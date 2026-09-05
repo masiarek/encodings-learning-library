@@ -20,8 +20,8 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [Validation is a boundary](03_Encodings/validation_is_a_boundary/README.md) | written, 2026-09-05 — all four languages, and the second *C view* |
 | [UTF-16 and surrogates](03_Encodings/utf16_and_surrogates/README.md) | stub |
 | [Byte order and the BOM](03_Encodings/byte_order_and_bom/README.md) | stub |
-| [Encode and decode are verbs](03_Encodings/encode_and_decode_are_verbs/README.md) | stub |
-| [Mojibake](03_Encodings/mojibake/README.md) | stub |
+| [Encode and decode are verbs](03_Encodings/encode_and_decode_are_verbs/README.md) | written, 2026-09-05 — Python, Rust and shell |
+| [Mojibake](03_Encodings/mojibake/README.md) | written, 2026-09-05 — Python and shell; the Rust point is the previous page's |
 | [04_Python](04_Python/README.md) — five pages | stubs |
 | [05_Rust](05_Rust/README.md) — four pages | stubs |
 | [06_Terminal](06_Terminal/README.md) — four pages | stubs |
@@ -38,6 +38,8 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 ## Written out of order, on purpose
 
 Chapters 9 and 10 were written before chapters 3–7 because they are the two that do not depend on them. [09_History](09_History/README.md) explains the *shape* of everything the stubs will say, so it makes the remaining pages read as conclusions rather than commandments; [10_Best_Practices](10_Best_Practices/README.md) is the answer a reader most often arrives wanting, and leaving it until last would have meant a library that could explain every trap and never say what to do. Both link forward into the stubs, so filling those in adds detail under an argument that is already made.
+
+Chapter 3's last two lessons went the same way on 2026-09-05, and for a smaller reason: [Encode and decode are verbs](03_Encodings/encode_and_decode_are_verbs/README.md) and [Mojibake](03_Encodings/mojibake/README.md) are the pair that names the whole problem, and the front page had been describing that problem with nowhere finished to send a reader. Neither needs [UTF-8 by hand](03_Encodings/utf8_by_hand/README.md) — they are about the table being an argument, not about the bit-packing inside any one table — so the checkpoint page is still next after `code_pages`.
 
 ## Deliberately not yet
 

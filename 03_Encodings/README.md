@@ -10,8 +10,8 @@ A code point is a number, and a file is bytes. An **encoding** is the rule for w
 | 2 | [Validation is a boundary](validation_is_a_boundary/README.md) | Who checks that a run of bytes really is UTF-8, and what is left of the check afterwards? | written, 2026-09-05 |
 | 3 | [UTF-16 and surrogates](utf16_and_surrogates/README.md) | Why do Windows, Java, JavaScript and SAP say an emoji is two characters long? | stub |
 | 4 | [Byte order and the BOM](byte_order_and_bom/README.md) | Which byte of a two-byte number comes first, and what are `EF BB BF` doing at the top of my CSV? | stub |
-| 5 | [Encode and decode are verbs](encode_and_decode_are_verbs/README.md) | What exactly are the two operations, and where in a program do they belong? | stub |
-| 6 | [Mojibake](mojibake/README.md) | Why `Ã©`, and how do I name the culprit from the garbage alone? | stub |
+| 5 | [Encode and decode are verbs](encode_and_decode_are_verbs/README.md) | What exactly are the two operations, and where in a program do they belong? | written, 2026-09-05 |
+| 6 | [Mojibake](mojibake/README.md) | Why `Ã©`, and how do I name the culprit from the garbage alone? | written, 2026-09-05 |
 
 ## The through-line
 

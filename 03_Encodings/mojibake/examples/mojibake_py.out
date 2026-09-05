@@ -1,0 +1,95 @@
+
+1. THE MECHANISM: THE BYTES DO NOT CHANGE
+------------------------------------------------------------------------
+   the writer had      'café'
+   and wrote           63 61 66 c3 a9   (UTF-8)
+   the reader read     63 61 66 c3 a9   (the same bytes)
+   under Latin-1, so   'cafÃ©'
+   bytes identical:    True
+
+   Nothing was corrupted. The file is byte-for-byte what the writer
+   produced. Only the table was wrong, which is why the damage is
+   perfectly regular -- and therefore recognisable, and often reversible.
+
+2. THE RECOGNITION TABLE
+------------------------------------------------------------------------
+   true text  UTF-8 bytes              seen as          what it was
+   'é'        c3 a9                    'Ã©'             an accented letter, read as Latin-1
+   'é'        c3 a9                    'Ã©'             the same, read as Windows-1252
+   '—'        e2 80 94                 'â€”'            an em dash -- the commonest one in the wild
+   '“'        e2 80 9c                 'â€œ'            a curly quote from a word processor
+   '”'        e2 80 9d                 <raises: 0x9d>   its closing partner -- see below
+   '\xa0'     c2 a0                    'Â\xa0'          a non-breaking space: the lone Â people see
+   'łódź'     c5 82 c3 b3 64 c5 ba     'Å‚Ã³dÅº'        Polish, via a UTF-8 file read as 1252
+
+   Every row is the same one bug. Once `Ã` or `â€` is a shape you
+   recognise, you are reading the writer's table off the screen.
+
+   The row that raises is worth keeping: Windows-1252 leaves 5 byte
+   values undefined (0x81, 0x8d, 0x8f, 0x90, 0x9d), so unlike Latin-1 it can
+   occasionally refuse. That is the whole of its advantage as a detector,
+   and 5 out of 256 is not much of one.
+
+3. DOUBLE ENCODING: COUNTING THE LAYERS
+------------------------------------------------------------------------
+   0 layer(s): 'café'                   63 61 66 c3 a9
+   1 layer(s): 'cafÃ©'                  63 61 66 c3 83 c2 a9
+   2 layer(s): 'cafÃ\x83Â©'             63 61 66 c3 83 c2 83 c3 82 c2 a9
+   3 layer(s): 'cafÃ\x83Â\x83Ã\x82Â©'   63 61 66 c3 83 c2 83 c3 82 c2 83 c3 83 c2 82 c3 82 c2 a9
+
+   Each pass multiplies: one byte above 0x7f becomes two, then four.
+   'é' -> 'Ã©' -> 'Ã\x83Â©'. The growth is the tell -- a file that got
+   longer every time it was copied has an interface applying the bug
+   on every hop.
+
+4. REVERSING IT, AND COUNTING BACK DOWN
+------------------------------------------------------------------------
+   found in the data: 'cafÃ\x83Â©'
+   after 1 repair(s):  'cafÃ©'
+   after 2 repair(s):  'café'
+
+   2 layers, and it stops on its own: the next repair raises,
+   which is the signal that the text underneath is now real. This works
+   because Latin-1 maps all 256 byte values -- so .encode('latin_1')
+   hands back exactly the bytes the wrong decode read, none lost.
+
+5. THE TWO THAT DO NOT REVERSE
+------------------------------------------------------------------------
+   thrown away at WRITE time: 'café'.encode('ascii', errors='replace')
+     bytes on disk  63 61 66 3f  -> 'caf?'
+   thrown away at READ time:  b'caf\xe9'.decode('utf_8', errors='replace')
+     text in memory 'caf�'  U+FFFD REPLACEMENT CHARACTER
+
+   '?' and U+FFFD are not encodings of 'é'. They are the record that a
+   character was discarded, and no table anywhere can bring it back. If
+   these are in the archive, the archive is the loss -- go upstream.
+   The difference matters when you are asked whether a file is fixable:
+   'Ã©' is a display of the right bytes and repairs; '?' and U+FFFD are
+   the right display of bytes that no longer say what they said.
+
+6. AND ONE THAT IS NOT AN ENCODING BUG AT ALL
+------------------------------------------------------------------------
+   '字'  U+5B57  CJK UNIFIED IDEOGRAPH-5B57
+       decoded fine: e5 ad 97 -> '字'
+   '𝔊'  U+1D50A  MATHEMATICAL FRAKTUR CAPITAL G
+       decoded fine: f0 9d 94 8a -> '𝔊'
+
+   If a character shows as a box and Python can still tell you its name,
+   the decode was correct and your font has no glyph. Tofu is a display
+   problem. Changing the encoding will not fix it, and trying is how a
+   working file gets damaged.
+
+7. NAMING THE CULPRIT FROM THE GARBAGE ALONE
+------------------------------------------------------------------------
+   observed in a report: 'Å‚Ã³dÅº'
+   try every table it could have been READ under, and re-read as UTF-8:
+     read as latin_1    no: '‚' is not in this table
+     read as cp1252     -> 'łódź'   [LATIN SMALL LETTER L WITH STROKE, LATIN SMALL LETTER O WITH ACUTE, LATIN SMALL LETTER Z WITH ACUTE]
+     read as cp1250     no: 'Å' is not in this table
+     read as iso8859_2  no: 'Å' is not in this table
+     read as cp850      no: '‚' is not in this table
+
+   One pair produces a word. That pair IS the bug report: the file was
+   written UTF-8 and read as that table, at whichever hop first shows
+   the damage. Prove it with a hex dump of the original rather than
+   arguing about it -- the bytes have been right the whole time.

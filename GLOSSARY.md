@@ -30,6 +30,7 @@ Short entries, each with the page that explains it in full. Alphabetical.
 | **replacement character** | `U+FFFD` `�`, what a decoder writes in place of bytes it cannot read, if told to replace rather than raise | [Encode, decode and errors](04_Python/encode_decode_and_errors/README.md) |
 | **scalar value** | A code point that is *not* a surrogate: `U+0000`–`U+D7FF` and `U+E000`–`U+10FFFF`. What UTF-8 can encode, and exactly what Rust's `char` can hold | [Validation is a boundary](03_Encodings/validation_is_a_boundary/README.md) |
 | **surrogate pair** | Two 16-bit UTF-16 units (`D800–DBFF` then `DC00–DFFF`) standing for one code point above `U+FFFF` | [UTF-16 and surrogates](03_Encodings/utf16_and_surrogates/README.md) |
+| **tofu** | The empty box `□` shown for a character the FONT has no glyph for. Not an encoding error at all — the bytes decoded correctly, and changing the encoding to chase it is how a working file gets damaged | [Mojibake](03_Encodings/mojibake/README.md) |
 | **Unicode** | The one numbering for every character in every script: 1,114,112 code points, 17 planes | [Unicode code points](02_Characters/unicode_code_points/README.md) |
 | **UTF-8** | The encoding that writes a code point as 1–4 bytes, leaves ASCII unchanged, and is what nearly every file today is | [UTF-8 by hand](03_Encodings/utf8_by_hand/README.md) |
 | **UTF-16** | The encoding that writes a code point as one or two 16-bit units; Windows, Java, JavaScript and SAP's internal form | [UTF-16 and surrogates](03_Encodings/utf16_and_surrogates/README.md) |

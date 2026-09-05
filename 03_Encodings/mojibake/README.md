@@ -2,24 +2,236 @@
 
 **Level:** 101 → 201 · for anyone who has seen Ã©
 
-> **Stub — an outline, not a lesson.** There is no runnable example behind this page yet, so nothing on it has been through [the check that backs every other claim in this library](../../CONTRIBUTING.md). The bullets below are the questions the finished page has to answer.
+**One line:** Mojibake is bytes decoded under the wrong table — `Ã©` is `C3 A9` read as Latin-1 — and once you can recognise the common patterns you can name the culprit from the garbage alone.
 
-**One line:** Mojibake is bytes decoded under the wrong table — `Ã©` is `C3 A9` read as Latin-1 — and once you can recognise the four common patterns you can name the culprit from the garbage alone.
+## Nothing is damaged
 
-## What the finished page has to answer
+This is the part that changes how the bug feels. `café` written as UTF-8 is the five bytes `63 61 66 c3 a9`. A reader that applies Latin-1 to those same five bytes gets `cafÃ©` — and the file is still `63 61 66 c3 a9`. Not one bit moved. There is no corruption to recover from, no disk error, no truncation: the writer wrote correctly, the reader read correctly, and they used different tables, because [the file does not record which one was used](../../09_History/from_telegraph_to_unicode/README.md).
 
-- The recognition table: `Ã©` / `Ã‚Â` (UTF-8 read as Latin-1 or 1252), `é` as `?` (encoded to a table that lacks it), `�` (the replacement character, U+FFFD), `□` (a font gap, not an encoding error at all)
-- Double encoding: UTF-8 bytes read as Latin-1 and written out as UTF-8 again — `Ã©` becomes `Ã\u0083Â©`, and how to count the layers
-- Reversing it: `s.encode('latin-1').decode('utf-8')` and why it works — Latin-1 is the table that round-trips every byte
-- The one that cannot be reversed: `?` means the byte was thrown away at write time
-- Where it came from: which side of an interface decoded, under what default, and how to prove it with a hex dump rather than argue
+That is why the damage is *regular*. Corruption is random and unrepairable; mojibake is a function, applied uniformly, and a function that was applied can usually be un-applied. It is also why arguing about it goes in circles — both sides are describing what they see on a screen, and neither has looked at the bytes.
 
-## The example it will run
+The word is Japanese: 文字化け, *moji* (character) + *bake* (change, transform), and it entered English mostly through [Joel Spolsky's 2003 essay ↗](https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/). Japan met it two decades before the West did, and for the reason [Why UTF-8 won](../../09_History/why_utf8_won/README.md) gives: it had the most encodings to disagree about.
 
-Python: produce each pattern deliberately from `'café'`, then reverse the reversible ones; shell: the same with `iconv`.
+## Reading the garbage
+
+Almost everything you will meet is UTF-8 read as a one-byte table, which is why two shapes cover most sightings:
+
+| You see | It was | Because |
+|---|---|---|
+| `Ã©` `Ã¨` `Ã¼` `Ã±` | `é` `è` `ü` `ñ` | UTF-8 two-byte sequences start `C3`, and `C3` is `Ã` in Latin-1 and 1252 |
+| `â€”` `â€œ` `â€™` | `—` `“` `’` | UTF-8 three-byte punctuation starts `E2 80`, and `E2 80` is `â €` in 1252 |
+| a lone `Â` | a non-breaking space, `°`, `£`… | anything in `U+00A0`–`U+00BF` is `C2` plus itself; `C2` is `Â` |
+| `?` | a character the writer's table did not have | thrown away at **write** time |
+| `�` (U+FFFD) | a byte the reader's table could not use | thrown away at **read** time |
+| `□` tofu | the right character | not an encoding bug at all — your font has no glyph |
+
+The first three repair. The last three do not, and the reason is the useful distinction on this page: in the first three every byte survived, and in the middle two a byte was *discarded* — by the writer or by the reader, and which one tells you whose logs to read. The last is not a bug in your data at all, and the surest way to break a working file is to go "fixing" its encoding because a box appeared.
+
+## Counting the layers
+
+If a file passes through the same broken interface twice, the damage compounds: `é` → `Ã©` → `Ã\x83Â©`. Each pass turns one byte above `0x7F` into two, so the file gets longer every hop — five bytes, seven, eleven, nineteen — and a column that keeps overflowing is often this, not a data-entry problem. Counting the layers matters because the repair has to be applied exactly that many times.
+
+The repair itself is the inverse: put the characters back as bytes under the table that was wrongly applied, then decode those bytes as UTF-8 — `s.encode('latin-1').decode('utf-8')` in Python. It works for the same reason Latin-1 could not refuse in the first place: Latin-1 maps all 256 byte values, so encoding under it hands back exactly the bytes the wrong decode read, with none lost.
+
+**But do not run the repair "until it errors" outside Python.** The Python loop stops on its own because its last step is a UTF-8 *decode*, which the repaired bytes fail. `iconv -f UTF-8 -t ISO-8859-1` has no such step: it will happily take a correctly repaired UTF-8 file one hop further and turn it into a correct Latin-1 file, reporting success. Section 3 of the shell run below shows exactly that — repair 3 succeeds when it should have stopped. Count first, then repair.
+
+## In Python
+
+<!-- output:mojibake_py -->
+*Verified output of [`mojibake_py.py`](examples/mojibake_py.py) — regenerated by `tools/run_examples.py`, never hand-typed.*
+
+```text
+1. THE MECHANISM: THE BYTES DO NOT CHANGE
+------------------------------------------------------------------------
+   the writer had      'café'
+   and wrote           63 61 66 c3 a9   (UTF-8)
+   the reader read     63 61 66 c3 a9   (the same bytes)
+   under Latin-1, so   'cafÃ©'
+   bytes identical:    True
+
+   Nothing was corrupted. The file is byte-for-byte what the writer
+   produced. Only the table was wrong, which is why the damage is
+   perfectly regular -- and therefore recognisable, and often reversible.
+
+2. THE RECOGNITION TABLE
+------------------------------------------------------------------------
+   true text  UTF-8 bytes              seen as          what it was
+   'é'        c3 a9                    'Ã©'             an accented letter, read as Latin-1
+   'é'        c3 a9                    'Ã©'             the same, read as Windows-1252
+   '—'        e2 80 94                 'â€”'            an em dash -- the commonest one in the wild
+   '“'        e2 80 9c                 'â€œ'            a curly quote from a word processor
+   '”'        e2 80 9d                 <raises: 0x9d>   its closing partner -- see below
+   '\xa0'     c2 a0                    'Â\xa0'          a non-breaking space: the lone Â people see
+   'łódź'     c5 82 c3 b3 64 c5 ba     'Å‚Ã³dÅº'        Polish, via a UTF-8 file read as 1252
+
+   Every row is the same one bug. Once `Ã` or `â€` is a shape you
+   recognise, you are reading the writer's table off the screen.
+
+   The row that raises is worth keeping: Windows-1252 leaves 5 byte
+   values undefined (0x81, 0x8d, 0x8f, 0x90, 0x9d), so unlike Latin-1 it can
+   occasionally refuse. That is the whole of its advantage as a detector,
+   and 5 out of 256 is not much of one.
+
+3. DOUBLE ENCODING: COUNTING THE LAYERS
+------------------------------------------------------------------------
+   0 layer(s): 'café'                   63 61 66 c3 a9
+   1 layer(s): 'cafÃ©'                  63 61 66 c3 83 c2 a9
+   2 layer(s): 'cafÃ\x83Â©'             63 61 66 c3 83 c2 83 c3 82 c2 a9
+   3 layer(s): 'cafÃ\x83Â\x83Ã\x82Â©'   63 61 66 c3 83 c2 83 c3 82 c2 83 c3 83 c2 82 c3 82 c2 a9
+
+   Each pass multiplies: one byte above 0x7f becomes two, then four.
+   'é' -> 'Ã©' -> 'Ã\x83Â©'. The growth is the tell -- a file that got
+   longer every time it was copied has an interface applying the bug
+   on every hop.
+
+4. REVERSING IT, AND COUNTING BACK DOWN
+------------------------------------------------------------------------
+   found in the data: 'cafÃ\x83Â©'
+   after 1 repair(s):  'cafÃ©'
+   after 2 repair(s):  'café'
+
+   2 layers, and it stops on its own: the next repair raises,
+   which is the signal that the text underneath is now real. This works
+   because Latin-1 maps all 256 byte values -- so .encode('latin_1')
+   hands back exactly the bytes the wrong decode read, none lost.
+
+5. THE TWO THAT DO NOT REVERSE
+------------------------------------------------------------------------
+   thrown away at WRITE time: 'café'.encode('ascii', errors='replace')
+     bytes on disk  63 61 66 3f  -> 'caf?'
+   thrown away at READ time:  b'caf\xe9'.decode('utf_8', errors='replace')
+     text in memory 'caf�'  U+FFFD REPLACEMENT CHARACTER
+
+   '?' and U+FFFD are not encodings of 'é'. They are the record that a
+   character was discarded, and no table anywhere can bring it back. If
+   these are in the archive, the archive is the loss -- go upstream.
+   The difference matters when you are asked whether a file is fixable:
+   'Ã©' is a display of the right bytes and repairs; '?' and U+FFFD are
+   the right display of bytes that no longer say what they said.
+
+6. AND ONE THAT IS NOT AN ENCODING BUG AT ALL
+------------------------------------------------------------------------
+   '字'  U+5B57  CJK UNIFIED IDEOGRAPH-5B57
+       decoded fine: e5 ad 97 -> '字'
+   '𝔊'  U+1D50A  MATHEMATICAL FRAKTUR CAPITAL G
+       decoded fine: f0 9d 94 8a -> '𝔊'
+
+   If a character shows as a box and Python can still tell you its name,
+   the decode was correct and your font has no glyph. Tofu is a display
+   problem. Changing the encoding will not fix it, and trying is how a
+   working file gets damaged.
+
+7. NAMING THE CULPRIT FROM THE GARBAGE ALONE
+------------------------------------------------------------------------
+   observed in a report: 'Å‚Ã³dÅº'
+   try every table it could have been READ under, and re-read as UTF-8:
+     read as latin_1    no: '‚' is not in this table
+     read as cp1252     -> 'łódź'   [LATIN SMALL LETTER L WITH STROKE, LATIN SMALL LETTER O WITH ACUTE, LATIN SMALL LETTER Z WITH ACUTE]
+     read as cp1250     no: 'Å' is not in this table
+     read as iso8859_2  no: 'Å' is not in this table
+     read as cp850      no: '‚' is not in this table
+
+   One pair produces a word. That pair IS the bug report: the file was
+   written UTF-8 and read as that table, at whichever hop first shows
+   the damage. Prove it with a hex dump of the original rather than
+   arguing about it -- the bytes have been right the whole time.
+```
+<!-- /output -->
+
+Section 7 is the practical one: given only the garbage, try each table it could have been read under and see which produces a word. Usually exactly one does, and that pair is the bug report.
+
+## In the terminal
+
+Two dumps end the argument. If the file contains `c3 a9`, the file is UTF-8 and the **reader** was told the wrong table. If it contains `e9`, the file is Latin-1 or one of its relatives and the **writer** used a different table than the reader expects. Neither dump is damaged, and neither one knows which was intended — which is precisely why you have to go and ask a person, armed with the dump.
+
+<!-- output:mojibake_sh -->
+*Verified output of [`mojibake_sh.sh`](examples/mojibake_sh.sh) — regenerated by `tools/run_examples.py`, never hand-typed.*
+
+```text
+1. WHAT IS ON DISK, AND WHAT THE READER MADE OF IT
+------------------------------------------------------------------------
+
+   on disk, written by a program that got it right:
+     00000000: 6361 66c3 a9                             caf..
+
+   what a reader using the wrong table then produced:
+     00000000: 6361 66c3 83c2 a9                        caf....
+
+   Both are real files. The first is café. The second is what you get
+   when the first is read as Latin-1 and written back out as UTF-8 --
+   and it is the second one that arrives in the bug report.
+
+2. EACH LAYER MAKES THE FILE LONGER
+------------------------------------------------------------------------
+
+   0 layer(s): 636166c3a9                               5 bytes
+   1 layer(s): 636166c383c2a9                           7 bytes
+   2 layer(s): 636166c383c283c382c2a9                   11 bytes
+   3 layer(s): 636166c383c283c382c283c383c282c382c2a9   19 bytes
+
+   Five bytes, seven, eleven, nineteen. A field that keeps overflowing
+   its column every time the file is copied is this, on every hop.
+
+3. THE REPAIR IS THE INVERSE -- AND ONE STEP TOO FAR
+------------------------------------------------------------------------
+
+   found:      636166c383c283c382c2a9   (2 layers)
+   repair 1:   636166c383c2a9           iconv exit 0
+   repair 2:   636166c3a9               iconv exit 0
+   repair 3:   636166e9                 iconv exit 0
+   repair 4:   (refused)                iconv exit 1
+
+   Read that carefully: repair 2 got the original five bytes back, and
+   repair 3 SUCCEEDED anyway -- turning a correct UTF-8 file into a
+   correct Latin-1 one. iconv does not stop where you want it to,
+   because -t ISO-8859-1 works on any text Latin-1 can hold.
+   The Python loop on this page does stop, and only because its repair
+   ENDS in a UTF-8 decode, which the four bytes 63 61 66 e9 fail.
+   So: count the layers first. "Repair until it errors" is a Python
+   trick and it does not transfer to the command line.
+
+4. THE TWO BYTE PATTERNS, AND WHO TO GO AND TALK TO
+------------------------------------------------------------------------
+
+   c3 a9  in the file  ->  the file IS UTF-8. The bytes are right and the
+                           READER was told the wrong table. Fix the reader.
+     00000000: 6361 66c3 a9                             caf..
+
+   e9     in the file  ->  the file is Latin-1 (or 1252, or 1250...). The
+                           WRITER used a different table. Fix the writer,
+                           or tell the reader the truth.
+     00000000: 6361 66e9                                caf.
+
+   That is the whole diagnosis, and it takes one xxd. Neither dump is
+   damaged -- and neither one knows which of them was intended.
+```
+<!-- /output -->
+
+## The bug Rust makes you type out
+
+There is no Rust example on this page, because the interesting thing about Rust here is the absence: `String::from_utf8` returns a `Result`, and std ships no Latin-1 decoder at all, so there is no wrong argument to pass by accident. To produce mojibake in Rust you have to write the decoder yourself — `bytes.iter().map(|&b| b as char).collect::<String>()` — which is one line, cannot fail, and is exactly this bug. It is [section 4 of the previous page](../encode_and_decode_are_verbs/README.md), and seeing the mechanism as code you had to choose to write is the clearest statement of it in the library.
+
+## If you are coming from Python or ABAP
+
+**Python.** Three habits cover most of it. Never "fix" an encoding problem with `errors='ignore'` — that is the `?` case, and it converts a repairable file into an unrepairable one. Use `errors='replace'` only for display, never before writing. And when you have mojibake in a database rather than a file, remember the repair operates on *text*: `s.encode('latin-1').decode('utf-8')` will raise on rows that were never damaged, which is a feature — it means you can run it over a column and let the exception mark the clean rows. The [`ftfy` ↗](https://ftfy.readthedocs.io/) library automates all of this and counts the layers for you; it is worth reading rather than reimplementing, and worth understanding first so you can tell when it has guessed wrong.
+
+**ABAP.** The commonest source is an interface, not a program: `OPEN DATASET … IN LEGACY TEXT MODE CODE PAGE …` naming a code page that is not the one the file was written in, or an RFC destination whose code page setting disagrees with the sending system. The diagnosis is the same as everywhere else — read the file into an `xstring` and look at the bytes before deciding whose fault it is, because `cl_abap_codepage=>convert_from( )` will tell you which byte it stopped on. SAP names its tables by number rather than by name (1100, 1160, 4110 and so on); those numbers are worth verifying against your own system rather than quoting from any document, and [SAP code pages](../../07_Real_Data/sap_code_pages/README.md) is where this library keeps them. *(Not machine-checked — CI cannot run ABAP.)*
+
+## Try it
+
+```bash
+cd 03_Encodings/mojibake/examples
+python3 mojibake_py.py
+bash mojibake_sh.sh
+```
+
+Without the machine: a colleague sends you `Ãœber` and asks you to fix the database. What single question do you ask before touching anything? Then: they send `?ber` instead. What has changed, and what can you still promise them?
 
 ## See also
 
-- [Encode and decode are verbs](../encode_and_decode_are_verbs/README.md)
-- [Mojibake round trip](../../07_Real_Data/mojibake_round_trip/README.md)
-- [Code pages](../../02_Characters/code_pages/README.md)
+- [Encode and decode are verbs](../encode_and_decode_are_verbs/README.md) — the two verbs this page shows misapplied
+- [Code pages](../../02_Characters/code_pages/README.md) — the tables being confused, and why there are so many
+- [Windows-1252 vs Latin-1](../../07_Real_Data/windows_1252_vs_latin1/README.md) — the 32 bytes where the two commonest culprits differ
+- [Mojibake round trip](../../07_Real_Data/mojibake_round_trip/README.md) — the same repair against real interface data
+- [Why UTF-8 won](../../09_History/why_utf8_won/README.md) — property 4, and why Latin-1 could never have warned you
+- [UTF-8 everywhere](../../10_Best_Practices/utf8_everywhere/README.md) — how to stop producing it

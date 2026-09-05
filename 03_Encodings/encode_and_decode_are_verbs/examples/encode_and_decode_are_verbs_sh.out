@@ -1,0 +1,38 @@
+
+1. A PIPE CARRIES BYTES. THAT IS ALL IT CARRIES.
+------------------------------------------------------------------------
+
+$ printf 'caf\xc3\xa9' | xxd
+00000000: 6361 66c3 a9                             caf..
+   five bytes. Nothing on this pipe records that they are UTF-8,
+   or text at all. The next command has to be told.
+
+2. iconv IS THE TWO VERBS, WRITTEN AS FLAGS
+------------------------------------------------------------------------
+
+$ printf 'caf\xc3\xa9' | iconv -f UTF-8 -t ISO-8859-1 | xxd
+00000000: 6361 66e9                                caf.
+   -f UTF-8      decode these bytes under this table  -> café
+   -t ISO-8859-1 encode that text under this table    -> 4 bytes
+   Same message, one byte shorter, because Latin-1 spends one byte
+   on é where UTF-8 spends two.
+
+3. NOTHING CHECKS -f AGAINST THE DATA
+------------------------------------------------------------------------
+
+$ printf 'caf\xc3\xa9' | iconv -f ISO-8859-1 -t UTF-8 | xxd
+00000000: 6361 66c3 83c2 a9                        caf....
+   iconv exit 0 -- no complaint whatsoever.
+   The same five bytes, decoded under the WRONG table and re-encoded:
+   seven bytes now, and c3 a9 has become c3 83 c2 a9. That is mojibake,
+   made deliberately, with a command that reported success.
+
+4. AND BACK, BECAUSE LATIN-1 THREW NOTHING AWAY
+------------------------------------------------------------------------
+
+$ ... | iconv -f UTF-8 -t ISO-8859-1 | xxd
+00000000: 6361 66c3 a9                             caf..
+   63 61 66 c3 a9 -- the five bytes we started with.
+   The damage in step 3 was reversible because every byte survived it.
+   That is not true of every mistake, and which ones reverse is the
+   next lesson.

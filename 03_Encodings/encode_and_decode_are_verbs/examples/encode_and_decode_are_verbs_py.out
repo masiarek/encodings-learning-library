@@ -1,0 +1,91 @@
+
+1. TWO NOUNS
+------------------------------------------------------------------------
+   text  'café'         type str   len 4  <- characters
+   bytes b'caf\xc3\xa9' type bytes len 5  <- bytes
+
+   Two different types holding the same message. len() answers a
+   different question on each, and they disagree the moment a
+   character needs more than one byte.
+
+2. TWO VERBS, AND THE ARGUMENT NOTHING CHECKS
+------------------------------------------------------------------------
+   'café'.encode('utf_8')          -> b'caf\xc3\xa9'
+   b'caf\xc3\xa9'.decode('utf_8')  -> 'café'
+
+   encode: text  -> bytes,  under a table
+   decode: bytes -> text,   under a table
+
+   The table is an ARGUMENT. It is not a property of the bytes, it is
+   not stored with them, and no check anywhere confirms that the table
+   you passed is the table the writer used.
+
+3. THE 3x3 GRID: ONE STRING, THREE TABLES, BOTH VERBS
+------------------------------------------------------------------------
+   'café'.encode('utf_8'    ) = 63 61 66 c3 a9
+   'café'.encode('latin_1'  ) = 63 61 66 e9
+   'café'.encode('utf_16_le') = 63 00 61 00 66 00 e9 00
+
+   bytes written as utf_8:
+     read as utf_8      'café'  <- correct
+     read as latin_1    'cafÃ©'
+     read as utf_16_le  UnicodeDecodeError at byte 4: truncated data
+
+   bytes written as latin_1:
+     read as utf_8      UnicodeDecodeError at byte 3: unexpected end of data
+     read as latin_1    'café'  <- correct
+     read as utf_16_le  '慣\ue966'
+
+   bytes written as utf_16_le:
+     read as utf_8      UnicodeDecodeError at byte 6: invalid continuation byte
+     read as latin_1    'c\x00a\x00f\x00é\x00'
+     read as utf_16_le  'café'  <- correct
+
+   Three of the nine are right, and they are right for one reason only:
+   the reader was told the same table the writer used. Of the other six,
+   three raise and three do not -- and the three that do not are worse.
+
+4. WHY latin-1 CAN NEVER RAISE
+------------------------------------------------------------------------
+   of the 256 one-byte inputs, latin_1  decodes 256
+   of the 256 one-byte inputs, utf_8    decodes 128
+   of the 256 one-byte inputs, ascii    decodes 128
+
+   latin-1 maps all 256 byte values to code points 0-255, so decoding
+   under it CANNOT fail. That makes it the right tool for carrying
+   arbitrary bytes through a str, and the wrong tool for detecting
+   anything at all: it answers 'fine' to every file you show it.
+
+5. THE TWO ERRORS, FIELD BY FIELD
+------------------------------------------------------------------------
+   b'caf\xe9!'.decode('utf_8')
+     .encoding 'utf-8'    the table you passed
+     .start    3          the byte it stopped on
+     .object   b'\xe9'    that byte
+     .reason   'invalid continuation byte'
+
+   'café'.encode('ascii')
+     .encoding 'ascii'    the table you passed
+     .start    3          the character it stopped on
+     .object   'é'        that character
+     .reason   'ordinal not in range(128)'
+
+   Both name the table, the position and the reason. Read the position
+   first: it tells you which character in the file to look at, and a
+   hex dump of that offset usually ends the argument.
+
+6. THE UNICODE SANDWICH, AND THE COST OF SKIPPING IT
+------------------------------------------------------------------------
+   decode at the edge coming in  ->  work in text  ->  encode at the edge going out
+
+   Slicing text and slicing bytes are not the same operation:
+     'café'[:4]            = 'café'
+     b'caf\xc3\xa9'[:4]     = b'caf\xc3'  <- half of a character
+       and decoding that:      UnicodeDecodeError at byte 3: unexpected end of data
+
+   A four-CHARACTER field and a four-BYTE column are different sizes:
+     len('café')          = 4 characters
+     len('café'.encode()) = 5 bytes
+
+   Every interface bug in chapter 7 is one of those two lines being
+   the one the program did not mean.

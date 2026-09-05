@@ -1,0 +1,61 @@
+
+1. TWO NOUNS, AND THE TABLE IS PART OF THE TYPE
+------------------------------------------------------------------------
+   let text: &str = "café";
+     text.len()            = 5  <- BYTES, always
+     text.chars().count()  = 4  <- characters
+     text.as_bytes()       = [63, 61, 66, c3, a9]
+
+   `&str` does not mean 'text'. It means 'bytes that are valid
+   UTF-8', and that promise is the type. There is no second kind
+   of String holding Latin-1, so no String ever has to say which
+   table it is -- which is why .len() can be bytes without lying.
+
+2. ENCODING TAKES NO ARGUMENT
+------------------------------------------------------------------------
+   text.as_bytes()  -> [63, 61, 66, c3, a9]
+   text.to_string().into_bytes()  -> same bytes, no copy of the data
+
+   Python's .encode() needs a table and defaults to UTF-8. Rust
+   has nothing to pass: the bytes under a String ALREADY are the
+   UTF-8 ones. Encoding here is not a conversion, it is a cast of
+   the reader's attention from characters to the bytes beneath.
+
+3. DECODING IS A Result, AND YOU ARE MADE TO LOOK AT IT
+------------------------------------------------------------------------
+   String::from_utf8([63, 61, 66, c3, a9])
+     Ok("café")
+   String::from_utf8([63, 61, 66, e9])
+     Err: valid up to byte 3, error_len None
+     from_utf8_lossy -> "caf�"
+
+   valid_up_to() is the offset to put in the bug report: everything
+   before it decoded, and the byte at it is the one to look at in a
+   hex dump. from_utf8_lossy never fails -- it substitutes U+FFFD,
+   which means the damage is now IN the string and the original
+   byte is gone.
+
+4. THE TABLE RUST DOES NOT SHIP
+------------------------------------------------------------------------
+   the same bytes [63, 61, 66, c3, a9], read under the other table:
+     as UTF-8   "café"
+     as Latin-1 "cafÃ©"   <- one line, and it cannot fail
+
+   fn decode_latin1(b: &[u8]) -> String { b.iter().map(|&b| b as char).collect() }
+
+   That is the entire Latin-1 decoder: every byte IS its code point.
+   It has no error case, so it accepts every file ever written and
+   returns something. Std does not ship it, and the reason is not
+   that it is hard -- it is that a decoder which cannot fail is a
+   decoder that cannot warn you.
+
+5. WHERE THE TWO VERBS LIVE IN A RUST PROGRAM
+------------------------------------------------------------------------
+   fs::read_to_string(p) -> io::Result<String>   decodes; fails on bad UTF-8
+   fs::read(p)           -> io::Result<Vec<u8>>  does not decode
+   String::from_utf8     -> Result<String, _>    the decode, made explicit
+   str::as_bytes         -> &[u8]                the encode, free
+
+   The sandwich is not advice here, it is the signatures: to get a
+   String out of bytes you pass through a Result, and the compiler
+   will not let you forget which side of the boundary you are on.
