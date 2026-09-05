@@ -2,7 +2,7 @@
 
 **Level:** 101 → 201 · the chapter this library is built around
 
-A code point is a number, and a file is bytes. An **encoding** is the rule for writing one as the other, and there are several rules. This chapter is UTF-8 done by hand, then who checks that a file really follows it, then the other rules you will meet, then what it looks like when a file is read under the wrong one.
+A code point is a number, and a file is bytes. An **encoding** is the rule for writing one as the other, there are several rules, and — the fact the last two lessons exist for — **the file does not record which rule was used**. This chapter is UTF-8 done by hand, then who checks that a file really follows it, then the other rules you will meet, then what it looks like when a file is read under the wrong one.
 
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|

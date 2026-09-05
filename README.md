@@ -12,6 +12,14 @@ No page here hand-types what a program prints. Each lesson links real example fi
 
 <!-- --8<-- [start:below-hero] -->
 
+## The root problem: bytes are not characters
+
+A file on disk is just **bytes** — numbers 0 through 255. What you meant to store was **characters**: `A`, `—`, `é`, `你`. An **encoding** is the agreed rulebook mapping one to the other, and there has never been only one rulebook.
+
+The catch is the whole subject: **a file does not record which rulebook was used.** No header, no marker — just bytes. Every program that opens a text file has to decide, from a protocol, a convention, or a guess. When the writer and the reader disagree you get [mojibake](03_Encodings/mojibake/README.md): the bytes are correct and the interpretation is wrong. Worse, [some tables cannot report a problem at all](09_History/why_utf8_won/README.md) — which is why this damage went undiagnosed for twenty years.
+
+That is the plan of the library. Chapter 1 is the bytes, chapter 2 is the characters, chapter 3 is the rulebook, and chapters 4 through 7 are the four places the disagreement actually happens.
+
 ## Start here
 
 [**00_Start_Here/**](00_Start_Here/README.md) is the plan: seven chapters in reading order, the four checkpoints they lead to, and how to work a lesson. Then the first three pages, which are the whole of chapter 1:
