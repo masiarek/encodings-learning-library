@@ -1,0 +1,57 @@
+1. od -c NAMES THE COMMON ONES; xxd JUST SHOWS A DOT
+
+$ printf 'a\tb\nc\r\n' | od -An -tx1 -c | tidy
+  61  09  62  0a  63  0d  0a
+   a  \t   b  \n   c  \r  \n
+
+$ printf 'a\tb\nc\r\n' | xxd
+00000000: 6109 620a 630d 0a                        a.b.c..
+
+2. THE SAME TWO LINES, THREE WAYS TO END THEM
+
+$ printf 'one\ntwo\n'     | xxd
+00000000: 6f6e 650a 7477 6f0a                      one.two.
+
+$ printf 'one\r\ntwo\r\n' | xxd
+00000000: 6f6e 650d 0a74 776f 0d0a                 one..two..
+
+$ printf 'one\rtwo\r'     | xxd
+00000000: 6f6e 650d 7477 6f0d                      one.two.
+
+3. wc -l COUNTS LF BYTES, NOTHING ELSE
+
+$ printf 'one\ntwo\n'     | wc -l | tr -d ' '
+2
+
+$ printf 'one\r\ntwo\r\n' | wc -l | tr -d ' '
+2
+
+$ printf 'one\rtwo\r'     | wc -l | tr -d ' '
+0
+
+4. cat -v SHOWS THE CR AS ^M — THE THING YOU SEE IN vim
+
+$ printf 'one\r\ntwo\r\n' | cat -v
+one^M
+two^M
+
+5. STRIP THEM: tr is always installed
+
+$ printf 'one\r\ntwo\r\n' | tr -d '\r' | xxd
+00000000: 6f6e 650a 7477 6f0a                      one.two.
+
+6. THE CARET ARITHMETIC, IN BASH
+
+$ echo $(( 0x49 & 0x1F ))   # Ctrl-I
+9
+
+$ echo $(( 0x4D & 0x1F ))   # Ctrl-M
+13
+
+7. NUL CANNOT LIVE IN A SHELL VARIABLE, BUT IT CAN LIVE IN A PIPE
+
+$ printf 'ab\0cd' | xxd
+00000000: 6162 0063 64                             ab.cd
+
+$ printf 'ab\0cd' | wc -c | tr -d ' '
+5

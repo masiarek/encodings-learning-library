@@ -16,6 +16,7 @@ Three kinds of example, told apart by extension
     examples/<stem>.py    stdlib-only Python, run as `python3 -I <stem>.py`
     examples/<stem>.rs    compiled with `rustc --edition 2024`, no cargo, no crates
     examples/<stem>.sh    run as `bash <stem>.sh` — xxd, od, hexdump, iconv, printf
+    examples/<stem>.c     compiled with `cc -std=c11 -Wall -Wextra` (clang or gcc), no libraries
 
 Stems are unique repo-wide *across* extensions, because a Markdown block names a
 bare stem with no path and no extension. The convention is a language suffix:
@@ -57,7 +58,7 @@ REPO = Path(__file__).resolve().parent.parent
 EDITION = "2024"
 
 # extension -> (how the page labels the source fence, how the tool runs it)
-LANGS = {".py": "python", ".rs": "rust", ".sh": "bash"}
+LANGS = {".py": "python", ".rs": "rust", ".sh": "bash", ".c": "c"}
 
 # <!-- output:stem -->  ...generated...  <!-- /output -->
 # <!-- source:stem -->  ...generated...  <!-- /source -->
@@ -111,7 +112,7 @@ def find_examples() -> dict[str, Path]:
                 f"ERROR: duplicate example stem {path.stem!r}\n"
                 f"  {found[path.stem].relative_to(REPO)}\n  {path.relative_to(REPO)}\n"
                 "Stems are named bare in Markdown blocks, so they must be unique "
-                "across languages too — add a _py / _rs / _sh suffix."
+                "across languages too — add a _py / _rs / _sh / _c suffix."
             )
         found[path.stem] = path
     return found
@@ -139,13 +140,13 @@ def run_example(src: Path, workdir: Path) -> str:
     PYTHONPATH cannot change what the page claims.
     """
     env = fixed_env()
-    if src.suffix == ".rs":
+    if src.suffix in (".rs", ".c"):
         binary = workdir / src.stem
-        build = subprocess.run(
-            ["rustc", "--edition", EDITION, str(src), "-o", str(binary)],
-            capture_output=True,
-            text=True,
-        )
+        if src.suffix == ".rs":
+            build_cmd = ["rustc", "--edition", EDITION, str(src), "-o", str(binary)]
+        else:
+            build_cmd = ["cc", "-std=c11", "-Wall", "-Wextra", str(src), "-o", str(binary)]
+        build = subprocess.run(build_cmd, capture_output=True, text=True)
         if build.returncode != 0:
             sys.exit(f"ERROR: {src.relative_to(REPO)} failed to compile\n{build.stderr}")
         if build.stderr.strip():
@@ -296,7 +297,7 @@ def main() -> int:
 
     examples = find_examples()
     if not examples:
-        print("No examples found (looked for *.py / *.rs / *.sh under any examples/ folder).")
+        print("No examples found (looked for *.py / *.rs / *.sh / *.c under any examples/ folder).")
         return 0
 
     selected = resolve_selection(args.only, examples) if args.only else None

@@ -1,0 +1,40 @@
+1. THE ONES YOU WILL MEET: code, hex, Python escape, caret, meaning
+     0  0x00  NUL  '\x00'  ^@  nothing — and the end of a C string
+     7  0x07  BEL  '\x07'  ^G  ring the bell (a terminal still beeps)
+     8  0x08  BS   '\x08'  ^H  move back one column
+     9  0x09  TAB  '\t'    ^I  jump to the next tab stop
+    10  0x0A  LF   '\n'    ^J  line feed: move down one line  — the Unix line end
+    11  0x0B  VT   '\x0b'  ^K  vertical tab (nobody uses it)
+    12  0x0C  FF   '\x0c'  ^L  form feed: eject the page (printers still do)
+    13  0x0D  CR   '\r'    ^M  carriage return: back to column 0  — half of the Windows line end
+    27  0x1B  ESC  '\x1b'  ^[  escape: the next bytes are a command to the terminal
+   127  0x7F  DEL  '\x7f'  ^?  delete (punch every hole in the paper tape)
+
+2. THE CARET IS ARITHMETIC: Ctrl+letter clears bit 6, the way Shift clears bit 5
+   Ctrl-I  =  0x49 & 0x1F  =   9  =  TAB
+   Ctrl-J  =  0x4a & 0x1F  =  10  =  LF
+   Ctrl-M  =  0x4d & 0x1F  =  13  =  CR
+   Ctrl-[  =  0x5b & 0x1F  =  27  =  ESC
+   So ^M is CR, ^I is TAB, ^J is LF, ^[ is ESC — the caret names vim and od use.
+
+3. THREE LINE ENDINGS, ONE FILE EACH
+   Unix  LF         6f 6e 65 0a 74 77 6f 0a           8 bytes  split('\n') -> ['one', 'two', '']
+   Windows  CR LF   6f 6e 65 0d 0a 74 77 6f 0d 0a    10 bytes  split('\n') -> ['one\r', 'two\r', '']
+   Classic Mac  CR  6f 6e 65 0d 74 77 6f 0d           8 bytes  split('\n') -> ['one\rtwo\r']
+   Only LF counts as a line to split('\n'); the CR stays glued to the word before it.
+
+4. splitlines() KNOWS ALL OF THEM, AND MORE THAN YOU WANT
+   'a\nb\r\nc\rd\x0be\x0cf\x1cg\x85h\u2028i'
+   split('\n')  -> 3 pieces
+   splitlines() -> 9 pieces: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']
+   VT, FF, FS, NEL and LINE SEPARATOR all count. A CSV with a stray \x85 in a cell splits there.
+
+5. NUL: PYTHON KEEPS IT, C STOPS AT IT
+   len('ab\x00cd') = 5   (Python: five characters, NUL is just a character)
+   libc strlen(b'ab\x00cd') = 2   (C: the string ended at the NUL)
+   Every C API you hand a Python string to sees the first half only. See the C example.
+
+6. ESC IS STILL A LIVE PROTOCOL
+   '\x1b[31mred\x1b[0m'
+   bytes: 1b 5b 33 31 6d 72 65 64 1b 5b 30 6d
+   ESC [ 31 m  =  'switch to red';  ESC [ 0 m  =  'reset'.  A terminal draws 3 letters; a file holds 12 bytes.

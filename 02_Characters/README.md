@@ -7,7 +7,7 @@ A byte is a number. Text is characters. The only bridge between them is a **tabl
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|
 | 1 | [A character is a number](a_character_is_a_number/README.md) | Who decided 65 means `A`, and why are the digits and the two alphabets placed where they are? | written |
-| 2 | [Control characters](control_characters/README.md) | What are the first 32, and which three still matter every day? | stub |
+| 2 | [Control characters](control_characters/README.md) | What are the first 32, which three still matter every day, and where does a C string end? | written |
 | 3 | [Code pages](code_pages/README.md) | What did everybody do with the unclaimed 128, and why does `0xE9` have six meanings? | stub |
 | 4 | [Unicode code points](unicode_code_points/README.md) | What is `U+00E9`, and why is it a number rather than a byte? | stub |
 | 5 | [A code point is not a character](a_code_point_is_not_a_character/README.md) | Why does `len()` still not count what a person calls a character? | stub |

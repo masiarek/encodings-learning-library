@@ -1,0 +1,22 @@
+1. THE ARRAY AND THE STRING ARE DIFFERENT LENGTHS
+   sizeof(s) = 6   (the compiler stored six bytes, terminator included)
+   strlen(s) = 2   (strlen counted until the first NUL)
+   printf("%s") -> "ab"   (so does printf)
+
+2. THE BYTES ARE ALL STILL THERE
+   61 62 00 63 64 00
+   Only the C string functions stop early. The memory does not.
+
+3. A 'char' IS A BYTE, NOT A CHARACTER
+   "caf\xc3\xa9" has strlen 5: C counts bytes and has never heard of é
+
+4. THE CONTROL CHARACTERS C CAN SPELL
+   \a                 =  7 = 0x07
+   \b                 =  8 = 0x08
+   \t                 =  9 = 0x09
+   \n                 = 10 = 0x0A
+   \v                 = 11 = 0x0B
+   \f                 = 12 = 0x0C
+   \r                 = 13 = 0x0D
+   \e (not standard)  = 27 = 0x1B
+   \0                 =  0 = 0x00

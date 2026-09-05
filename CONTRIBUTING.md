@@ -15,6 +15,7 @@ House rules for writing a page here. Readers browsing lessons do not need this f
       a_character_is_a_number_rs.out
       a_character_is_a_number_sh.sh        the shell script
       a_character_is_a_number_sh.out
+      a_character_is_a_number_c.c          (optional) the C view, where one helps
 ```
 
 One idea per folder. The folder name is the idea, in `lower_snake_case`, and it becomes a permanent URL — so name it for what it teaches, not for where it currently sits in the reading order.
@@ -65,6 +66,8 @@ python3 tools/run_examples.py --check         # write nothing, fail on drift (CI
 **Python: stdlib only.** A reader must be able to run any page with the `python3` already on their machine, and CI has no install step to prove it.
 
 **Rust: bare `rustc --edition 2024`.** No Cargo, no crates. A lesson about something a crate does (`unicode-segmentation`, say) hand-rolls the narrow case in std and says plainly what the crate adds.
+
+**C: `cc -std=c11 -Wall -Wextra`**, no libraries beyond libc, and only on a page where the C view sharpens the point — it is an aside, not a fourth track. `cc` is clang on macOS and gcc on Ubuntu; both compile in CI, so a warning from either is printed as a note and worth fixing.
 
 **Shell: `bash`, and only tools both macOS and Ubuntu ship** — `xxd`, `od`, `hexdump`, `printf`, `iconv`, `tr`, `sed`. CI runs every example on both, which is the only check that catches a BSD/GNU difference. Two already found: `od` pads its lines on macOS and not on Linux (pipe through the `tidy` helper the existing scripts define), and `printf '\x..'` is bash, not POSIX (so the scripts run under `bash`, and a page that wants portability shows the octal form).
 

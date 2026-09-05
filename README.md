@@ -45,6 +45,8 @@ The code is the illustration, never the subject. Each is here for what it shows 
 - **The terminal** shows the actual bytes on an actual pipe — `xxd`, `od`, `printf`, `iconv` — with no language's interpretation in between.
 - **Rust** shows the same idea with the width (`u8`) and the encoding (`String` promises UTF-8) written into the type, so the compiler holds a line the other two leave to discipline.
 
+A few lessons add a short **C view** — `examples/*.c`, compiled and checked like the rest — where seeing the bytes with no abstraction at all is the fastest explanation; NUL is the first.
+
 Every lesson also carries an *If you are coming from Python or ABAP* section, because those are the two languages a reader of this library already thinks in. The ABAP half is prose — CI cannot run ABAP — and says so on every page.
 
 ## How the library works
