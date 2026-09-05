@@ -2,7 +2,7 @@
 
 **Level:** reference · the outside reading
 
-Every link here was fetched and checked on **2026-09-05** (`GET`, following redirects; YouTube links through the oEmbed endpoint, which refuses a wrong video id). A link is listed because it teaches something a page here does not, or teaches it better; each entry says which. Anything advocacy-shaped says so. The print books under [Books](#books) link to Open Library rather than a publisher: O'Reilly's own pages answer an automated `GET` with 403, and one author's domain has since been sold to a merchandise shop — which is the argument for checking a link by fetching it and reading what comes back, not by trusting the status line.
+Every link here was fetched and checked on **2026-09-05** (`GET`, following redirects; YouTube links through the oEmbed endpoint, which refuses a wrong video id). The Stack Overflow scores quoted below were read the same day through `api.stackexchange.com`, which is also how that page was fetched — stackoverflow.com itself refuses an automated request. Treat them as a floor: a vote count drifts upward, and the ordering it implies is what matters, not the digits. A link is listed because it teaches something a page here does not, or teaches it better; each entry says which. Anything advocacy-shaped says so. The print books under [Books](#books) link to Open Library rather than a publisher: O'Reilly's own pages answer an automated `GET` with 403, and one author's domain has since been sold to a merchandise shop — which is the argument for checking a link by fetching it and reading what comes back, not by trusting the status line.
 
 ## The one answer everybody links
 
