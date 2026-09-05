@@ -81,15 +81,43 @@
 
 7. NAMING THE CULPRIT FROM THE GARBAGE ALONE
 ------------------------------------------------------------------------
-   observed in a report: 'Å‚Ã³dÅº'
-   try every table it could have been READ under, and re-read as UTF-8:
+   Forwards first: one em dash, read under each table in turn.
+     latin_1    -> 'â\x80\x94'
+     cp1252     -> 'â€”'
+     cp1250     -> 'â€”'
+     iso8859_2  -> 'â\x80\x94'
+     cp850      -> 'ÔÇö'
+     mac_roman  -> '‚Äî'
+
+   Six tables, five distinct shapes -- cp1252 and cp1250 agree here, so
+   the fingerprint names a FAMILY and only sometimes a single table.
+   The last row is the one people meet without knowing its name: an
+   em dash in a CSV that Excel opened on a Mac.
+
+   Backwards is the useful direction. Given only the garbage, try
+   every table it could have been READ under, and re-read as UTF-8:
+
+   'Å‚Ã³dÅº'  -- a Polish name, in a report from a Windows box
      read as latin_1    no: '‚' is not in this table
      read as cp1252     -> 'łódź'   [LATIN SMALL LETTER L WITH STROKE, LATIN SMALL LETTER O WITH ACUTE, LATIN SMALL LETTER Z WITH ACUTE]
      read as cp1250     no: 'Å' is not in this table
      read as iso8859_2  no: 'Å' is not in this table
      read as cp850      no: '‚' is not in this table
+     read as mac_roman  no: '³' is not in this table
 
-   One pair produces a word. That pair IS the bug report: the file was
-   written UTF-8 and read as that table, at whichever hop first shows
-   the damage. Prove it with a hex dump of the original rather than
+   '‚Äî'  -- an em dash, in a CSV double-clicked on a Mac
+     read as latin_1    no: '‚' is not in this table
+     read as cp1252     no: the bytes that gives are not UTF-8
+     read as cp1250     no: the bytes that gives are not UTF-8
+     read as iso8859_2  no: '‚' is not in this table
+     read as cp850      no: '‚' is not in this table
+     read as mac_roman  -> '—'   [EM DASH]
+
+   Exactly one table produces a word, and it is a different table for
+   each sighting. That pair IS the bug report: the file was written
+   UTF-8 and read as that table, at whichever hop first shows the
+   damage. Note what the second one tells you for free -- mac_roman is
+   not a table anybody chooses, it is what a Mac reaches for when no
+   encoding was declared, so the garbage named the PLATFORM as well as
+   the table. Prove it with a hex dump of the original rather than
    arguing about it -- the bytes have been right the whole time.

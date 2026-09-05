@@ -1,0 +1,60 @@
+
+1. THE ORDER IS A METHOD NAME, NOT A DEFAULT
+------------------------------------------------------------------------
+   let n: u32 = 258;
+     n.to_be_bytes()  = [00, 00, 01, 02]   big-endian, network order
+     n.to_le_bytes()  = [02, 01, 00, 00]   little-endian
+     n.to_ne_bytes()  = whichever this machine uses -- not printed here,
+                        because a recorded answer key must not depend
+                        on the machine that produced it
+
+   Three methods, three names. Nothing is implicit, so a program
+   that writes a number to a socket or a file has already said
+   which end it meant. `to_ne_bytes` is the one to be suspicious
+   of: it is correct for a memory dump and wrong for a format.
+
+2. READING BACK, WITH THE ORDER SUPPLIED BY THE READER
+------------------------------------------------------------------------
+   the four bytes            [00, 00, 01, 02]
+     u32::from_be_bytes(..)  = 258
+     u32::from_le_bytes(..)  = 33619968
+
+   Same bytes, two answers, both valid. This is the problem the
+   byte order mark exists to solve for text: put one known code
+   point at the front and the reader can work the order out
+   instead of being told it out of band.
+
+3. A SIGNATURE IS VALID UTF-8, SO NOTHING REJECTS IT
+------------------------------------------------------------------------
+   bytes                     [ef, bb, bf, 69, 64]
+   String::from_utf8(..)     Ok("\u{feff}id")
+     s.len()                 5   <- bytes, and three of them are the mark
+     s.chars().count()       3   <- one invisible char, then i, then d
+     s == "id"               false
+
+   The comparison is the bug, and it is silent. `from_utf8`
+   cannot help: the mark is a legitimate code point and the bytes
+   are well formed. Validity was never the question.
+
+4. trim() WILL NOT REMOVE IT
+------------------------------------------------------------------------
+   first char                '\u{feff}'
+     first.is_whitespace()   false
+     s.trim() == "id"        false
+
+   U+FEFF is named ZERO WIDTH NO-BREAK SPACE and is not in
+   Unicode's White_Space property, so `trim` -- which is defined
+   in terms of that property -- steps straight over it. A field
+   that was trimmed and still does not match is this.
+
+5. SO YOU WRITE THE STRIP, AND IT IS ONE LINE
+------------------------------------------------------------------------
+   s.strip_prefix('\u{feff}')  Some("id")
+   ..unwrap_or(&s) on a clean string leaves it alone:
+     "id" -> "id"
+
+   That is Python's `utf-8-sig` in one method call, and having to
+   type it is the honest version: std does not hide a codec that
+   silently edits your input. The cost is that you must remember
+   to do it at every boundary where a file of unknown origin
+   arrives -- which is the same place you already chose a codec.

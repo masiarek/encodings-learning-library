@@ -1,0 +1,103 @@
+
+1. A NUMBER WIDER THAN A BYTE HAS TWO SPELLINGS
+------------------------------------------------------------------------
+   the number                258   = 0x00000102
+   .to_bytes(4, 'big')       00 00 01 02   most significant end first
+   .to_bytes(4, 'little')    02 01 00 00   least significant end first
+
+   Same number, same four bytes, opposite order. Both are correct and
+   neither is detectable from the bytes alone: 00 00 01 02 read the
+   other way round is 33,619,968, and nothing in the file objects.
+   Big-endian is the order the internet standards chose, which is why
+   it is called network byte order; x86 and ARM run little-endian, so
+   every packet header crossing a socket is being swapped.
+
+   A single byte has no order. This whole question only exists for
+   values stored in more than one byte -- which is what UTF-16 makes
+   every character, and what UTF-8 makes none of.
+
+2. THE MARK: ONE CODE POINT, WRITTEN IN THE FILE'S OWN ORDER
+------------------------------------------------------------------------
+   U+FEFF is ZERO WIDTH NO-BREAK SPACE
+   as utf-16-be   fe ff
+   as utf-16-le   ff fe
+
+   The reader does not have to be told the order; it reads the mark and
+   deduces it. Both of these decode to the same two letters:
+     fe ff 00 49 00 44    .decode('utf-16') -> 'ID'
+     ff fe 49 00 44 00    .decode('utf-16') -> 'ID'
+
+   And here is why the trick is sound rather than merely conventional.
+   Read the little-endian bytes as if they were big-endian:
+     b'\xff\xfeI\x00D\x00'.decode('utf-16-be') -> '\ufffe䤀䐀'
+     first code point: U+FFFE, no name -- a PERMANENT NONCHARACTER
+
+   U+FFFE is reserved forever and can never be assigned. So the mirror
+   image of the mark is not some other letter that might legitimately
+   open a file -- it is a value guaranteed never to mean anything, and
+   a reader that sees it knows for certain it has the order backwards.
+
+3. UTF-8 HAS NO BYTE ORDER, AND GETS THE MARK ANYWAY
+------------------------------------------------------------------------
+   the same code point as UTF-8   ef bb bf
+   codecs.BOM_UTF8                b'\xef\xbb\xbf'
+
+   UTF-8 is a stream of single bytes; a three-byte character has one
+   spelling and there is no end to put first. So EF BB BF resolves
+   nothing. It was repurposed as a SIGNATURE: a flag at the front
+   meaning 'read me as UTF-8', for a reader that would otherwise fall
+   back to a local code page and guess wrong. Python spells that codec
+   'utf-8-sig' -- sig for signature, not for byte order.
+
+   plain UTF-8     69 64 2c 6e 61 6d 65 0a
+   with signature  ef bb bf 69 64 2c 6e 61 6d 65 0a
+
+   Same file. Three bytes of difference, and they are content.
+
+4. utf-8-sig: FORGIVING ON THE WAY IN, LOUD ON THE WAY OUT
+------------------------------------------------------------------------
+   ef bb bf 69 64 as utf-8: '\ufeffid'   as utf-8-sig: 'id'
+   69 64          as utf-8: 'id'         as utf-8-sig: 'id'
+
+   That asymmetry is the whole rule. Reading with utf-8-sig strips a
+   signature if there is one and does nothing at all if there is not,
+   so it is the safe reader for a file of unknown origin. Writing with
+   it always adds one -- so write plain 'utf-8' unless you have decided
+   on purpose that the consumer needs the flag.
+
+5. WHAT THE THREE BYTES BREAK
+------------------------------------------------------------------------
+   Invisible to a reader that expects it. To everyone else it is just
+   the first three bytes of the file:
+
+   a ^-anchored match   re.match('^id', '\ufeffid') -> None
+   a JSON parser        JSONDecodeError: Unexpected UTF-8 BOM (decode using utf-8-sig): line 1 column 1 (char 0)
+   a shebang            ef bb bf 23 21 2f ...   the kernel looks at offset 0 and does not find '#!'
+   an exact key match   '\ufeffid' == 'id' -> False
+   a strip()            '\ufeffid'   -- U+FEFF.isspace() is False, so strip() leaves it
+   concatenation        ef bb bf 61 0a ef bb bf 62 0a
+                        a signature in the MIDDLE of a file is not a
+                        signature, it is garbage on line 2
+
+   Only the JSON parser complains, and it is the only one that names
+   the fix in its own error message. The rest fail silently: the match
+   returns None, the comparison returns False, the strip does nothing,
+   and a header that looks identical on screen goes on not matching.
+
+6. THE DECISION, IN ONE QUESTION
+------------------------------------------------------------------------
+   Who reads this file?
+
+     a program, by exact bytes    -> plain 'utf-8'. A parser, a config,
+       (JSON, a shell script,        a shebang and a diff all read from
+        a diff, a build)             offset 0 and the mark is content.
+
+     a guessing GUI               -> 'utf-8-sig'. Excel has no other
+       (Excel, Notepad)             way to know, and guesses the local
+                                    code page when there is no flag.
+
+     both                         -> write plain, and make the reader
+                                    forgiving with 'utf-8-sig'.
+
+   The question is answerable: grep for who opens the file before you
+   change what you write into it.

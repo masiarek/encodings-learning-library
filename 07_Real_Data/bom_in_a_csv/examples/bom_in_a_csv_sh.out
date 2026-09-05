@@ -1,0 +1,61 @@
+
+1. THE DIAGNOSIS, IN ONE COMMAND
+------------------------------------------------------------------------
+
+   xxd on the file from Excel:
+     00000000: efbb bf69 642c 6e61 6d65 0a31 2c41 6461  ...id,name.1,Ada
+
+   xxd on the file from a script:
+     00000000: 6964 2c6e 616d 650a 312c 4164 610a 322c  id,name.1,Ada.2,
+
+   Or just the first three bytes, which is the whole question:
+     from Excel      efbbbf
+     from a script   69642c
+
+   efbbbf means a signature is present. Anything else means there is
+   none. On screen the two files are identical, and they will stay
+   identical in every editor, viewer and paste into a chat window.
+
+2. WHAT IT DOES TO A SHELL PIPELINE
+------------------------------------------------------------------------
+
+   grep -c "^id"      clean 1   signed 0
+   first field, cut   clean 69640a   signed efbbbf69640a
+   awk "$1==\"id\""    clean match   signed no match
+
+   Three pipelines, three silent wrong answers. Not one of them
+   errors; grep returns 0 matches, cut hands back a field with three
+   extra bytes, awk compares two strings that print the same and are
+   not equal. A pipeline built on any of these produces an empty
+   report and no complaint.
+
+3. STRIP IT ON THE WAY IN
+------------------------------------------------------------------------
+
+   sed "1s/^<bom>//" then the same three checks:
+     grep -c "^id"    1
+     first field      69640a
+     awk compare      match
+
+   ..and on the file that never had one, the same sed is a no-op:
+     grep -c "^id"    1
+
+   Line 1 only, and conditional. That is `encoding="utf-8-sig"` for
+   a shell pipeline, and it is safe to put in front of any CSV.
+
+4. THE OTHER DIRECTION, WHICH IS WHY THE THING EXISTS
+------------------------------------------------------------------------
+
+   a UTF-8 row with an em dash, no signature:
+     00000000: 312c 6265 666f 7265 e280 9461 6674 6572  1,before...after
+     00000010: 0a                                       .
+
+   handed to a reader that guesses a one-byte table instead:
+     as Mac Roman   1,before‚Äîafter
+     as CP1252      1,beforeâ€”after
+
+   Both are what Excel shows on a double-click when nothing declared
+   the encoding -- a Mac guesses one, Windows the other, and the shape
+   of the garbage says which. Three bytes at the front remove the
+   guess. That is the entire argument for writing one, and it applies
+   only to files whose reader is a person.

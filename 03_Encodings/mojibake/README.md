@@ -14,13 +14,14 @@ The word is Japanese: 文字化け, *moji* (character) + *bake* (change, transfo
 
 ## Reading the garbage
 
-Almost everything you will meet is UTF-8 read as a one-byte table, which is why two shapes cover most sightings:
+Almost everything you will meet is UTF-8 read as a one-byte table, which is why a handful of shapes cover most sightings:
 
 | You see | It was | Because |
 |---|---|---|
 | `Ã©` `Ã¨` `Ã¼` `Ã±` | `é` `è` `ü` `ñ` | UTF-8 two-byte sequences start `C3`, and `C3` is `Ã` in Latin-1 and 1252 |
 | `â€”` `â€œ` `â€™` | `—` `“` `’` | UTF-8 three-byte punctuation starts `E2 80`, and `E2 80` is `â €` in 1252 |
 | a lone `Â` | a non-breaking space, `°`, `£`… | anything in `U+00A0`–`U+00BF` is `C2` plus itself; `C2` is `Â` |
+| `‚Äî` `‚Äú` `√©` `¬†` | `—` `“` `é` nbsp | the same bytes read as **Mac Roman** — the fallback on a Mac, so this shape names the platform too |
 | `?` | a character the writer's table did not have | thrown away at **write** time |
 | `�` (U+FFFD) | a byte the reader's table could not use | thrown away at **read** time |
 | `□` tofu | the right character | not an encoding bug at all — your font has no glyph |
@@ -123,22 +124,52 @@ The repair itself is the inverse: put the characters back as bytes under the tab
 
 7. NAMING THE CULPRIT FROM THE GARBAGE ALONE
 ------------------------------------------------------------------------
-   observed in a report: 'Å‚Ã³dÅº'
-   try every table it could have been READ under, and re-read as UTF-8:
+   Forwards first: one em dash, read under each table in turn.
+     latin_1    -> 'â\x80\x94'
+     cp1252     -> 'â€”'
+     cp1250     -> 'â€”'
+     iso8859_2  -> 'â\x80\x94'
+     cp850      -> 'ÔÇö'
+     mac_roman  -> '‚Äî'
+
+   Six tables, five distinct shapes -- cp1252 and cp1250 agree here, so
+   the fingerprint names a FAMILY and only sometimes a single table.
+   The last row is the one people meet without knowing its name: an
+   em dash in a CSV that Excel opened on a Mac.
+
+   Backwards is the useful direction. Given only the garbage, try
+   every table it could have been READ under, and re-read as UTF-8:
+
+   'Å‚Ã³dÅº'  -- a Polish name, in a report from a Windows box
      read as latin_1    no: '‚' is not in this table
      read as cp1252     -> 'łódź'   [LATIN SMALL LETTER L WITH STROKE, LATIN SMALL LETTER O WITH ACUTE, LATIN SMALL LETTER Z WITH ACUTE]
      read as cp1250     no: 'Å' is not in this table
      read as iso8859_2  no: 'Å' is not in this table
      read as cp850      no: '‚' is not in this table
+     read as mac_roman  no: '³' is not in this table
 
-   One pair produces a word. That pair IS the bug report: the file was
-   written UTF-8 and read as that table, at whichever hop first shows
-   the damage. Prove it with a hex dump of the original rather than
+   '‚Äî'  -- an em dash, in a CSV double-clicked on a Mac
+     read as latin_1    no: '‚' is not in this table
+     read as cp1252     no: the bytes that gives are not UTF-8
+     read as cp1250     no: the bytes that gives are not UTF-8
+     read as iso8859_2  no: '‚' is not in this table
+     read as cp850      no: '‚' is not in this table
+     read as mac_roman  -> '—'   [EM DASH]
+
+   Exactly one table produces a word, and it is a different table for
+   each sighting. That pair IS the bug report: the file was written
+   UTF-8 and read as that table, at whichever hop first shows the
+   damage. Note what the second one tells you for free -- mac_roman is
+   not a table anybody chooses, it is what a Mac reaches for when no
+   encoding was declared, so the garbage named the PLATFORM as well as
+   the table. Prove it with a hex dump of the original rather than
    arguing about it -- the bytes have been right the whole time.
 ```
 <!-- /output -->
 
-Section 7 is the practical one: given only the garbage, try each table it could have been read under and see which produces a word. Usually exactly one does, and that pair is the bug report.
+Section 7 is the practical one, and it runs both ways. Forwards, one em dash under six tables gives five distinct shapes — `cp1252` and `cp1250` happen to agree, so a fingerprint sometimes narrows to a family rather than to one table. Backwards is what you actually need: given only the garbage, try each table it could have been read under and see which produces a word. Exactly one does, and that pair is the bug report.
+
+The second sighting is the one worth memorising, because it is the commonest way a non-programmer meets this. `‚Äî` is an em dash in a UTF-8 file that Excel opened by double-click on a Mac. Nobody chose `mac_roman`; it is what a Mac falls back to when the file declares no encoding, exactly as [Windows falls back to 1252](../../07_Real_Data/windows_1252_vs_latin1/README.md). So the same three bytes `E2 80 94` produce `‚Äî` on one desk and `â€”` on the next — which means the garbage names the platform as well as the table, and [a CSV that says which encoding it is](../../07_Real_Data/bom_in_a_csv/README.md) never gets guessed at on either.
 
 ## In the terminal
 

@@ -1,0 +1,76 @@
+
+1. THE SAME TWO LETTERS, BOTH WAYS ROUND
+------------------------------------------------------------------------
+
+   as UTF-16BE (most significant byte first):
+     00000000: 0049 0044                                .I.D
+
+   as UTF-16LE (least significant byte first):
+     00000000: 4900 4400                                I.D.
+
+   Two files, same text, no byte in common in the same place. A
+   reader handed either one and told nothing has to guess -- and the
+   guess is not detectable, because both are well-formed UTF-16.
+
+2. THE MARK, PUT IN FRONT BY HAND
+------------------------------------------------------------------------
+
+   with a big-endian mark:
+     00000000: feff 0049 0044                           ...I.D
+
+   with a little-endian mark:
+     00000000: fffe 4900 4400                           ..I.D.
+
+   Now nobody is guessing. The first two bytes are the same code
+   point written in the file's own order, so a reader learns the
+   order by reading. FE FF and FF FE are the whole protocol.
+
+3. UTF-8 HAS NO ORDER, AND STILL COLLECTS THREE BYTES
+------------------------------------------------------------------------
+
+   plain UTF-8:
+     00000000: 6964 2c6e 616d 650a                      id,name.
+
+   the same, with the UTF-8 signature:
+     00000000: efbb bf69 642c 6e61 6d65 0a              ...id,name.
+
+   first three bytes: efbbbf
+   EF BB BF is U+FEFF encoded as UTF-8. It resolves no byte order --
+   UTF-8 has none -- it is a flag saying "this file is UTF-8", for a
+   reader that would otherwise fall back to a local code page.
+
+4. TO ANYTHING ANCHORED AT THE START, IT IS CONTENT
+------------------------------------------------------------------------
+
+   grep -c "^id" on the clean file      : 1
+   grep -c "^id" on the signed file     : 0
+
+   Same visible text, and the second one matches nothing. The line
+   does not start with i; it starts with EF. Nothing errors, nothing
+   warns, the count is just zero -- which is the failure mode that
+   costs an afternoon.
+
+5. AND TWO SIGNED FILES DO NOT CONCATENATE
+------------------------------------------------------------------------
+
+     00000000: efbb bf61 0aef bbbf 620a                 ...a....b.
+
+   The second mark is now in the middle of the file, where it is not
+   a signature at all -- just an invisible character glued to the "b".
+   Anything that joins files (cat, a log shipper, a multipart upload)
+   turns a signature into a data bug on every part after the first.
+
+6. TAKING IT OFF, PORTABLY
+------------------------------------------------------------------------
+
+   sed on line 1 only  : 69642c6e616d650a
+   tail -c +4          : 69642c6e616d650a
+   ..the same on a file that never had one:
+   sed on line 1 only  : 69642c6e616d650a
+   tail -c +4          : 6e616d650a
+
+   Use the sed. Both strip a real mark, and both are identical on
+   BSD and GNU -- but `tail -c +4` removes three bytes whether or not
+   they were the mark, so on a clean file it eats the first three
+   characters -- "id," is gone and the header now begins "name". The
+   sed is conditional, which is what `utf-8-sig` is in Python.

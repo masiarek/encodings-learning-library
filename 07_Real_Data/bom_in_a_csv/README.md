@@ -2,23 +2,222 @@
 
 **Level:** 101 → 201 · for anyone who has opened a CSV from Excel
 
-> **Stub — an outline, not a lesson.** There is no runnable example behind this page yet, so nothing on it has been through [the check that backs every other claim in this library](../../CONTRIBUTING.md). The bullets below are the questions the finished page has to answer.
+**One line:** Excel writes `EF BB BF` at the front of a UTF-8 CSV and reads one correctly only if it is there — so the same three bytes are the fix for a person double-clicking the file and a silent bug for the program parsing it, and the only real skill is knowing which of those a given file has.
 
-**One line:** Excel writes `EF BB BF` at the start of a UTF-8 CSV, so the first column of the first row is named `\ufeffID` and every lookup on `'ID'` fails; `encoding='utf-8-sig'` on the way in is the whole fix, and on the way out it is what makes Excel read your UTF-8 correctly.
+## The same three bytes, twice, in opposite directions
 
-## What the finished page has to answer
+This page is the [byte order mark](../../03_Encodings/byte_order_and_bom/README.md) met where nearly everybody meets it, and what makes it confusing is that both complaints about it are true at once.
 
-- Seeing it: `xxd file.csv | head -1` and the three bytes before the first letter
-- The failing lookup: `row['ID']` raising `KeyError` while `print(row.keys())` shows a key that looks exactly like `ID`
-- `utf-8-sig` on read: strips a BOM if present, harmless if not — so it is the safe default for any CSV of unknown origin
-- `utf-8-sig` on write: why Excel (and only Excel) needs the BOM to guess UTF-8 rather than the local code page
-- SAP: the inbound file with a BOM and the first field that never matches — the same bug, wearing a different error message
+Going *out*, the signature is a fix. A CSV records no encoding, so a program that opens one has to decide which rulebook to apply, and Excel — with nothing to go on — falls back to the machine's legacy code page. Your correctly-written UTF-8 then arrives as [mojibake](../../03_Encodings/mojibake/README.md) on a double-click. Three bytes at the front settle it.
 
-## The example it will run
+Going *in*, the same signature is the bug. To a parser those bytes are simply the first three bytes of the file, so the first column of the header is not `id` but `﻿id`, and every lookup, comparison and anchored match against `'id'` fails — silently, because `U+FEFF` has zero width and the two strings look identical everywhere a human would check.
 
-Python: write a CSV with `utf-8-sig`, dump it, read it back with `utf-8` (the failing key) and `utf-8-sig` (the fix).
+So it is not a good thing or a bad thing. It is a flag aimed at a guessing reader, and it is content to everybody else.
+
+## Seeing it takes one command
+
+```bash
+head -c 3 file.csv | xxd -p    # efbbbf -> signature present; anything else -> none
+```
+
+Do this first and do not skip it, because every tool that shows you the file shows you *text*, and in text the three bytes are nothing at all. They survive a screenshot, a copy-paste into a chat window, and a colleague swearing the header says `id`.
+
+## The failing lookup
+
+`row['id']` raises `KeyError: 'id'` while `print(reader.fieldnames[0])` prints, apparently, `id`. Section 2 of the Python run below puts those two lines next to each other, because seeing them together is the moment this stops being mysterious: the key really is three characters long, and one of them takes up no space.
+
+The fix is one word — `encoding='utf-8-sig'` — and the useful property is that it is *unconditional*: `utf-8-sig` strips a signature if there is one and does nothing whatever if there is not. There is no penalty for being wrong about which kind of file you were sent, which is why it is simply the right reader for any CSV of unknown origin, not a special case for Excel files.
+
+## Which way the garbage points
+
+When the signature is missing and Excel guesses, the guess is platform-specific — and that turns out to be useful. The same em dash, `E2 80 94`, comes out as `‚Äî` under Mac Roman and `â€”` under Windows-1252, so the shape of the garbage in a bug report tells you which desk the file was opened on before you have asked anybody. Section 4 of the Python run shows all three readings of one file side by side; [Mojibake](../../03_Encodings/mojibake/README.md) section 7 turns the same fact into a general method for naming the culprit.
+
+## The rule, and how to apply it without guessing
+
+**Who reads this file?**
+
+| The file's audience | Write it as | Because |
+|---|---|---|
+| a person, in Excel | `utf-8-sig` | nothing parses it, and the three bytes buy a correct guess |
+| a program, by exact bytes | `utf-8` | a header match, an anchored `grep`, a diff, a downstream JSON step — all read from offset 0 |
+| unknown, or both | `utf-8` out, `utf-8-sig` in | the forgiving reader costs nothing and covers files you did not write |
+
+The middle row is the one people get wrong, and the question is answerable rather than a matter of taste: **grep for who opens the file before changing what you write into it.** A worked example, from a sibling repo — [star-voting-library ↗](https://github.com/masiarek/star-voting-library) generates four index CSVs that exist to be opened in Excel and are never read back by any script, which is exactly the top row; the decision was made by searching the repo for readers first, and the three places that *do* read a CSV were switched to `utf-8-sig` at the same time. Had a parser been reading those files by header name, the answer would have been the opposite one.
+
+One thing that is easy to forget once the signature is in: **signed CSVs do not concatenate.** Joining two of them puts the second signature in the middle of the file, where it is not a signature at all — just an invisible character welded to a data row. Strip on read, then join.
+
+## In Python
+
+<!-- output:bom_in_a_csv_py -->
+*Verified output of [`bom_in_a_csv_py.py`](examples/bom_in_a_csv_py.py) — regenerated by `tools/run_examples.py`, never hand-typed.*
+
+```text
+1. WHAT ARRIVED
+------------------------------------------------------------------------
+   from Excel     ef bb bf 69 64 2c 6e 61 6d 65 0a 31 ...
+   from a script  69 64 2c 6e 61 6d 65 0a 31 2c 41 64 ...
+
+   The first three bytes are the difference, and on screen there is no
+   difference at all -- both files show 'id,name' on line 1. This is
+   the entire bug: the evidence is invisible in every tool that shows
+   you text, and obvious in the one that shows you bytes.
+
+2. READ AS PLAIN utf-8: THE LOOKUP THAT FAILS
+------------------------------------------------------------------------
+   reader.fieldnames   ['\ufeffid', 'name']
+   first row           {'\ufeffid': '1', 'name': 'Ada'}
+
+   the header, printed  '﻿id'      <- looks exactly like 'id'
+   the header, repr     '\ufeffid'
+   len()                3   <- three characters, not two
+   == 'id'              False
+   row['id']            KeyError: 'id'
+
+   Read that pair of lines again. print() shows 'id' and the lookup on
+   'id' raises, because U+FEFF is zero width -- it takes up no space on
+   screen and one place in the string. A colleague who pastes the
+   header into a chat message pastes something that looks right.
+
+3. READ AS utf-8-sig: THE WHOLE FIX
+------------------------------------------------------------------------
+   from Excel     fieldnames=['id', 'name']   row['id']='1'
+   from a script  fieldnames=['id', 'name']   row['id']='1'
+
+   One word in the open() call, and note the second line: utf-8-sig on
+   a file that never had a signature does nothing at all. There is no
+   penalty for being wrong about which kind of file you were sent, so
+   for a CSV of unknown origin it is simply the correct reader.
+
+4. AND WHY EXCEL WANTED IT: THE OTHER DIRECTION
+------------------------------------------------------------------------
+   your script writes this row     '1,before—after'
+   in UTF-8, that is               31 2c 62 65 66 6f 72 65 e2 80 94 61 66 74 65 72
+   and the em dash is              e2 80 94   (U+2014)
+
+   Now Excel opens it by double-click with no signature to go on, and
+   falls back to the machine's legacy code page:
+     read as mac_roman  (Excel on a Mac   ) -> '1,before‚Äîafter'
+     read as cp1252     (Excel on Windows ) -> '1,beforeâ€”after'
+     read as utf_8_sig  (told the truth   ) -> '1,before—after'
+
+   Same file, three readings. The two guesses are mojibake, and they
+   are DIFFERENT mojibake -- so the garbage in the bug report tells you
+   which desk it was opened on before you have asked. Writing the
+   signature removes the guess, which is the only reason to write one.
+
+5. SO: WHO READS THIS FILE?
+------------------------------------------------------------------------
+   for a human, in Excel        -> write 'utf-8-sig'.
+     the file's job is to be double-clicked; nothing parses it; the
+     three bytes buy a correct guess and cost nothing.
+
+   for a program, by exact bytes -> write 'utf-8'.
+     a header match, a ^-anchored grep, a diff, a JSON step downstream:
+     the mark is content and every one of those fails silently.
+
+   unknown, or both              -> write 'utf-8', read 'utf-8-sig'.
+     the forgiving reader costs nothing and covers files you did not
+     write. This is the default worth reaching for.
+
+   One more, easy to forget once the signature is in:
+     two signed CSVs concatenated: ef bb bf 69 64 2c 6e 61 6d 65 0a 31 2c 41 64 61 0a 32 2c 42 ...
+     ..and at the join:            ... 65 6e 0a ef bb bf 69 64 2c 6e 61 6d
+     The second signature is in the middle of the file now, where it
+     is not a signature -- it is an invisible character in a data row.
+     Concatenating CSVs is common; strip on read, then join.
+```
+<!-- /output -->
+
+## In the terminal
+
+<!-- output:bom_in_a_csv_sh -->
+*Verified output of [`bom_in_a_csv_sh.sh`](examples/bom_in_a_csv_sh.sh) — regenerated by `tools/run_examples.py`, never hand-typed.*
+
+```text
+1. THE DIAGNOSIS, IN ONE COMMAND
+------------------------------------------------------------------------
+
+   xxd on the file from Excel:
+     00000000: efbb bf69 642c 6e61 6d65 0a31 2c41 6461  ...id,name.1,Ada
+
+   xxd on the file from a script:
+     00000000: 6964 2c6e 616d 650a 312c 4164 610a 322c  id,name.1,Ada.2,
+
+   Or just the first three bytes, which is the whole question:
+     from Excel      efbbbf
+     from a script   69642c
+
+   efbbbf means a signature is present. Anything else means there is
+   none. On screen the two files are identical, and they will stay
+   identical in every editor, viewer and paste into a chat window.
+
+2. WHAT IT DOES TO A SHELL PIPELINE
+------------------------------------------------------------------------
+
+   grep -c "^id"      clean 1   signed 0
+   first field, cut   clean 69640a   signed efbbbf69640a
+   awk "$1==\"id\""    clean match   signed no match
+
+   Three pipelines, three silent wrong answers. Not one of them
+   errors; grep returns 0 matches, cut hands back a field with three
+   extra bytes, awk compares two strings that print the same and are
+   not equal. A pipeline built on any of these produces an empty
+   report and no complaint.
+
+3. STRIP IT ON THE WAY IN
+------------------------------------------------------------------------
+
+   sed "1s/^<bom>//" then the same three checks:
+     grep -c "^id"    1
+     first field      69640a
+     awk compare      match
+
+   ..and on the file that never had one, the same sed is a no-op:
+     grep -c "^id"    1
+
+   Line 1 only, and conditional. That is `encoding="utf-8-sig"` for
+   a shell pipeline, and it is safe to put in front of any CSV.
+
+4. THE OTHER DIRECTION, WHICH IS WHY THE THING EXISTS
+------------------------------------------------------------------------
+
+   a UTF-8 row with an em dash, no signature:
+     00000000: 312c 6265 666f 7265 e280 9461 6674 6572  1,before...after
+     00000010: 0a                                       .
+
+   handed to a reader that guesses a one-byte table instead:
+     as Mac Roman   1,before‚Äîafter
+     as CP1252      1,beforeâ€”after
+
+   Both are what Excel shows on a double-click when nothing declared
+   the encoding -- a Mac guesses one, Windows the other, and the shape
+   of the garbage says which. Three bytes at the front remove the
+   guess. That is the entire argument for writing one, and it applies
+   only to files whose reader is a person.
+```
+<!-- /output -->
+
+## If you are coming from Python or ABAP
+
+**Python.** `csv.DictReader` is where this bites, because the damage lands in a *key* rather than in a value, and a wrong key raises somewhere far away from the `open()` call that caused it. Read with `encoding='utf-8-sig'` and the problem cannot arise; if you are handed a `str` that already contains one, `s.removeprefix('﻿')` is the repair, and note that `.strip()` is not — `U+FEFF` is not whitespace. When writing for Excel, `newline=''` in the `open()` call matters as much as the encoding does, or the `csv` module's `\r\n` collides with the platform's line-ending translation and you get blank rows between records. See [Opening a file](../../04_Python/opening_a_file/README.md) and [CRLF vs LF](../crlf_vs_lf/README.md).
+
+**ABAP.** The inbound version of this is an interface whose *first field never matches* while every other field is fine — a Windows or Excel producer sends a file with `EF BB BF`, `OPEN DATASET … IN TEXT MODE ENCODING UTF-8` reads it as data, and the header record's first column arrives three bytes long. It reads like a mapping error and is not one. Strip on the first record only, at the boundary, the same place you named the encoding; and when writing a file for a user to open in Excel rather than for another system to parse, the signature is a deliberate choice worth a comment in the code, because the next person to touch it will assume it is a bug. Check what your release actually offers for the byte-order-mark constants rather than trusting a name from a document. *(Not machine-checked — CI cannot run ABAP.)*
+
+## Try it
+
+```bash
+cd 07_Real_Data/bom_in_a_csv/examples
+python3 bom_in_a_csv_py.py
+bash bom_in_a_csv_sh.sh
+```
+
+Without the machine: a report you generate has always opened fine in Excel. A colleague adds a step that concatenates yesterday's file onto today's before mailing it out, and now row 5,001 has a strange character in the first cell and its `id` will not match anything. Say what row 5,001 is, and where the fix belongs.
 
 ## See also
 
-- [Byte order and the BOM](../../03_Encodings/byte_order_and_bom/README.md)
-- [Opening a file](../../04_Python/opening_a_file/README.md)
+- [Byte order and the BOM](../../03_Encodings/byte_order_and_bom/README.md) — what `U+FEFF` is, why UTF-16 needs it and UTF-8 does not
+- [Mojibake](../../03_Encodings/mojibake/README.md) — what the missing signature causes, and reading the garbage backwards
+- [Windows-1252 vs Latin-1](../windows_1252_vs_latin1/README.md) — the table Excel guesses on Windows
+- [Opening a file](../../04_Python/opening_a_file/README.md) — `encoding=` and `newline=` in one call
+- [CRLF vs LF](../crlf_vs_lf/README.md) — the other thing Excel does to a CSV
+- [Python text in practice](../../10_Best_Practices/python_text_in_practice/README.md) — the read/write asymmetry as a standing habit

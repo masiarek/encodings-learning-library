@@ -132,22 +132,45 @@ print("   working file gets damaged.")
 
 # ------------------------------------------------------------------ 7
 head(7, "NAMING THE CULPRIT FROM THE GARBAGE ALONE")
-observed = "Å‚Ã³dÅº"
-print(f"   observed in a report: {observed!r}")
-print("   try every table it could have been READ under, and re-read as UTF-8:")
-for read_as in ["latin_1", "cp1252", "cp1250", "iso8859_2", "cp850"]:
-    try:
-        guess = observed.encode(read_as).decode("utf_8")
-    except UnicodeEncodeError as e:
-        print(f"     read as {read_as:<10} no: {e.object[e.start]!r} is not in this table")
-        continue
-    except UnicodeDecodeError:
-        print(f"     read as {read_as:<10} no: the bytes that gives are not UTF-8")
-        continue
-    names = ", ".join(unicodedata.name(c, "?") for c in guess if ord(c) > 0x7F)
-    print(f"     read as {read_as:<10} -> {guess!r}   [{names}]")
+TABLES = ["latin_1", "cp1252", "cp1250", "iso8859_2", "cp850", "mac_roman"]
+
+print("   Forwards first: one em dash, read under each table in turn.")
+dash = "—"
+for read_as in TABLES:
+    print(f"     {read_as:<10} -> {dash.encode('utf_8').decode(read_as)!r}")
 print()
-print("   One pair produces a word. That pair IS the bug report: the file was")
-print("   written UTF-8 and read as that table, at whichever hop first shows")
-print("   the damage. Prove it with a hex dump of the original rather than")
+print("   Six tables, five distinct shapes -- cp1252 and cp1250 agree here, so")
+print("   the fingerprint names a FAMILY and only sometimes a single table.")
+print("   The last row is the one people meet without knowing its name: an")
+print("   em dash in a CSV that Excel opened on a Mac.")
+
+print()
+print("   Backwards is the useful direction. Given only the garbage, try")
+print("   every table it could have been READ under, and re-read as UTF-8:")
+SIGHTINGS = [
+    ("Å‚Ã³dÅº", "a Polish name, in a report from a Windows box"),
+    ("‚Äî", "an em dash, in a CSV double-clicked on a Mac"),
+]
+for observed, where in SIGHTINGS:
+    print()
+    print(f"   {observed!r}  -- {where}")
+    for read_as in TABLES:
+        try:
+            guess = observed.encode(read_as).decode("utf_8")
+        except UnicodeEncodeError as e:
+            print(f"     read as {read_as:<10} no: {e.object[e.start]!r} is not in this table")
+            continue
+        except UnicodeDecodeError:
+            print(f"     read as {read_as:<10} no: the bytes that gives are not UTF-8")
+            continue
+        names = ", ".join(unicodedata.name(c, "?") for c in guess if ord(c) > 0x7F)
+        print(f"     read as {read_as:<10} -> {guess!r}   [{names}]")
+print()
+print("   Exactly one table produces a word, and it is a different table for")
+print("   each sighting. That pair IS the bug report: the file was written")
+print("   UTF-8 and read as that table, at whichever hop first shows the")
+print("   damage. Note what the second one tells you for free -- mac_roman is")
+print("   not a table anybody chooses, it is what a Mac reaches for when no")
+print("   encoding was declared, so the garbage named the PLATFORM as well as")
+print("   the table. Prove it with a hex dump of the original rather than")
 print("   arguing about it -- the bytes have been right the whole time.")

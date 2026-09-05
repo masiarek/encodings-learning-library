@@ -8,7 +8,7 @@ Everything before this chapter is mechanism. This chapter is the six shapes the 
 |---|---|---|---|
 | 1 | [SAP code pages](sap_code_pages/README.md) | What are 1100, 1160, 4110 and 4103, and how do I reproduce an interface's mojibake outside SAP? | stub |
 | 2 | [Mojibake round trip](mojibake_round_trip/README.md) | When can damaged text be repaired, and when is the data gone? | stub |
-| 3 | [A BOM in a CSV](bom_in_a_csv/README.md) | Why is my first column named `﻿ID`? | stub |
+| 3 | [A BOM in a CSV](bom_in_a_csv/README.md) | Why is my first column named `﻿ID`? | written, 2026-09-05 |
 | 4 | [Fixed-width byte fields](fixed_width_byte_fields/README.md) | Why does a 10-byte field hold five Polish letters, and how do I truncate without cutting one in half? | stub |
 | 5 | [Windows-1252 vs Latin-1](windows_1252_vs_latin1/README.md) | Why is the text almost right except for `€` and the quotes? | stub |
 | 6 | [CRLF vs LF](crlf_vs_lf/README.md) | Where do the `^M`s come from? | stub |

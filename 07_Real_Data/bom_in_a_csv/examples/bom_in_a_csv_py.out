@@ -1,0 +1,74 @@
+
+1. WHAT ARRIVED
+------------------------------------------------------------------------
+   from Excel     ef bb bf 69 64 2c 6e 61 6d 65 0a 31 ...
+   from a script  69 64 2c 6e 61 6d 65 0a 31 2c 41 64 ...
+
+   The first three bytes are the difference, and on screen there is no
+   difference at all -- both files show 'id,name' on line 1. This is
+   the entire bug: the evidence is invisible in every tool that shows
+   you text, and obvious in the one that shows you bytes.
+
+2. READ AS PLAIN utf-8: THE LOOKUP THAT FAILS
+------------------------------------------------------------------------
+   reader.fieldnames   ['\ufeffid', 'name']
+   first row           {'\ufeffid': '1', 'name': 'Ada'}
+
+   the header, printed  '﻿id'      <- looks exactly like 'id'
+   the header, repr     '\ufeffid'
+   len()                3   <- three characters, not two
+   == 'id'              False
+   row['id']            KeyError: 'id'
+
+   Read that pair of lines again. print() shows 'id' and the lookup on
+   'id' raises, because U+FEFF is zero width -- it takes up no space on
+   screen and one place in the string. A colleague who pastes the
+   header into a chat message pastes something that looks right.
+
+3. READ AS utf-8-sig: THE WHOLE FIX
+------------------------------------------------------------------------
+   from Excel     fieldnames=['id', 'name']   row['id']='1'
+   from a script  fieldnames=['id', 'name']   row['id']='1'
+
+   One word in the open() call, and note the second line: utf-8-sig on
+   a file that never had a signature does nothing at all. There is no
+   penalty for being wrong about which kind of file you were sent, so
+   for a CSV of unknown origin it is simply the correct reader.
+
+4. AND WHY EXCEL WANTED IT: THE OTHER DIRECTION
+------------------------------------------------------------------------
+   your script writes this row     '1,before—after'
+   in UTF-8, that is               31 2c 62 65 66 6f 72 65 e2 80 94 61 66 74 65 72
+   and the em dash is              e2 80 94   (U+2014)
+
+   Now Excel opens it by double-click with no signature to go on, and
+   falls back to the machine's legacy code page:
+     read as mac_roman  (Excel on a Mac   ) -> '1,before‚Äîafter'
+     read as cp1252     (Excel on Windows ) -> '1,beforeâ€”after'
+     read as utf_8_sig  (told the truth   ) -> '1,before—after'
+
+   Same file, three readings. The two guesses are mojibake, and they
+   are DIFFERENT mojibake -- so the garbage in the bug report tells you
+   which desk it was opened on before you have asked. Writing the
+   signature removes the guess, which is the only reason to write one.
+
+5. SO: WHO READS THIS FILE?
+------------------------------------------------------------------------
+   for a human, in Excel        -> write 'utf-8-sig'.
+     the file's job is to be double-clicked; nothing parses it; the
+     three bytes buy a correct guess and cost nothing.
+
+   for a program, by exact bytes -> write 'utf-8'.
+     a header match, a ^-anchored grep, a diff, a JSON step downstream:
+     the mark is content and every one of those fails silently.
+
+   unknown, or both              -> write 'utf-8', read 'utf-8-sig'.
+     the forgiving reader costs nothing and covers files you did not
+     write. This is the default worth reaching for.
+
+   One more, easy to forget once the signature is in:
+     two signed CSVs concatenated: ef bb bf 69 64 2c 6e 61 6d 65 0a 31 2c 41 64 61 0a 32 2c 42 ...
+     ..and at the join:            ... 65 6e 0a ef bb bf 69 64 2c 6e 61 6d
+     The second signature is in the middle of the file now, where it
+     is not a signature -- it is an invisible character in a data row.
+     Concatenating CSVs is common; strip on read, then join.
