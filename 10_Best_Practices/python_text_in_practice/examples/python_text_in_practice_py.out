@@ -1,0 +1,80 @@
+
+1. str AND bytes DO NOT MIX, AND THAT IS THE FEATURE
+------------------------------------------------------------------------
+   str    'Łódź'       len 4   type str
+   bytes  b'\xc5\x81\xc3\xb3d\xc5\xba' len 7   type bytes
+   "a" + b"b"             -> TypeError: can only concatenate str (not "bytes") to str
+   "Ł" in b"\xc5\x81"     -> TypeError: a bytes-like object is required, not 'str'
+   b"x".decode()          -> 'x'
+   Python 2 would have guessed here, and guessed with ASCII. Python 3
+   refuses, which turns a wrong answer in production into a TypeError
+   on your machine. Every '.encode()' you add is you saying where the
+   boundary of your program is.
+
+2. open(): FOUR ARGUMENTS THAT SHOULD BE HABIT
+------------------------------------------------------------------------
+   on disk               b'id,city\r\n1,\xc5\x81\xc3\xb3d\xc5\xba\r\n'
+   encoding='utf-8'      'id,city\r\n1,Łódź\r\n'
+   newline= left default 'id,city\n1,Łódź\n'   <- \r\n became \n
+     open(p, encoding='utf-8')   name the encoding even when it is the
+                                 default; it says which side of the
+                                 boundary the file is on
+     newline=''                  for csv, ALWAYS — the csv module does
+                                 its own line handling and doubles up
+                                 otherwise
+     errors='strict'             the default; change it deliberately
+     'rb' / 'wb'                 when it is not text: images, zips, and
+                                 anything you will hash or checksum
+
+3. TWO SWITCHES THAT TURN THE WHOLE CLASS OF BUG INTO A WARNING
+------------------------------------------------------------------------
+   sys.flags.utf8_mode        = 1   (PYTHONUTF8=1 / -X utf8)
+   sys.flags.warn_default_encoding = 0   (-X warn_default_encoding)
+   UTF-8 mode (PEP 540) makes Python ignore the machine's locale and use
+   UTF-8 everywhere; PEP 686 makes that the DEFAULT in Python 3.15, which
+   is the single biggest change to this subject in fifteen years.
+
+   The second flag is the one to run your test suite under today:
+   -X warn_default_encoding turns every open() that did not name an
+   encoding into an EncodingWarning, pointing at the line. That is a
+   whole codebase audited in one run, and it is PEP 597, since 3.10.
+
+4. FILENAMES ARE NOT TEXT, AND PYTHON HANDS YOU THE ESCAPE HATCH
+------------------------------------------------------------------------
+   bytes on disk       b'report-caf\xe9.csv'
+   os.fsdecode(...)    'report-caf\udce9.csv'
+   os.fsencode(back)   b'report-caf\xe9.csv'
+   round-trips exactly True
+   A Unix filename is any bytes but NUL and '/', so it need not be UTF-8
+   at all. os.listdir() gives you str with the undecodable bytes parked
+   in surrogates, and os.fsencode puts them back — which is why you can
+   rename a file you cannot print. Never .encode('utf-8') a filename by
+   hand; that is the call that raises on somebody else's disk.
+
+5. bytes HAS TEXT-LOOKING METHODS. THEY ARE ASCII-ONLY, ON PURPOSE.
+------------------------------------------------------------------------
+   'straße'.upper()          -> 'STRASSE'   <- one letter became two
+   'straße'.encode().upper() -> b'STRA\xc3\x9fE'
+                                  ^ the ß bytes came through untouched:
+                                    bytes.upper() only knows a-z.
+
+   re.findall(r'\w+', 'Łódź ok')          -> ['Łódź', 'ok']
+   re.findall(rb'\w+', b'...') on bytes   -> [b'd', b'ok']
+   Same pattern, two answers: \w means 'Unicode word character' against
+   str and 'ASCII word character' against bytes. A bytes object has no
+   idea which table made it, so ASCII is the only thing it can assume —
+   and that is the right call, not a limitation.
+
+6. THE unicodedata TOOLKIT, WHICH IS ALREADY INSTALLED
+------------------------------------------------------------------------
+   'ź'        category Ll   combining   0  LATIN SMALL LETTER Z WITH ACUTE
+   '́'        category Mn   combining 230  COMBINING ACUTE ACCENT
+   '😀'        category So   combining   0  GRINNING FACE
+   lookup('YEN SIGN')          -> '¥'
+   normalize('NFKC', 'ﬁ')      -> 'fi'   <- the ligature becomes two letters
+   normalize('NFKC', '１２３')  -> '123'   <- fullwidth digits become ASCII
+   NFKC is the aggressive one: it folds compatibility forms together, so
+   it is right for a search index or a username check and wrong for text
+   you will store and hand back. NFC is the safe default for storage.
+
+   And the export side, one flag: json.dumps(ensure_ascii=False) -> {"c": "Łódź"}

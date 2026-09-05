@@ -34,8 +34,12 @@ No page here hand-types what a program prints. Each lesson links real example fi
 | [06_Terminal](06_Terminal/README.md) | How do I see, make, and re-encode bytes with no language at all? |
 | [07_Real_Data](07_Real_Data/README.md) | The six shapes this takes when a file crosses an SAP interface |
 | [08_Build_Your_Own](08_Build_Your_Own/README.md) | A project: design a silly 3-bit text format with its own code points, then implement it in Rust against a reference that prints every expected result |
+| [09_History](09_History/README.md) | Where all of this came from — six eras, six constraints, and why the one that won, won |
+| [10_Best_Practices](10_Best_Practices/README.md) | What to actually do on Monday, in nine lines and three pages |
 
-Chapter 1, the first page of chapter 2, and the chapter 8 project are written; the rest are **stubs** — each page's questions written down, with a notice, and no example behind it yet. [ROADMAP.md](ROADMAP.md) says what is next.
+Chapters 1, 9 and 10 are written, along with the first pages of chapter 2 and the chapter 8 project; the rest are **stubs** — each page's questions written down, with a notice, and no example behind it yet. [ROADMAP.md](ROADMAP.md) says what is next.
+
+**In a hurry?** [10_Best_Practices](10_Best_Practices/README.md) is the whole modern answer on one page, and [Why UTF-8 won](09_History/why_utf8_won/README.md) is why it is that short.
 
 ## Why three languages
 

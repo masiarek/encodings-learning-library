@@ -1,0 +1,85 @@
+
+1. TAKE &str, RETURN String, AND STOP THINKING ABOUT IT
+------------------------------------------------------------------------
+   shout("literal")   = "LITERAL"
+   shout(&owned)      = "PŁYTA"
+   shout(&owned[0..3])= "PŁ"
+   One function, three callers, no allocation to call it. A &str
+   is a borrowed window onto bytes that are already valid UTF-8;
+   String owns them. That is the whole distinction.
+
+2. THREE LENGTHS. THE COMPILER WILL NOT PICK ONE FOR YOU.
+------------------------------------------------------------------------
+   bytes  5   chars  5   "hello"
+   bytes  7   chars  4   "Łódź"
+   bytes  5   chars  4   "café"
+   bytes  6   chars  5   "cafe\u{301}"
+   bytes  9   chars  3   "日本語"
+   Rows 3 and 4 look identical and are not: 'café' composed is 4
+   chars, decomposed is 5. `len()` is BYTES — it is the one people
+   mean least often and reach for most, because it is the short name.
+
+3. NEVER INVENT A BYTE INDEX. ASK FOR ONE.
+------------------------------------------------------------------------
+   s.find('d')            = Some(4)   <- a real boundary, from std
+   s.get(0..2)            = Some("Ł")
+   s.get(0..1)            = None   <- inside a character: None
+   s.char_indices()       = [(0, 'Ł'), (2, 'ó'), (4, 'd'), (5, 'ź')]
+   s.chars().next()       = Some('Ł')
+   Indices that came from std (`find`, `char_indices`, `split`) are
+   always boundaries. An index you computed by counting letters is
+   not, and `&s[0..1]` panics rather than returning half a letter.
+
+4. ASCII METHODS ARE FAST AND WRONG; UNICODE ONES ARE RIGHT AND SLOWER
+------------------------------------------------------------------------
+   "Straße"
+      to_lowercase()       "straße"
+      to_ascii_lowercase() "straße"   <- non-ASCII left alone
+   "ŁÓDŹ"
+      to_lowercase()       "łódź"
+      to_ascii_lowercase() "ŁÓdŹ"   <- non-ASCII left alone
+   Use the ascii_ methods when the data really is ASCII (a protocol
+   token, a hex digit, an HTTP header name) — they are branch-free.
+   Use the Unicode ones for anything a person typed.
+
+   And note the length change, which is why case is not per-char:
+   "ß".to_uppercase() = "SS", 2 chars from 1
+
+5. REVERSING BY chars() IS NOT REVERSING A WORD
+------------------------------------------------------------------------
+   composed   "café" reversed -> "éfac"
+   decomposed "cafe\u{301}" reversed -> "\u{301}efac"
+   The accent came off the 'e' and landed on the front. `chars()`
+   yields Unicode SCALAR VALUES, and a user-perceived character can
+   be several of them — that is what the `unicode-segmentation`
+   crate is for, and there is no std substitute. Same reason emoji
+   families and flags cannot be counted with `chars().count()`.
+
+6. AT THE BOUNDARY: BYTES IN, CHECKED TEXT OUT
+------------------------------------------------------------------------
+   from_utf8(good) -> Ok("order,café,2")
+   from_utf8(latin-1) -> Err: invalid utf-8 sequence of 1 bytes from index 9
+   lossy              -> "order,caf�,2"
+   Decode once, at the edge, and carry &str inwards. `from_utf8` for
+   data you will act on; `from_utf8_lossy` only for something a human
+   reads, because it destroys the bytes it could not understand.
+   `unsafe { from_utf8_unchecked }` is for a checked-elsewhere hot
+   path and nothing else: a &str that lies is undefined behaviour.
+
+7. PATHS AND ARGUMENTS ARE NOT &str, AND THAT IS NOT PEDANTRY
+------------------------------------------------------------------------
+   OsStr::to_str()          = Some("report.csv")
+   OsStr::to_string_lossy() = "report.csv"
+   A Unix filename is any bytes except NUL and '/', and a Windows
+   one is any UTF-16 units including unpaired surrogates. Neither
+   is guaranteed to be UTF-8, so `Path` is not a `str` — handle the
+   `None` from `to_str()` rather than unwrapping it in a tool that
+   will one day be pointed at somebody else's disk.
+
+8. WHEN THE DATA IS NOT TEXT, SAY SO IN THE TYPE
+------------------------------------------------------------------------
+   b"\x89PNG..."          = [89, 50, 4e, 47, 0d, 0a, 1a, 0a]
+   is it UTF-8?            false
+   Binary is `&[u8]`/`Vec<u8>`, and it should never be forced through
+   String on the way past. The type IS the documentation: `&[u8]`
+   says 'unknown bytes', `&str` says 'already checked'.

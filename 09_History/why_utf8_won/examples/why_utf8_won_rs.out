@@ -1,0 +1,61 @@
+
+1. A &str IS BYTES PLUS A PROMISE
+------------------------------------------------------------------------
+   "Łódź"
+   s.len()          = 7   <- BYTES, not characters
+   s.chars().count()= 4   <- characters
+   s.as_bytes()     = [c5, 81, c3, b3, 64, c5, ba]
+   The promise is the whole difference between &str and &[u8]:
+   every &str in a running program is already valid UTF-8, because
+   there is no way to make one that is not without saying `unsafe`.
+
+2. THE DOOR: from_utf8 CHECKS, AND SAYS WHERE IT FAILED
+------------------------------------------------------------------------
+   b"caf\xc3\xa9" (real UTF-8)        -> Ok("café")
+   b"caf\xe9 au lait" (Latin-1)       -> Err: valid up to byte 3, 1 byte(s) rejected there
+   b"caf\xc3" (truncated)             -> Err: valid up to byte 3, ended mid-character
+   `valid_up_to` is the byte offset where the file stops making
+   sense — which is how a tool can report the LINE of the problem
+   instead of 'this file is not UTF-8, good luck'.
+
+3. TWO REJECTIONS THAT ARE SECURITY, NOT PEDANTRY
+------------------------------------------------------------------------
+   c0 80  (overlong NUL)              -> Err: valid up to byte 0, 1 byte(s) rejected there
+   2f              (a real slash)     -> Ok("/")
+   c0 af  (overlong slash)            -> Err: valid up to byte 0, 1 byte(s) rejected there
+   Every code point has exactly ONE valid UTF-8 spelling. A decoder
+   that accepts the padded spellings lets `c0 af` slip a '/' past a
+   filter that was looking for 2f — which is how directory-traversal
+   attacks worked in 2001. Rust's `from_utf8` refuses them.
+
+   ed a0 80  (a lone surrogate)       -> Err: valid up to byte 0, 1 byte(s) rejected there
+   Surrogates are UTF-16's plumbing, not characters. UTF-8 has no
+   room for them, so text that came from a careless UTF-16 system
+   is caught here rather than three systems later.
+
+4. WHEN YOU CANNOT REFUSE: from_utf8_lossy
+------------------------------------------------------------------------
+   bytes  [53, 61, 6c, 65, 73, 20, 72, 65, 70, 6f, 72, 74, 3a, 20, 63, 61, 66, e9, 20, ff, 20, 74, 6f, 74]
+   lossy  "Sales report: caf� � totals"
+   Each bad byte becomes U+FFFD, the replacement character. Use it
+   for a log line a human will read; never for data you will write
+   back out, because the original bytes are gone for good.
+
+5. SELF-SYNCHRONISING, IN THE TYPE SYSTEM
+------------------------------------------------------------------------
+   char_indices(): 0:Ł 2:ó 4:d 5:ź
+   is_char_boundary: 0:Y 1:n 2:Y 3:n 4:Y 5:Y 6:n 7:Y
+   Slicing at a boundary works; slicing inside a character does not.
+   `get` asks instead of panicking, which is how to do it in a tool:
+     s.get(0..2) = Some("Ł")
+     s.get(0..1) = None
+     s.get(2..4) = Some("ó")
+
+6. AND ASCII STILL COSTS ONE BYTE
+------------------------------------------------------------------------
+   bytes  5   chars  5   ascii-only true    "hello"
+   bytes  7   chars  4   ascii-only false   "Łódź"
+   bytes  9   chars  3   ascii-only false   "日本語"
+   `is_ascii()` is a fast path a great deal of real code takes: if a
+   string is ASCII, byte indexing and character indexing are the same
+   thing, and UTF-8 is what makes that shortcut safe to check for.

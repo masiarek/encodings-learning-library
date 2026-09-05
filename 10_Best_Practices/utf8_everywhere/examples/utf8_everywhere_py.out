@@ -1,0 +1,88 @@
+
+1. THE SANDWICH: DECODE AT THE EDGE, WORK IN TEXT, ENCODE AT THE EDGE
+------------------------------------------------------------------------
+   in   (bytes) b'name,city\r\n\xc5\x81\xc3\xb3d\xc5\xba,PL\r\n'
+   work (str)   [['name', 'city'], ['Łódź', 'PL']]
+   out  (bytes) b'name;city\n\xc5\x81\xc3\xb3d\xc5\xba;PL'
+   Bytes at the two ends, text in the middle, and NOTHING in the middle
+   that has to know what an encoding is. Every encoding bug you will
+   ever have is a program that let bytes leak into the filling.
+
+2. THE ENCODING IS NOT A GUESS — IT COMES FROM THE PROTOCOL
+------------------------------------------------------------------------
+   sys.flags.utf8_mode        = 1
+   locale.getencoding() is UTF-8? False
+   (The NAME is not printed on purpose: this run is pinned to LC_ALL=C,
+   where macOS calls it 'US-ASCII' and Linux calls it 'ANSI_X3.4-1968'.
+   Even the name of the fallback encoding is machine-dependent.)
+
+   That fallback is what open() uses when you do not pass encoding=.
+   On a Windows box it is 'cp1252' — which is how the same script reads
+   a file correctly here and silently wrongly there.
+
+   So: open(path, encoding='utf-8'), always, even when it is the default.
+   Python 3.15 makes UTF-8 the default (PEP 686) and the argument STILL
+   belongs in the call, because it documents which side of the boundary
+   the file is on. The encoding comes from the HTTP header, the database
+   connection, the interface spec — never from the bytes themselves.
+
+3. errors= IS A POLICY DECISION. MAKE IT ON PURPOSE.
+------------------------------------------------------------------------
+   the bytes: b'Sales: caf\xe9'
+     errors=strict            -> UnicodeDecodeError at byte 10
+     errors=replace           -> 'Sales: caf�'
+     errors=ignore            -> 'Sales: caf'
+     errors=backslashreplace  -> 'Sales: caf\\xe9'
+     errors=surrogateescape   -> 'Sales: caf\udce9'
+
+   Only ONE of them can be undone: surrogateescape round-trips.
+     decode then encode == the original bytes: True
+   Use strict for data you own, surrogateescape when you must carry
+   somebody else's bytes through unharmed, replace only for a log line
+   a human will read. Never ignore: it deletes evidence silently.
+
+4. COMPARE AFTER NORMALIZING, NOT BEFORE
+------------------------------------------------------------------------
+   composed   'łódź'  4 code points  c5 82 c3 b3 64 c5 ba
+   decomposed 'łódź'  6 code points  c5 82 6f cc 81 64 7a cc 81
+   composed == decomposed                : False
+   NFC(composed) == NFC(decomposed)      : True
+   Same word, same screen, different bytes — a macOS filename and a
+   Linux one, or a form field and a database row. Normalize to NFC on
+   the way IN and compare after that; do not normalize at compare time
+   in one place and forget in the other.
+
+   Caseless comparison is casefold(), not lower():
+     'Straße'     lower 'straße'      casefold 'strasse'     upper 'STRASSE'
+     'İstanbul'   lower 'i̇stanbul'   casefold 'i̇stanbul'   upper 'İSTANBUL'
+   Note the lengths change. 'ß'.upper() is two letters, so a case
+   conversion is not a per-character operation and never was.
+
+5. 'LENGTH' HAS THREE ANSWERS. SAY WHICH ONE YOU MEANT.
+------------------------------------------------------------------------
+   text            bytes  code points  graphemes
+   Łódź                7            4          4
+   café                5            4          4
+   café (NFD)          6            5          4
+   👨‍👩‍👧           18            5          1
+   (the last column is counted BY EYE — Python's standard library has no
+    grapheme segmenter, which is the point of the paragraph below)
+   The bytes column is what a VARCHAR(n) and a fixed-width field count.
+   The code-point column is what len() gives you. The last column needs
+   grapheme-cluster segmentation, which is a library in every language
+   including this one. Three different questions — pick one deliberately.
+
+6. TWO DEFAULTS WORTH CHANGING ON THE WAY OUT
+------------------------------------------------------------------------
+   json.dumps(...)                     -> {"city": "\u0141\u00f3d\u017a"}
+   json.dumps(..., ensure_ascii=False) -> {"city": "Łódź"}
+   Both are valid JSON and both survive the trip. The first is ASCII-safe
+   escaping from an era when the channel might not be 8-bit clean; today
+   it mostly makes payloads bigger and logs unreadable. JSON is UTF-8 by
+   RFC 8259, so ensure_ascii=False is the honest default now.
+
+   And the BOM: read Excel's CSVs with encoding='utf-8-sig', which eats a
+   leading BOM if there is one; write with 'utf-8' so you never add one.
+     first bytes from Excel : ef bb bf 69 64 2c
+     read as utf-8          : '\ufeffid'  <- BOM stuck to the header
+     read as utf-8-sig      : 'id'

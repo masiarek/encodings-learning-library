@@ -1,0 +1,49 @@
+1. ASCII-ONLY TOOLS, ON TEXT THEY HAVE NEVER HEARD OF
+   The row: id,Łódź,日本語,ok
+
+$ printf '%s\n' "$ROW" | cut -d, -f2
+Łódź
+
+$ printf '%s\n' "$ROW" | cut -d, -f3
+日本語
+
+$ printf '%s\n' "$ROW" | awk -F, '{print NF " fields"}'
+4 fields
+
+$ printf '%s\n' "$ROW" | grep -c 'id'
+1
+   cut, awk and grep split on the byte 0x2c. In UTF-8 that byte can only
+   ever be a real comma, so none of them can cut a character in half.
+
+2. THE SAME ROW AS UTF-16, HANDED TO THE SAME TOOLS
+
+$ printf '%s' "$ROW" | iconv -f UTF-8 -t UTF-16LE | xxd -p | head -2
+690064002c004101f30064007a012c00e5652c679e8a2c006f006b00
+   cut -d, -f2 on that gives : 004101f30064007a010a
+   Bytes, not text — and every other byte is 00, which is what ends a
+   string in C. Adopting UTF-16 in 1993 would have meant rewriting every
+   tool on the machine on the same day. Adopting UTF-8 meant rewriting
+   none of them.
+
+3. SORTING BY RAW BYTES IS ALREADY THE RIGHT ORDER
+   Five characters, deliberately out of order, sorted by BYTE value
+   with no locale at all:
+
+$ printf 'z\né\nA\n日\n0\n' | LC_ALL=C sort
+0
+A
+z
+é
+日
+   That is exactly their Unicode order: 0 (U+0030), A (U+0041),
+   z (U+007A), é (U+00E9), 日 (U+65E5). A byte sort, a byte-wise binary
+   search and a plain B-tree index are all correct on UTF-8 without
+   knowing a thing about Unicode.
+
+4. AND THE COUNTING TRAP THAT NEVER WENT AWAY
+
+$ printf '%s' 'Łódź' | wc -c | tr -d ' '
+7
+   Seven bytes, four letters. wc -c counts bytes and always did; it is
+   the database column, the fixed-width field and the substring that
+   still need to be told which of the two they meant.

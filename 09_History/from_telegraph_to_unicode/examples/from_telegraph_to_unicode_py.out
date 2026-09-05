@@ -1,0 +1,116 @@
+
+1. FIVE BITS (1874): THE ARITHMETIC THAT FORCED A SHIFT KEY
+------------------------------------------------------------------------
+   patterns in 5 bits : 2**5 = 32
+   letters + digits + a little punctuation : 48
+   enough? False
+   The fix was a MODE, not more bits: one code said 'letters follow',
+   another said 'figures follow', so 32 patterns carried 62 meanings.
+   Shift state is the oldest idea in this library — and the oldest bug:
+   a lost shift code turns the rest of the message into gibberish.
+
+2. SEVEN BITS (ASCII, 1963/1967): 128 AGREED, 128 UNCLAIMED
+------------------------------------------------------------------------
+   patterns in 7 bits : 128      patterns in 8 : 256
+   'A'   ->  65  0x41  01000001   top bit 0
+   'z'   -> 122  0x7A  01111010   top bit 0
+   '0'   ->  48  0x30  00110000   top bit 0
+   Every ASCII byte has its top bit 0. The other 128 patterns belonged
+   to nobody, and that vacancy is the whole of the next forty years.
+
+3. EBCDIC (IBM, 1964): THE OTHER NUMBERING, STILL SHIPPING
+------------------------------------------------------------------------
+   IBM's System/360 came out a year after ASCII with its own table,
+   inherited from punched cards. It does not even agree about 'A'.
+   A      ASCII 0x41    EBCDIC 0xC1
+   a      ASCII 0x61    EBCDIC 0x81
+   0      ASCII 0x30    EBCDIC 0xF0
+   space  ASCII 0x20    EBCDIC 0x40
+
+   The alphabet is not contiguous — punched-card rows left two gaps:
+      H=0xC8 I=0xC9 J=0xD1 K=0xD2 Q=0xD8 R=0xD9 S=0xE2
+   so 'B' - 'A' == 1 but 'J' - 'I' == 8. Loops over letter codes break.
+
+   And the sort order is inverted at every level:
+     by ASCII byte  : ['3rd', 'Alpha', 'Zoe', 'apple']
+     by EBCDIC byte : ['apple', 'Alpha', 'Zoe', '3rd']
+   digits-then-caps-then-lower, versus lower-then-caps-then-digits.
+   Reading an EBCDIC file as ASCII is not mojibake, it is nonsense:
+     0x41, which is 'A' in ASCII, is '\xa0' in EBCDIC — NO-BREAK SPACE, not a letter at all.
+
+4. CODE PAGES (1980s): EVERYBODY CLAIMED THE TOP HALF
+------------------------------------------------------------------------
+   The same byte, 0xE9, decoded under the tables that were shipping:
+     0xE9 under latin_1    -> 'é'     (Western Europe, ISO 8859-1)
+     0xE9 under cp1252     -> 'é'     (Windows Western)
+     0xE9 under iso8859_2  -> 'é'     (Central Europe, ISO 8859-2)
+     0xE9 under cp1250     -> 'é'     (Windows Central Europe)
+     0xE9 under cp437      -> 'Θ'     (the original IBM PC)
+     0xE9 under cp850      -> 'Ú'     (PC Western Europe)
+     0xE9 under koi8_r     -> 'И'     (Russian)
+     0xE9 under mac_roman  -> 'È'     (classic Mac OS)
+     0xE9 under cp037      -> 'Z'     (EBCDIC)
+   9 tables, 6 answers, and the file says which one it used: nowhere.
+
+   They were also INCOMPLETE, which is the part people forget.
+   No 8-bit table holds Polish and Greek and Japanese at once:
+     'Łódź καλημέρα' in latin_1    -> UnicodeEncodeError on 'Ł'
+     'Łódź καλημέρα' in cp1250     -> UnicodeEncodeError on 'κ'
+     'Łódź καλημέρα' in iso8859_2  -> UnicodeEncodeError on 'κ'
+
+5. DOUBLE BYTES (1980s): ASIA NEVER FIT IN 256 AT ALL
+------------------------------------------------------------------------
+   日本語 in shift_jis   -> 93 fa 96 7b 8c ea                      (6 bytes)
+   日本語 in euc_jp      -> c6 fc cb dc b8 ec                      (6 bytes)
+   日本語 in iso2022_jp  -> 1b 24 42 46 7c 4b 5c 38 6c 1b 28 42    (12 bytes)
+   日本語 in utf_8       -> e6 97 a5 e6 9c ac e8 aa 9e             (9 bytes)
+   Three legacy encodings, three different byte strings for the same
+   three characters. And look at iso2022_jp: 1b 24 42 is an ESCAPE that
+   switches the reader into Japanese and 1b 28 42 switches it back — the
+   1874 shift code again, 110 years later, with the same failure mode.
+   In shift_jis and euc_jp a byte in the middle of a file could be the
+   second half of a character, so you could not scan backwards or split.
+   Even inside one region they disagreed: gb2312 cannot hold '語'.
+
+6. UNICODE (1991): NUMBER THE CHARACTERS ONCE, FOR EVERYONE
+------------------------------------------------------------------------
+   'A'   U+0041       65   LATIN CAPITAL LETTER A
+   'é'   U+00E9      233   LATIN SMALL LETTER E WITH ACUTE
+   '語'  U+8A9E    35486   CJK UNIFIED IDEOGRAPH-8A9E
+   '😀'  U+1F600   128512   GRINNING FACE
+   That number is the CODE POINT. Note what has not been said yet:
+   nothing at all about how many bytes it takes. That is chapter 3.
+
+7. 1996: THE 16-BIT ASSUMPTION BROKE
+------------------------------------------------------------------------
+   16 bits holds 65,536 characters. In 1991 that looked like plenty,
+   so Windows NT, Java and JavaScript all built 16-bit characters in.
+   Unicode 2.0 (1996) raised the ceiling to U+10FFFF = 1,114,112 slots,
+   and paid for it with SURROGATES: two 16-bit units for one character.
+   café      code points  4   UTF-16 units  4   UTF-8 bytes  5
+   Łódź      code points  4   UTF-16 units  4   UTF-8 bytes  7
+   日本語    code points  3   UTF-16 units  3   UTF-8 bytes  9
+   😀        code points  1   UTF-16 units  2   UTF-8 bytes  4
+   '😀' as UTF-16 is d8 3d de 00: the surrogate pair D83D DE00.
+   Python counts characters, so len('😀') == 1. Java and JavaScript count
+   UTF-16 units, so their .length is 2. Same string, two answers, forever.
+
+8. UTF-8 (1992, WON BY 2008): THE ONE THAT KEPT ASCII WORKING
+------------------------------------------------------------------------
+   Hi        -> 48 69
+   café      -> 63 61 66 c3 a9
+   日本語    -> e6 97 a5 e6 9c ac e8 aa 9e
+   😀        -> f0 9f 98 80
+   Look at 'Hi': an ASCII file is already a UTF-8 file, byte for byte.
+   Nothing else on this page could say that, which is why it won.
+
+9. THE SCARS YOU STILL STEP ON
+------------------------------------------------------------------------
+   ASCII's layout   : chr(ord('a') ^ 0x20) == 'A'   (upper/lower is one bit)
+   the teletype     : Windows still ends a line with b'\r\n'
+   Latin-1's luck   : it is the only table where byte == code point,
+                      so bytes -> latin-1 -> bytes round-trips: True
+   the 16-bit era   : len('😀') == 1 here, .length == 2 in JS
+   two spellings    : 'é' is c3 a9 composed or 65 cc 81 decomposed,
+                      and nfc == nfd is False until you normalize
+   bytes vs letters : len('Łódź') == 4, len('Łódź'.encode()) == 7 — a CHAR(4) column is not enough

@@ -1,0 +1,53 @@
+1. 'café' AS EACH ERA WOULD HAVE WRITTEN IT TO DISK
+   iconv converts; xxd -p prints the bytes that actually landed.
+   CP037     83818651
+   LATIN1    636166e9
+   CP1252    636166e9
+   CP437     63616682
+   UTF-8     636166c3a9
+   UTF-16BE  00630061006600e9
+
+   CP037 is EBCDIC, and it does not agree even about the 'c'.
+   Three of the 8-bit tables give five bytes and disagree on the last.
+   UTF-8 is six bytes; UTF-16BE is eight, half of them 00.
+
+2. A POLISH FILE FROM 2005, READ ON FOUR MACHINES
+   'Łódź' written under Windows-1250, which is where it lived then:
+
+$ printf '\xc5\x81\xc3\xb3d\xc5\xba' | iconv -f UTF-8 -t CP1250 | xxd -p
+a3f3649f
+
+   Those same four bytes, decoded by someone whose machine assumed
+   a different table — every one of these 'succeeds':
+   read as CP1250      -> Łódź
+   read as LATIN1      -> £ód
+   read as ISO-8859-2  -> Łód
+   read as CP1252      -> £ódŸ
+   read as KOI8-R      -> ёСd÷
+
+   Two of those readings look three letters long. They are not — the
+   fourth byte decoded to an INVISIBLE control character. Only the bytes
+   show it:
+
+$ printf '\xc5\x81\xc3\xb3d\xc5\xba' | iconv -f UTF-8 -t CP1250 | iconv -f LATIN1 -t UTF-8 | xxd -p
+c2a3c3b364c29f
+   c2 9f is U+009F, a C1 control, sitting where the 'ź' was.
+
+   Four bytes, five readings, no error anywhere. The file does not carry
+   its table, so 'which encoding is this?' has no answer from the bytes.
+
+3. WHY UTF-8 COULD BE ADOPTED WITHOUT REWRITING ANYTHING
+
+$ printf 'Hello' | iconv -f UTF-8 -t ASCII | xxd -p
+48656c6c6f
+
+$ printf 'Hello' | iconv -f UTF-8 -t UTF-8 | xxd -p
+48656c6c6f
+   Identical. An ASCII file already IS a UTF-8 file, byte for byte, so
+   every tool that only knew ASCII kept working the day UTF-8 arrived.
+   The 1991 answer, UTF-16, could not say that:
+
+$ printf 'Hello' | iconv -f UTF-8 -t UTF-16BE | xxd -p
+00480065006c006c006f
+   Different bytes, and full of 00 — which is what ends a string in C.
+   Every existing tool would have had to be rewritten on the same day.
