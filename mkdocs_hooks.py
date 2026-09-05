@@ -56,6 +56,8 @@ NAV_ORDER: dict[str, list[str]] = {
         "06_Terminal",
         "07_Real_Data",
         "08_Build_Your_Own",
+        "09_History",
+        "10_Best_Practices",
         "GLOSSARY.md",
         "RESOURCES.md",
         "ROADMAP.md",
@@ -81,6 +83,7 @@ NAV_ORDER: dict[str, list[str]] = {
     "03_Encodings": [
         "README.md",
         "utf8_by_hand",
+        "validation_is_a_boundary",
         "utf16_and_surrogates",
         "byte_order_and_bom",
         "encode_and_decode_are_verbs",
@@ -111,6 +114,20 @@ NAV_ORDER: dict[str, list[str]] = {
     "08_Build_Your_Own": [
         "README.md",
         "tribit",
+    ],
+    # The story, in the order it happened.
+    "09_History": [
+        "README.md",
+        "from_telegraph_to_unicode",
+        "why_utf8_won",
+    ],
+    # The universal rules first, then the two languages, then the wire.
+    "10_Best_Practices": [
+        "README.md",
+        "utf8_everywhere",
+        "rust_strings_in_practice",
+        "python_text_in_practice",
+        "interfaces_and_storage",
     ],
     "07_Real_Data": [
         "README.md",
