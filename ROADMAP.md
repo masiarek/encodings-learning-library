@@ -25,8 +25,18 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [05_Rust](05_Rust/README.md) — four pages | stubs |
 | [06_Terminal](06_Terminal/README.md) — four pages | stubs |
 | [07_Real_Data](07_Real_Data/README.md) — six pages | stubs |
+| [From the telegraph to Unicode](09_History/from_telegraph_to_unicode/README.md) | written, 2026-09-05 |
+| [Why UTF-8 won](09_History/why_utf8_won/README.md) | written, 2026-09-05 |
+| [UTF-8 everywhere](10_Best_Practices/utf8_everywhere/README.md) | written, 2026-09-05 |
+| [Rust strings in practice](10_Best_Practices/rust_strings_in_practice/README.md) | written, 2026-09-05 |
+| [Python text in practice](10_Best_Practices/python_text_in_practice/README.md) | written, 2026-09-05 |
+| [Interfaces and storage](10_Best_Practices/interfaces_and_storage/README.md) | stub |
 | [Tribit — the specification](08_Build_Your_Own/tribit/README.md) | written, 2026-09-05 — the Rust implementation is Adam's project |
 | [RESOURCES.md](RESOURCES.md) | written, 2026-09-05 — re-check the links when a page graduates and cites one |
+
+## Written out of order, on purpose
+
+Chapters 9 and 10 were written before chapters 3–7 because they are the two that do not depend on them. [09_History](09_History/README.md) explains the *shape* of everything the stubs will say, so it makes the remaining pages read as conclusions rather than commandments; [10_Best_Practices](10_Best_Practices/README.md) is the answer a reader most often arrives wanting, and leaving it until last would have meant a library that could explain every trap and never say what to do. Both link forward into the stubs, so filling those in adds detail under an argument that is already made.
 
 ## Deliberately not yet
 
