@@ -17,10 +17,11 @@ $ printf 'Hi there\n' | xxd -g1 -c 8
 00000008: 0a                       .
 
 4. od: the POSIX tool. -An drops the offset, -tx1 = hex bytes, -c = as characters
+   (a tab instead of the space, so -c has something to show for every byte)
 
-$ printf 'Hi there\n' | od -An -tx1 -c | tidy
-           48  69  20  74  68  65  72  65  0a
-           H   i       t   h   e   r   e  \n
+$ printf 'Hi\tthere\n' | od -An -tx1 -c | tidy
+  48  69  09  74  68  65  72  65  0a
+   H   i  \t   t   h   e   r   e  \n
 
 5. hexdump -C: the third classic; same three columns, |ascii| framed
 
@@ -34,7 +35,7 @@ $ printf 'caf\xc3\xa9\n' | xxd
 00000000: 6361 66c3 a90a                           caf...
 
 $ printf 'caf\xc3\xa9\n' | od -An -tx1 -c | tidy
-           63  61  66  c3  a9  0a
-           c   a   f 303 251  \n
+  63  61  66  c3  a9  0a
+   c   a   f 303 251  \n
    Four letters, five bytes plus the newline: c a f, then TWO bytes c3 a9 for the e-acute.
    od -c shows those two as octal (303 251) because it has no character to show.

@@ -17,8 +17,8 @@ abc
 3. THE CONTROL CHARACTERS ARE BYTES TOO: od shows them by name
 
 $ printf 'a\tb\nc\r\n' | od -An -tx1 -c | tidy
-           61  09  62  0a  63  0d  0a
-           a  \t   b  \n   c  \r  \n
+  61  09  62  0a  63  0d  0a
+   a  \t   b  \n   c  \r  \n
 
 4. THE CASE BIT: tr flips ASCII letters by the same rule
 

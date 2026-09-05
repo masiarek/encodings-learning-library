@@ -16,6 +16,8 @@ the offset: how many bytes came before this line, in hex
 
 That is `xxd`. Every hex-dump tool prints the same three things, and the differences are cosmetic: `xxd` pairs the bytes, `hexdump -C` spaces them singly and frames the text in `|`, `od -An -tx1 -c` puts the characters on a second row under the hex. Learn to read one and you can read all of them.
 
+One thing the shell example does that you would not: it pipes `od` through a small `tidy` helper. BSD `od` (macOS) and GNU `od` (Linux) lay their columns out differently — a blank address column, padding, and the character row aligned one column apart — and this library records every example's output on both, so the helper re-prints the fields four wide to make the two agree. The bytes are untouched; only the whitespace is.
+
 The offset column is in hex, like everything else. The second line of a dump starts at `00000010` — that is sixteen, not ten. The right-hand column is a *guess*: the tool applies the ASCII agreement to each byte and prints a dot where that agreement has nothing to say. A dot does not mean "garbage"; it means "not ASCII, ask a different reader".
 
 ## In the terminal
@@ -43,10 +45,11 @@ $ printf 'Hi there\n' | xxd -g1 -c 8
 00000008: 0a                       .
 
 4. od: the POSIX tool. -An drops the offset, -tx1 = hex bytes, -c = as characters
+   (a tab instead of the space, so -c has something to show for every byte)
 
-$ printf 'Hi there\n' | od -An -tx1 -c | tidy
-           48  69  20  74  68  65  72  65  0a
-           H   i       t   h   e   r   e  \n
+$ printf 'Hi\tthere\n' | od -An -tx1 -c | tidy
+  48  69  09  74  68  65  72  65  0a
+   H   i  \t   t   h   e   r   e  \n
 
 5. hexdump -C: the third classic; same three columns, |ascii| framed
 
@@ -60,8 +63,8 @@ $ printf 'caf\xc3\xa9\n' | xxd
 00000000: 6361 66c3 a90a                           caf...
 
 $ printf 'caf\xc3\xa9\n' | od -An -tx1 -c | tidy
-           63  61  66  c3  a9  0a
-           c   a   f 303 251  \n
+  63  61  66  c3  a9  0a
+   c   a   f 303 251  \n
    Four letters, five bytes plus the newline: c a f, then TWO bytes c3 a9 for the e-acute.
    od -c shows those two as octal (303 251) because it has no character to show.
 ```

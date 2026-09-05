@@ -5,10 +5,12 @@
 set -eu
 
 show() { printf '\n$ %s\n' "$1"; eval "$1"; }
-# od pads every line to a fixed width on macOS (BSD) and not on Linux (GNU), and
-# prints an empty trailer line on one of them. `tidy` strips both so the recorded
-# output is the same on every machine — the bytes it shows are not affected.
-tidy() { sed -e 's/[[:space:]]*$//' -e '/^$/d'; }
+# od lays its columns out differently on macOS (BSD) and Linux (GNU): BSD keeps a
+# blank address column under -An, pads every line, and left-aligns the -c row
+# where GNU right-aligns it. `tidy` re-prints every field four wide, so the same
+# bytes give the same picture on both. One limit: a SPACE byte prints as blanks
+# under -c and would vanish, so these examples feed od inputs with no spaces.
+tidy() { awk '{ for (i = 1; i <= NF; i++) printf "%4s", $i; print "" }' | sed -e '/^$/d'; }
 
 echo "1. xxd: offset | sixteen bytes in hex, paired | the same bytes as ASCII"
 show "printf 'Hi there\\n' | xxd"
@@ -23,7 +25,8 @@ show "printf 'Hi there\\n' | xxd -g1 -c 8"
 
 echo
 echo "4. od: the POSIX tool. -An drops the offset, -tx1 = hex bytes, -c = as characters"
-show "printf 'Hi there\\n' | od -An -tx1 -c | tidy"
+echo "   (a tab instead of the space, so -c has something to show for every byte)"
+show "printf 'Hi\\tthere\\n' | od -An -tx1 -c | tidy"
 
 echo
 echo "5. hexdump -C: the third classic; same three columns, |ascii| framed"

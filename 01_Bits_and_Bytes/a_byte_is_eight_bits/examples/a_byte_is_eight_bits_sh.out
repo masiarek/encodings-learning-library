@@ -6,9 +6,9 @@ $ printf 'A' | xxd -b
 2. THE SAME BYTE AS A DECIMAL, A HEX PAIR, AND A CHARACTER
 
 $ printf 'A' | od -An -tu1 -tx1 -c | tidy
-           65
-           41
-           A
+  65
+  41
+   A
 
 3. GOING THE OTHER WAY: WRITE THE BYTE 65 AND LET THE TERMINAL READ IT AS TEXT
 
