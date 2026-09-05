@@ -26,7 +26,7 @@ A byte sequence can fail to be UTF-8 in six ways, and only the first two are the
 |---|---|
 | `89` | a continuation byte with no lead byte in front of it |
 | `E2 89` | a lead byte announcing three bytes, with only two present |
-| `C0 AF` | `2F` — an ASCII `/` — written the two-byte way. An **overlong** form |
+| `C0 AF` | `2F` — an ASCII `/` — written the two-byte way. An [**overlong**](../overlong_sequences/README.md) form |
 | `E0 80 AF` | the same `/`, written the three-byte way |
 | `ED A0 80` | `U+D800`, a UTF-16 **surrogate**, which is not a character |
 | `F5 80 80 80` | a number above `U+10FFFF`, the top of Unicode |
@@ -423,6 +423,7 @@ And one to work out without the machine: `F0 82 82 AC` is four bytes that decode
 
 ## See also
 
+- [Overlong sequences](../overlong_sequences/README.md) — the four rows of the table above that decode perfectly and are forbidden anyway, and the boundary bytes that fall out
 - [UTF-8 by hand](../utf8_by_hand/README.md) — the templates this page assumes, with a pencil
 - [UTF-16 and surrogates](../utf16_and_surrogates/README.md) — where `U+D800` comes from, and why UTF-8 has to forbid it
 - [Mojibake](../mojibake/README.md) — the failure that happens when the bytes *are* valid and the table was still wrong

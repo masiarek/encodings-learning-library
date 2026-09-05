@@ -84,6 +84,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "README.md",
         "utf8_by_hand",
         "validation_is_a_boundary",
+        "overlong_sequences",
         "utf16_and_surrogates",
         "byte_order_and_bom",
         "encode_and_decode_are_verbs",

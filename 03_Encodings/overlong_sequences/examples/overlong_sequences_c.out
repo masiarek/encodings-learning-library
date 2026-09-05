@@ -1,0 +1,28 @@
+1. THE DECODER WITH NOTHING BUT THE TEMPLATES
+   1 byte  -> U+007D  '}'
+   2 bytes -> U+007D  '}'
+   3 bytes -> U+007D  '}'
+   4 bytes -> U+007D  '}'
+   Four different byte strings, one character. C will not stop you:
+   there is no str type here, only a pointer, and no library ran a check.
+
+2. WHERE THE BOUNDARY FALLS, BY ARITHMETIC
+   For each template, walk the second byte upward and ask the only
+   question that matters: is this code point already spellable shorter?
+   2 bytes: lead 0xC2 0x80 is the first that reaches U+0080
+            so 0xC0 and 0xC1 lead nothing legal, ever.
+   3 bytes: 0xE0 0xA0 ... is the first that reaches U+0800
+            so after 0xE0, a second byte below 0xA0 is overlong.
+   4 bytes: 0xF0 0x90 ... is the first that reaches U+10000
+            so after 0xF0, a second byte below 0x90 is overlong.
+
+3. THE FIX, IN THREE COMPARISONS
+   if (b0 == 0xC0 || b0 == 0xC1)                 return REJECT;
+   if (b0 == 0xE0 && b1 <  0xA0)                 return REJECT;
+   if (b0 == 0xF0 && b1 <  0x90)                 return REJECT;
+   1 byte  U+007D  accept
+   2 bytes U+007D  REJECT
+   3 bytes U+007D  REJECT
+   4 bytes U+007D  REJECT
+   Three lines. That is the entire cost of the rule, and leaving them
+   out is what a decade of directory-traversal advisories was about.

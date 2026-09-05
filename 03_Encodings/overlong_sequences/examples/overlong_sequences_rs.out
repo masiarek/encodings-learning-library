@@ -1,0 +1,33 @@
+1. from_utf8 ON EACH SPELLING
+   7D           Ok("}")
+   C1 BD        Err(valid_up_to: 0, error_len: Some(1))
+   E0 81 BD     Err(valid_up_to: 0, error_len: Some(1))
+   F0 80 81 BD  Err(valid_up_to: 0, error_len: Some(1))
+   valid_up_to is how many bytes were text before the trouble -- zero here,
+   because the trouble is the first byte of the sequence. error_len is how
+   many bytes to skip: Some(1) means one bad byte, then look again.
+
+2. THE SAME BYTES, MADE SAFE INSTEAD OF REFUSED
+   7D           -> "}"   (0 replacement chars)
+   C1 BD        -> "��"   (2 replacement chars)
+   E0 81 BD     -> "���"   (3 replacement chars)
+   F0 80 81 BD  -> "����"   (4 replacement chars)
+   Lossy conversion never invents the brace. It marks the damage and moves on,
+   one U+FFFD per byte that could not begin or continue a real sequence.
+
+3. THE CHARACTER WAS NEVER THE PROBLEM
+   char::from_u32(0x7D)      = Some('}')
+   '}' encodes as             7D
+   char::from_u32(0xD800)    = None   (a surrogate is not a character)
+   char::MAX                 = U+10FFFF
+   U+007D is a perfectly good code point with a perfectly good encoding.
+   What Rust refused was a second, longer way of writing the same one.
+
+4. WHERE THE GUARANTEE IS HANDED BACK
+   from_utf8_unchecked(7D) = "}"   -- sound: the bytes really are UTF-8
+   The same call on C1 BD would be undefined behaviour, and this program
+   does not make it: every later &str method is allowed to assume the
+   invariant, so a false promise is not a wrong answer, it is no answer.
+   Write that line with the bytes in view and rustc refuses to compile it --
+   see the page for the error. `unsafe` moves the check to you; it does not
+   remove it, and here the compiler checks your homework anyway.

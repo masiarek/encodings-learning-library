@@ -1,0 +1,38 @@
+
+1. THE CLOSING BRACE, SPELLED FOUR WAYS
+
+   $ printf '\x7d' | xxd -p
+     7d
+   $ printf '\xc1\xbd' | xxd -p
+     c1bd
+   $ printf '\xe0\x81\xbd' | xxd -p
+     e081bd
+   $ printf '\xf0\x80\x81\xbd' | xxd -p
+     f08081bd
+   All four carry the same seven payload bits. Only the first is UTF-8.
+
+2. iconv TAKES ONLY THE SHORTEST ONE
+
+   \x7d                 exit 0   the brace, as UTF-8
+   \xc1\xbd             exit 1   overlong, 2 bytes
+   \xe0\x81\xbd         exit 1   overlong, 3 bytes
+   \xf0\x80\x81\xbd     exit 1   overlong, 4 bytes
+   Same on macOS and on Linux. Unlike the U+10FFFF cap, the shortest-form rule
+   predates RFC 3629, so every iconv built in the last twenty years enforces it.
+
+3. A BYTE FILTER DOES NOT SEE THE BRACE IT IS LOOKING FOR
+
+   plain     6e616d657d64726f70      9 bytes in,  8 out  -> filter removed 1
+   overlong  6e616d65c1bd64726f70   10 bytes in, 10 out  -> filter removed 0
+   `tr -d '}'` is a byte filter and the overlong brace contains no 0x7D byte,
+   so it passes through untouched. Any later stage that decodes leniently gets
+   back the character the filter was put there to remove.
+
+4. SO THE ORDER OF THE PIPELINE IS THE SECURITY PROPERTY
+
+   wrong:   cat input | tr -d '}' | do_something        # filter, then hope
+   right:   iconv -f UTF-8 -t UTF-8 < input | tr -d '}' | do_something
+
+   Validate at the top of the pipe and every stage below it is looking at bytes
+   that have exactly one reading. Filter first and you are guarding a spelling,
+   not a character - and there are three other spellings.

@@ -1,0 +1,43 @@
+1. ONE CHARACTER, FOUR SPELLINGS
+   The closing brace }  is U+007D, binary 0111 1101 -- seven payload bits.
+   Every template below carries those same seven bits. Only the padding grows.
+   1 byte :  7D            01111101
+   2 bytes:  C1 BD         11000001 10111101
+   3 bytes:  E0 81 BD      11100000 10000001 10111101
+   4 bytes:  F0 80 81 BD   11110000 10000000 10000001 10111101
+   The two-byte row is the slide's 0xC1 0xBD; the three-byte row is 0xE0 0x81 0xBD.
+
+2. WHAT PYTHON SAYS ABOUT EACH
+   7D           -> '}'
+   C1 BD        -> UnicodeDecodeError: invalid start byte, bytes 0..1
+   E0 81 BD     -> UnicodeDecodeError: invalid continuation byte, bytes 0..1
+   F0 80 81 BD  -> UnicodeDecodeError: invalid continuation byte, bytes 0..1
+   Only the shortest spelling is UTF-8. The other three are ill-formed --
+   not because the bits are wrong, but because a second spelling is not allowed.
+   Note WHERE each one dies: 0xC1 can only ever start an overlong form, so it is
+   refused as a start byte with no second byte read. 0xE0 and 0xF0 are legal start
+   bytes, so those two survive one byte longer and die on the byte after.
+
+3. THE DECODER EVERYBODY WRITES BY HAND
+   naive_decode(7D)               = '}'
+   naive_decode(C1 BD)            = '}'
+   naive_decode(E0 81 BD)         = '}'
+   naive_decode(F0 80 81 BD)      = '}'
+   Every bit handled correctly, every template read right -- and it takes all four.
+   That is the bug. It is not a typo -- it is the check nobody thought to add.
+
+4. WALKING A FILTER PAST THE GATE
+   plain  }  6E 61 6D 65 7D 64 72 6F 70     filter says: BLOCKED
+   overlong  6E 61 6D 65 C1 BD 64 72 6F 70  filter says: allowed
+   ...and then the sloppy decoder runs: 'name}drop'
+   The filter looked at bytes, the decoder produced characters, and the two
+   disagreed about what the input said. That gap is the whole attack.
+   RFC 3629 section 10 tells this story with '/' and a 2001 web-server worm.
+
+5. THIRTEEN BYTES THAT CANNOT APPEAR IN UTF-8 AT ALL
+   C0 C1 F5 F6 F7 F8 F9 FA FB FC FD FE FF
+   13 of 256, found by encoding every code point Unicode has and
+   collecting the bytes that never came out.
+   0xC0 and 0xC1 are missing because the only code points they could lead are
+   ones that fit in a single byte -- so they are overlong by construction.
+   0xF5 and up are missing because they lead past U+10FFFF, the top of Unicode.
