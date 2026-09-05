@@ -1,0 +1,32 @@
+1. PYTHON COUNTS CHARACTERS WHERE RUST COUNTS BYTES
+   name      value       len(str)          len(str.encode())
+   noodles   noodles      7 characters        7 bytes
+   oodles    oodles       6 characters        6 bytes
+   poodles   ಠ_ಠ          3 characters        7 bytes
+   Rust's String.len() is the RIGHT-hand column. Python's len() is the left one.
+   For 'noodles' they agree, which is why the difference stays hidden until it doesn't.
+
+2. THE TWO TYPES, AND THE TWO VERBS BETWEEN THEM
+   type(poodles)            = str
+   type(poodles.encode())   = bytes
+   poodles.encode().hex(' ') = E0 B2 A0 5F E0 B2 A0
+   .encode() str -> bytes    .decode() bytes -> str    and neither happens by itself
+
+3. WHERE THE CHECK HAPPENS: NOT AT CONSTRUCTION
+   truncated = b'\xe0\xb2\xa0_\xe0\xb2'
+   len(truncated) = 6 — Python built this object without complaint.
+   A bytes object has made no promise, so it can hold this forever.
+   truncated.decode() -> UnicodeDecodeError: unexpected end of data
+   start=4 end=6 — the same index Rust's valid_up_to() reports
+   Rust puts this check at String::from_utf8. Python puts it at .decode(). Same check, later.
+
+4. errors= IS THE CHOICE from_utf8_lossy MAKES FOR YOU
+   truncated.decode(errors='replace') -> 'ಠ_�'
+   truncated.decode(errors='ignore') -> 'ಠ_'
+   truncated.decode(errors='backslashreplace') -> 'ಠ_\\xe0\\xb2'
+   Rust offers exactly one of these in std: from_utf8_lossy, which is errors='replace'.
+
+5. THE ONE PYTHON MAKES EASY THAT RUST REFUSES
+   poodles[0] = 'ಠ'   — Python indexes by CHARACTER, so this just works
+   Rust will not compile s[0], because byte 0 is E0 and that is not a character.
+   Python's answer is friendlier and hides the question; Rust's is ruder and cannot.

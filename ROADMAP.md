@@ -24,7 +24,8 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [Encode and decode are verbs](03_Encodings/encode_and_decode_are_verbs/README.md) | written, 2026-09-05 — Python, Rust and shell |
 | [Mojibake](03_Encodings/mojibake/README.md) | written, 2026-09-05 — Python and shell; the Rust point is the previous page's |
 | [04_Python](04_Python/README.md) — five pages | stubs |
-| [05_Rust](05_Rust/README.md) — four pages | stubs |
+| [`String` is bytes that promise UTF-8](05_Rust/string_is_bytes_that_promise_utf8/README.md) | written, 2026-09-05 — Rust, Python and shell; the one figure in the repo, and `valid_up_to()` matched against Python's `UnicodeDecodeError.start` |
+| [05_Rust](05_Rust/README.md) — the other three pages | stubs |
 | [06_Terminal](06_Terminal/README.md) — four pages | stubs |
 | [A BOM in a CSV](07_Real_Data/bom_in_a_csv/README.md) | written, 2026-09-05 — Python and shell; the decision procedure, and the two platform fingerprints |
 | [07_Real_Data](07_Real_Data/README.md) — the other five pages | stubs |

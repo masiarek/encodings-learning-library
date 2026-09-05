@@ -6,7 +6,7 @@ Rust's `String` is a `Vec<u8>` with one promise attached — the bytes are valid
 
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|
-| 1 | [`String` is bytes that promise UTF-8](string_is_bytes_that_promise_utf8/README.md) | What is a `String`, under the hood, and why does `s[0]` not compile? | stub |
+| 1 | [`String` is bytes that promise UTF-8](string_is_bytes_that_promise_utf8/README.md) | What is a `String`, under the hood, and why does `s[0]` not compile? | **written** |
 | 2 | [`char` is four bytes](char_is_four_bytes/README.md) | Why do `len()`, `chars().count()` and `size_of::<char>()` all disagree? | stub |
 | 3 | [From UTF-8, and lossy](from_utf8_and_lossy/README.md) | What do the three ways of turning bytes into a `String` each promise? | stub |
 | 4 | [Slicing by byte](slicing_by_byte/README.md) | Why can `&s[0..2]` panic, and what do I call instead? | stub |

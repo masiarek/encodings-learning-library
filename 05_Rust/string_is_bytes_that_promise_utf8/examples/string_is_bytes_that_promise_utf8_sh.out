@@ -1,0 +1,23 @@
+1. THE SAME TWO STRINGS, WEIGHED BY A PROGRAM THAT HAS NO STRING TYPE
+   noodles    7 bytes on the pipe
+   ಠ_ಠ    7 bytes on the pipe
+   Two different strings, one of them 3 characters long, both 7 bytes.
+   Look at the ragged column above: printf '%-10s' pads to ten BYTES, not ten
+   characters, so the 3-character string is padded as though it were 7 wide.
+   The bug this library is about, biting this script, in its second line of output.
+
+2. AND HERE THEY ARE
+
+$ printf 'noodles' | xxd
+00000000: 6e6f 6f64 6c65 73                        noodles
+
+$ printf 'ಠ_ಠ' | xxd
+00000000: e0b2 a05f e0b2 a0                        ..._...
+
+   E0 B2 A0 is one character. So is the second E0 B2 A0. The 5F between them is '_'.
+
+3. THE PROMISE, CHECKED BY A TOOL INSTEAD OF A TYPE
+   iconv -f UTF-8 -t UTF-8 accepts or rejects; its exit status is the whole answer.
+   whole string     -> exit 0, valid UTF-8
+   last byte removed -> nonzero exit, NOT valid UTF-8
+   That is String::from_utf8 and bytes.decode(), as a process.
