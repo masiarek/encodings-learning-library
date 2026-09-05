@@ -682,4 +682,5 @@ Two Rust-specific things you will meet, both on purpose. `text_to_codepoints` wa
 - [Hex is a shorthand](../../01_Bits_and_Bytes/hex_is_a_shorthand/README.md) — why 4 bits per digit made hex easy and 3 will make this hard
 - [Baudot code ↗](https://en.wikipedia.org/wiki/Baudot_code) — CAPS is its *letters/figures shift*, ninety years on
 - [Variable-length quantity ↗](https://en.wikipedia.org/wiki/Variable-length_quantity) — T3V is one, on 3-bit units instead of bytes
+- [encoding_rs, *The API Design* ↗](https://hsivonen.fi/encoding_rs/#api) — how a production decoder answers the questions exercises 1–3 raise: a buffer that fills mid-character, and how the caller says the input has ended
 - [RESOURCES](../../RESOURCES.md) — the katas that ask you to write the real UTF-8 encoder next

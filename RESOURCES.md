@@ -41,6 +41,7 @@ One thing the thread does *not* settle, because nobody asked: that a code point 
 
 | | Use it for |
 |---|---|
+| [WHATWG Encoding Standard ↗](https://encoding.spec.whatwg.org/) | The set of encodings every browser actually implements — and a **closed** one: "User agents must not support any other encodings". A table of every encoding and every label a document may claim, which is where the web-only facts come from: `latin1`, `iso-8859-1` and even `ascii` are all synonyms for **windows-1252**, so byte `0x80` decodes as `€` under all three. The source for [Code pages](02_Characters/code_pages/README.md), [Windows-1252 vs Latin-1](07_Real_Data/windows_1252_vs_latin1/README.md) and [`file` guesses](06_Terminal/file_guesses/README.md). |
 | [RFC 3629: UTF-8 ↗](https://www.rfc-editor.org/rfc/rfc3629) | Six pages. The byte templates, the overlong prohibition, the surrogate prohibition. The only spec in this list short enough to read whole. |
 | [The Unicode Standard, chapter 2: General Structure ↗](https://www.unicode.org/versions/latest/core-spec/chapter-2/) | Code points vs code units vs encoding forms, stated by the people who defined them. Section 2.5 is the diagram. |
 | [Unicode FAQ: UTF-8, UTF-16, UTF-32 & BOM ↗](https://www.unicode.org/faq/utf_bom.html) | Every BOM question, answered by the consortium. |
@@ -48,6 +49,20 @@ One thing the thread does *not* settle, because nobody asked: that a code point 
 | [Wikipedia: UTF-8 ↗](https://en.wikipedia.org/wiki/UTF-8) · [Mojibake ↗](https://en.wikipedia.org/wiki/Mojibake) · [Windows-1252 ↗](https://en.wikipedia.org/wiki/Windows-1252) · [Byte order mark ↗](https://en.wikipedia.org/wiki/Byte_order_mark) · [Baudot code ↗](https://en.wikipedia.org/wiki/Baudot_code) · [ISO/IEC 2022 ↗](https://en.wikipedia.org/wiki/ISO/IEC_2022) · [Variable-length quantity ↗](https://en.wikipedia.org/wiki/Variable-length_quantity) · [Base64 ↗](https://en.wikipedia.org/wiki/Base64) | The tables. Wikipedia's UTF-8 page has the template table and the history of how the 6-byte form was cut to 4; the 1252 page has the 32-byte difference; Baudot and 2022 are the ancestors of the Tribit project's CAPS and ESC. |
 | [Microsoft: Code pages ↗](https://learn.microsoft.com/en-us/windows/win32/intl/code-pages) | Windows' numbering (1252, 1250, 65001 = UTF-8). SAP's numbering is different and is on [SAP code pages](07_Real_Data/sap_code_pages/README.md). |
 | [W3C: Character encodings for beginners ↗](https://www.w3.org/International/questions/qa-what-is-encoding) | The gentlest official page; the "what is an encoding" many tutorials paraphrase. |
+
+## When you want to see one implemented
+
+Not reading for now, and not a tutorial — the answer to *"how hard is all of this, really?"*, for after chapter 3 and for the [Tribit project](08_Build_Your_Own/tribit/README.md).
+
+[encoding_rs: a Web-Compatible Character Encoding Library in Rust ↗](https://hsivonen.fi/encoding_rs/) — Henri Sivonen, 2018-12-03, twenty-one thousand words on implementing the whole Encoding Standard above, in Rust, for Firefox. It has two halves and only the first is for a learner. Everything through *The API Design* is about the decisions the Tribit exercises walk straight into: what a decoder returns when the output buffer fills in the middle of a character, why the *caller* allocates the buffer, why "the input has ended" has to be an explicit flag rather than an empty slice, and what a BOM does to a decoder that has already started. The second half — SIMD, lookup-table compression, benchmarks — is for people optimising one, and can be skipped without loss.
+
+Three things worth taking from it even if you read no further:
+
+- **Age is not safety.** uconv, the library it replaced, was written in 1999 and had a buffer overrun found in it in 2016, in code added in 2001.
+- **The bugs were in the boring part.** The memory-safety problems clustered in the *legacy CJK* decoders — the encodings nobody thinks about, not UTF-8.
+- **Legacy encodings are not history.** Sivonen's own bank served him ISO-8859-15, and Japanese news sites still published new articles daily in Shift_JIS. That is the same argument as [07_Real_Data](07_Real_Data/README.md), made about the Web instead of about SAP.
+
+Dated in one place, and usefully so: it puts the Web at "over 90%" UTF-8 while questioning W3Techs' method for counting ISO-8859-1 apart from windows-1252 — a distinction the Encoding Standard says does not exist. W3Techs now says 99.0% (September 2026), so the *remaining* 1% is the whole reason that library is as large as it is. The crate is [`encoding_rs` on docs.rs ↗](https://docs.rs/encoding_rs/latest/encoding_rs/); it cannot appear in an example here, since Rust examples in this library are bare `rustc` with no crates.
 
 ## Language documentation
 
