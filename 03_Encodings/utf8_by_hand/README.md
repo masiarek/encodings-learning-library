@@ -12,7 +12,7 @@
 - Done by hand: `é` U+00E9 → `C3 A9`; `€` U+20AC → `E2 82 AC`; `😀` U+1F600 → `F0 9F 98 80`; and `A` → `41`, unchanged — why ASCII files are already UTF-8
 - Decoding by hand: read the lead byte, count the `1`s, strip the markers, concatenate the payload bits
 - Self-synchronising: why you can start reading in the middle of a file and find the next character boundary within three bytes
-- What *invalid* means: a lone continuation byte, an overlong `C0 80`, a surrogate, anything above U+10FFFF — and what each language does when it meets one
+- What *invalid* means: a lone continuation byte, an overlong `C0 80`, a surrogate, anything above U+10FFFF — the templates' own rules; *who checks them, and when*, is [Validation is a boundary](../validation_is_a_boundary/README.md)
 - Why `len()` in bytes is always ≥ the number of code points, and by how much for Polish, Russian, Chinese and emoji text
 
 ## The example it will run
@@ -21,6 +21,7 @@ Python: an encoder written from the templates, checked against `.encode('utf-8')
 
 ## See also
 
+- [Validation is a boundary](../validation_is_a_boundary/README.md) — the same templates, from the checker's side
 - [Unicode code points](../../02_Characters/unicode_code_points/README.md)
 - [UTF-16 and surrogates](../utf16_and_surrogates/README.md)
 - [Mojibake](../mojibake/README.md)

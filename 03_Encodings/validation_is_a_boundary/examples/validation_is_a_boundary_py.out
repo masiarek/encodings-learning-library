@@ -1,0 +1,40 @@
+1. THE THREE SEQUENCES FROM THE SLIDE, DECODED
+   1: 0111.1101                           U+007D: 0x7D            (})
+   2: 1100.0010 1010.1001                 U+00A9: 0xC2 0xA9       (©)
+   3: 1110.0010 1000.1001 1010.0000       U+2260: 0xE2 0x89 0xA0  (≠)
+   1 lead byte + 0/1/2 continuation bytes; the payload bits concatenate, nothing else moves.
+
+2. SIX WAYS TO BE INVALID, AND WHAT THE EXCEPTION KNOWS
+   89           start=0 end=1  invalid start byte         lone continuation byte
+   e2 89        start=0 end=2  unexpected end of data     truncated 3-byte sequence
+   c0 af        start=0 end=1  invalid start byte         overlong '/' — two bytes for U+002F
+   e0 80 af     start=0 end=1  invalid continuation byte  overlong '/' — the three-byte way
+   ed a0 80     start=0 end=1  invalid continuation byte  UTF-16 surrogate U+D800
+   f5 80 80 80  start=0 end=1  invalid start byte         above U+10FFFF
+   start is how far the bytes were text; the reason names which rule broke.
+   Two of the reasons are the rule table talking. C0 is an 'invalid start byte' because
+   C0 and C1 can only ever begin an overlong form, so no second byte is needed to reject it.
+   ED is a fine start byte, so ED A0 fails one byte later: after ED the only legal
+   second bytes are 80..9F, and A0 is where the surrogates begin.
+
+3. THE SAME BAD BYTES, FIVE ERROR HANDLERS
+   replace           -> 'caf� au lait'
+   ignore            -> 'caf au lait'
+   backslashreplace  -> 'caf\\xe9 au lait'
+   surrogateescape   -> 'caf\udce9 au lait'
+   strict (default)  -> raises at byte 3
+   Only 'strict' preserves the fact that something was wrong. The rest are decisions.
+
+4. AFTER THE BOUNDARY, PYTHON DOES NOT HOLD UTF-8 AT ALL
+   text                  = '≠'
+   len(text)             = 1   (code points)
+   len(text.encode())    = 3   (UTF-8 bytes, rebuilt on demand)
+   A str is a sequence of code points. The UTF-8 was consumed at decode() and is gone;
+   every .encode() builds it again. Nothing in the object records that a check ever ran.
+
+5. AND A str CAN HOLD WHAT UTF-8 CANNOT ENCODE
+   chr(0xD800)           = '\ud800'   <- built without complaint
+   .encode('utf-8')      -> UnicodeEncodeError: surrogates not allowed
+   chr(0x10FFFF)         = '\U0010ffff'   (the top of the range; chr(0x110000) is a ValueError)
+   So Python checks on the way IN and again on the way OUT, because between the two
+   the type allows a value no UTF-8 file can contain.

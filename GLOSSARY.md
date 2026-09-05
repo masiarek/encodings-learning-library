@@ -26,10 +26,13 @@ Short entries, each with the page that explains it in full. Alphabetical.
 | **mojibake** | Bytes decoded under the wrong table: `Ã©` is `C3 A9` (UTF-8 for `é`) read as Latin-1 | [Mojibake](03_Encodings/mojibake/README.md) |
 | **nibble** | Four bits; one hex digit; half a byte | [Hex is a shorthand](01_Bits_and_Bytes/hex_is_a_shorthand/README.md) |
 | **normalization** | Rewriting a string to one canonical code-point sequence (NFC, NFD …) so that two spellings of `é` compare equal | [Normalization](04_Python/normalization/README.md) |
+| **overlong form** | A code point written in more bytes than it needs — `C0 AF` for `/`, which the templates decode fine and every validator rejects, because one character must have exactly one encoding | [Validation is a boundary](03_Encodings/validation_is_a_boundary/README.md) |
 | **replacement character** | `U+FFFD` `�`, what a decoder writes in place of bytes it cannot read, if told to replace rather than raise | [Encode, decode and errors](04_Python/encode_decode_and_errors/README.md) |
+| **scalar value** | A code point that is *not* a surrogate: `U+0000`–`U+D7FF` and `U+E000`–`U+10FFFF`. What UTF-8 can encode, and exactly what Rust's `char` can hold | [Validation is a boundary](03_Encodings/validation_is_a_boundary/README.md) |
 | **surrogate pair** | Two 16-bit UTF-16 units (`D800–DBFF` then `DC00–DFFF`) standing for one code point above `U+FFFF` | [UTF-16 and surrogates](03_Encodings/utf16_and_surrogates/README.md) |
 | **Unicode** | The one numbering for every character in every script: 1,114,112 code points, 17 planes | [Unicode code points](02_Characters/unicode_code_points/README.md) |
 | **UTF-8** | The encoding that writes a code point as 1–4 bytes, leaves ASCII unchanged, and is what nearly every file today is | [UTF-8 by hand](03_Encodings/utf8_by_hand/README.md) |
 | **UTF-16** | The encoding that writes a code point as one or two 16-bit units; Windows, Java, JavaScript and SAP's internal form | [UTF-16 and surrogates](03_Encodings/utf16_and_surrogates/README.md) |
+| **validation** | Checking that a run of bytes really follows an encoding's rules. Cheap, done once, at the edge of a program — and what a language remembers about it afterwards is the whole difference between them | [Validation is a boundary](03_Encodings/validation_is_a_boundary/README.md) |
 | **Windows-1252** | Latin-1 with the 32 bytes `0x80–0x9F` reassigned to `€`, smart quotes and friends; SAP code page 1160 | [Windows-1252 vs Latin-1](07_Real_Data/windows_1252_vs_latin1/README.md) |
 | **xstring** | ABAP's byte-sequence type, displayed in hex; the counterpart of Python's `bytes`. `string` and `c` are characters | [Hex is a shorthand](01_Bits_and_Bytes/hex_is_a_shorthand/README.md) |

@@ -1,0 +1,27 @@
+1. C HOLDS WHAT UNICODE FORBIDS, AND NOTHING OBJECTS
+   char surrogate[] = "\xed\xa0\x80";   strlen = 3, sizeof = 4
+   char overlong[]  = "\xc0\xaf";        strlen = 2, sizeof = 3
+   Both compiled. Both have a length. printf("%s") would write those bytes to your
+   terminal unchanged. No function in the C library has an opinion about UTF-8,
+   because a char* is a run of bytes and that is the entire type.
+
+2. SO YOU WRITE THE CHECK YOURSELF - THE SAME INPUTS AS THE OTHER TWO EXAMPLES
+   7d           OK          valid_up_to=1  U+007D, the slide's line 1
+   c2 a9        OK          valid_up_to=2  U+00A9, the slide's line 2
+   e2 89 a0     OK          valid_up_to=3  U+2260, the slide's line 3
+   89           BAD         valid_up_to=0  lone continuation byte
+   e2 89        INCOMPLETE  valid_up_to=0  truncated 3-byte sequence
+   c0 af        BAD         valid_up_to=0  overlong '/'
+   ed a0 80     BAD         valid_up_to=0  UTF-16 surrogate U+D800
+   f5 80 80 80  BAD         valid_up_to=0  above U+10FFFF
+   e0 80 af     BAD         valid_up_to=0  overlong '/' the 3-byte way
+
+3. THE TWO ANSWERS THAT ARE NOT THE SAME ANSWER
+   BAD        = these bytes are not UTF-8 and never will be. Resynchronise.
+   INCOMPLETE = a valid prefix that ran out. Keep it and read more.
+   That is Rust's Some(n) and None, and the distinction a 'return false' validator loses.
+
+4. WHAT THE TALK IS ACTUALLY ABOUT
+   The loop above is ~30 lines and branches once per byte. A DFA replaces the branches
+   with a table lookup per byte; SSE intrinsics check 16 bytes per iteration.
+   Same rules, same verdicts - only the throughput changes.

@@ -1,0 +1,54 @@
+
+1. THE THREE SEQUENCES FROM THE SLIDE, AS BYTES ON A PIPE
+
+$ printf '\x7d' | xxd
+00000000: 7d                                       }
+$ printf '\xc2\xa9' | xxd
+00000000: c2a9                                     ..
+$ printf '\xe2\x89\xa0' | xxd
+00000000: e289 a0                                  ...
+
+2. iconv FROM UTF-8 TO UTF-8 IS A VALIDATOR: EXIT 0 MEANS YES
+
+   \x7d                     exit 0   U+007D
+   \xc2\xa9                 exit 0   U+00A9
+   \xe2\x89\xa0             exit 0   U+2260
+   \x89                     exit 1   lone continuation byte
+   \xe2\x89                 exit 1   truncated 3-byte sequence
+   \xc0\xaf                 exit 1   overlong '/'
+   \xe0\x80\xaf             exit 1   overlong '/' the 3-byte way
+   \xed\xa0\x80             exit 1   UTF-16 surrogate U+D800
+   \xfe                     exit 1   a byte that can never appear in UTF-8
+
+3. AND THE PLACE WHERE iconv IS NOT THE SAME VALIDATOR
+
+   \xf4\x90\x80\x80         exit 0   U+110000 - one past the top of Unicode
+   \xf5\x80\x80\x80         exit 0   U+140000
+   \xf7\xbf\xbf\xbf         exit 0   U+1FFFFF
+   Exit 0, on macOS and on Linux both: iconv accepts 4-byte sequences that encode
+   a number above U+10FFFF. Python and Rust reject all three. Neither side is
+   confused - iconv is checking the older, wider UTF-8 that ran to 31 bits, and
+   RFC 3629 (2003) capped the encoding at U+10FFFF to match what UTF-16 can name.
+   "Valid UTF-8" is not one question. Say which validator you asked.
+
+4. WHAT IT WROTE BEFORE IT STOPPED IS valid_up_to
+
+$ printf 'caf\xc3\xa9 \xe9 oops' | iconv -f UTF-8 -t UTF-8 | xxd
+00000000: 6361 66c3 a920                           caf.. 
+   The six bytes of "café " came through; the stream stopped at the bare \xe9.
+
+5. SO THE OFFSET OF THE FIRST BAD BYTE IS ONE PIPELINE
+
+   caf\xc3\xa9 \xe9 oops        valid up to byte 6
+   all \xe2\x89\xa0 good        valid up to byte 12
+   \xed\xa0\x80 at the front    valid up to byte 0
+   (wc -c on whatever iconv managed to emit. On a real file: iconv -f UTF-8 -t UTF-8 < f | wc -c)
+
+6. WHAT NO VALIDATOR CAN TELL YOU
+
+   iconv answers "are these bytes UTF-8?" and nothing else. It cannot tell you what
+   they ARE. Every byte sequence in existence is valid Latin-1, so a file that is
+   valid UTF-8 is usually valid under three other encodings too, meaning something
+   different in each. `file --mime-encoding` guesses; iconv verifies one guess at a
+   time. Validity is a property of the bytes. The encoding is a fact about where
+   they came from, and it is not in the file.

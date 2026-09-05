@@ -1,0 +1,50 @@
+1. THE THREE SEQUENCES FROM THE SLIDE, DECODED
+   1: 0111.1101                           U+007D: 0x7D            (})
+   2: 1100.0010 1010.1001                 U+00A9: 0xC2 0xA9       (©)
+   3: 1110.0010 1000.1001 1010.0000       U+2260: 0xE2 0x89 0xA0  (≠)
+   Same three sequences, same bits. UTF-8 is UTF-8; only the checking differs.
+
+2. SIX WAYS TO BE INVALID, AND WHAT Utf8Error KNOWS
+   89           valid_up_to=0  error_len=Some(1) lone continuation byte
+   e2 89        valid_up_to=0  error_len=None    truncated 3-byte sequence
+   c0 af        valid_up_to=0  error_len=Some(1) overlong '/' - two bytes for U+002F
+   e0 80 af     valid_up_to=0  error_len=Some(1) overlong '/' - the three-byte way
+   ed a0 80     valid_up_to=0  error_len=Some(1) UTF-16 surrogate U+D800
+   f5 80 80 80  valid_up_to=0  error_len=Some(1) above U+10FFFF
+   error_len = Some(n): definitely wrong, skip n bytes and resynchronise.
+   error_len = None:    the bytes ran out mid-sequence - a valid PREFIX, not an error yet.
+
+3. WHY THAT None MATTERS: THE SAME BYTES, ONE BYTE LATER
+   e2 89        -> Err(None)
+   e2 89 a0     -> Ok("≠")
+   A reader on a socket keeps the tail and waits. A reader that saw Some(n) throws it away.
+
+4. PAST THE BOUNDARY, THE TYPE REMEMBERS - SO NOTHING CHECKS AGAIN
+   s                    = "café ≠"
+   s.len()              = 9   (bytes - it is still a byte buffer)
+   s.chars().count()    = 6   (a full decode, but no validation)
+   s.as_bytes()         = [63 61 66 c3 a9 20 e2 89 a0]
+   `&str` MEANS valid UTF-8. chars() bottoms out in an unsafe fn whose safety comment
+   reads "bytes must produce a valid UTF-8-like string" - it trusts the type and skips
+   every range check. That saved scan is what the invariant buys.
+
+5. AND A char CANNOT HOLD WHAT UTF-8 CANNOT ENCODE
+   size_of::<char>()        = 4   (a Unicode scalar value, not a code unit)
+   char::from_u32(0xD800)   = None   <- the surrogate Python built happily
+   char::from_u32(0x110000) = None
+   char::from_u32(0x10FFFF) = Some('\u{10ffff}')
+   The gap Python leaves between decode and encode does not exist here: there is no
+   value of type char that encode_utf8 could fail on. It is not checked, it is unrepresentable.
+
+6. WHEN YOU WANT THE BYTES ANYWAY: lossy, AND THE unsafe DOOR
+   89           lossy -> "�"        1 replacement char(s)
+   e2 89        lossy -> "�"        1 replacement char(s)
+   c0 af        lossy -> "��"       2 replacement char(s)
+   e0 80 af     lossy -> "���"      3 replacement char(s)
+   ed a0 80     lossy -> "���"      3 replacement char(s)
+   f5 80 80 80  lossy -> "����"     4 replacement char(s)
+   How many U+FFFD you get is error_len, applied repeatedly - the Unicode 'maximal subpart' rule.
+   String::from_utf8(vec![E2,89]).unwrap_err().into_bytes() = [226, 137]
+   The failed conversion hands the bytes back rather than dropping them.
+   And str::from_utf8_unchecked is the same conversion with the check removed - `unsafe`,
+   because a wrong promise here is undefined behaviour, not a panic.
