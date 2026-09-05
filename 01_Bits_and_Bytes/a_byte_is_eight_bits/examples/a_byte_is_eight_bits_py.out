@@ -1,0 +1,36 @@
+1. EIGHT SWITCHES, EACH WORTH A POWER OF TWO
+   place value :  128   64   32   16    8    4    2    1
+     0         :    0    0    0    0    0    0    0    0    = 0
+     1         :    0    0    0    0    0    0    0    1    = 1
+     2         :    0    0    0    0    0    0    1    0    = 2
+    65         :    0    1    0    0    0    0    0    1    = 64 + 1
+   127         :    0    1    1    1    1    1    1    1    = 64 + 32 + 16 + 8 + 4 + 2 + 1
+   128         :    1    0    0    0    0    0    0    0    = 128
+   200         :    1    1    0    0    1    0    0    0    = 128 + 64 + 8
+   255         :    1    1    1    1    1    1    1    1    = 128 + 64 + 32 + 16 + 8 + 4 + 2 + 1
+
+2. HOW MANY PATTERNS EIGHT SWITCHES CAN MAKE
+   2 ** 8 = 256, so one byte holds 0..255 and nothing else.
+   256 needs a ninth bit: 100000000  (9 digits)
+
+3. TWO WAYS TO WRITE THE SAME NUMBER
+   format(65, '08b')      -> '01000001'   (number -> its eight bits)
+   int('01000001', 2)     -> 65            (eight bits -> number)
+   0b0100_0001            -> 65            (a binary literal in source)
+
+4. THE SAME BYTE, THREE READINGS
+   as a number    : 65
+   as bits        : 0100 0001
+   as ASCII text  : b'A'   (Python shows the byte 65 as the letter A)
+   Nothing in the byte says which reading is right. The program does.
+
+5. DECIMAL -> BINARY BY HAND, FOR 200
+   200 >= 128 -> write 1, subtract,  72 left
+    72 >= 64  -> write 1, subtract,   8 left
+     8 <  32  -> write 0
+     8 <  16  -> write 0
+     8 >= 8   -> write 1, subtract,   0 left
+     0 <  4   -> write 0
+     0 <  2   -> write 0
+     0 <  1   -> write 0
+   result: 1100 1000  == format(200, '08b') -> True

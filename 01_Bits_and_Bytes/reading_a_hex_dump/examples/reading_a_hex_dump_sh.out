@@ -1,0 +1,40 @@
+1. xxd: offset | sixteen bytes in hex, paired | the same bytes as ASCII
+
+$ printf 'Hi there\n' | xxd
+00000000: 4869 2074 6865 7265 0a                   Hi there.
+
+2. A LONGER INPUT: the offset column counts bytes, in hex, sixteen per line
+
+$ printf 'The quick brown fox jumps over it\n' | xxd
+00000000: 5468 6520 7175 6963 6b20 6272 6f77 6e20  The quick brown 
+00000010: 666f 7820 6a75 6d70 7320 6f76 6572 2069  fox jumps over i
+00000020: 740a                                     t.
+
+3. xxd -g1 ungroups the pairs; -c 8 changes the line width
+
+$ printf 'Hi there\n' | xxd -g1 -c 8
+00000000: 48 69 20 74 68 65 72 65  Hi there
+00000008: 0a                       .
+
+4. od: the POSIX tool. -An drops the offset, -tx1 = hex bytes, -c = as characters
+
+$ printf 'Hi there\n' | od -An -tx1 -c | tidy
+           48  69  20  74  68  65  72  65  0a
+           H   i       t   h   e   r   e  \n
+
+5. hexdump -C: the third classic; same three columns, |ascii| framed
+
+$ printf 'Hi there\n' | hexdump -C
+00000000  48 69 20 74 68 65 72 65  0a                       |Hi there.|
+00000009
+
+6. NON-ASCII BYTES: the right-hand column gives up and prints a dot
+
+$ printf 'caf\xc3\xa9\n' | xxd
+00000000: 6361 66c3 a90a                           caf...
+
+$ printf 'caf\xc3\xa9\n' | od -An -tx1 -c | tidy
+           63  61  66  c3  a9  0a
+           c   a   f 303 251  \n
+   Four letters, five bytes plus the newline: c a f, then TWO bytes c3 a9 for the e-acute.
+   od -c shows those two as octal (303 251) because it has no character to show.

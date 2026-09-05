@@ -1,0 +1,17 @@
+1. ONE VALUE, THREE SPELLINGS
+   decimal  65
+   binary   01000001      ({:08b} pads to eight digits)
+   as text  A           ({as char} reads the same byte as ASCII)
+
+2. THE WIDTH IS PART OF THE TYPE
+   size_of::<u8>()  = 1 byte
+   u8::MIN ..= u8::MAX = 0 ..= 255
+   255u8.checked_add(1) = None   (a ninth bit does not exist)
+   255u8.wrapping_add(1) = 0      (asked to wrap, it wraps)
+
+3. BINARY LITERALS AND PARSING
+   0b0100_0001                          = 65
+   u8::from_str_radix("01000001", 2)  = 65
+
+4. EVERY PLACE VALUE, READ OFF THE BITS OF 200
+   200 = 11001000 = 128 + 64 + 8

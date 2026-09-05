@@ -1,0 +1,21 @@
+1. b'A' IS A u8. 'A' IS A char. THEY AGREE ON THE NUMBER.
+   b'A' = 65   'A' as u32 = 65   equal: true
+   65u8 as char = 'A'   char::from(65u8) = 'A'
+
+2. THE LAYOUT TRICKS, IN BYTE ARITHMETIC
+   b'7' - b'0'        = 7
+   (b'a' ^ 0x20) as char = 'A'
+   b'q'.to_ascii_uppercase() = 'Q'   (std does the same bit flip, safely)
+
+3. std CAN ASK EVERY QUESTION ABOUT THE TABLE
+    'A'  0x41  ascii=true  alpha=true  digit=false ctrl=false upper=true
+    'a'  0x61  ascii=true  alpha=true  digit=false ctrl=false upper=false
+    '7'  0x37  ascii=true  alpha=false digit=true  ctrl=false upper=false
+    ' '  0x20  ascii=true  alpha=false digit=false ctrl=false upper=false
+   '\n'  0x0A  ascii=true  alpha=false digit=false ctrl=true  upper=false
+    'Ã'  0xC3  ascii=false alpha=false digit=false ctrl=false upper=false
+   0xC3 is not ASCII: the top bit is set. `as char` still gives SOMETHING — see the note on the page.
+
+4. A BYTE STRING IS ASCII WHEN EVERY BYTE IS
+   b"Hi there".is_ascii() = true
+   "caf\u{e9}".is_ascii()   = false

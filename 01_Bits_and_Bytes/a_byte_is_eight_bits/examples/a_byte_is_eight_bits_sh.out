@@ -1,0 +1,30 @@
+1. THE LETTER A, AS THE EIGHT BITS IT IS STORED AS
+
+$ printf 'A' | xxd -b
+00000000: 01000001                                               A
+
+2. THE SAME BYTE AS A DECIMAL, A HEX PAIR, AND A CHARACTER
+
+$ printf 'A' | od -An -tu1 -tx1 -c | tidy
+           65
+           41
+           A
+
+3. GOING THE OTHER WAY: WRITE THE BYTE 65 AND LET THE TERMINAL READ IT AS TEXT
+
+$ printf '\101'; echo        # octal escape: 101 base 8 = 65
+A
+
+$ printf '\x41'; echo        # hex escape:    41 base 16 = 65
+A
+
+4. BASH ARITHMETIC UNDERSTANDS BASES
+
+$ echo $(( 2#01000001 ))
+65
+
+$ echo $(( 2#11111111 ))
+255
+
+$ echo $(( 2#11111111 + 1 ))    # bash integers are 64-bit: no wrap here
+256

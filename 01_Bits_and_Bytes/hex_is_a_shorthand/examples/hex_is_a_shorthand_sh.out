@@ -1,0 +1,23 @@
+1. printf CONVERTS BETWEEN BASES
+
+$ printf '%x\n' 65          # decimal in, hex out
+41
+
+$ printf '%02X\n' 5         # two digits, uppercase
+05
+
+$ printf '%d\n' 0x41        # hex in, decimal out
+65
+
+2. BASH ARITHMETIC DOES KNOW EVERY BASE: base#digits
+
+$ echo $(( 16#41 ))  $(( 2#01000001 ))  $(( 8#101 ))
+65 65 65
+
+3. THE PICTURE VERSUS THE THING
+
+$ printf '41' | xxd            # the TEXT 41: two bytes, 0x34 and 0x31
+00000000: 3431                                     41
+
+$ printf '\x41' | xxd          # the BYTE 0x41: one byte, shown as 41, read as A
+00000000: 41                                       A

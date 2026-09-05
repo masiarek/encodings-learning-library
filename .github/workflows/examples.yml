@@ -1,0 +1,42 @@
+# Every example must run and print exactly what its recorded .out file says — and
+# every lesson page's generated output block must match that run.
+#
+# This library has three kinds of example, and this job runs all of them:
+#   examples/*.py   stdlib-only Python, run with the python3 on the runner
+#   examples/*.rs   compiled with bare rustc (no cargo, no crates)
+#   examples/*.sh   bash, using xxd / od / hexdump / iconv / printf
+#
+# It runs on BOTH Ubuntu and macOS on purpose. The shell examples call BSD tools
+# on a Mac and GNU tools on Linux, and an answer key that only matches one of
+# them is a machine-dependent example — the one kind no local run can catch.
+
+name: examples
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Make sure xxd is present (a separate package on Ubuntu)
+        if: runner.os == 'Linux'
+        run: command -v xxd || sudo apt-get install -y xxd
+      - name: Show toolchain
+        run: |
+          python3 --version
+          rustc --version
+          bash --version | head -1
+          xxd -v 2>&1 | head -1
+      - name: Run every example and check it against its answer key
+        run: python3 tools/run_examples.py --check
+      - name: Check that every external link is marked as external
+        run: python3 tools/check_link_style.py

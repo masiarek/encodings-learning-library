@@ -1,0 +1,44 @@
+1. THE AGREEMENT: ord() looks a character up, chr() looks a number up
+   'A'  ord ->  65   hex 41   bits 01000001   chr(65) -> 'A'
+   'a'  ord ->  97   hex 61   bits 01100001   chr(97) -> 'a'
+   '0'  ord ->  48   hex 30   bits 00110000   chr(48) -> '0'
+   ' '  ord ->  32   hex 20   bits 00100000   chr(32) -> ' '
+   '~'  ord -> 126   hex 7E   bits 01111110   chr(126) -> '~'
+
+2. THE TABLE HAS A LAYOUT, AND IT IS NOT AN ACCIDENT
+   digits start at 0x30:   0=30 1=31 2=32 3=33 4=34 5=35 6=36 7=37 8=38 9=39
+   uppercase at 0x41:      A=41 B=42 C=43 D=44 E=45 F=46 ...
+   lowercase at 0x61:      a=61 b=62 c=63 d=64 e=65 f=66 ...
+   'a' - 'A' = 32 = 0x20 = 0010 0000: one bit apart, bit 5
+
+3. TWO TRICKS THE LAYOUT MAKES POSSIBLE
+   digit value  : ord('7') - ord('0') = 7
+   flip case    : chr(ord('a') ^ 0x20) = 'A',  chr(ord('Q') ^ 0x20) = 'q'
+   force lower  : chr(ord('Q') | 0x20) = 'q'   force upper: chr(ord('q') & ~0x20) = 'Q'
+
+4. THE FIRST 32 ARE NOT LETTERS: control characters, from teletype days
+     0  0x00  NUL  '\x00'
+     7  0x07  BEL  '\x07'
+     8  0x08  BS   '\x08'
+     9  0x09  TAB  '\t'
+    10  0x0A  LF   '\n'
+    13  0x0D  CR   '\r'
+    27  0x1B  ESC  '\x1b'
+   127  0x7F  DEL  '\x7f'
+   TAB, LF and CR are the three you will meet every week; NUL ends a C string.
+
+5. ALL 128 FIT IN SEVEN BITS, SO THE TOP BIT OF EVERY ASCII BYTE IS 0
+   'A'    01000001
+   'z'    01111010
+   '~'    01111110
+   '\x7f' 01111111
+   The 128 patterns with the top bit SET are unclaimed by ASCII.
+   Everyone claimed them differently. That is the next lesson.
+
+6. THE WHOLE PRINTABLE TABLE, 32..126
+    32=   33=!  34="  35=#  36=$  37=%  38=&  39='  40=(  41=)  42=*  43=+  44=,  45=-  46=.  47=/
+    48=0  49=1  50=2  51=3  52=4  53=5  54=6  55=7  56=8  57=9  58=:  59=;  60=<  61==  62=>  63=?
+    64=@  65=A  66=B  67=C  68=D  69=E  70=F  71=G  72=H  73=I  74=J  75=K  76=L  77=M  78=N  79=O
+    80=P  81=Q  82=R  83=S  84=T  85=U  86=V  87=W  88=X  89=Y  90=Z  91=[  92=\  93=]  94=^  95=_
+    96=`  97=a  98=b  99=c 100=d 101=e 102=f 103=g 104=h 105=i 106=j 107=k 108=l 109=m 110=n 111=o
+   112=p 113=q 114=r 115=s 116=t 117=u 118=v 119=w 120=x 121=y 122=z 123={ 124=| 125=} 126=~

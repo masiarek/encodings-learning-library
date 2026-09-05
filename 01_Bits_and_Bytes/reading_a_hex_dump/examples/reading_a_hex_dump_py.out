@@ -1,0 +1,22 @@
+1. THE SAME THREE COLUMNS, BUILT BY HAND
+00000000  48 69 20 74 68 65 72 65 0a                       |Hi there.|
+
+2. OFFSETS ARE BYTE POSITIONS, IN HEX, SO LINE TWO STARTS AT 0x10 = 16
+00000000  54 68 65 20 71 75 69 63 6b 20 62 72 6f 77 6e 20  |The quick brown |
+00000010  66 6f 78 20 6a 75 6d 70 73 20 6f 76 65 72 20 69  |fox jumps over i|
+00000020  74 0a                                            |t.|
+
+3. WHAT 'PRINTABLE' MEANS: 32..126 get a character, everything else a dot
+00000000  74 61 62 09 68 65 72 65 0a 6e 65 77 20 6c 69 6e  |tab.here.new lin|
+00000010  65 00 6e 75 6c 6c 7f 64 65 6c                    |e.null.del|
+
+4. THE SHORTCUT: bytes.hex(' ') is the middle column on its own
+   b'caf\xc3\xa9'
+   63 61 66 c3 a9
+   len('café') = 4 characters, len(word) = 5 bytes
+
+5. HOW MANY BYTES IS THIS TEXT?  Count the hex pairs, or ask.
+   'Hi'              2 bytes   48 69
+   'Hi there\n'      9 bytes   48 69 20 74 68 65 72 65 0a
+   'café'            5 bytes   63 61 66 c3 a9
+   'naïve façade'   14 bytes   6e 61 c3 af 76 65 20 66 61 c3 a7 61 64 65

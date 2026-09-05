@@ -1,0 +1,29 @@
+1. CHARACTER -> NUMBER: printf's quote trick
+
+$ printf '%d\n' "'A"
+65
+
+$ printf '%d %d %d\n' "'a" "'0" "' "
+97 48 32
+
+2. NUMBER -> CHARACTER: an octal or hex escape
+
+$ printf '\101\102\103\n'
+ABC
+
+$ printf '\x61\x62\x63\n'
+abc
+
+3. THE CONTROL CHARACTERS ARE BYTES TOO: od shows them by name
+
+$ printf 'a\tb\nc\r\n' | od -An -tx1 -c | tidy
+           61  09  62  0a  63  0d  0a
+           a  \t   b  \n   c  \r  \n
+
+4. THE CASE BIT: tr flips ASCII letters by the same rule
+
+$ echo 'Hello, World' | tr 'a-z' 'A-Z'
+HELLO, WORLD
+
+5. THE WHOLE TABLE IS ON YOUR MACHINE: man ascii (not run here)
+   Try:  man ascii

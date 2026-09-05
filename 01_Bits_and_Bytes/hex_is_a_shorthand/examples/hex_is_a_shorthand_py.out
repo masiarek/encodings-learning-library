@@ -1,0 +1,47 @@
+1. ONE HEX DIGIT IS EXACTLY FOUR BITS (a 'nibble')
+   bits   hex   decimal
+   0000   0      0
+   0001   1      1
+   0010   2      2
+   0011   3      3
+   0100   4      4
+   0101   5      5
+   0110   6      6
+   0111   7      7
+   1000   8      8
+   1001   9      9
+   1010   A     10
+   1011   B     11
+   1100   C     12
+   1101   D     13
+   1110   E     14
+   1111   F     15
+
+2. SO A BYTE IS EXACTLY TWO HEX DIGITS, ALWAYS
+    65 = 0100 0001 = 41   (left nibble 4, right nibble 1)
+   200 = 1100 1000 = C8   (left nibble C, right nibble 8)
+   255 = 1111 1111 = FF   (left nibble F, right nibble F)
+     0 = 0000 0000 = 00   (left nibble 0, right nibble 0)
+    15 = 0000 1111 = 0F   (left nibble 0, right nibble F)
+    16 = 0001 0000 = 10   (left nibble 1, right nibble 0)
+   Compare decimal: 65 / 200 / 255 have no visible relation to their bits.
+
+3. THE SPELLINGS PYTHON GIVES YOU
+   hex(65)              -> '0x41'     (0x prefix, lowercase, no padding)
+   format(65, '02x')    -> '41'       (two digits, no prefix)
+   format(5, '02x')     -> '05'       (padding matters: '5' would not be a byte)
+   f'{65:#04x}'         -> '0x41'     (# adds the prefix, 04 counts the prefix)
+   int('41', 16)        -> 65         (text -> number, base 16)
+   0x41                 -> 65         (a hex literal in source)
+   bytes.fromhex('41')  -> b'A'       (text -> the byte itself)
+   b'A'.hex()           -> '41'       (the byte -> text)
+
+4. THE TRAP: THE TEXT '41' IS NOT THE BYTE 0x41
+   '41'.encode()        -> b'41'   which is the bytes 34 31
+   Two characters, '4' and '1', are two bytes: 0x34 and 0x31.
+   bytes.fromhex('41')  -> b'A'    one byte, value 0x41 = 65 = 'A'
+   A hex dump SHOWS you '41'; the file CONTAINS one byte. Never confuse the picture with the thing.
+
+5. WHY 0xFF IS THE NUMBER EVERYONE REMEMBERS
+   0xFF = 255 = 11111111 = every switch on = the biggest byte
+   0x100 = 256 = 100000000 = the first number that needs a second byte

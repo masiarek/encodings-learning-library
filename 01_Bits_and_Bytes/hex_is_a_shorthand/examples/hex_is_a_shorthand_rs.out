@@ -1,0 +1,17 @@
+1. FOUR FORMAT SPECIFIERS, ONE VALUE
+   {:x}     -> 41       lowercase hex, no padding
+   {:02X}   -> 41       uppercase, two digits — the byte-shaped one
+   {:#04x}  -> 0x41     prefix included, width counts the prefix
+   {:08b}   -> 01000001 the same eight bits, one per digit
+
+2. THREE LITERALS THAT ARE ALL 65
+   0x41 == 0b0100_0001 == b'A'  ->  true
+
+3. PARSING NEEDS THE BASE, AND REFUSES THE PREFIX
+   u8::from_str_radix("41", 16)   -> Ok(65)
+   u8::from_str_radix("0x41", 16) -> Err(ParseIntError { kind: InvalidDigit })
+   (the prefix is for humans; the parser wants digits only)
+
+4. A BYTE STRING PRINTED AS HEX, TWO DIGITS PER BYTE
+   "café" -> 63 61 66 c3 a9
+   five bytes for four letters; the last two are the é. Next chapter.
