@@ -2,7 +2,7 @@
 
 **Level:** reference · the outside reading
 
-Every link here was fetched and checked on **2026-09-05** (`GET`, following redirects; YouTube links through the oEmbed endpoint, which refuses a wrong video id). A link is listed because it teaches something a page here does not, or teaches it better; each entry says which. Anything advocacy-shaped says so.
+Every link here was fetched and checked on **2026-09-05** (`GET`, following redirects; YouTube links through the oEmbed endpoint, which refuses a wrong video id). A link is listed because it teaches something a page here does not, or teaches it better; each entry says which. Anything advocacy-shaped says so. The print books under [Books](#books) link to Open Library rather than a publisher: O'Reilly's own pages answer an automated `GET` with 403, and one author's domain has since been sold to a merchandise shop — which is the argument for checking a link by fetching it and reading what comes back, not by trusting the status line.
 
 ## The one answer everybody links
 
@@ -77,13 +77,40 @@ Dated in one place, and usefully so: it puts the Web at "over 90%" UTF-8 while q
 
 ## Books
 
-None of these is required. Listed in the order they would help someone at the start of this library.
+None of these is required, and only the first group is about this library's subject. That group follows the chapters; the three after it are the neighbouring subjects — what happens to a code point after it is decoded, what people do with text once the bytes are settled, and how a machine searches bytes quickly. Each is listed because it teaches something no page here does.
+
+### Alongside the chapters
 
 - **Charles Petzold, *Code: The Hidden Language of Computer Hardware and Software*, 2nd ed. (2022).** Chapters on Morse, Braille, bits, bytes and ASCII — the [01_Bits_and_Bytes](01_Bits_and_Bytes/README.md) chapter here, told slowly and beautifully. The companion site [codehiddenlanguage.com ↗](https://www.codehiddenlanguage.com/) has the interactive circuits.
 - **Luciano Ramalho, *Fluent Python*, 2nd ed. (2022), chapter 4 "Unicode Text Versus Bytes".** The best Python chapter on the subject: `str`/`bytes`, codecs, `errors=`, BOM, normalization, sorting, and dual-mode APIs. The code is linked above.
 - **Jim Blandy, Jason Orendorff & Leonora Tindall, *Programming Rust*, 2nd ed. (2021), chapter 17 "Strings and Text".** `char`, `String`, `&str`, formatting, and a proper section on Unicode — the Rust companion to Ramalho's chapter.
 - **Jukka Korpela, *Unicode Explained* (2006).** The thorough one: characters vs glyphs, the properties, the encodings, with more history than you will use. Old, but Unicode's foundations have not moved.
 - **Richard Gillam, *Unicode Demystified* (2002).** For when you want to know how normalization and bidi actually work. Reference, not reading.
+- **[Henry S. Warren Jr., *Hacker's Delight*, 2nd ed. (2012) ↗](https://openlibrary.org/isbn/9780321842688).** Chapter 1 as an adult: what can be done to a word of bits with no branch and no table. Not a book about text at all, but it is where a validator like the one in the `encoding_rs` write-up above gets its tricks, and it is the answer to "why would anyone care that a byte is eight bits".
+
+### Past where this library stops
+
+- **[Yannis Haralambous, *Fonts & Encodings* (2007) ↗](https://openlibrary.org/isbn/9780596102425).** Carries the chain one step further than any page here: code point → glyph → font file. This library ends when a decoder hands over a code point; this is the thousand pages about what has to happen next before anyone sees a character. The only book that covers the whole chain in one place.
+- **[Ken Lunde, *CJKV Information Processing*, 2nd ed. (2009) ↗](https://openlibrary.org/isbn/9780596514471).** The East Asian encodings in full — Shift_JIS, the EUC family, Big5, GB 18030 — and the writing systems that forced them to be shaped that way. [07_Real_Data](07_Real_Data/README.md) meets one legacy table at a time and [why UTF-8 won](09_History/why_utf8_won/README.md) spends a paragraph on the Shift_JIS trail-byte overlap; this is the whole family, told by the person who documented it. Worth knowing that these are the encodings where the `encoding_rs` post above found its memory-safety bugs — not UTF-8.
+- **[Victor Stinner, *Programming with Unicode* (free) ↗](https://unicodebook.readthedocs.io/).** The same problem posed in C, Python 2, Python 3 and the Win32 API side by side, by the CPython developer who did that work. The closest thing in print to this library's habit of showing one lesson in several languages — and it covers the platform this library does not, Windows.
+
+### Text processing, the next subject along
+
+Where this library asks *what the bytes are*, these ask what to do with them once that is settled.
+
+- **[Aho, Kernighan & Weinberger, *The AWK Programming Language*, 2nd ed. (2024) ↗](https://awk.dev/).** One small language whose entire subject is splitting text into fields and transforming it; the first edition (1988) is why every Unix machine still has `awk`. The site carries the table of contents, the programs, and the errata.
+- **[Dale Dougherty & Arnold Robbins, *sed & awk*, 2nd ed. (1997) ↗](https://openlibrary.org/isbn/9781565922259).** The stream-editing half, and the standard reference for `sed` — a tool with no manual worth reading.
+- **[Dale Dougherty & Tim O'Reilly, *Unix Text Processing* (1987, free) ↗](https://www.oreilly.com/openbook/utp/).** Where the pipeline idiom comes from. The tools are troff-era and the book is dated in every particular, but it is the one that argues text is a *stream you pass through filters* — the assumption underneath [06_Terminal](06_Terminal/README.md).
+- **[Brian Kernighan & Rob Pike, *The Practice of Programming* (1999) ↗](https://www.cs.princeton.edu/~bwk/tpop.webpage/).** Its Markov chapter writes one text program in C, C++, Java, Awk and Perl and then compares them — the cross-language reading this library does per lesson, done once at length. (Their earlier *Software Tools*, 1976, is the ancestor of the whole idea; out of print and listed here without a link.)
+
+### Searching bytes, a different subject again
+
+No page here asks how `grep` or `rg` is fast. That question starts in these.
+
+- **[Dan Gusfield, *Algorithms on Strings, Trees, and Sequences* (1997) ↗](https://openlibrary.org/isbn/9780521585194).** The rigorous one: exact matching, suffix trees, approximate matching, and the bioinformatics that drove it. A textbook, and priced like one.
+- **[Gonzalo Navarro & Mathieu Raffinot, *Flexible Pattern Matching in Strings* (2002) ↗](https://www.dcc.uchile.cl/~gnavarro/FPMbook/).** Bit-parallel matching — packing a search into the bits of a single machine word, which is what makes a modern search tool quick. The one place chapter 1's bit view turns out to be load-bearing. The authors' page has the code and slides.
+- **[Christian Charras & Thierry Lecroq, *Exact String Matching Algorithms* (free) ↗](http://monge.univ-mlv.fr/~lecroq/string/).** Thirty-odd algorithms, each with C source and an animation of it running. Reference, not reading. Served over plain `http` from the authors' old university host, which is the only copy.
+- **[Witten, Moffat & Bell, *Managing Gigabytes*, 2nd ed. (1999) ↗](https://openlibrary.org/isbn/9781558605701).** Indexing and compression treated as one problem: how a full-text index over a large corpus is built, and then squeezed. Written before machine learning took the word "search", and none the worse for it.
 
 ## Videos
 
