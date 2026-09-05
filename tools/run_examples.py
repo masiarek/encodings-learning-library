@@ -45,6 +45,7 @@ cannot see repo-wide drift, which is the whole job there.
 from __future__ import annotations
 
 import argparse
+import difflib
 import os
 import re
 import subprocess
@@ -324,8 +325,18 @@ def main() -> int:
             if not key.exists():
                 failures.append(f"{src.relative_to(REPO)}: no answer key — run with --update")
                 continue
-            if key.read_text(encoding="utf-8") != actual:
+            recorded = key.read_text(encoding="utf-8")
+            if recorded != actual:
                 failures.append(f"{src.relative_to(REPO)}: output differs from {key.name}")
+                # Print the diff here, not just the verdict: on a CI runner the
+                # difference is usually a BSD/GNU tool quirk, and the log is the
+                # only place anyone can see which line it was.
+                print(f"  DIFF      {src.relative_to(REPO)} (recorded -> actual)")
+                for line in difflib.unified_diff(
+                    recorded.splitlines(), actual.splitlines(),
+                    fromfile=key.name, tofile="actual", lineterm="", n=1,
+                ):
+                    print("    " + line)
             else:
                 print(f"  ok        {src.relative_to(REPO)}")
 
