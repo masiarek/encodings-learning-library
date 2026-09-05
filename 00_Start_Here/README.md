@@ -31,6 +31,8 @@ flowchart LR
     P --> D["07 Real data<br/>SAP code pages, BOM, CRLF…"]
     R --> D
     T --> D
+    E --> X["08 Build your own<br/>the Tribit project"]
+    R --> X
 ```
 
 | Chapter | What it settles | Written / stub |
@@ -42,6 +44,7 @@ flowchart LR
 | [05_Rust](../05_Rust/README.md) | `String` is bytes that promise UTF-8; `char` is a code point; the three `from_utf8`s; byte slicing | 0 / 4 |
 | [06_Terminal](../06_Terminal/README.md) | `printf`, `iconv`, the locale, and why `file` only guesses | 0 / 4 |
 | [07_Real_Data](../07_Real_Data/README.md) | SAP code pages, mojibake repair, the BOM in a CSV, byte-width fields, 1252 vs Latin-1, CRLF | 0 / 6 |
+| [08_Build_Your_Own](../08_Build_Your_Own/README.md) | A project: the Tribit format — your own code points, a 3-bit variable-length encoding, a container, a viewer — specified with test vectors for a Rust implementation | 1 / 0 |
 
 A **stub** is a page with its questions written down and no example behind it yet; it carries a notice saying so. Stubs exist so the plan has a shape and every page has its permanent address before the prose does. They are written in the order above, and the [ROADMAP](../ROADMAP.md) says which is next.
 
@@ -63,6 +66,12 @@ One lesson per sitting. The chapters are short on purpose.
 ## Where C fits
 
 C is the language where a string *is* the bytes: `char` is one byte, `strlen` counts bytes up to the first NUL, and `"café"` is five bytes plus a terminator with nothing in the language that knows about characters. That is the truth Python hides behind `str` and Rust enforces with `&str` versus `&[u8]`, so one look at it in C makes both of the others click. It is not a fourth track here — the pointer arithmetic and `wchar_t` would cost more than they teach — but a short *The C view* aside is planned for the lessons where it sharpens the point: [A character is a number](../02_Characters/a_character_is_a_number/README.md), [Control characters](../02_Characters/control_characters/README.md) (NUL), and [UTF-8 by hand](../03_Encodings/utf8_by_hand/README.md).
+
+## When you want more than the lessons
+
+[RESOURCES.md](../RESOURCES.md) is the outside reading: the one Stack Overflow answer everybody links, the two articles every programmer is told to read, the books, four videos, the tools that let you look a character up, and the katas that ask you to write the real UTF-8 encoder. Every link on it was checked the day it was added.
+
+The project in [08_Build_Your_Own](../08_Build_Your_Own/README.md) can be started any time after chapter 1; its layers 2 and 3 need nothing but bits, and layer 1 is more fun once chapter 2 has explained what a code page is.
 
 ## Siblings
 

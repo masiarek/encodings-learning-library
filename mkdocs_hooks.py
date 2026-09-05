@@ -55,7 +55,9 @@ NAV_ORDER: dict[str, list[str]] = {
         "05_Rust",
         "06_Terminal",
         "07_Real_Data",
+        "08_Build_Your_Own",
         "GLOSSARY.md",
+        "RESOURCES.md",
         "ROADMAP.md",
     ],
     # From one switch to one byte, then how to write a byte down, then how to
@@ -105,6 +107,10 @@ NAV_ORDER: dict[str, list[str]] = {
         "iconv",
         "locale_and_lc_ctype",
         "file_guesses",
+    ],
+    "08_Build_Your_Own": [
+        "README.md",
+        "tribit",
     ],
     "07_Real_Data": [
         "README.md",

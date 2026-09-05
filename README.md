@@ -33,8 +33,9 @@ No page here hand-types what a program prints. Each lesson links real example fi
 | [05_Rust](05_Rust/README.md) | What is the promise a `String` makes, and which rules are that promise being kept? |
 | [06_Terminal](06_Terminal/README.md) | How do I see, make, and re-encode bytes with no language at all? |
 | [07_Real_Data](07_Real_Data/README.md) | The six shapes this takes when a file crosses an SAP interface |
+| [08_Build_Your_Own](08_Build_Your_Own/README.md) | A project: design a silly 3-bit text format with its own code points, then implement it in Rust against a reference that prints every expected result |
 
-Chapter 1 and the first page of chapter 2 are written; the rest are **stubs** — each page's questions written down, with a notice, and no example behind it yet. [ROADMAP.md](ROADMAP.md) says what is next.
+Chapter 1, the first page of chapter 2, and the chapter 8 project are written; the rest are **stubs** — each page's questions written down, with a notice, and no example behind it yet. [ROADMAP.md](ROADMAP.md) says what is next.
 
 ## Why three languages
 
@@ -78,6 +79,6 @@ python3 tools/run_examples.py --check    # write nothing, fail on drift (what CI
 
 There is a second block kind, `source:`, which pastes the program itself for pages where the code *is* the lesson.
 
-Conventions for anyone writing a page: [CONTRIBUTING.md](CONTRIBUTING.md). Terms: [GLOSSARY.md](GLOSSARY.md). What is planned and deliberately not written yet: [ROADMAP.md](ROADMAP.md).
+Conventions for anyone writing a page: [CONTRIBUTING.md](CONTRIBUTING.md). Terms: [GLOSSARY.md](GLOSSARY.md). Links, books, videos, tools and katas, each one checked: [RESOURCES.md](RESOURCES.md). What is planned and deliberately not written yet: [ROADMAP.md](ROADMAP.md).
 
 <!-- --8<-- [end:below-hero] -->

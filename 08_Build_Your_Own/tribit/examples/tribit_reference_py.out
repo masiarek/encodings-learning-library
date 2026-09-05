@@ -1,0 +1,240 @@
+1. THE TRIBITSET TABLE (our code points)
+    0  000000  1 unit   ' '
+    1  000001  1 unit   'e'
+    2  000010  1 unit   't'
+    3  000011  1 unit   'a'
+    4  000100  2 units  'o'
+    5  000101  2 units  'i'
+    6  000110  2 units  'n'
+    7  000111  2 units  's'
+    8  001000  2 units  'h'
+    9  001001  2 units  'r'
+   10  001010  2 units  'd'
+   11  001011  2 units  'l'
+   12  001100  2 units  'c'
+   13  001101  2 units  'u'
+   14  001110  2 units  'm'
+   15  001111  2 units  'w'
+   16  010000  3 units  'f'
+   17  010001  3 units  'g'
+   18  010010  3 units  'y'
+   19  010011  3 units  'p'
+   20  010100  3 units  'b'
+   21  010101  3 units  'v'
+   22  010110  3 units  'k'
+   23  010111  3 units  'j'
+   24  011000  3 units  'x'
+   25  011001  3 units  'q'
+   26  011010  3 units  'z'
+   27  011011  3 units  '0'
+   28  011100  3 units  '1'
+   29  011101  3 units  '2'
+   30  011110  3 units  '3'
+   31  011111  3 units  '4'
+   32  100000  3 units  '5'
+   33  100001  3 units  '6'
+   34  100010  3 units  '7'
+   35  100011  3 units  '8'
+   36  100100  3 units  '9'
+   37  100101  3 units  'ą'
+   38  100110  3 units  'ć'
+   39  100111  3 units  'ę'
+   40  101000  3 units  'ł'
+   41  101001  3 units  'ń'
+   42  101010  3 units  'ó'
+   43  101011  3 units  'ś'
+   44  101100  3 units  'ź'
+   45  101101  3 units  'ż'
+   46  101110  3 units  'é'
+   47  101111  3 units  '\n'
+   48  110000  3 units  '.'
+   49  110001  3 units  ','
+   50  110010  3 units  '!'
+   51  110011  3 units  '?'
+   52  110100  3 units  "'"
+   53  110101  3 units  '-'
+   54  110110  3 units  ':'
+   55  110111  3 units  ';'
+   56  111000  3 units  '('
+   57  111001  3 units  ')'
+   58  111010  3 units  '"'
+   59  111011  3 units  '€'
+   60  111100  3 units  '😀'
+   61  111101  3 units  CAPS  (next letter is uppercase)
+   62  111110  3 units  RESERVED (an encoder must refuse it)
+   63  111111  3 units  ESC   (next number is a Unicode scalar)
+
+2. T3V: ONE NUMBER AS UNITS   (unit = [more][2 bits], top group first)
+          0 =      0x0  ->  0           ( 1 unit )  000
+          1 =      0x1  ->  1           ( 1 unit )  001
+          3 =      0x3  ->  3           ( 1 unit )  011
+          4 =      0x4  ->  50          ( 2 units)  101 000
+          5 =      0x5  ->  51          ( 2 units)  101 001
+         15 =      0xf  ->  73          ( 2 units)  111 011
+         16 =     0x10  ->  540         ( 3 units)  101 100 000
+         63 =     0x3f  ->  773         ( 3 units)  111 111 011
+         64 =     0x40  ->  5440        ( 4 units)  101 100 100 000
+        255 =     0xff  ->  7773        ( 4 units)  111 111 111 011
+        256 =    0x100  ->  54440       ( 5 units)  101 100 100 100 000
+        233 =     0xe9  ->  7661        ( 4 units)  111 110 110 001
+       8364 =   0x20ac  ->  6446670     ( 7 units)  110 100 100 110 110 111 000
+      65535 =   0xffff  ->  77777773    ( 8 units)  111 111 111 111 111 111 111 011
+      65536 =  0x10000  ->  544444440   ( 9 units)  101 100 100 100 100 100 100 100 000
+     128512 =  0x1f600  ->  577564440   ( 9 units)  101 111 111 101 110 100 100 100 000
+    1114111 = 0x10ffff  ->  54477777773 (11 units)  101 100 100 111 111 111 111 111 111 111 011
+
+3. T3V DECODER REFUSALS
+   truncated     [5]  -> truncated T3V at unit 0
+   truncated     [5, 6]  -> truncated T3V at unit 0
+   overlong 0    [4, 0]  -> overlong T3V at unit 0
+   overlong 1    [4, 1]  -> overlong T3V at unit 0
+   not a tribit  [8]  -> unit 8 is not a tribit
+   (44 0 = 100 100 000 -> 0 is overlong too: the check is on the FIRST unit only,
+    because a later 100 carries two real zero bits.)
+
+4. TEXT, END TO END
+   text        ''
+   code points []
+   units (oct)
+   bits by 3
+   bits by 4      <- nibbles: the seams no longer line up
+   bits by 8
+   packed      54 33 00   (T3 magic, pad=0, then 0 bytes)
+   round trip  True
+   payload bytes: Tribit 0   UTF-8 0   UTF-16 0
+
+   text        'e'
+   code points [1]
+   units (oct) 1
+   bits by 3   001
+   bits by 4   001   <- nibbles: the seams no longer line up
+   bits by 8   001
+   packed      54 33 05 20   (T3 magic, pad=5, then 1 bytes)
+   round trip  True
+   payload bytes: Tribit 1   UTF-8 1   UTF-16 2
+
+   text        'a'
+   code points [3]
+   units (oct) 3
+   bits by 3   011
+   bits by 4   011   <- nibbles: the seams no longer line up
+   bits by 8   011
+   packed      54 33 05 60   (T3 magic, pad=5, then 1 bytes)
+   round trip  True
+   payload bytes: Tribit 1   UTF-8 1   UTF-16 2
+
+   text        'café'
+   code points [12, 3, 16, 46]
+   units (oct) 703540672
+   bits by 3   111 000 011 101 100 000 110 111 010
+   bits by 4   1110 0001 1101 1000 0011 0111 010   <- nibbles: the seams no longer line up
+   bits by 8   11100001 11011000 00110111 010
+   packed      54 33 05 e1 d8 37 40   (T3 magic, pad=5, then 4 bytes)
+   round trip  True
+   payload bytes: Tribit 4   UTF-8 5   UTF-16 8
+
+   text        'Hello, World!'
+   code points [61, 8, 1, 11, 11, 4, 49, 0, 61, 15, 4, 9, 11, 10, 50]
+   units (oct) 77160163635074107717350616362742
+   bits by 3   111 111 001 110 000 001 110 011 110 011 101 000 111 100 001 000 111 111 001 111 011 101 000 110 001 110 011 110 010 111 100 010
+   bits by 4   1111 1100 1110 0000 0111 0011 1100 1110 1000 1111 0000 1000 1111 1100 1111 0111 0100 0110 0011 1001 1110 0101 1110 0010   <- nibbles: the seams no longer line up
+   bits by 8   11111100 11100000 01110011 11001110 10001111 00001000 11111100 11110111 01000110 00111001 11100101 11100010
+   packed      54 33 00 fc e0 73 ce 8f 08 fc f7 46 39 e5 e2   (T3 magic, pad=0, then 12 bytes)
+   round trip  True
+   payload bytes: Tribit 12   UTF-8 13   UTF-16 26
+
+   text        'Zażółć gęślą jaźń'
+   code points [61, 26, 3, 45, 42, 40, 38, 0, 17, 39, 43, 11, 37, 0, 23, 3, 44, 41]
+   units (oct) 771562367166266065205416536636365105533670661
+   bits by 3   111 111 001 101 110 010 011 110 111 001 110 110 010 110 110 000 110 101 010 000 101 100 001 110 101 011 110 110 011 110 011 110 101 001 000 101 101 011 011 110 111 000 110 110 001
+   bits by 4   1111 1100 1101 1100 1001 1110 1110 0111 0110 0101 1011 0000 1101 0101 0000 1011 0000 1110 1010 1111 0110 0111 1001 1110 1010 0100 0101 1010 1101 1110 1110 0011 0110 001   <- nibbles: the seams no longer line up
+   bits by 8   11111100 11011100 10011110 11100111 01100101 10110000 11010101 00001011 00001110 10101111 01100111 10011110 10100100 01011010 11011110 11100011 0110001
+   packed      54 33 01 fc dc 9e e7 65 b0 d5 0b 0e af 67 9e a4 5a de e3 62   (T3 magic, pad=1, then 17 bytes)
+   round trip  True
+   payload bytes: Tribit 17   UTF-8 26   UTF-16 34
+
+   text        '€'
+   code points [59]
+   units (oct) 763
+   bits by 3   111 110 011
+   bits by 4   1111 1001 1   <- nibbles: the seams no longer line up
+   bits by 8   11111001 1
+   packed      54 33 07 f9 80   (T3 magic, pad=7, then 2 bytes)
+   round trip  True
+   payload bytes: Tribit 2   UTF-8 3   UTF-16 2
+
+   text        '😀'
+   code points [60]
+   units (oct) 770
+   bits by 3   111 111 000
+   bits by 4   1111 1100 0   <- nibbles: the seams no longer line up
+   bits by 8   11111100 0
+   packed      54 33 07 fc 00   (T3 magic, pad=7, then 2 bytes)
+   round trip  True
+   payload bytes: Tribit 2   UTF-8 4   UTF-16 4
+
+   text        'é'
+   code points [1, 63, 769]
+   units (oct) 177374441
+   bits by 3   001 111 111 011 111 100 100 100 001
+   bits by 4   0011 1111 1011 1111 0010 0100 001   <- nibbles: the seams no longer line up
+   bits by 8   00111111 10111111 00100100 001
+   packed      54 33 05 3f bf 24 20   (T3 magic, pad=5, then 4 bytes)
+   round trip  True
+   payload bytes: Tribit 4   UTF-8 3   UTF-16 4
+
+   text        'AB'
+   code points [61, 3, 61, 20]
+   units (oct) 7713771550
+   bits by 3   111 111 001 011 111 111 001 101 101 000
+   bits by 4   1111 1100 1011 1111 1100 1101 1010 00   <- nibbles: the seams no longer line up
+   bits by 8   11111100 10111111 11001101 101000
+   packed      54 33 02 fc bf cd a0   (T3 magic, pad=2, then 4 bytes)
+   round trip  True
+   payload bytes: Tribit 4   UTF-8 2   UTF-16 4
+
+   text        'ü'
+   code points [63, 252]
+   units (oct) 7737770
+   bits by 3   111 111 011 111 111 111 000
+   bits by 4   1111 1101 1111 1111 1100 0   <- nibbles: the seams no longer line up
+   bits by 8   11111101 11111111 11000
+   packed      54 33 03 fd ff c0   (T3 magic, pad=3, then 3 bytes)
+   round trip  True
+   payload bytes: Tribit 3   UTF-8 2   UTF-16 2
+
+   text        '\t'
+   code points [63, 9]
+   units (oct) 77361
+   bits by 3   111 111 011 110 001
+   bits by 4   1111 1101 1110 001   <- nibbles: the seams no longer line up
+   bits by 8   11111101 1110001
+   packed      54 33 01 fd e2   (T3 magic, pad=1, then 2 bytes)
+   round trip  True
+   payload bytes: Tribit 2   UTF-8 1   UTF-16 2
+
+5. UNPACK REFUSALS
+   bad magic        58 33 00       -> bad magic b'X3'
+   pad > 7          54 33 08 00    -> pad count 8 > 7
+   pad, no payload  54 33 02       -> pad count with no payload
+   pad bits set     54 33 02 03    -> pad bits are not zero
+   bits not /3      54 33 00 00    -> 8 payload bits is not a multiple of 3
+
+6. CODE POINT REFUSALS
+   CAPS at end        [61]  -> CAPS at end of text
+   CAPS before digit  [61, 27]  -> CAPS before non-letter code point 27
+   ESC at end         [63]  -> ESC at end of text
+   ESC to surrogate   [63, 55296]  -> ESC to invalid Unicode scalar 0xd800
+   ESC past Unicode   [63, 1114112]  -> ESC to invalid Unicode scalar 0x110000
+   reserved           [62]  -> reserved code point 62
+
+7. THE SAME TEXT UNDER THREE CODE-POINT ASSIGNMENTS, ONE ENCODING
+   Tribit  = T3V over OUR code points;  T3U = T3V over UNICODE code points (no table)
+   text                  Tribit   T3U  UTF-8  UTF-16   (payload bytes)
+   'e'                        1     2      1       2
+   'the'                      2     5      3       6
+   'café'                     4     6      5       8
+   'Hello, World!'           12    19     13      26
+   'Zażółć gęślą jaźń'       17    28     26      34
+   '😀'                        2     4      4       4
+   Same encoding, different numbering: the table is where the bytes were saved or spent.
