@@ -1,0 +1,51 @@
+
+1. ONE BYTE ABOVE 0x7F, UNDER FIVE TABLES
+------------------------------------------------------------------------
+
+   the byte e9, and what each rulebook says it is:
+     table        UTF-8 out   character
+     ISO-8859-1   c3a9  é
+     ISO-8859-2   c3a9  é
+     CP437        ce98  Θ
+     CP850        c39a  Ú
+     KOI8-R       d098  И
+
+   Five tables, four answers. Nothing about the byte changed.
+
+2. THE SAME FIVE TABLES, BELOW 0x7F
+------------------------------------------------------------------------
+
+   the byte 41:
+     ISO-8859-1   41  A
+     ISO-8859-2   41  A
+     CP437        41  A
+     CP850        41  A
+     KOI8-R       41  A
+
+   41 is A in all of them, and 41 on the way out too. Every code page
+   keeps the 1963 agreement for the bottom half; that is what makes
+   them code PAGES rather than unrelated tables.
+
+3. ONE POLISH WORD, TWO TABLES THAT CAN BOTH WRITE IT
+------------------------------------------------------------------------
+
+   starting from UTF-8:
+     00000000: c581 c3b3 64c5 ba                        ....d..
+   $ iconv -f UTF-8 -t ISO-8859-2
+     00000000: a3f3 64bc                                ..d.
+   $ iconv -f UTF-8 -t CP1250
+     00000000: a3f3 649f                                ..d.
+
+   Same word, same length, different bytes -- they agree on Ł and ó and
+   part company on ź. Two files, four bytes each, and no way to tell
+   them apart except by being told.
+
+4. SO ASK THE PIPE WHICH ONE IT HAS
+------------------------------------------------------------------------
+
+     bytes: a3f364bc
+     table: 
+
+   There is no second line. `file`, `xxd` and every other tool can
+   show you the bytes and none of them can tell you the table, because
+   it was never written down anywhere. Somebody has to say.

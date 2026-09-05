@@ -2,25 +2,296 @@
 
 **Level:** 101 → 201 · for anyone starting from zero
 
-> **Stub — an outline, not a lesson.** There is no runnable example behind this page yet, so nothing on it has been through [the check that backs every other claim in this library](../../CONTRIBUTING.md). The bullets below are the questions the finished page has to answer.
+**One line:** A code page is ASCII plus a second opinion: every one of them keeps the first 128 numbers and disagrees with every other one about the second 128 — so a byte above `0x7F` means nothing until somebody names a table, and the tables agree *just* enough that the wrong one reads like a typo.
 
-**One line:** Every code page agrees with ASCII on the first 128 numbers and disagrees with every other code page on the second 128 — so a byte above `0x7F` means nothing until you know which table it was written under.
+## What a code page is
 
-## What the finished page has to answer
+[ASCII](../a_character_is_a_number/README.md) used seven bits and settled 128 numbers. Files are made of eight-bit [bytes](../../01_Bits_and_Bytes/a_byte_is_eight_bits/README.md), so 128 patterns were left over — and every country, vendor and operating system filled them in for itself. A **code page** is one of those fill-ins: a 256-entry table that agrees with ASCII below `0x80` and does as it pleases above.
 
-- Latin-1 (ISO-8859-1): the one table where byte value and Unicode code point are the same number, 0..255
-- Windows-1252: Latin-1 with 32 of its slots reassigned (`0x80` is €, `0x93`/`0x94` are the smart quotes) — the source of most "almost right" text
-- Latin-2 (ISO-8859-2) and Windows-1250: where `ą ę ł ś ż` lived before UTF-8, and why a Polish file from 2005 is unreadable under Latin-1
-- CP437: the DOS table, box-drawing characters and all; CP850; the mainframe's EBCDIC, which does not even agree on `A`
-- The demonstration: one byte, `0xE9`, decoded under six tables, giving six different characters — and `0x41` giving `A` under all of them
-- How SAP names these tables by number (1100, 1160, 1401 …) — the full table is in [SAP code pages](../../07_Real_Data/sap_code_pages/README.md)
+That shared bottom half is the whole reason these files were interchangeable at all. Source code, CSV commas, HTTP headers, English prose — all of it lives below `0x80` and survives every table swap intact. It is also why the problem stayed invisible in the English-speaking world for a decade: nothing an American office typed ever went above the line.
 
-## The example it will run
+## The ones you will actually meet
 
-Python: `bytes([0xE9]).decode(cp)` across `latin-1`, `cp1252`, `iso8859_2`, `cp437`, `cp1250`, `koi8_r`; shell: `iconv` between two of them.
+| Table | Also called | Its second half is for | Where you meet it |
+|---|---|---|---|
+| **Latin-1** | ISO-8859-1 | Western Europe: `é ü ñ å ø` | HTTP's old default; the identity table (below) |
+| **Windows-1252** | CP1252, "ANSI" | Latin-1, with 32 slots reassigned to `€` and smart quotes | Almost every "almost right" file from a Windows desktop |
+| **Latin-2** | ISO-8859-2 | Central Europe: `ą ę ł ś ż č ř` | Polish, Czech, Hungarian files, mostly pre-2005 |
+| **Windows-1250** | CP1250 | Central Europe again — *differently* | Windows in the same countries, incompatibly |
+| **CP437** | "OEM", the DOS table | Box-drawing characters, Greek letters, maths | DOS, BIOS screens, old `.txt` art |
+| **CP850** | DOS Latin-1 | CP437 with more accented letters, fewer boxes | DOS in Western Europe |
+| **KOI8-R** | — | Russian Cyrillic, ordered so that stripping the top bit leaves readable Latin | Russian email and Usenet, and still some Linux boxes |
+
+Two things are deliberately not on this page. **EBCDIC** does not belong in the list at all — it disagrees with ASCII about the *bottom* half too, so it is not a code page in this sense; its story is in [From the telegraph to Unicode](../../09_History/from_telegraph_to_unicode/README.md). And the exact 32-byte difference between Windows-1252 and Latin-1 — the one that produces most real-world damage — has [its own page](../../07_Real_Data/windows_1252_vs_latin1/README.md) in the real-data chapter.
+
+SAP names these tables by number rather than by name. Those numbers are worth checking against your own system rather than quoting from any document, this one included; [SAP code pages](../../07_Real_Data/sap_code_pages/README.md) is where this library keeps them.
+
+## Latin-1 is the odd one
+
+For every byte from 0 to 255, Latin-1 decodes it to the code point of the same number. `0xE9` is `U+00E9`. `0xFF` is `U+00FF`. That is not a coincidence — Unicode's first 256 code points were *taken* from Latin-1 — and it has two consequences worth memorising.
+
+First, **decoding under Latin-1 can never fail**, because there is no byte it has nothing to say about. That makes it the only lossless way to carry unknown bytes through a text type, and the worst possible tool for working out what a file is: it answers "fine" to everything. Second, it is the only table in the list that is a *rule* rather than a *list*. Every other code page is 128 numbers somebody has to ship — which the Rust example makes uncomfortably concrete.
+
+## The agreement is the dangerous part
+
+The usual way to tell this story is "the tables disagree", and that is true but not the useful half. Measured over the 128 bytes above `0x7F`, the disagreement is partial, and the amount varies wildly:
+
+- Latin-1 and Latin-2 agree on **71 of 128**. A Polish file read as Latin-1 comes out *mostly right*, with a few wrong letters — which reads as a typing mistake, not a bug, so nobody investigates.
+- Latin-2 and Windows-1250 — two tables for the same languages — agree on only **81 of 128**, so even getting the *language* right is not enough.
+- CP437 and KOI8-R agree with the whole ISO family on **zero**. That is the easy case: it is obviously garbage, so somebody fixes it.
+
+The counts come out of section 3 of the Python run below, and they invert the intuition: the more similar two tables are, the longer their confusion survives. The worst outcome is not garbage — garbage gets reported. It is one wrong letter in a customer's surname, in a file that has been copied nine times since.
+
+## In Python
+
+<!-- output:code_pages_py -->
+*Verified output of [`code_pages_py.py`](examples/code_pages_py.py) — regenerated by `tools/run_examples.py`, never hand-typed.*
+
+```text
+1. THE HALF EVERYBODY AGREES ON
+------------------------------------------------------------------------
+   printable ASCII, 0x20-0x7E: 95 of 95 bytes decode
+   identically under all 7 tables.
+
+     0x41 -> 'A' under every one of them
+     0x37 -> '7' under every one of them
+     0x2c -> ',' under every one of them
+
+   That is the entire reason these files were interchangeable at all.
+   Source code, CSV delimiters, HTTP headers and English prose live
+   down here, which is why the problem stayed invisible in the
+   English-speaking world for a decade.
+
+2. ONE BYTE, ABOVE THE LINE
+------------------------------------------------------------------------
+   0xe9 -- 4 different characters:
+     latin1   'é' U+00E9 LATIN SMALL LETTER E WITH ACUTE
+     1252     'é' U+00E9 LATIN SMALL LETTER E WITH ACUTE
+     8859-2   'é' U+00E9 LATIN SMALL LETTER E WITH ACUTE
+     1250     'é' U+00E9 LATIN SMALL LETTER E WITH ACUTE
+     437      'Θ' U+0398 GREEK CAPITAL LETTER THETA
+     850      'Ú' U+00DA LATIN CAPITAL LETTER U WITH ACUTE
+     koi8     'И' U+0418 CYRILLIC CAPITAL LETTER I
+
+   0xb9 -- 5 different characters:
+     latin1   '¹' U+00B9 SUPERSCRIPT ONE
+     1252     '¹' U+00B9 SUPERSCRIPT ONE
+     8859-2   'š' U+0161 LATIN SMALL LETTER S WITH CARON
+     1250     'ą' U+0105 LATIN SMALL LETTER A WITH OGONEK
+     437      '╣' U+2563 BOX DRAWINGS DOUBLE VERTICAL AND LEFT
+     850      '╣' U+2563 BOX DRAWINGS DOUBLE VERTICAL AND LEFT
+     koi8     '╧' U+2567 BOX DRAWINGS UP SINGLE AND HORIZONTAL DOUBLE
+
+   Not one byte. Not a corrupted byte. The same byte, and the question
+   'what character is this?' has no answer until somebody names a table.
+
+3. HOW MUCH THE TABLES AGREE -- WHICH IS THE PART THAT HURTS
+------------------------------------------------------------------------
+   of the 128 bytes 0x80-0xFF, how many decode to the SAME character:
+
+              latin1    1252  8859-2    1250     437     850    koi8
+   latin1        128      96      71      49       0       0       0
+   1252           96     123      39      70       0       0       0
+   8859-2         71      39     128      81       0       0       0
+   1250           49      70      81     123       0       0       0
+   437             0       0       0       0     128      81       0
+   850             0       0       0       0      81     128       0
+   koi8            0       0       0       0       0       0     128
+
+   Read the off-diagonal numbers. Latin-1 and Latin-2 agree on 71 of
+   128 -- so a Polish file read as Latin-1 comes out mostly right, with
+   a handful of wrong letters, which reads as a typo rather than a bug.
+   The DOS and Cyrillic tables agree with the ISO family on ZERO, and
+   that is the easy case: it is obviously garbage and gets fixed.
+
+4. LATIN-1 IS THE ONE THAT IS AN IDENTITY
+------------------------------------------------------------------------
+   for every byte 0-255, latin_1 decodes it to code point b: True
+     0xe9 -> U+00E9
+     0xff -> U+00FF
+
+     latin1   defines 256 of 256 byte values
+     1252     defines 251 of 256 byte values
+     8859-2   defines 256 of 256 byte values
+     1250     defines 251 of 256 byte values
+     437      defines 256 of 256 byte values
+     850      defines 256 of 256 byte values
+     koi8     defines 256 of 256 byte values
+
+   Latin-1's first 256 code points ARE Unicode's first 256 -- not a
+   coincidence, it is where Unicode took them from. Two consequences:
+   decoding under Latin-1 can never fail, and Latin-1 is therefore the
+   only lossless way to carry unknown bytes through a text type.
+
+5. A POLISH FILE FROM 2005
+------------------------------------------------------------------------
+   'Łódź'.encode(latin_1   ) raises: 'Ł' is not in this table
+   'Łódź'.encode(cp1250    ) = a3 f3 64 9f
+   'Łódź'.encode(iso8859_2 ) = a3 f3 64 bc
+
+   Two tables can both write it, and they do not write it the same way.
+     written cp1250     a3 f3 64 9f
+       read as cp1250     'Łódź'   <- correct
+       read as iso8859_2  'Łód\x9f'
+       read as latin_1    '£ód\x9f'
+       read as cp437      'ú≤dƒ'
+     written iso8859_2  a3 f3 64 bc
+       read as cp1250     'ŁódĽ'
+       read as iso8859_2  'Łódź'   <- correct
+       read as latin_1    '£ód¼'
+       read as cp437      'ú≤d╝'
+
+   The two Central European readings are the cruel ones: three letters
+   right and the fourth quietly wrong -- Ľ for ź, or a control character
+   that prints as nothing at all. Nobody files a bug for that. They
+   retype the word and move on, and the file goes on being wrong.
+   The cp437 reading is the lucky one: it is obviously broken.
+
+6. WHAT NONE OF THEM COULD DO
+------------------------------------------------------------------------
+   reachable by ONE 8-bit table                256  at the absolute most
+   reachable by all 7 of them together        478
+   code points Unicode has room for      1,114,112
+
+   And you may only pick one table per file. That is not an argument
+   about tidiness -- a Kraków office and an Athens office could not put
+   both addresses in one file, because there was no byte to write.
+```
+<!-- /output -->
+
+## In the terminal
+
+`iconv -f <table>` is you naming the rulebook out loud. Nothing on the pipe knows it, checks it, or remembers it — which section 4 makes the point of.
+
+<!-- output:code_pages_sh -->
+*Verified output of [`code_pages_sh.sh`](examples/code_pages_sh.sh) — regenerated by `tools/run_examples.py`, never hand-typed.*
+
+```text
+1. ONE BYTE ABOVE 0x7F, UNDER FIVE TABLES
+------------------------------------------------------------------------
+
+   the byte e9, and what each rulebook says it is:
+     table        UTF-8 out   character
+     ISO-8859-1   c3a9  é
+     ISO-8859-2   c3a9  é
+     CP437        ce98  Θ
+     CP850        c39a  Ú
+     KOI8-R       d098  И
+
+   Five tables, four answers. Nothing about the byte changed.
+
+2. THE SAME FIVE TABLES, BELOW 0x7F
+------------------------------------------------------------------------
+
+   the byte 41:
+     ISO-8859-1   41  A
+     ISO-8859-2   41  A
+     CP437        41  A
+     CP850        41  A
+     KOI8-R       41  A
+
+   41 is A in all of them, and 41 on the way out too. Every code page
+   keeps the 1963 agreement for the bottom half; that is what makes
+   them code PAGES rather than unrelated tables.
+
+3. ONE POLISH WORD, TWO TABLES THAT CAN BOTH WRITE IT
+------------------------------------------------------------------------
+
+   starting from UTF-8:
+     00000000: c581 c3b3 64c5 ba                        ....d..
+   $ iconv -f UTF-8 -t ISO-8859-2
+     00000000: a3f3 64bc                                ..d.
+   $ iconv -f UTF-8 -t CP1250
+     00000000: a3f3 649f                                ..d.
+
+   Same word, same length, different bytes -- they agree on Ł and ó and
+   part company on ź. Two files, four bytes each, and no way to tell
+   them apart except by being told.
+
+4. SO ASK THE PIPE WHICH ONE IT HAS
+------------------------------------------------------------------------
+
+     bytes: a3f364bc
+     table: 
+
+   There is no second line. `file`, `xxd` and every other tool can
+   show you the bytes and none of them can tell you the table, because
+   it was never written down anywhere. Somebody has to say.
+```
+<!-- /output -->
+
+## In Rust
+
+Rust's std has exactly one decoder, for UTF-8, and no code pages at all — so writing one here shows what a code page *is* with the romance stripped off. Latin-1 is a function with no data in it; Windows-1250 is 128 literal numbers. (Those numbers were typed by hand and then machine-diffed entry by entry against Python's own `cp1250` codec — the header comment carries the command. The `49` this program counts is arrived at independently of the `49` in the Python matrix above, which is the nearest thing to a proof either of them is right.)
+
+<!-- output:code_pages_rs -->
+*Verified output of [`code_pages_rs.rs`](examples/code_pages_rs.rs) — regenerated by `tools/run_examples.py`, never hand-typed.*
+
+```text
+1. A CODE PAGE, AS A DATA STRUCTURE
+------------------------------------------------------------------------
+   fn latin1(b: u8) -> char { b as char }                 <- no data
+   const CP1250_TOP: [char; 128] = [ ... ];              <- 128 numbers
+
+   That asymmetry is the lesson. Latin-1 needs no table because it
+   IS the identity: byte value equals code point, all the way to 255.
+   Every other code page is a list somebody has to ship, and a list
+   is a thing you can be given the wrong copy of.
+
+2. THE SAME BYTES, THROUGH BOTH FUNCTIONS
+------------------------------------------------------------------------
+   bytes [a3, f3, 64, 9f]
+     latin1  -> "£ód\u{9f}"
+     cp1250  -> "Łódź"
+
+   One of those is a Polish city and one is a pound sign and some
+   punctuation. Both functions ran without complaint, because
+   neither one has anything to complain about: a lookup cannot fail.
+
+3. WHERE THE TWO TABLES AGREE, AND WHERE THEY DO NOT
+------------------------------------------------------------------------
+   of the 128 bytes 0x80-0xFF:
+     the two tables agree on   49
+     CP1250 defines nothing at 5
+
+   twelve of the disagreements, from 0xA0 up where both tables
+   have real letters rather than control codes:
+
+     0xa1 ¡ vs ˇ 0xa2 ¢ vs ˘ 0xa3 £ vs Ł 0xa5 ¥ vs Ą
+     0xaa ª vs Ş 0xaf ¯ vs Ż 0xb2 ² vs ˛ 0xb3 ³ vs ł
+     0xb9 ¹ vs ą 0xba º vs ş 0xbc ¼ vs Ľ 0xbd ½ vs ˝
+
+   Rust ships none of this. std has one decoder -- UTF-8 -- and for
+   anything else you reach for a crate (`encoding_rs`), which is
+   itself a statement: in 2026 a code page is a compatibility
+   concern, not a way to write files.
+```
+<!-- /output -->
+
+## If you are coming from Python or ABAP
+
+**Python.** Every table on this page is a codec in your standard library, no install: `bytes([0xE9]).decode('cp437')` works today. That makes Python the fastest tool for identifying a mystery file — decode the same bytes under each candidate and read which one produces words. Two things to know. `latin-1` is special-cased in exactly the way this page describes, so `data.decode('latin-1')` is the standard trick for carrying arbitrary bytes through a `str` and back unchanged. And codec *names* are forgiving — `latin-1`, `latin_1`, `iso-8859-1` and `8859` all reach the same codec — which is convenient until you write one down and someone reads it as authoritative.
+
+**ABAP.** The table is named at the boundary and nowhere else: `OPEN DATASET … IN LEGACY TEXT MODE CODE PAGE …` for a file, the destination's setting for an RFC, and `cl_abap_codepage=>convert_from( )` when you have the bytes in an `xstring` already. SAP's numbers for these tables are a private naming scheme over the same public tables, and the mapping is worth verifying on your own system rather than trusting a list. The practical consequence is the one this page is about: a non-Unicode source system sending a Central European file, and a receiver told the wrong number, produces a file that *mostly* works — so the failure surfaces as a handful of odd surnames months later, not as a short dump. *(Not machine-checked — CI cannot run ABAP.)*
+
+## Try it
+
+```bash
+cd 02_Characters/code_pages/examples
+python3 code_pages_py.py
+bash code_pages_sh.sh
+rustc --edition 2024 code_pages_rs.rs -o /tmp/cp && /tmp/cp
+```
+
+Without the machine: you are given a four-byte file, `a3 f3 64 9f`, and told only that it is one Polish word. You have Latin-1, Latin-2 and Windows-1250 available. How many of the three can you *rule out*, and what does that tell you about how much a file's bytes can ever say about themselves?
 
 ## See also
 
-- [A character is a number](../a_character_is_a_number/README.md)
-- [Unicode code points](../unicode_code_points/README.md)
-- [Windows-1252 vs Latin-1](../../07_Real_Data/windows_1252_vs_latin1/README.md)
+- [A character is a number](../a_character_is_a_number/README.md) — the 128 every table on this page kept
+- [Unicode code points](../unicode_code_points/README.md) — the answer to all of this: one number per character, and enough numbers
+- [Windows-1252 vs Latin-1](../../07_Real_Data/windows_1252_vs_latin1/README.md) — the 32 bytes that cause most of the damage
+- [Mojibake](../../03_Encodings/mojibake/README.md) — what the wrong table looks like on screen, and how to reverse it
+- [Encode and decode are verbs](../../03_Encodings/encode_and_decode_are_verbs/README.md) — the table as an argument nothing checks
+- [From the telegraph to Unicode](../../09_History/from_telegraph_to_unicode/README.md) — why there were so many, and why it ended
+- [SAP code pages](../../07_Real_Data/sap_code_pages/README.md) — the same tables, by number
+- [WHATWG Encoding Standard ↗](https://encoding.spec.whatwg.org/) — the closed list of tables browsers implement, and every label each one answers to

@@ -1,0 +1,109 @@
+
+1. THE HALF EVERYBODY AGREES ON
+------------------------------------------------------------------------
+   printable ASCII, 0x20-0x7E: 95 of 95 bytes decode
+   identically under all 7 tables.
+
+     0x41 -> 'A' under every one of them
+     0x37 -> '7' under every one of them
+     0x2c -> ',' under every one of them
+
+   That is the entire reason these files were interchangeable at all.
+   Source code, CSV delimiters, HTTP headers and English prose live
+   down here, which is why the problem stayed invisible in the
+   English-speaking world for a decade.
+
+2. ONE BYTE, ABOVE THE LINE
+------------------------------------------------------------------------
+   0xe9 -- 4 different characters:
+     latin1   'é' U+00E9 LATIN SMALL LETTER E WITH ACUTE
+     1252     'é' U+00E9 LATIN SMALL LETTER E WITH ACUTE
+     8859-2   'é' U+00E9 LATIN SMALL LETTER E WITH ACUTE
+     1250     'é' U+00E9 LATIN SMALL LETTER E WITH ACUTE
+     437      'Θ' U+0398 GREEK CAPITAL LETTER THETA
+     850      'Ú' U+00DA LATIN CAPITAL LETTER U WITH ACUTE
+     koi8     'И' U+0418 CYRILLIC CAPITAL LETTER I
+
+   0xb9 -- 5 different characters:
+     latin1   '¹' U+00B9 SUPERSCRIPT ONE
+     1252     '¹' U+00B9 SUPERSCRIPT ONE
+     8859-2   'š' U+0161 LATIN SMALL LETTER S WITH CARON
+     1250     'ą' U+0105 LATIN SMALL LETTER A WITH OGONEK
+     437      '╣' U+2563 BOX DRAWINGS DOUBLE VERTICAL AND LEFT
+     850      '╣' U+2563 BOX DRAWINGS DOUBLE VERTICAL AND LEFT
+     koi8     '╧' U+2567 BOX DRAWINGS UP SINGLE AND HORIZONTAL DOUBLE
+
+   Not one byte. Not a corrupted byte. The same byte, and the question
+   'what character is this?' has no answer until somebody names a table.
+
+3. HOW MUCH THE TABLES AGREE -- WHICH IS THE PART THAT HURTS
+------------------------------------------------------------------------
+   of the 128 bytes 0x80-0xFF, how many decode to the SAME character:
+
+              latin1    1252  8859-2    1250     437     850    koi8
+   latin1        128      96      71      49       0       0       0
+   1252           96     123      39      70       0       0       0
+   8859-2         71      39     128      81       0       0       0
+   1250           49      70      81     123       0       0       0
+   437             0       0       0       0     128      81       0
+   850             0       0       0       0      81     128       0
+   koi8            0       0       0       0       0       0     128
+
+   Read the off-diagonal numbers. Latin-1 and Latin-2 agree on 71 of
+   128 -- so a Polish file read as Latin-1 comes out mostly right, with
+   a handful of wrong letters, which reads as a typo rather than a bug.
+   The DOS and Cyrillic tables agree with the ISO family on ZERO, and
+   that is the easy case: it is obviously garbage and gets fixed.
+
+4. LATIN-1 IS THE ONE THAT IS AN IDENTITY
+------------------------------------------------------------------------
+   for every byte 0-255, latin_1 decodes it to code point b: True
+     0xe9 -> U+00E9
+     0xff -> U+00FF
+
+     latin1   defines 256 of 256 byte values
+     1252     defines 251 of 256 byte values
+     8859-2   defines 256 of 256 byte values
+     1250     defines 251 of 256 byte values
+     437      defines 256 of 256 byte values
+     850      defines 256 of 256 byte values
+     koi8     defines 256 of 256 byte values
+
+   Latin-1's first 256 code points ARE Unicode's first 256 -- not a
+   coincidence, it is where Unicode took them from. Two consequences:
+   decoding under Latin-1 can never fail, and Latin-1 is therefore the
+   only lossless way to carry unknown bytes through a text type.
+
+5. A POLISH FILE FROM 2005
+------------------------------------------------------------------------
+   'Łódź'.encode(latin_1   ) raises: 'Ł' is not in this table
+   'Łódź'.encode(cp1250    ) = a3 f3 64 9f
+   'Łódź'.encode(iso8859_2 ) = a3 f3 64 bc
+
+   Two tables can both write it, and they do not write it the same way.
+     written cp1250     a3 f3 64 9f
+       read as cp1250     'Łódź'   <- correct
+       read as iso8859_2  'Łód\x9f'
+       read as latin_1    '£ód\x9f'
+       read as cp437      'ú≤dƒ'
+     written iso8859_2  a3 f3 64 bc
+       read as cp1250     'ŁódĽ'
+       read as iso8859_2  'Łódź'   <- correct
+       read as latin_1    '£ód¼'
+       read as cp437      'ú≤d╝'
+
+   The two Central European readings are the cruel ones: three letters
+   right and the fourth quietly wrong -- Ľ for ź, or a control character
+   that prints as nothing at all. Nobody files a bug for that. They
+   retype the word and move on, and the file goes on being wrong.
+   The cp437 reading is the lucky one: it is obviously broken.
+
+6. WHAT NONE OF THEM COULD DO
+------------------------------------------------------------------------
+   reachable by ONE 8-bit table                256  at the absolute most
+   reachable by all 7 of them together        478
+   code points Unicode has room for      1,114,112
+
+   And you may only pick one table per file. That is not an argument
+   about tidiness -- a Kraków office and an Athens office could not put
+   both addresses in one file, because there was no byte to write.

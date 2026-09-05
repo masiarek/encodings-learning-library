@@ -13,20 +13,21 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [Reading a hex dump](01_Bits_and_Bytes/reading_a_hex_dump/README.md) | written, 2026-09-05 |
 | [A character is a number](02_Characters/a_character_is_a_number/README.md) | written, 2026-09-05 |
 | [Control characters](02_Characters/control_characters/README.md) | written, 2026-09-05 — the first page with a *C view* (`examples/*.c`, compiled by the runner since the same day) |
-| [Code pages](02_Characters/code_pages/README.md) | stub — **next** |
-| [Unicode code points](02_Characters/unicode_code_points/README.md) | stub |
+| [Code pages](02_Characters/code_pages/README.md) | written, 2026-09-05 — Python, Rust and shell; the agreement matrix is the original bit |
+| [Unicode code points](02_Characters/unicode_code_points/README.md) | stub — **next** |
 | [A code point is not a character](02_Characters/a_code_point_is_not_a_character/README.md) | stub |
 | [UTF-8 by hand](03_Encodings/utf8_by_hand/README.md) | stub — the checkpoint page |
 | [Validation is a boundary](03_Encodings/validation_is_a_boundary/README.md) | written, 2026-09-05 — all four languages, and the second *C view* |
 | [Overlong sequences](03_Encodings/overlong_sequences/README.md) | written, 2026-09-05 — all four languages; the shortest-form rule, Table 3-7, and the three formats that break it on purpose |
 | [UTF-16 and surrogates](03_Encodings/utf16_and_surrogates/README.md) | stub |
-| [Byte order and the BOM](03_Encodings/byte_order_and_bom/README.md) | stub |
+| [Byte order and the BOM](03_Encodings/byte_order_and_bom/README.md) | written, 2026-09-05 — Python, Rust and shell; why `U+FFFE` makes the mirror proof rather than convention |
 | [Encode and decode are verbs](03_Encodings/encode_and_decode_are_verbs/README.md) | written, 2026-09-05 — Python, Rust and shell |
 | [Mojibake](03_Encodings/mojibake/README.md) | written, 2026-09-05 — Python and shell; the Rust point is the previous page's |
 | [04_Python](04_Python/README.md) — five pages | stubs |
 | [05_Rust](05_Rust/README.md) — four pages | stubs |
 | [06_Terminal](06_Terminal/README.md) — four pages | stubs |
-| [07_Real_Data](07_Real_Data/README.md) — six pages | stubs |
+| [A BOM in a CSV](07_Real_Data/bom_in_a_csv/README.md) | written, 2026-09-05 — Python and shell; the decision procedure, and the two platform fingerprints |
+| [07_Real_Data](07_Real_Data/README.md) — the other five pages | stubs |
 | [From the telegraph to Unicode](09_History/from_telegraph_to_unicode/README.md) | written, 2026-09-05 |
 | [Why UTF-8 won](09_History/why_utf8_won/README.md) | written, 2026-09-05 |
 | [UTF-8 everywhere](10_Best_Practices/utf8_everywhere/README.md) | written, 2026-09-05 |

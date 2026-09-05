@@ -1,0 +1,38 @@
+
+1. A CODE PAGE, AS A DATA STRUCTURE
+------------------------------------------------------------------------
+   fn latin1(b: u8) -> char { b as char }                 <- no data
+   const CP1250_TOP: [char; 128] = [ ... ];              <- 128 numbers
+
+   That asymmetry is the lesson. Latin-1 needs no table because it
+   IS the identity: byte value equals code point, all the way to 255.
+   Every other code page is a list somebody has to ship, and a list
+   is a thing you can be given the wrong copy of.
+
+2. THE SAME BYTES, THROUGH BOTH FUNCTIONS
+------------------------------------------------------------------------
+   bytes [a3, f3, 64, 9f]
+     latin1  -> "£ód\u{9f}"
+     cp1250  -> "Łódź"
+
+   One of those is a Polish city and one is a pound sign and some
+   punctuation. Both functions ran without complaint, because
+   neither one has anything to complain about: a lookup cannot fail.
+
+3. WHERE THE TWO TABLES AGREE, AND WHERE THEY DO NOT
+------------------------------------------------------------------------
+   of the 128 bytes 0x80-0xFF:
+     the two tables agree on   49
+     CP1250 defines nothing at 5
+
+   twelve of the disagreements, from 0xA0 up where both tables
+   have real letters rather than control codes:
+
+     0xa1 ¡ vs ˇ 0xa2 ¢ vs ˘ 0xa3 £ vs Ł 0xa5 ¥ vs Ą
+     0xaa ª vs Ş 0xaf ¯ vs Ż 0xb2 ² vs ˛ 0xb3 ³ vs ł
+     0xb9 ¹ vs ą 0xba º vs ş 0xbc ¼ vs Ľ 0xbd ½ vs ˝
+
+   Rust ships none of this. std has one decoder -- UTF-8 -- and for
+   anything else you reach for a crate (`encoding_rs`), which is
+   itself a statement: in 2026 a code page is a compatibility
+   concern, not a way to write files.
