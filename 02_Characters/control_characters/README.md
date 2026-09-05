@@ -299,3 +299,4 @@ Then on a real file: `xxd some.csv | grep -m3 '0d0a'` tells you whether it came 
 - [A character is a number](../a_character_is_a_number/README.md) — the table these are the first 32 rows of, and the case bit this page's caret bit is the twin of
 - [CRLF vs LF](../../07_Real_Data/crlf_vs_lf/README.md) — the repairs: `dos2unix`, `tr -d '\r'`, `newline=''`, git's `autocrlf`
 - [Reading a hex dump](../../01_Bits_and_Bytes/reading_a_hex_dump/README.md) — why `xxd` shows a dot and `od -c` shows a name
+- [RFC 69 — how Rust got `b'A'` ↗](https://masiarek.github.io/rust-learning-library/14_Strings/rfc_69_byte_literals/index.html) — a language that asked out loud whether to ban U+0000–U+001F from its literals, and decided not to
