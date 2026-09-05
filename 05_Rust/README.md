@@ -2,7 +2,7 @@
 
 **Level:** 101 → 201 · for anyone learning Rust
 
-Rust's `String` is a `Vec<u8>` with one promise attached — the bytes are valid UTF-8 — and everything that feels strange about Rust strings is that promise being kept. These pages connect the type to chapters 2 and 3; the sibling [Rust learning library ↗](https://masiarek.github.io/rust-learning-library/STRINGS.html) owns the memory, ownership and API stories, and is linked from every page here rather than repeated.
+Rust's `String` is a `Vec<u8>` with one promise attached — the bytes are valid UTF-8 — and everything that feels strange about Rust strings is that promise being kept. These pages connect the type to chapters 2 and 3; the sibling Rust learning library's [Strings chapter ↗](https://masiarek.github.io/rust-learning-library/14_Strings/index.html) owns the memory, ownership and API stories — twelve lessons, plus a reference page for each of the 125 `str` and `String` methods, mapped in [STRINGS.md ↗](https://masiarek.github.io/rust-learning-library/STRINGS.html) — and is linked from every page here rather than repeated. Read in that direction it is a Rust section that happens to be about text; read in this one it is the same bytes, from the encoding's side.
 
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|

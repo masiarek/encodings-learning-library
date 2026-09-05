@@ -428,3 +428,4 @@ And one to work out without the machine: `F0 82 82 AC` is four bytes that decode
 - [Mojibake](../mojibake/README.md) — the failure that happens when the bytes *are* valid and the table was still wrong
 - [From UTF-8, and lossy](../../05_Rust/from_utf8_and_lossy/README.md) — `Utf8Error`, `Cow<str>` and `OsStr`, as an API rather than as a comparison
 - [`String` is bytes that promise UTF-8](../../05_Rust/string_is_bytes_that_promise_utf8/README.md) — the promise this page leans on, from the type's side
+- [Strings, in the Rust learning library ↗](https://masiarek.github.io/rust-learning-library/14_Strings/index.html) — where the Rust half of this page goes next: `String` vs `&str`, slices, `char`, and the byte-boundary panic, taught as a language rather than as an encoding
