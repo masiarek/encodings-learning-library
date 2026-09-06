@@ -1,0 +1,61 @@
+
+1. A char IS A CODE POINT, AND from_u32 IS THE GATE
+------------------------------------------------------------------------
+   U+0041    Some('A')
+   U+00E9    Some('é')
+   U+0104    Some('Ą')
+   U+20AC    Some('€')
+   U+1F600   Some('😀')
+   U+D800    None   <- not a scalar value
+   U+110000  None   <- not a scalar value
+
+   The last two are the only two ways to fail: a surrogate,
+   and anything past the top of the number line.
+
+2. THE HOLE IN THE MIDDLE: U+D800..=U+DFFF
+------------------------------------------------------------------------
+   code points in that range rejected by char: 2048
+   they exist only so UTF-16 can spell the upper planes,
+   which is why they are reserved and never characters.
+
+3. THE COUNT IS DEFINITIONAL, NOT A TABLE LOOKUP
+------------------------------------------------------------------------
+   0x110000            =   1114112   17 planes of 65,536
+   minus the surrogates=      2048
+   usable scalars      =   1112064
+
+   and every one of them fits in a char, which is always
+   4 bytes wide -- a code point, not a UTF-8 byte.
+
+4. WRITING ONE DOWN IN SOURCE
+------------------------------------------------------------------------
+   '\u{E9}' is 'é', and as a number 233
+   escape_unicode goes the other way: \u{104}
+   a char knows its own neighbourhood by arithmetic:
+      is_ascii()      false
+      is_alphabetic() true
+      len_utf8()      2   <- chapter 3's question
+
+5. THE NEIGHBOURHOOD MAP, MEASURED: WHERE WHITESPACE LIVES
+------------------------------------------------------------------------
+   25 code points, in 10 runs -- not 25 things to learn:
+
+   U+0009..=U+000D     TAB LF VT FF CR -- the run 9-A-B-C-D
+   U+0020              SPACE, the first printable code point
+   U+0085              NEL, over in the C1 controls (0080-009F)
+   U+00A0              NO-BREAK SPACE = 0x20 | 0x80
+   U+1680              OGHAM SPACE MARK, first slot of its block
+   U+2000..=U+200A     the printer's type case: quads down to a hair
+   U+2028..=U+2029     LINE then PARAGRAPH separator, smaller first
+   U+202F              NARROW NO-BREAK SPACE
+   U+205F              MEDIUM MATHEMATICAL SPACE
+   U+3000              IDEOGRAPHIC SPACE, where the CJK zone opens
+
+   Four neighbourhoods carry all of it: the ASCII controls,
+   Latin-1's high half, the 2000 punctuation block, and CJK.
+
+   The two exceptions both end in B, and both are traps:
+      U+000B  is_whitespace true  is_ascii_whitespace false
+      U+200B  is_whitespace false is_ascii_whitespace false
+   U+000B VERTICAL TAB is whitespace but not ASCII whitespace.
+   U+200B ZERO WIDTH SPACE is named a space and is neither.

@@ -1,0 +1,78 @@
+
+1. U+00E9 IS A NUMBER, WRITTEN IN HEX
+------------------------------------------------------------------------
+   U+00E9   decimal 233   binary 11101001
+   chr(233) = 'é'   ord('é') = 233
+   name: LATIN SMALL LETTER E WITH ACUTE
+
+   U+00E9 and 0xE9 are the same NUMBER and different things:
+   one is a code point, the other is a byte under one table.
+   Which bytes carry U+00E9 is chapter 3's question, not this one.
+
+2. READ IT AS AN ADDRESS: BLOCK, THEN HOUSE NUMBER
+------------------------------------------------------------------------
+   block     what lives there            example
+   U+0000    ASCII                       U+0041   A
+   U+0080    Latin-1's high half         U+00A0   NBSP, invisible
+   U+0100    Latin Extended-A            U+0104   Ą
+   U+0370    Greek                       U+03A9   Ω
+   U+0400    Cyrillic                    U+042F   Я
+   U+2000    General Punctuation         U+2014   — em dash
+   U+20A0    Currency Symbols            U+20AC   €
+   U+3000    CJK Symbols/Punctuation     U+3000   ideographic space
+   U+4E00    CJK Ideographs              U+4E00   一
+   U+1F300   Emoji                       U+1F600  😀
+
+   You do not memorise U+20AC. You memorise that currency starts
+   at U+20A0, and read the AC as a house number on that street.
+
+3. THE FIRST 256 CODE POINTS *ARE* LATIN-1 -- WHICH IS THE TRAP
+------------------------------------------------------------------------
+   bytes 0x00-0xFF decoded as latin-1: 256 of 256 succeed
+   0xE9 -> 'é', and ord() of it is 233
+
+   Latin-1 is the identity table: byte N is code point N. So it can
+   never raise on decode -- and a mis-tagged file therefore does not
+   fail, it just quietly reads as the wrong letters.
+
+4. WHERE POLISH LIVES
+------------------------------------------------------------------------
+   Ą  U+0104  LATIN CAPITAL LETTER A WITH OGONEK
+   Ć  U+0106  LATIN CAPITAL LETTER C WITH ACUTE
+   Ę  U+0118  LATIN CAPITAL LETTER E WITH OGONEK
+   Ł  U+0141  LATIN CAPITAL LETTER L WITH STROKE
+   Ń  U+0143  LATIN CAPITAL LETTER N WITH ACUTE
+   Ó  U+00D3  LATIN CAPITAL LETTER O WITH ACUTE
+   Ś  U+015A  LATIN CAPITAL LETTER S WITH ACUTE
+   Ź  U+0179  LATIN CAPITAL LETTER Z WITH ACUTE
+   Ż  U+017B  LATIN CAPITAL LETTER Z WITH DOT ABOVE
+
+   All but Ó are in Latin Extended-A (U+0100-U+017F), because the
+   Latin-1 block had no room left. Ó is at U+00D3, inside Latin-1,
+   which is why it alone survives a wrong-table read intact.
+
+5. THREE PIECES OF ARITHMETIC, AND FOUR FEWER THINGS TO MEMORISE
+------------------------------------------------------------------------
+   (a) the whitespace run 9-A-B-C-D, in cursor-travel order
+       U+0009  TAB  right a little
+       U+000A  LF   down one line
+       U+000B  VT   down a block
+       U+000C  FF   down a page
+       U+000D  CR   back to column 0
+       ...and ASCII whitespace is that run MINUS B, PLUS 0x20.
+
+   (b) NBSP is SPACE with the top bit set
+       0x20 | 0x80 = 0xA0  -> NO-BREAK SPACE
+
+   (c) the same 0x20 is the case bit you already use
+       'A' is 0x41, and 0x41 ^ 0x20 = 0x61 = 'a'
+
+6. SEVENTEEN PLANES, AND THE 2,048 SLOTS THAT ARE NOT CHARACTERS
+------------------------------------------------------------------------
+   17 planes x 65,536 = 1,114,112 slots
+   minus 2,048 surrogates (U+D800-U+DFFF) reserved for UTF-16
+   = 1,112,064 usable scalar values
+
+   Python will build a str from a surrogate; Rust's char will not.
+   chr(0xD800) is fine here: '\ud800'
+   ...until you ask for its bytes: UnicodeEncodeError
