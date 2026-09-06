@@ -82,10 +82,10 @@ The other five each answer one question the base toolbox answers badly:
 $ xxd -p latin1.txt
 636166e90a
 
-$ od -A n -a latin1.txt        # BSD — the od already on your Mac
+$ od -An -a latin1.txt        # BSD — the od already on your Mac
            c   a   f  e9  nl
 
-$ god -A n -a latin1.txt       # GNU — the same flags, from coreutils
+$ god -An -a latin1.txt       # GNU — the same flags, from coreutils
    c   a   f   i  nl
 ```
 
