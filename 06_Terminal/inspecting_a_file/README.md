@@ -30,7 +30,7 @@ $ od -at x1 demo-16.txt
 
 Eight characters and a newline. `ls -l` says **12**, because `ls -l` has always counted bytes. `iconv` turns it into **20**. And the top row of each dump — the one that looks like it is showing you the text — contains four question marks, a stray `82`, and a byte of the `€` politely labelled `sp`.
 
-Nothing on this page uses `ä`, because the library has [a fixed cast](../../CAST.md) and `é` is already the two-byte character every reader here has met. `café: 1€` has the same shape as the line above — seven one-byte characters, one two-byte, one three-byte — and gives the same numbers: nine characters, twelve bytes, twenty after `iconv`.
+No example on this page uses `ä` — only the quoted session above does — because the library has [a fixed cast](../../CAST.md) and `é` is already the two-byte character every reader here has met. `café: 1€` has the same shape as the line above — seven one-byte characters, one two-byte, one three-byte — and gives the same numbers: nine characters, twelve bytes, twenty after `iconv`.
 
 ## Four questions, and which tool answers which
 
