@@ -1,0 +1,39 @@
+1. THREE VARIABLES, ONE ANSWER — and the order they are consulted in
+     LANG=<utf8>                        -> UTF-8
+     LANG=<utf8>  LC_CTYPE=C            -> not UTF-8   <- LC_CTYPE beats LANG
+     LANG=C  LC_CTYPE=C  LC_ALL=<utf8>  -> UTF-8       <- LC_ALL beats everything
+     LANG is the fallback, LC_CTYPE is the specific setting, LC_ALL is the
+     override. Set LC_ALL in a script and nothing else can be consulted.
+
+2. IN THE C LOCALE THERE IS NO SUCH THING AS A CHARACTER
+
+$ LC_ALL=C     wc -c < ./_demo.txt | tr -d ' '
+6
+
+$ LC_ALL=C     wc -m < ./_demo.txt | tr -d ' '
+6
+   ^ two different flags, the same answer. 'Character' means 'byte' here,
+     so the question wc -m exists to ask cannot be asked.
+
+$ LC_ALL=$U    wc -m < ./_demo.txt | tr -d ' '
+5
+   ^ same file, same tool, same second. One byte of it is now half a letter.
+
+3. LC_CTYPE IS NOT LC_COLLATE — the variables really are independent
+
+$ LC_ALL=C           sort ./_sort.txt | tr '\n' ' '; echo
+A B aa az b 
+
+$ LC_CTYPE=$U        sort ./_sort.txt | tr '\n' ' '; echo
+A B aa az b 
+   ^ identical. Switching the CHARACTER TYPE to UTF-8 says nothing about
+     sort order, which is LC_COLLATE's job and was never asked to change.
+     'The locale' is six variables; a tool reads the one it needs.
+
+4. SO WHICH TOOLS CHANGE?
+     wc -m      yes   it is a question about characters
+     wc -c      no    a byte is a byte in every locale
+     sort       yes, but to LC_COLLATE, not to LC_CTYPE
+     od -a      yes   it asks isprint() -- see 'Inspecting a file'
+     tr         it depends on WHOSE tr, which is the point of the table
+                on the page: BSD tr obeys the locale and GNU tr cannot.

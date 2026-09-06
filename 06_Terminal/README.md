@@ -11,5 +11,5 @@
 | 3 | [A character and its bytes on one line](character_and_its_bytes/README.md) | How do I see the letter and its hex at the same time? | written |
 | 4 | [Inspecting a file](inspecting_a_file/README.md) | Which column of a dump is the file, and which ones are the tool guessing? | written |
 | 5 | [`iconv`](iconv/README.md) | How do I re-encode a file, and what does its refusal mean? | stub |
-| 6 | [Locale and `LC_CTYPE`](locale_and_lc_ctype/README.md) | What is the terminal's default encoding, and which tools change with it? | stub |
+| 6 | [Locale and `LC_CTYPE`](locale_and_lc_ctype/README.md) | What is the terminal's default encoding, and which tools change with it? | written |
 | 7 | [`file` guesses](file_guesses/README.md) | Why is `file`'s answer an inference, and when is it sure? | stub |

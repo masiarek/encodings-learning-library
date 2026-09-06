@@ -1,0 +1,28 @@
+1. A C LOCALE, AND NOTHING ELSE SET
+     LC_ALL=C  LANG=C  PYTHONUTF8 unset  -- the default in a container,
+     a cron job, a systemd unit and most CI runners.
+
+2. WHAT THE LOCALE SAYS, AND WHAT PYTHON DOES ANYWAY
+     locale.getencoding() is utf-8             False
+     locale.getpreferredencoding() is utf-8    True
+     sys.flags.utf8_mode                       1
+     sys.stdout.encoding is utf-8              True
+     sys.getfilesystemencoding() is utf-8      True
+     UTF-8 Mode turned ITSELF on, because the locale is C (PEP 540).
+     Nothing in the environment asked for it. Python read the same
+     setting `wc` read and decided a machine claiming to be ASCII-only
+     is describing its own configuration, not its data.
+
+3. WHAT THAT IS PROTECTING YOU FROM
+     PYTHONUTF8=1   utf8_mode 1   open() read it: OK
+     PYTHONUTF8=0   utf8_mode 0   open() read it: UnicodeDecodeError
+     Same file, same locale, one variable apart. With the mode off,
+     open() takes its default encoding from the C locale -- ASCII --
+     and the second byte of the e-acute ends the program. That is the
+     crash 3.7 stopped shipping, and it is still one variable away.
+
+4. THE ONLY SPELLING THAT IS NOT A GUESS
+     open(path, encoding='utf-8')    says what it means, everywhere
+     open(path)                      asks the locale, unless UTF-8 Mode
+     open(path, encoding=None)       the same guess, spelled worse
+     Pass encoding= and nothing on this page can reach your program.
