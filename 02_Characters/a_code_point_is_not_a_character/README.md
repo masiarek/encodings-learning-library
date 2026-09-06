@@ -13,6 +13,7 @@
 - ZWJ sequences: how 👨‍👩‍👧‍👦 is seven code points, and what `len()` and `.chars().count()` each say about it
 - The five answers to "how long": bytes, code units, code points, graphemes, and terminal columns — one table
 - Why the standard libraries stop at code points, and what `unicode-segmentation` (Rust) and `regex` `\X` (Python, third-party) add
+- The shortest way to get the number without any of them: **`rg -P -o '\X' | wc -l`**, which is [already installed and measured](../../11_Tools/pcre2/README.md) — 👨‍👩‍👧‍👦 is 26 bytes, 7 code points and 1 grapheme, and that page prints all three
 
 ## The example it will run
 
@@ -23,3 +24,4 @@ Python: the five counts for four strings; Rust: `len()` vs `chars().count()` on 
 - [Unicode code points](../unicode_code_points/README.md)
 - [Normalization](../../04_Python/normalization/README.md)
 - [`char` is four bytes](../../05_Rust/char_is_four_bytes/README.md)
+- [PCRE2 — the other regex engine](../../11_Tools/pcre2/README.md) — the one tool in the toolbox that can count graphemes
