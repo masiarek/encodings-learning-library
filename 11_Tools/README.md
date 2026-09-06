@@ -23,9 +23,12 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 | 1 | [`grep` on text that is not ASCII](grep/README.md) | Why did my search miss a line that is plainly there? | written |
 | 2 | [`ripgrep` — the Rust grep](ripgrep/README.md) | What does `rg` decide differently, and when does that matter? | written |
 | 3 | [`find`, and filenames that are bytes](find/README.md) | Why does `cat` open the file that `find -name` cannot see? | written |
-| 4 | [`tr` and `sort` work a byte at a time](tr_and_sort/README.md) | Why did deleting `é` damage a different word? | written |
-| 5 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
-| 6 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
+| 4 | [`sed` matches patterns, not bytes](sed/README.md) | Why does `sed` get right what `tr` gets wrong? | written |
+| 5 | [`awk` is three programs](awk/README.md) | Whose `awk` is this, and why does it disagree with itself? | written |
+| 6 | [`cut` counts what it is told to count](cut/README.md) | `-b` or `-c`? And why does the same command differ per machine? | written |
+| 7 | [`tr` and `sort` work a byte at a time](tr_and_sort/README.md) | Why did deleting `é` damage a different word? | written |
+| 8 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
+| 9 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
 
 ## What you already have
 
@@ -37,8 +40,28 @@ Nothing on this list needs installing on either macOS or Ubuntu, and the pages a
 | `find` | walk a directory | filenames are **bytes**, and `-name` is a byte comparison — even where [the filesystem disagrees](find/README.md) |
 | `sort` | order lines | the **locale** picks the order, and byte order is not alphabetical order |
 | `tr` | substitute or delete | **bytes only**, always — which is why [it damages the word next door](tr_and_sort/README.md) |
-| `sed`, `awk`, `cut` | edit and slice | `cut -c` is characters or bytes depending on the locale; `cut -b` is honest |
+| [`sed`](sed/README.md) | edit with patterns | a **sequence**, not a byte set — which is why it repairs what `tr` breaks |
+| [`awk`](awk/README.md) | fields and arithmetic | three implementations, two of them called `awk`, and they do not agree |
+| [`cut`](cut/README.md) | slice columns | `-b` is honest; `-c` means characters on one platform and bytes on the other |
 | `wc` | count | `-c` bytes, `-m` characters, `-l` [newlines](../06_Terminal/trailing_newline/README.md) — three questions, three answers |
+
+## What each of them does with a byte that is not text
+
+The sharpest way to tell these tools apart is to hand them a file they cannot decode. Three lines, all containing the word `line`, the middle one holding the invalid bytes `ff fe`:
+
+| BSD tool, `LC_ALL=en_US.UTF-8` | lines out, of 3 | exit | said |
+|---|---|---|---|
+| [`grep -a line`](grep/README.md) | **2** | **0** | **nothing at all** |
+| [`sed -n '/line/p'`](sed/README.md) | 1 | 1 | `RE error: illegal byte sequence` |
+| [`awk '/line/'`](awk/README.md) | 1 | 2 | `towc: multibyte conversion failure`, naming record 2 |
+| [`cut -c1-3`](cut/README.md) | 2 | 74 | `Illegal byte sequence` |
+| `cut -b1-3` | **3** | 0 | — it never decodes, so it cannot fail this way |
+
+Every one of those runs **3 of 3, exit 0, silently** under `LC_ALL=C`, and on Ubuntu the GNU versions run 3 of 3 in *either* locale. So the table is one platform's behaviour in one locale — but it is the platform and locale a Mac gives you by default.
+
+Two things to take from it. **`grep` is the only one that says nothing and still exits 0**, which is why [its page](grep/README.md) calls that the worst failure shape in this library — the others hand you something a script can catch. And **the escape is the same for all of them**: work in bytes. `LC_ALL=C` for the whole pipeline, or `-b` where the tool offers it.
+
+*(Measured 2026-09-06 on macOS 26.6 and ubuntu:24.04. Not machine-checked — no answer key can hold both platforms.)*
 
 ## What is worth installing
 

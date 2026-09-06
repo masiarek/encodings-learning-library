@@ -13,7 +13,7 @@ These are the tools you reach for after `grep` has found the lines: delete somet
 | `tr` | translate or delete characters | **bytes, always** — no locale, no flag, no exception |
 | `sort` | sort lines | byte order in the C locale, **collation order** in any other |
 | `uniq` | drop duplicate lines | compares **bytes**, so two spellings of one word are two values |
-| `cut -c` | cut by character | bytes, unless the locale is a UTF-8 one — `cut -b` is the honest spelling |
+| `cut -c` | cut by character | bytes, unless the locale is a UTF-8 one *and* the platform is BSD — [its own page](../cut/README.md) has the measurement; `cut -b` is the honest spelling |
 
 `tr` is the one that damages data, so it goes first.
 
@@ -163,7 +163,7 @@ Which means the practical advice splits:
 1. **`tr` for ASCII only.** `tr -d '\r'`, `tr 'a-z' 'A-Z'` on identifiers, and nothing above `U+007F`.
 2. **Pin the locale on `sort`, in both directions.** `LC_ALL=C sort` when two programs must agree; a UTF-8 locale when a person will read it. Never leave it to whatever the shell happened to inherit.
 3. **Normalize before `uniq` or `sort -u`.** Otherwise the count is over spellings, not words. [The `find` page](../find/README.md) is the same bug wearing a filename.
-4. **`cut -b`, not `cut -c`,** for fixed-width records — and remember that a byte offset can land inside a character. That is [the fixed-width field problem](../../07_Real_Data/fixed_width_byte_fields/README.md) in one line.
+4. **`cut -b`, not `cut -c`,** for fixed-width records — and remember that a byte offset can land inside a character. [`cut` has its own page](../cut/README.md) now, because the same command returns four bytes on Ubuntu and five on a Mac; the interface version is [the fixed-width field problem](../../07_Real_Data/fixed_width_byte_fields/README.md).
 5. **When a pipeline mangles text, `xxd` each stage.** The stage where the hex stops being valid UTF-8 is the culprit, and it is usually a `tr`.
 
 ## If you are coming from Python or ABAP

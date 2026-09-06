@@ -1,0 +1,73 @@
+1. -c AND -b, ON THE SAME FILE, IN THIS LOCALE
+$ cat cafe.txt
+café bar
+$ xxd -p cafe.txt
+636166c3a9206261720a
+$ cut -c1-4 cafe.txt | xxd -p
+636166c30a
+$ cut -b1-4 cafe.txt | xxd -p
+636166c30a
+   Identical, and both wrong in the same way: 63 61 66 c3 is 'caf' plus
+   the first byte of é. The output is not valid UTF-8 and cut said
+   nothing. In the C locale a character IS a byte, so -c and -b are the
+   same flag — which is exactly why the difference between them is so
+   easy to never notice.
+
+2. THE PROMISE IN THE MANUAL
+   -b selects BYTES. -c selects CHARACTERS. Those are different words for
+   a reason, and only one of the two cuts on your PATH keeps the second
+   promise, and only in a UTF-8 locale. The page has the measurement.
+   The rule that survives it: if you mean bytes, write -b; if you mean
+   characters, do not use cut.
+
+3. FIELDS ARE SAFE — THE DELIMITER IS WHAT MATTERS, NOT THE CONTENT
+$ cat rows.csv
+Ada,café,3
+Ben,naïve,7
+$ cut -d, -f2 rows.csv
+café
+naïve
+   Whole fields, comma-delimited, and the accented text inside them comes
+   through untouched. cut never looks inside a field, so -d/-f is safe at
+   any width. Nearly all real cut usage is this.
+
+4. BUT THE DELIMITER ITSELF MUST BE ONE BYTE
+$ cat bullet.txt        # a bullet, three bytes: e2 80 a2
+a•b
+$ cut -d"•" -f2 bullet.txt
+   (refused — exit 1)
+   Both cuts refuse here, wording it differently, so only the status is
+   shown. A multi-byte delimiter is not a thing cut can take in this
+   locale — and when a field separator is a real character rather than a
+   comma, awk -F is the tool that will take it.
+
+5. THE FIXED-WIDTH RECORD, WHICH IS WHERE THIS BITES FOR REAL
+$ cat fixed.txt
+ADA  café      003
+$ xxd -p fixed.txt
+4144412020636166c3a92020202020203030330a
+   The layout was designed in CHARACTERS, the way a person counts:
+     name 1-5, description 6-15, code 16-18   (18 characters of record)
+$ cut -b1-5 fixed.txt   | xxd -p      # name: correct
+41444120200a
+$ cut -b16-18 fixed.txt                # code: should be 003
+ 00
+   It printed ' 00'. The code field is one byte late, and every field
+   after the é is, because é costs two bytes and the layout budgeted one
+   character. The record is 18 characters and 19 bytes, so the byte
+   columns for the code are 17-19, not 16-18:
+$ cut -b17-19 fixed.txt
+003
+   Both cuts do this identically, and neither reports anything: you get a
+   field, it is the wrong field, and it is only obviously wrong because
+   this record ends in digits. Had the code been letters you would have
+   shipped it. The offset is correct until the first non-ASCII character
+   in the record and wrong for everything after it, which is why these
+   bugs surface months later, on one customer's data.
+
+6. COUNTING CHARACTERS WITHOUT cut
+   wc -c (bytes)      : 10
+   wc -m (this locale): 10
+   Both say the same number here, because in the C locale wc -m is also
+   counting bytes. Two flags, one answer, and no warning that the
+   question you asked was not the question that got answered.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The three rules ripgrep follows, applied by hand in the standard library.
+"""The four rules ripgrep follows, applied by hand in the standard library.
 
 `rg` is not on either CI runner — it ships with no operating system — so no
 answer key on this page can be recorded from the tool itself. What CAN be
@@ -15,28 +15,45 @@ is why the real outputs on the page are dated and name their machines.
 import re
 
 RAW_UTF16 = b"\xff\xfe" + "café\n".encode("utf-16-le")
+RAW_UTF32 = b"\xff\xfe\x00\x00" + "café\n".encode("utf-32-le")
 RAW_UTF8 = "café\n".encode("utf-8")
 RAW_LATIN1 = "café latin1\n".encode("latin-1")
 RAW_NUL = b"hello\x00world\nhello again\n"
 RAW_INVALID = b"good line\nbad \xff\xfe line\nlast line\n"
 
-# The four marks rg sniffs for, longest first — order matters, because
-# UTF-32LE's mark BEGINS with the whole of UTF-16LE's.
-BOMS = [
-    (b"\xff\xfe\x00\x00", "utf-32-le"),
-    (b"\x00\x00\xfe\xff", "utf-32-be"),
+# The marks rg's default (-E auto) actually tests for. Three, not five: the man
+# page says detection "only applies to files that begin with a UTF-8 or UTF-16
+# byte-order mark (BOM). No other automatic detection is performed."
+RG_BOMS = [
     (b"\xef\xbb\xbf", "utf-8-sig"),
     (b"\xff\xfe", "utf-16-le"),
     (b"\xfe\xff", "utf-16-be"),
 ]
 
+# The two it does not test — and the first of them BEGINS with the whole of
+# UTF-16LE's mark, which is why leaving it off the list is not a no-op.
+UNTESTED = [
+    (b"\xff\xfe\x00\x00", "utf-32-le"),
+    (b"\x00\x00\xfe\xff", "utf-32-be"),
+]
+
 
 def sniff(raw: bytes) -> str | None:
     """Rule 1: a byte-order mark names the encoding, and rg believes it."""
-    for mark, codec in BOMS:
+    for mark, codec in RG_BOMS:
         if raw.startswith(mark):
             return codec
     return None
+
+
+def decode_like_rg(raw: bytes) -> str:
+    """Sniff, consume the mark, decode. No mark means assume UTF-8."""
+    codec = sniff(raw)
+    if codec is None:
+        return raw.decode("utf-8", "replace")
+    if codec == "utf-8-sig":
+        return raw.decode(codec)  # this codec eats its own mark
+    return raw[2:].decode(codec)  # rg does not put the mark in the output
 
 
 def show(label: str, value: object) -> None:
@@ -44,9 +61,13 @@ def show(label: str, value: object) -> None:
 
 
 print("RULE 1. A BOM NAMES THE ENCODING, AND IS ACTED ON")
-for name, raw in [("utf-16le + BOM", RAW_UTF16), ("utf-8, no BOM", RAW_UTF8)]:
+for name, raw in [
+    ("utf-16le + BOM", RAW_UTF16),
+    ("utf-8, no BOM", RAW_UTF8),
+    ("utf-32le + BOM", RAW_UTF32),
+]:
     codec = sniff(raw)
-    text = raw.decode(codec) if codec else raw.decode("utf-8", "replace")
+    text = decode_like_rg(raw)
     show(f"{name}: sniffed", codec or "(nothing — assume UTF-8)")
     show(f"{name}: 'caf' in the BYTES", b"caf" in raw)
     show(f"{name}: 'caf' after decoding", "caf" in text)
@@ -54,8 +75,14 @@ print("   The first file answers False then True: the word is present and the")
 print("   bytes do not contain it. That gap is the whole difference between")
 print("   grep and rg on this file — rg looks at the first two bytes, decodes,")
 print("   and searches the text. grep searches the bytes and finds nothing.")
-print("   Note the sniff order: UTF-32LE's mark ff fe 00 00 STARTS with UTF-16LE's")
-print("   ff fe, so a shorter-first sniffer reads every UTF-32LE file as UTF-16.")
+print("   The third file answers False TWICE, and that is not a typo. rg tests")
+print("   three marks, not five:", ", ".join(c for _, c in RG_BOMS) + ".")
+show("marks rg does not test", ", ".join(c for _, c in UNTESTED))
+show("utf-32le + BOM: what it decoded to", repr(text))
+print("   UTF-32LE's mark ff fe 00 00 STARTS with UTF-16LE's ff fe, so a sniffer")
+print("   that does not test the four-byte form calls the file UTF-16 and welds a")
+print("   NUL to every letter. rg is such a sniffer, and the NULs then make it")
+print("   call the file binary — measured on the page above, both machines.")
 
 print()
 print("RULE 2. NO BOM: SEARCH THE RAW BYTES, AND A UNICODE CLASS SKIPS")

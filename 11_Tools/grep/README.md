@@ -172,7 +172,9 @@ $ LC_ALL=C           grep -an line invalid.txt      $ LC_ALL=en_US.UTF-8 grep -a
 
 Four runs, one file. Three of them find three lines. The fourth — **BSD grep in a UTF-8 locale** — finds two, and reports nothing at all about the third: no warning, no diagnostic, exit status 0. The line did not fail to match; it failed to be *considered*, because grep could not decode it into characters and moved on.
 
-That is the worst failure shape in this whole library, and it is worth naming why: [`iconv` refuses](../../03_Encodings/validation_is_a_boundary/README.md) and [`file` guesses](../../06_Terminal/file_guesses/README.md), and both of those are answers you can act on. A silent skip is not an answer at all. If you are grepping a file whose encoding you do not know — an export, a log, anything that crossed a system boundary — **run the search in `LC_ALL=C`**, where grep is a pure byte matcher and every line is considered:
+That is the worst failure shape in this whole library, and it is worth naming why: [`iconv` refuses](../../03_Encodings/validation_is_a_boundary/README.md) and [`file` guesses](../../06_Terminal/file_guesses/README.md), and both of those are answers you can act on. A silent skip is not an answer at all.
+
+It is also **unique to `grep`**. Handed the identical file in the identical locale, BSD `sed` stops and exits 1, BSD `awk` stops and names the input record, and `cut -c` stops and exits 74 — every one of them a failure a script can catch. `grep` alone loses a line, says nothing and reports success. The [chapter's family table](../README.md) puts all four side by side. If you are grepping a file whose encoding you do not know — an export, a log, anything that crossed a system boundary — **run the search in `LC_ALL=C`**, where grep is a pure byte matcher and every line is considered:
 
 ```bash
 LC_ALL=C grep -an 'pattern' suspicious.txt

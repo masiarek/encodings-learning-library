@@ -5,12 +5,21 @@ RULE 1. A BOM NAMES THE ENCODING, AND IS ACTED ON
    utf-8, no BOM: sniffed                 (nothing — assume UTF-8)
    utf-8, no BOM: 'caf' in the BYTES      True
    utf-8, no BOM: 'caf' after decoding    True
+   utf-32le + BOM: sniffed                utf-16-le
+   utf-32le + BOM: 'caf' in the BYTES     False
+   utf-32le + BOM: 'caf' after decoding   False
    The first file answers False then True: the word is present and the
    bytes do not contain it. That gap is the whole difference between
    grep and rg on this file — rg looks at the first two bytes, decodes,
    and searches the text. grep searches the bytes and finds nothing.
-   Note the sniff order: UTF-32LE's mark ff fe 00 00 STARTS with UTF-16LE's
-   ff fe, so a shorter-first sniffer reads every UTF-32LE file as UTF-16.
+   The third file answers False TWICE, and that is not a typo. rg tests
+   three marks, not five: utf-8-sig, utf-16-le, utf-16-be.
+   marks rg does not test                 utf-32-le, utf-32-be
+   utf-32le + BOM: what it decoded to     '\x00c\x00a\x00f\x00é\x00\n\x00'
+   UTF-32LE's mark ff fe 00 00 STARTS with UTF-16LE's ff fe, so a sniffer
+   that does not test the four-byte form calls the file UTF-16 and welds a
+   NUL to every letter. rg is such a sniffer, and the NULs then make it
+   call the file binary — measured on the page above, both machines.
 
 RULE 2. NO BOM: SEARCH THE RAW BYTES, AND A UNICODE CLASS SKIPS
          WHAT IT CANNOT DECODE

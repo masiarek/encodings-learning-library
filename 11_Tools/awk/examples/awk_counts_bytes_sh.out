@@ -1,0 +1,57 @@
+1. WHICH awk IS THIS? THE ANSWER IS NOT THE SAME ON TWO MACHINES
+   macOS ships the one-true-awk (BWK awk); Ubuntu ships mawk; gawk is
+   what many people mean by 'awk' and is on neither by default. This
+   script prints nothing about which one it is, because the identity is
+   exactly what differs — and in THIS locale all three agree anyway.
+
+2. length() COUNTS BYTES HERE
+$ cat cafe.txt
+café
+$ awk "{print length(\$0)}" cafe.txt
+5
+   Four characters on screen, five from length(). In the C locale that
+   is every awk's answer. In a UTF-8 locale it is still mawk's and still
+   BWK awk's, and gawk says 4 — see the page.
+
+3. substr() CUTS WHERE length() COUNTS, SO IT CUTS INSIDE A CHARACTER
+$ awk "{printf \"%s\", substr(\$0,1,4)}" cafe.txt | xxd -p
+636166c3
+   63 61 66 c3 — 'caf' and the FIRST HALF of é. The output is no longer
+   valid UTF-8, and awk neither warned nor failed. This is the same shape
+   as cut -b and as a fixed-width field: an offset is a byte offset.
+
+4. gsub(/./) AGREES WITH length() — IN THIS LOCALE
+$ awk "{n=gsub(/./,\"X\"); print n, \$0}" cafe.txt
+5 XXXXX
+   Five. Both the regex engine and length() are counting bytes, so they
+   agree. On one of the three awks, in a UTF-8 locale, they stop agreeing
+   with EACH OTHER inside a single program. That is the page's point.
+
+5. toupper() IS AN ASCII PROMISE HERE
+$ awk "{print toupper(\$0)}" cafe.txt
+CAFé
+$ awk "{print tolower(\$0)}" shout.txt
+ŻÓŁw
+   café became CAFé and ŻÓŁW became ŻÓŁw: the ASCII letters changed and
+   nothing else did. Half a word case-mapped is worse than none, because
+   it reads as a typo rather than as an encoding problem.
+
+6. WHAT DOES WORK PERFECTLY: FIELDS WITH AN ASCII SEPARATOR
+$ cat rows.csv
+Ada,café,3
+Ben,naïve,7
+$ awk -F, "{print \$1 \" wants \" \$2}" rows.csv
+Ada wants café
+Ben wants naïve
+   Splitting on a comma and moving whole fields around never looks inside
+   a character, so it is safe at any width in any locale. Most awk in the
+   world is this, which is why the trap above stays hidden for years.
+
+7. COUNTING CHARACTERS PORTABLY, WITHOUT A LOCALE
+$ awk "{n=\$0; c=gsub(/[\\200-\\277]/,\"\",n); print length(\$0)-c}" cafe.txt
+4
+   Four — the right answer, from an awk that thinks in bytes. UTF-8's
+   design is what makes it possible: continuation bytes are exactly
+   0x80-0xBF and nothing else uses that range, so bytes minus
+   continuation bytes is the character count. It works on all three awks
+   in any locale, which no built-in can claim.
