@@ -60,7 +60,7 @@ And [NFKC](../python_text_in_practice/README.md) is the *aggressive* normalizati
 ## "Length" has three answers
 
 ```text
-   "café" (decomposed)      6 bytes    5 code points    4 things a person sees
+   "café" (decomposed)      6 bytes    5 code points    4 things a person sees
 ```
 
 - **Bytes** — what a `VARCHAR(50)`, a fixed-width field, a wire limit and `wc -c` count.
