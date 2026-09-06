@@ -42,7 +42,7 @@ Nothing on this list needs installing on either macOS or Ubuntu, and the pages a
 
 ## What is worth installing
 
-Two of these earn their place immediately; the other four are for a specific bad day. Each is covered on [the five worth installing](worth_installing/README.md), except `uni`, which gets [its own page](uni/README.md) because it answers a question nothing else here can.
+`uni` and `rg` earn their place immediately and have a page each; the rest are for a specific bad day and share [one page](worth_installing/README.md), which measures every one of them against the tool you already have.
 
 | Install | What it adds |
 |---|---|

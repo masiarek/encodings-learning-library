@@ -20,7 +20,7 @@ $ uni identify 'żé€'
 '€'  U+20AC  8364   e2 82 ac    &euro;     EURO SIGN
 ```
 
-The `UTF8` column is the one `xxd -p` gives you. The other four are the ones it cannot, and the last one is the answer to the question you actually had.
+The `UTF8` column is the one `xxd -p` gives you. The other four — the code point, `Dec`, `HTML` and `Name` — are the ones it cannot, and `Name` is the answer to the question you actually had. Note that the code point is the column with no heading, printed against the character itself.
 
 ## It goes both ways
 

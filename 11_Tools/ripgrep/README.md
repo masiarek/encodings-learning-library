@@ -14,7 +14,7 @@
 | a UTF-16 file? | invisible — searches bytes, finds nothing | **reads the BOM and transcodes** |
 | an undecodable byte? | BSD **drops the line**; GNU keeps it | keeps the line; no Unicode class matches the byte |
 | a NUL? | "binary file matches" | "binary file matches (found `\0` byte around offset 5)" |
-| BSD vs GNU split? | [seven found so far](../../CONTRIBUTING.md) | none — one codebase, same binary behaviour |
+| BSD vs GNU split? | [a documented list of them](../../CONTRIBUTING.md), and growing | none — one codebase, same binary behaviour |
 
 The last row is the quiet one. Every other page in this library has to say *"measured on two machines, and here is where they disagree"*. On `rg` the two machines agree, byte for byte, which is what a single implementation buys you.
 
