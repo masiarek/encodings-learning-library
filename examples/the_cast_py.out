@@ -1,0 +1,56 @@
+1. THE CORE EIGHT -- one per UTF-8 width, one per boundary -- and a specialist
+   code pt   UTF-8        8859-1  1252  char  why it is in the cast
+   U+41      41           41      41    'A'   the ASCII baseline -- the same byte in every encoding here
+   U+7E      7E           7E      7E    '~'   the top of printable ASCII, one below DEL
+   U+E9      C3 A9        E9      E9    'é'   the canonical mojibake case, and the composed half of the pair
+   U+17C     C5 BC        --      --    'ż'   Polish: a 2-byte letter Latin-1 cannot hold at all
+   U+20AC    E2 82 AC     --      80    '€'   in Windows-1252 at 0x80, absent from ISO-8859-1
+   U+65E5    E6 97 A5     --      --    '日'   CJK: 3 bytes, and two columns wide on a terminal
+   U+CA0     E0 B2 A0     --      --    'ಠ'   a script no keyboard here has -- forces escape syntax
+   U+1F600   F0 9F 98 80  --      --    '😀'   above U+FFFF: 4 bytes, and a surrogate PAIR in UTF-16
+   U+DF      C3 9F        DF      DF    'ß'   uppercases to TWO letters, so case can change a string's length
+
+2. THE INVISIBLES -- you cannot see them, and every one of them bites
+   code pt   UTF-8        name             why it is in the cast
+   U+0       00           NUL              ends a C string; the byte no text format may contain
+   U+D       0D           CR               the half of CRLF that Unix does not write
+   U+A       0A           LF               the other half
+   U+301     CC 81        COMBINING ACUTE  put it after 'e' and you get a second 'é'
+   U+A0      C2 A0        NO-BREAK SPACE   whitespace to Unicode, not to ASCII
+   U+FEFF    EF BB BF     BOM              a byte-order mark that marks no byte order in UTF-8
+   U+FFFD    EF BF BD     REPLACEMENT      what a lossy decode leaves where bytes failed
+
+3. THE STRINGS -- four rulers over the same text
+   chars  UTF-8  UTF-16  cols   text
+      13     13      13    13   'Hello, World!'
+                                the baseline: every ruler agrees
+       4      5       4     4   'café'
+                                the house string -- one accent, so bytes and chars part
+       5      6       5     4   'café'
+                                its twin: identical on screen, unequal in memory
+       4      7       4     4   'żółw'
+                                Polish: three of four letters cost two bytes
+       3      9       3     6   '日本語'
+                                three chars, nine bytes, six columns
+       5     18       8     6   '👨\u200d👩\u200d👧'
+                                one family: three people, two joiners, one grapheme
+   'chars' counts code points; 'UTF-16' counts 16-bit units, which is
+   what Java, JavaScript and ABAP call a character; 'cols' is the width
+   a terminal gives it. No two of the four are the same question, and
+   the family emoji answers all four differently.
+
+4. THE ONE PAIR OF BYTES WORTH MEMORISING
+   'é' in UTF-8    C3 A9   (2 bytes)
+   'é' in Latin-1  E9      (1 byte)
+   UTF-8 bytes read as Latin-1  -> 'Ã©'
+   ...and read as Windows-1252  -> 'Ã©'
+   That is mojibake in one line, and 'Ã©' is the shape to recognise.
+
+5. THREE THINGS THE CAST IS HERE TO PROVE
+   chr(0xD800).encode() -> UnicodeEncodeError: surrogates not allowed
+   A lone surrogate is not a character, so no encoding will take it.
+   'café' == 'café' -> False
+   They render identically. Comparing text means normalising first.
+   'ß'.upper() -> 'SS': 1 char in, 2 out
+   Case mapping is not one character in, one character out -- which is
+   why a fixed-size buffer around .upper() is a bug waiting for German.
