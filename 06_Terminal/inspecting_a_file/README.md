@@ -51,20 +51,23 @@ The first two are different questions, and the whole library is about the gap be
 
 On a UTF-8 file that arithmetic produces obvious garbage — `C )` for `é` — which is at least legible as garbage. On an **8-bit** file it can produce a plausible word, and that is the version to be afraid of:
 
-```text title="Measured 2026-09-06 on macOS 26.6 with GNU coreutils installed, LC_ALL=C — BSD od and GNU god on one file, one machine, one second. Not machine-checked."
+```text title="Measured 2026-09-06 on macOS 26.6 with GNU coreutils 9.11 (brew), LC_ALL=C — BSD od beside GNU god, one file, one machine, one second. Reproduced verbatim, padding and all. Not machine-checked."
 $ printf 'caf\351\n' > latin1.txt     # café in Latin-1: 63 61 66 e9 0a
 
-$ od -An -a latin1.txt         # BSD, the one macOS ships
-   c   a   f  e9  nl
+$ od -An -a latin1.txt | cat -vet       # BSD, the one macOS ships
+           c   a   f  e9  nl                                            $
+$
 
-$ god -An -a latin1.txt        # GNU, from coreutils
-   c   a   f   i  nl
+$ god -An -a latin1.txt | cat -vet      # GNU, from coreutils
+   c   a   f   i  nl$
 
-$ od -An -tx1 latin1.txt       # the row that is actually the file
-  63  61  66  e9  0a
+$ od -An -tx1 latin1.txt                # the row that is actually the file
+           63  61  66  e9  0a                                            
 ```
 
 `0xe9 & 0x7f` is `0x69`, which is `i`, so GNU's named row spells **`cafi`** — a word-shaped answer to *"what is in this file?"* that is wrong in exactly the place you were asking about. Nothing marks it as a substitution. That is the whole argument against reading this row: it does not fail visibly, it fails plausibly.
+
+The `cat -vet` is there because two of this page's splits are in that one pair of lines and only one of them survives a casual look. BSD indents eleven spaces where GNU indents three, pads the line out to a fixed width, and adds a **trailing blank line**; GNU does none of it. That is the padding difference the shell examples' `tidy` helper exists to absorb — and squeezing the runs of spaces to read the output more comfortably is exactly how you would delete the evidence of it. The library's front page shows this same comparison tidied, as the payoff for installing [`coreutils`](../../11_Tools/worth_installing/README.md); this is the untidied version, which is what the file actually contains.
 
 **BSD `od`** (macOS) asks `isprint()` in your current locale. In a UTF-8 locale that question is answered over U+0080–U+00FF, so `c3` is `Ã`, `a4` is `¤`, `ac` is `¬` — all printable, so od writes **the raw byte**. Your terminal then tries to read that lone byte as UTF-8, fails, and draws `?`. The question marks in the session above were never od's output:
 
