@@ -50,9 +50,9 @@ Chapters 1, 9, 10 and 11 are written, along with the first pages of chapter 2, h
 
 **In a hurry?** [10_Best_Practices](10_Best_Practices/README.md) is the whole modern answer on one page, and [Why UTF-8 won](09_History/why_utf8_won/README.md) is why it is that short.
 
-## Six tools worth installing
+## Tools worth installing
 
-The library needs none of these and CI has none of them, so nothing in this section is an answer key: each block is dated and names the machine it ran on. [11_Tools](11_Tools/README.md) measures every one of them against the tool you already have, because half the value is knowing exactly where the free answer stops.
+The library needs none of these and CI has none of them, so nothing in this section is an answer key: each block is dated and names the machine it ran on. [11_Tools](11_Tools/README.md) measures every one of them against the tool you already have, because half the value is knowing exactly where the free answer stops. It covers one more that this section does not, [`rg`](11_Tools/ripgrep/README.md) — a grep with no locale, one implementation on every platform, and it reads a BOM'd UTF-16 file that `grep` returns nothing for.
 
 **[`uni`](11_Tools/uni/README.md) earns its place immediately.** It prints every column at once — including the one no dump tool has, the character's *name*, which is the answer to "what **is** this?"
 
@@ -64,7 +64,7 @@ $ uni identify 'żé€'
 '€'  U+20AC  8364   e2 82 ac    &euro;     EURO SIGN
 ```
 
-`UTF8` is the column a hex dump already gives you; the other four are in no dump. It runs backwards too — `uni print U+017C` from the code point, `uni search 'z with dot'` from the name. It matches the *name*, mind: `uni search polish` finds NAIL POLISH before it finds a Polish letter.
+`UTF8` is the column a hex dump already gives you; the code point, the decimal, the HTML entity and the name are in no dump. It runs backwards too — `uni print U+017C` from the code point, `uni search 'z with dot'` from the name. It matches the *name*, mind: `uni search polish` finds NAIL POLISH before it finds a Polish letter.
 
 The other five each answer one question the base toolbox answers badly:
 
@@ -89,7 +89,7 @@ $ god -An -a latin1.txt       # GNU — the same flags, from coreutils
    c   a   f   i  nl
 ```
 
-One byte, `e9`, and two answers. GNU masks the high bit off and names what is left — `0xe9 & 0x7f` is `0x69`, so it prints `i`, and `cafi` is a wrong answer that reads like a word. BSD asks `isprint()` in your locale, cannot print it, and gives you the byte's number. [Inspecting a file](06_Terminal/inspecting_a_file/README.md) takes that apart and shows the same run untrimmed — BSD indents eleven spaces, pads the line to 72 characters and adds a blank line after it; GNU indents three and does none of that. The short version is that the `-a` row of a hex dump is the one column you should not trust.
+One byte, `e9`, and two answers. GNU masks the high bit off and names what is left — `0xe9 & 0x7f` is `0x69`, so it prints `i`, and `cafi` is a wrong answer that reads like a word. BSD asks `isprint()` in your locale, cannot print it, and gives you the byte's number. [Inspecting a file](06_Terminal/inspecting_a_file/README.md) takes that apart and shows the same run untrimmed. For this `-a` run BSD indents eleven spaces, pads the line to 72 characters — the width a full sixteen-byte line needs — and adds a blank line after it; GNU indents three and does none of that. Neither number is a constant: under `-tx1` the BSD line pads to 73 and the GNU indent drops to one. The short version is that the `-a` row of a hex dump is the one column you should not trust.
 
 ## Why three languages
 
