@@ -1,0 +1,169 @@
+
+1. THE TABLES OF A 2002 RFC, SHIPPED IN YOUR PYTHON
+------------------------------------------------------------------------
+   import stringprep
+
+   membership tests it exposes   17
+   mapping tables                2   (map_table_b2, map_table_b3)
+
+   Every one is an appendix of RFC 3454 turned into a function, and the
+   module opens by pinning the table it reads them from:
+
+       from unicodedata import ucd_3_2_0 as unicodedata
+       assert unicodedata.unidata_version == '3.2.0'
+
+   So this is the frozen table from `The table has a version`, with a
+   protocol built on top of it. Nothing below can vary by machine.
+
+2. FOUR STEPS, AND THE ORDER IS NORMATIVE
+------------------------------------------------------------------------
+   map -> normalize -> prohibit -> check bidi
+
+   plain          4 code points  'Cafe'               -> 'cafe'
+   composed       4 code points  'café'               -> 'café'
+   decomposed     5 code points  'café'              -> 'café'
+   case folded    4 code points  'CAFÉ'               -> 'café'
+
+   Four spellings, one prepared string. That is the entire purpose:
+   two people who think they typed the same name now have.
+
+   Rows 2 and 3 are the same picture on screen, five code points
+   against six, and the decomposed one is BUILT here rather than
+   typed, because a decomposed string cannot be typed. NFKC is what
+   reconciles them; preparation without it would keep them apart.
+
+3. MAPPED TO NOTHING: THE CHARACTERS THAT SIMPLY VANISH
+------------------------------------------------------------------------
+   Table B.1 is deleted before anything else happens, because whether
+   these are present or absent must not make two names different.
+
+   U+00AD  SOFT HYPHEN                    in tables ['b1']
+   U+200B  ZERO WIDTH SPACE               in tables ['b1', 'c12']
+   U+200D  ZERO WIDTH JOINER              in tables ['b1', 'c22']
+   U+FEFF  ZWNBSP -- the BOM, mid-string  in tables ['b1', 'c22']
+   U+034F  COMBINING GRAPHEME JOINER      in tables ['b1']
+   U+FE0F  VARIATION SELECTOR-16          in tables ['b1']
+
+   U+FEFF is in two of them at once, which is not a contradiction: B.1
+   deletes it, C.2.2 would reject it, and a profile says which of the
+   two it applies. Nameprep deletes.
+
+   the cast's ZWJ family      '👩\u200d👩\u200d👧'
+                              5 code points
+   after step 1               '👩👩👧'
+                              3 code points
+
+   The joiners are gone, so one family became three people. Deleting
+   an invisible character is the right call for a login name and the
+   wrong one for text a human will read back. A profile is a choice.
+
+4. FOLDING THAT CHANGES THE LENGTH
+------------------------------------------------------------------------
+   U+00DF  ß  LATIN SMALL LETTER SHARP S             -> 'ss'  (2)
+   U+1E9E  ẞ  LATIN CAPITAL LETTER SHARP S           -> 'ss'  (2)
+   U+0130  İ  LATIN CAPITAL LETTER I WITH DOT ABOVE  -> 'i̇'  (2)
+   U+2126  Ω  OHM SIGN                               -> 'ω'  (1)
+
+   Sharp s folds to two characters, and the capital form folds to the
+   same two -- so a name gets LONGER during a step whose job was to
+   make it comparable. A profile must expect that; RFC 3454 says so in
+   as many words. U+0130 does it with a combining mark instead.
+
+   B.2 is upper-to-lower, chosen because Internet protocols had a
+   tradition of lowercase. The RFC built it by iterating to a fixed
+   point, which is worth reading as pseudocode because it is four
+   lines and it invented what Unicode later called NFKC_Casefold:
+
+       b = NormalizeWithKC(Fold(a))
+       c = NormalizeWithKC(Fold(b))
+       if c is not the same as b, add a mapping for a -> c
+
+   Fold once and normalizing can undo it; fold and normalize until
+   nothing moves, and the table is stable from that point on.
+
+5. THE SAME NAME, PREPARED TWO WAYS, IS TWO DIFFERENT DOMAINS
+------------------------------------------------------------------------
+   'faß.de'         .encode('idna')  ->  b'fass.de'
+   'STRASSE.de'     .encode('idna')  ->  b'STRASSE.de'
+   'Bücher.de'      .encode('idna')  ->  b'xn--bcher-kva.de'
+   'ExAmPlE.com'    .encode('idna')  ->  b'ExAmPlE.com'
+
+   Row 1 is the whole argument. Nameprep is a stringprep profile, and
+   its B.2 folds sharp s to 'ss' -- so the prepared label is pure
+   ASCII, punycode never runs, and the string a German typed resolves
+   to a name they did not type. IDNA2008 abolished the mapping step
+   and keeps the character, giving a DIFFERENT registrable domain from
+   the same keystrokes. Both are correct implementations of a standard.
+
+   Row 4 is the quieter trap. An all-ASCII label skips preparation
+   entirely (RFC 3490 section 4.1), so the case survives -- while row 3
+   was folded on its way through. One function, two contracts, chosen
+   by a character you did not type.
+
+6. PROHIBITION IS A DESIGN TOOL, NOT AN ERROR PATH
+------------------------------------------------------------------------
+   RIGHT-TO-LEFT OVERRIDE     'ad\u202emin'              -> error: U+202E prohibited by C.8 changes display / deprecated
+   a private-use character    'ad\ue000min'              -> error: U+E000 prohibited by C.3 private use
+   a permanent noncharacter   'ad\ufffemin'              -> error: U+FFFE prohibited by C.4 noncharacter
+   a tagging character        'ad\U000e0041min'          -> error: U+E0041 prohibited by C.9 tagging
+
+   Nine categories of refusal, and not one of them is about a
+   character being WRONG. They are characters whose presence in an
+   identifier nobody can verify by looking. U+202E is the one that
+   reverses the display of everything after it -- the Trojan Source
+   class of bug, published in 2021 and prohibited by number here in
+   December 2002.
+
+   And two that are NOT refused, which is the more useful half:
+
+   NO-BREAK SPACE             'ad\xa0min'                -> 'ad min'
+   ACCOUNT OF                 '℀'                        -> 'a/c'
+
+   ...yet in_table_c12(NO-BREAK SPACE) is True, and C.1.2 is
+   `prohibit non-ASCII space`. It got through because step 2 had
+   already turned it into an ordinary space and step 3 never saw it.
+   That is what `the order is normative` buys, and it is why a
+   profile may not reorder the steps for convenience.
+
+   U+2100 goes the other way: nothing prohibits it, and NFKC expands
+   it into three characters, one of which is a PATH SEPARATOR.
+   Preparation does not only filter -- it rewrites, and what it
+   writes has to be safe in whatever consumes the prepared string.
+
+7. BIDI IS A RULE ABOUT SHAPE, NOT ABOUT RENDERING
+------------------------------------------------------------------------
+   aleph then 1               'ا1'                       -> error: bidi: an R/AL string must begin and end with R/AL
+   aleph, 1, beh              'ا1ب'                      -> 'ا1ب'
+   aleph then a latin b       'اb'                       -> error: bidi: an R/AL string may hold no L character
+
+   The RFC's own two examples, and they are checkable arithmetic: a
+   string holding any R/AL character may hold no L character, and must
+   begin and end with R/AL. No font, no layout engine, no rendering --
+   just membership in tables D.1 and D.2. Latin digits are in neither,
+   which is why 'aleph 1 beh' passes and 'aleph 1' does not.
+
+8. THE PIN THAT PROTECTS YOU IS THE PIN THAT LOCKS YOU OUT
+------------------------------------------------------------------------
+   Table A.1 is 'unassigned in Unicode 3.2', and the module computes
+   it the only way a frozen table can:
+
+       def in_table_a1(code):
+           if unicodedata.category(code) != 'Cn': return False
+
+   U+1F600  in_table_a1 -> True   GRINNING FACE, assigned 2010
+   U+1E9E  in_table_a1 -> True   CAPITAL SHARP S, assigned 2008
+   U+11DB0  in_table_a1 -> True   TOLONG SIKI LETTER I, assigned 2025
+   U+0378  in_table_a1 -> True   genuinely unassigned, still is
+
+   Four different truths, one answer -- the identical failure `The
+   table has a version` found in `Cn`, except that here a standard is
+   built on top of it. Section 7 had to legislate around it:
+
+      a STORED string  (a registered name)  MUST reject table A.1
+      a QUERY string   (what a user typed)  MAY allow it
+
+   Read that as the trade it is. Pinning Unicode 3.2 means a domain
+   can never change meaning because the standard grew -- and it means
+   an implementation that obeys the pin refuses every character
+   invented after 2002, permanently, including the one above that
+   somebody writes their language in.

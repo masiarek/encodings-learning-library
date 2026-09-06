@@ -1,0 +1,64 @@
+
+1. THE ONE STEP THAT IS JUST A LIST
+------------------------------------------------------------------------
+   RFC 3454 table B.1, transcribed:  27 code points
+   the widest one                    U+FEFF
+
+   A table small enough to write down is a table that cannot rot.
+   This one was sealed with the RFC in 2002, so a Rust literal is
+   an honest way to carry it -- which is NOT true of any of the
+   other three steps.
+
+2. STRINGS THAT LOOK IDENTICAL AND ARE NOT
+------------------------------------------------------------------------
+   stored as                    chars bytes  == "admin" after B.1
+   nothing inserted                 5     5  true       == "admin"
+   U+200B ZERO WIDTH SPACE          6     8  false      == "admin"
+   U+00AD SOFT HYPHEN               6     7  false      == "admin"
+   U+FEFF the BOM, mid-string       6     8  false      == "admin"
+
+   Every row renders as `admin` in every font there is. Three of
+   them are longer, and `==` on &str compares bytes -- so they are
+   four different names to Rust and one name to the person who
+   typed them. Deleting B.1 first is what closes that gap, and it
+   is step one of four for exactly this reason.
+
+3. WHAT RUST'S std WILL AND WILL NOT DO FOR YOU
+------------------------------------------------------------------------
+   the case axis, in full:
+      'ß'.to_uppercase()        "SS"   (2 chars)
+      "CAFÉ".to_lowercase()     "café"
+      eq_ignore_ascii_case      false   <- and it says its limit in its name
+
+   the normalization axis, not at all:
+      no normalize() in std, so the two spellings of café stay
+      two different &str values forever
+
+   the prohibition axis, partly, and by a different question:
+      U+E000  char::from_u32 true    is_control false   is_alphabetic false
+      U+FFFE  char::from_u32 true    is_control false   is_alphabetic false
+      U+202E  char::from_u32 true    is_control false   is_alphabetic false
+      U+0041  char::from_u32 true    is_control false   is_alphabetic true
+
+   Read the third row. U+202E is not a control character to Rust,
+   is a perfectly good char, and reverses your terminal. std has
+   no vocabulary for `this character is fine and must not appear
+   in an identifier` -- that judgement is the RFC's, not the
+   language's, and no amount of type safety supplies it.
+
+4. THE TABLE IS THE LIBRARY
+------------------------------------------------------------------------
+   Three of the four steps need a table nobody would transcribe:
+   B.2 is the case-folding database, normalization is the
+   decomposition database, and C.* plus D.* are properties of
+   every assigned code point. In Rust each is a crate -- and what
+   the crate ships is data, not cleverness.
+
+   That is why the version question follows preparation around.
+   A hand-written B.1 is fixed forever; a hand-written B.2 is a
+   snapshot of somebody's Unicode, and the RFC pinned 3.2 rather
+   than let it move underneath a domain name.
+
+   Is this compiler's table newer than the RFC's 3.2?  true
+   By how much is deliberately not printed -- that would put the
+   machine that built this page into the answer key.
