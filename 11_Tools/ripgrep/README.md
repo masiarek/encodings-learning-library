@@ -100,6 +100,63 @@ Two things follow. First, `caf` and `c` behave differently on the same file — 
 
 [Byte order and the BOM](../../03_Encodings/byte_order_and_bom/README.md) gives the general rule: test the four-byte mark before the two-byte one. This is that rule with a name on it. The fastest search tool in common use is a shorter-first sniffer, which is why the rule is worth carrying rather than delegating.
 
+## The file whose text is not there
+
+Everything above assumes the letters are *in* the file and the only question is how to decode them. A PDF breaks that assumption, and it does it silently:
+
+```text title="Measured 2026-09-06 — macOS 26.6.2, rg 15.1.0 (brew), pdftotext 25.12.0 (Poppler). Not machine-checked: CI has no rg."
+$ ls 10-Ownership.pdf
+10-Ownership.pdf
+
+$ rg -c ownership 10-Ownership.pdf
+exit=1
+
+$ rg -c -a ownership 10-Ownership.pdf        # -a does not help
+exit=1
+
+$ pdftotext -q 10-Ownership.pdf - | rg -c ownership
+3
+exit=0
+```
+
+A file named `10-Ownership.pdf` reports no matches for `ownership`. The word is in there three times, and `pdftotext` finds it.
+
+Note that `-a` changes nothing, which rules out the binary heuristic — this is not the UTF-32 story above, where `rg` decoded the file into something wrong and then called the result binary. A PDF keeps its text in **compressed streams**, usually FlateDecode, the same algorithm as gzip. The letters `o-w-n-e-r-s-h-i-p` are not in the file in any encoding. There is nothing to decode, because there is nothing there yet to decode.
+
+That is the third question of [this chapter](../README.md) — *what does it do when the text is not valid?* — with a rung below it that the other pages never reach. `grep` in the C locale is a pure byte matcher and finds this no better; the failure is not a tool's opinion about characters, it is the absence of the bytes. **Decompression is not a search flag. It is a step you have to have already done.**
+
+`rg` provides the hook for doing it, and gives up nothing: `--pre` names a program to run on each file, and `rg` reads that program's stdout instead of the file.
+
+```sh title="~/.local/bin/rg-pre"
+#!/bin/sh
+# ripgrep --pre preprocessor: make PDFs searchable by piping them through pdftotext.
+# rg passes the filename as $1 and reads our stdout. Non-PDFs pass through unchanged.
+case "$1" in
+    *.pdf|*.PDF) exec pdftotext -q "$1" - ;;
+    *)           exec cat "$1" ;;
+esac
+```
+
+`--pre-glob` matters as much as `--pre` — without it every file pays for a spawned process; with it only PDFs take the slow path:
+
+```bash
+rg --pre ~/.local/bin/rg-pre --pre-glob '*.pdf' PATTERN .
+```
+
+Worth wrapping, since nobody types that twice. In fish, as an autoloaded function — `--wraps rg` is what makes it inherit `rg`'s own completions:
+
+```fish title="~/.config/fish/functions/rgp.fish"
+function rgp --wraps rg --description "ripgrep that also searches inside PDFs (via pdftotext)"
+    command rg --pre $HOME/.local/bin/rg-pre --pre-glob '*.pdf' $argv
+end
+```
+
+In bash or zsh it is a function rather than an alias, because an alias cannot take arguments in the middle: `rgp() { rg --pre "$HOME/.local/bin/rg-pre" --pre-glob '*.pdf' "$@"; }`.
+
+The same hole and the same fix apply to every zip-shaped document — `.docx`, `.xlsx`, `.pptx`, `.epub`, `.odt` — each needing its own branch in the shim, or [ripgrep-all ↗](https://github.com/phiresky/ripgrep-all) instead of writing any of it. The one container `rg` opens unaided is a compressed *stream*: `-z` reads gzip, bzip2, xz, lz4, Brotli and zstd, which is why it helps with `access.log.2.gz` and not with a PDF.
+
+[rg — the menu](../../RIPGREP.md) carries the rest: what it costs on a large folder, the `-u`/`-uu`/`-uuu` ladder behind the `.gitignore` note below, and the one case no preprocessor reaches — a scanned PDF, which has no text layer for `pdftotext` to return.
+
 ## Five more flags that are encoding decisions
 
 `rg` has about a hundred flags and most of them are about *which files* to search. These five are about *what the bytes mean*, which puts them on this page. Same two machines, same day, same diff — identical apart from the version line.
@@ -228,6 +285,7 @@ RULE 4. INVALID BYTES DO NOT REMOVE A LINE
 | a search that behaves the same on every machine | `rg` |
 | a search on a machine you cannot install anything on | `grep`, and read [its page](../grep/README.md) first |
 | to search bytes, not characters | `rg --no-unicode`, or `LC_ALL=C grep` |
+| to search a PDF, `.docx` or other zip-shaped document | `rg --pre` — [nothing else will](#the-file-whose-text-is-not-there), the bytes are compressed |
 
 One more difference that is not about encodings but will bite you the first week: **`rg` respects `.gitignore` and skips hidden files**, so `rg pattern` and `grep -r pattern .` can return different sets of files for reasons that have nothing to do with the pattern. `rg -uuu` turns all of that off and is the honest comparison.
 
@@ -252,9 +310,11 @@ It is a single static binary written in Rust, which is also why there is no BSD/
 2. Run `rg -o . f | wc -l` and `rg -o --no-unicode . f | wc -l` on a file with accented text. The difference is the number of continuation bytes.
 3. Run `rg something` in a repo, then `rg -uuu something`. Count the extra files. That gap is `.gitignore`, not encoding — but it is the other reason `rg` and `grep` disagree.
 4. Pipe `rg` output for a Latin-1 file through `xxd -p` and confirm for yourself that the `�` you saw was never in the stream.
+5. Search any PDF you have for a word you can see on its first page. Then run the same search through `pdftotext -q file.pdf - | rg word`. The gap between those two answers is a compressed stream, not an encoding.
 
 ## See also
 
+- [rg — the menu](../../RIPGREP.md) — the practical companion to this page: the flags worth knowing, what `--files` reveals about everything `rg` declines to open, and the rest of the PDF story
 - [`grep` on text that is not ASCII](../grep/README.md) — the tool this one is measured against
 - [Byte order and the BOM](../../03_Encodings/byte_order_and_bom/README.md) — the five marks, the three `rg` tests, and why the order of the check matters
 - [`String` is bytes that promise UTF-8](../../05_Rust/string_is_bytes_that_promise_utf8/README.md) — the Rust type that makes `rg`'s "no character there" the natural answer
