@@ -23,6 +23,6 @@ Already demonstrated elsewhere, so this page should link rather than repeat it: 
 ## See also
 
 - [Inspecting a file](../inspecting_a_file/README.md) — what `file` says about the same text in five encodings, and what kind of claim each answer is
-
+- [The table has a version](../../02_Characters/the_table_has_a_version/README.md) — the same failure one layer up: an out-of-date Unicode table answers `Cn`, which does not mean *"not in my edition"* but *unassigned*, and comes with no hedge either
 - [Byte order and the BOM](../../03_Encodings/byte_order_and_bom/README.md)
 - [`iconv`](../iconv/README.md)
