@@ -164,7 +164,7 @@ The `dump` function is `xxd` with the pairing removed: slice the bytes sixteen a
 | Tool | Reach for it when | Note |
 |---|---|---|
 | `xxd` | you want the default view, or to go back (`xxd -r`) | ships with vim; `-b` for binary, `-g1` to unpair |
-| `od -An -tx1 -c` | you are on a machine with nothing else | POSIX, always present; `-c` shows octal for high bytes |
+| `od -An -tx1 -c` | you are on a machine with nothing else | POSIX, always present; `-c` shows octal for high bytes (set `LC_ALL=C`), and skip `-a` — [it makes names up](../../06_Terminal/inspecting_a_file/README.md) |
 | `hexdump -C` | you like the framed `\|text\|` column | also always present on macOS and Linux |
 | `bytes.hex(' ')` | you are already in Python | just the middle column, one line |
 
@@ -188,3 +188,4 @@ Then dump something real: `xxd ~/.zshrc | head`, or any file on your disk. Find 
 
 - [Hex is a shorthand](../hex_is_a_shorthand/README.md) — why each byte is two digits, and why `41` on screen is not `'41'` in the file
 - [A character is a number](../../02_Characters/a_character_is_a_number/README.md) — the agreement the right-hand column is applying
+- [Inspecting a file with `od`](../../06_Terminal/inspecting_a_file/README.md) — which of these columns is the file, and which is the tool guessing

@@ -26,7 +26,8 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [04_Python](04_Python/README.md) — five pages | stubs |
 | [`String` is bytes that promise UTF-8](05_Rust/string_is_bytes_that_promise_utf8/README.md) | written, 2026-09-05 — Rust, Python and shell; the one figure in the repo, and `valid_up_to()` matched against Python's `UnicodeDecodeError.start` |
 | [05_Rust](05_Rust/README.md) — the other three pages | stubs |
-| [06_Terminal](06_Terminal/README.md) — four pages | stubs |
+| [Inspecting a file with `od`](06_Terminal/inspecting_a_file/README.md) | written, 2026-09-05 — the named-character row is fiction in two dialects, and the `?` is the terminal's, not od's |
+| [06_Terminal](06_Terminal/README.md) — the other four pages | stubs |
 | [A BOM in a CSV](07_Real_Data/bom_in_a_csv/README.md) | written, 2026-09-05 — Python and shell; the decision procedure, and the two platform fingerprints |
 | [07_Real_Data](07_Real_Data/README.md) — the other five pages | stubs |
 | [From the telegraph to Unicode](09_History/from_telegraph_to_unicode/README.md) | written, 2026-09-05 |

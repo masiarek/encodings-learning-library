@@ -1,0 +1,60 @@
+1. THE HONEST VIEW: three tools, one file, the same twelve bytes
+
+$ printf 'caf\303\251: 1\342\202\254\n' | xxd
+00000000: 6361 66c3 a93a 2031 e282 ac0a            caf..: 1....
+
+$ printf 'caf\303\251: 1\342\202\254\n' | hexdump -C
+00000000  63 61 66 c3 a9 3a 20 31  e2 82 ac 0a              |caf..: 1....|
+0000000c
+
+$ printf 'caf\303\251: 1\342\202\254\n' | od -An -tx1 | tidy
+  63  61  66  c3  a9  3a  20  31  e2  82  ac  0a
+   Nine characters, twelve bytes. Every tool agrees, because this column IS the file.
+
+2. HOW BIG IS IT? wc -c counts bytes — the same number ls -l shows in its size column
+
+$ printf 'caf\303\251: 1\342\202\254\n' | wc -c | tr -d ' '
+12
+
+3. HOW MANY CHARACTERS? wc -m, and the answer depends on the locale
+
+$ printf 'caf\303\251: 1\342\202\254\n' | LC_ALL=C wc -m | tr -d ' '
+12
+   ^ in the C locale, 'character' means 'byte', so this is the wrong question answered 12
+
+$ printf "$LINE" | LC_ALL=$UTF8 wc -m | tr -d " "
+9
+   ^ in a UTF-8 locale the same command decodes first and says 9. Same file, same tool.
+
+4. od -c: the octal escape, for bytes it has no character for
+
+$ printf 'caf\303\251\n' | od -An -tx1 -c | tidy
+  63  61  66  c3  a9  0a
+   c   a   f 303 251  \n
+   c a f, then 303 251 for the é — two bytes, no character to draw for either.
+   (od -a, the NAMED-character row, is the one column to distrust: it is
+    locale-dependent on macOS and high-bit-stripped on GNU. See the page.)
+
+5. iconv: the same nine characters, re-encoded to UTF-16 — name the byte order
+
+$ printf 'caf\303\251: 1\342\202\254\n' | iconv -f UTF-8 -t UTF-16BE | xxd
+00000000: 0063 0061 0066 00e9 003a 0020 0031 20ac  .c.a.f...:. .1 .
+00000010: 000a                                     ..
+
+$ printf 'caf\303\251: 1\342\202\254\n' | iconv -f UTF-8 -t UTF-16LE | xxd
+00000000: 6300 6100 6600 e900 3a00 2000 3100 ac20  c.a.f...:. .1.. 
+00000010: 0a00                                     ..
+   Same characters, mirrored bytes. Ask for plain UTF-16 and the tool chooses
+   for you — big-endian on macOS, little-endian on GNU — and adds a BOM.
+
+6. THE 20-BYTE FILE, rebuilt portably: a BOM, then UTF-16BE
+
+$ { printf '\376\377'; printf 'caf\303\251: 1\342\202\254\n' | iconv -f UTF-8 -t UTF-16BE; } | xxd
+00000000: feff 0063 0061 0066 00e9 003a 0020 0031  ...c.a.f...:. .1
+00000010: 20ac 000a                                 ...
+
+$ { printf '\376\377'; printf 'caf\303\251: 1\342\202\254\n' | iconv -f UTF-8 -t UTF-16BE; } | wc -c | tr -d ' '
+20
+   12 bytes became 20: two for the BOM, two per character, for text that was
+   mostly ASCII. Look at the € — its code unit is 20 ac, and xxd's text column
+   shows a SPACE for that 20, because half a character still looks like a byte.
