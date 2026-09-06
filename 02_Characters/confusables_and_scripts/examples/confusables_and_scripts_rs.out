@@ -1,0 +1,58 @@
+
+1. TWO chars THAT std CANNOT TELL APART
+------------------------------------------------------------------------
+                          latin a      cyrillic a
+   code point             U+0061       U+0430
+   len_utf8()             1            2
+   is_alphabetic()        true         true
+   is_lowercase()         true         true
+   is_ascii()             true         false
+   is_alphanumeric()      true         true
+
+   is_ascii() is the only one that splits them, and it is not a
+   script test -- it would put 'é' on the Cyrillic side. `char`
+   has no script method, no block method, and no name method:
+   Rust ships the classification tables and not the names.
+
+2. BLOCKS, TRANSCRIBED -- AND WHY IT IS NOT THE EASY FIX
+------------------------------------------------------------------------
+   U+0061  a  LATIN (basic, lower)
+   U+0041  A  LATIN (basic, upper)
+   U+00E9  é  LATIN (1 Supplement + Extended-A/B)
+   U+017C  ż  LATIN (1 Supplement + Extended-A/B)
+   U+0430  а  CYRILLIC
+   U+03BF  ο  GREEK
+   U+1D9C  ᶜ  not in the transcribed table
+   U+0030  0  not in the transcribed table
+   U+002E  .  not in the transcribed table
+
+   Read the LATIN rows in the table above: the alphabet needs
+   FIVE ranges and this transcription still misses several, so
+   'ᶜ' comes back unknown though it is plainly a Latin letter.
+   And the last two rows are in no script at all -- a digit and
+   a full stop belong to every alphabet at once, which is why
+   any real mixed-script check has to special-case them.
+
+   So a block table is easy to write, easy to verify, and
+   wrong in two directions at once: incomplete for one script,
+   and silent about the characters that have none.
+
+3. WHERE RUST DOES KNOW -- AND IT IS THE COMPILER
+------------------------------------------------------------------------
+   let żółw = 4;  compiles       true
+   let zolw = 3;  also compiles  true
+
+   rustc accepts non-ASCII identifiers and then does exactly
+   what this page argues for: it declines to FOLD them, and
+   warns instead. Three lints ship for it --
+      uncommon_codepoints
+      confusable_idents
+      mixed_script_confusables
+   -- which is the UTS #39 machinery, in a compiler, aimed at
+   the one place where two names that look identical do real
+   damage: a diff nobody can read.
+
+   Note where that leaves the two languages. Python NORMALIZES
+   identifiers and so cannot warn about them; Rust preserves
+   them and so must. Same trade as IDNA2003 against IDNA2008,
+   one floor down.

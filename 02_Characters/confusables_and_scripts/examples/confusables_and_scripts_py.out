@@ -1,0 +1,123 @@
+
+1. ONE PICTURE, TWO CHARACTERS
+------------------------------------------------------------------------
+   a   U+0061   LATIN SMALL LETTER A
+   а   U+0430   CYRILLIC SMALL LETTER A
+
+   they are equal                False
+   their UTF-8 bytes             61  vs  d0 b0
+   their lengths in bytes        1  vs  2
+
+   Nothing is broken here. Cyrillic and Latin both took the letter
+   from Greek, so the shapes are related by descent -- and a table
+   that encodes every writing system has to hold both.
+
+2. NORMALIZATION IS NOT THE FIX -- BUT READ THE EXCEPTION
+------------------------------------------------------------------------
+   look-alike     name                                           merges under
+   U+0430 -> 'a'  CYRILLIC SMALL LETTER A                        nothing
+   U+03BF -> 'o'  GREEK SMALL LETTER OMICRON                     nothing
+   U+0440 -> 'p'  CYRILLIC SMALL LETTER ER                       nothing
+   U+0441 -> 'c'  CYRILLIC SMALL LETTER ES                       nothing
+   U+0435 -> 'e'  CYRILLIC SMALL LETTER IE                       nothing
+   U+0456 -> 'i'  CYRILLIC SMALL LETTER BYELORUSSIAN-UKRAINIAN I nothing
+   U+217C -> 'l'  SMALL ROMAN NUMERAL FIFTY                      NFKC, NFKD
+   U+2215 -> '/'  DIVISION SLASH                                 nothing
+   U+2010 -> '-'  HYPHEN                                         nothing
+
+   Eight of the nine survive every normalization form there is, and
+   they are RIGHT to. Normalization reconciles two spellings of the
+   SAME character; Cyrillic er and Latin p are two different letters
+   that a font happens to draw alike, and merging them would corrupt
+   every Russian word ever written.
+
+   The ninth is the instructive one. U+217C is a Roman numeral, and
+   Unicode itself declared it COMPATIBILITY-equivalent to the letter,
+   so NFKC folds it. That is the whole rule: normalization catches a
+   look-alike only where the standard already said the two are the
+   same character wearing different clothes. Visual similarity is a
+   fact about fonts, and no normalization form has ever claimed it.
+
+3. ONE LETTER, AND IT IS SOMEBODY ELSE'S DOMAIN
+------------------------------------------------------------------------
+   'apple.com'    U+0061 U+0070 U+0070 ...
+                  .encode('idna') -> b'apple.com'
+   'аpple.com'    U+0430 U+0070 U+0070 ...
+                  .encode('idna') -> b'xn--pple-43d.com'
+
+   The second one is not a spelling of the first; it is a different
+   name, and punycode preserves the difference perfectly -- which is
+   exactly what an encoding should do. The `xn--` form is why your
+   browser shows it: having decided it cannot tell you the names are
+   different, it stops showing you the pretty one.
+
+4. THE STANDARD LIBRARY HAS NO script()
+------------------------------------------------------------------------
+   hasattr(unicodedata, 'script')   False
+
+   Six properties are exposed and script is not among them. Ask the
+   ones that are, about the two letters from section 1:
+
+   property             latin a          cyrillic a
+   category             Ll               Ll
+   bidirectional        L                L
+   combining            0                0
+   east_asian_width     Na               A
+   decomposition        (none)           (none)
+
+   Four of the five cannot tell them apart, and the fifth is a red
+   herring worth spending three lines on, because it looks like a
+   hit:
+
+      U+0061  east_asian_width Na  LATIN SMALL LETTER A
+      U+00E9  east_asian_width A   LATIN SMALL LETTER E WITH ACUTE
+      U+017C  east_asian_width N   LATIN SMALL LETTER Z WITH DOT ABOVE
+      U+0430  east_asian_width A   CYRILLIC SMALL LETTER A
+
+   It splits LATIN against itself -- three Latin letters, three
+   different values -- because it answers `how many columns in a
+   CJK terminal`, not `which alphabet`. A property that separates
+   two characters is not thereby a script property.
+
+   The only stdlib function that does separate them is name(),
+   whose FIRST WORD is a script by convention -- and because a Name
+   is a Unicode stability guarantee, that convention is safe to
+   build on and safe to record:
+
+      U+0061  LATIN      from LATIN SMALL LETTER A
+      U+0430  CYRILLIC   from CYRILLIC SMALL LETTER A
+      U+03BF  GREEK      from GREEK SMALL LETTER OMICRON
+      U+0030  DIGIT      from DIGIT ZERO
+      U+002E  FULL       from FULL STOP
+
+5. A MIXED-SCRIPT DETECTOR, AND WHAT IT CATCHES
+------------------------------------------------------------------------
+   'apple.com'      ['LATIN']                  single script
+   'аpple.com'      ['CYRILLIC', 'LATIN']      MIXED -- refuse
+   'paypal.com'     ['LATIN']                  single script
+   'рaypal.com'     ['CYRILLIC', 'LATIN']      MIXED -- refuse
+
+   Six lines of stdlib, and it catches the whole classic attack: a
+   name that is mostly Latin with one letter borrowed from another
+   alphabet cannot help but be mixed-script.
+
+6. AND THE ONE IT WAVES STRAIGHT THROUGH
+------------------------------------------------------------------------
+   'аррӏе'
+   rendered            аррӏе.com
+   code points         U+0430 U+0440 U+0440 U+04CF U+0435
+   scripts present     ['CYRILLIC']
+   mixed?              False
+   punycode            b'xn--80ak6aa92e.com'
+
+   Every letter is Cyrillic, so the string is perfectly consistent
+   and the detector above is satisfied. This is a WHOLE-SCRIPT
+   confusable, and no amount of internal consistency will find it --
+   the only thing wrong with the name is that it is not the one the
+   reader thinks they are reading.
+
+   That is where the stdlib runs out and UTS #39 begins: a published
+   table of confusable sequences, plus restriction levels that ask
+   which scripts a USER expects rather than which the string uses.
+   And the last of those questions is not answerable inside a
+   library at all -- it is a policy a registry or a browser holds.

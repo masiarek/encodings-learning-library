@@ -18,7 +18,7 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [The table has a version](02_Characters/the_table_has_a_version/README.md) | written, 2026-09-06 — Python and Rust; `python3` and `rustc` on one machine were a Unicode release apart, and the page is about which of the three kinds of fact may go in a key |
 | [Preparing a string](02_Characters/preparing_a_string/README.md) | written, 2026-09-06 — Python and Rust; RFC 3454 stringprep, built on the frozen table the previous page explains, and the reason `faß.de` is two different domains |
 | [A code point is not a character](02_Characters/a_code_point_is_not_a_character/README.md) | stub |
-| [Confusables and scripts](02_Characters/confusables_and_scripts/README.md) | stub — added 2026-09-06; the half [preparing a string](02_Characters/preparing_a_string/README.md) declines, and the one normalization cannot fix |
+| [Confusables and scripts](02_Characters/confusables_and_scripts/README.md) | written, 2026-09-06 — Python and Rust; eight of nine look-alikes survive every normalization form, `east_asian_width` is a red herring that splits Latin against itself, and the whole-script confusable defeats the detector |
 | [Logical and visual order](02_Characters/logical_and_visual_order/README.md) | stub — added 2026-09-06; UAX #9, and why a terminal screenshot is not evidence about a string |
 | [Unicode in identifiers](02_Characters/unicode_in_identifiers/README.md) | stub — added 2026-09-06; Python NFKC-folds your variable names and Rust deliberately does not |
 | [UTF-8 by hand](03_Encodings/utf8_by_hand/README.md) | stub — the checkpoint page |
