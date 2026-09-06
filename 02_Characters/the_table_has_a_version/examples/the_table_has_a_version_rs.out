@@ -1,0 +1,64 @@
+1. THE TABLE TRAVELS WITH THE BINARY
+------------------------------------------------------------------------
+   char::UNICODE_VERSION is a (u8, u8, u8) const, baked in by rustc.
+   Its value is not printed here, for the reason the Python program
+   gives: it is a fact about the toolchain that built this file, not
+   a fact about Unicode.
+
+   is it at least 9.0?   true
+   ...and the compiler agreed before the program ever ran:
+      const _: () = assert!(char::UNICODE_VERSION.0 >= 9);
+
+   That const assert is the whole difference from Python. Python
+   reads unicodedata at run time, so the answer follows whichever
+   interpreter you launch. Rust settles it at compile time, so a
+   binary keeps the table its rustc had. Two machines running the
+   SAME binary can never disagree; two machines compiling the same
+   source very well can.
+
+2. DEFINITIONAL HERE TOO, AND STILL FREE OF THE TABLE
+------------------------------------------------------------------------
+   char::MAX                        U+10FFFF
+   char::from_u32(0xD800)           None   <- the surrogate hole
+   char::from_u32(0x110000)         None   <- past the end
+   usable scalar values             1112064
+
+   None of those four consult a table. They are the shape of the
+   number line, fixed when UTF-16 fixed it, and no Unicode release
+   can move them.
+
+3. THESE DO CONSULT IT -- AND THESE ANSWERS ARE STILL SAFE
+------------------------------------------------------------------------
+   code point  alphabetic  uppercase  len_utf8   char
+   U+00E9      true        false      2          é
+   U+1E9E      true        true       3          ẞ
+   U+1F600     false       false      4          😀
+   U+FFFE      false       false      3          ￾
+
+   The first three have been settled since 2010 at the latest, and
+   General_Category is not a property Unicode changes lightly -- but
+   note that it is NOT on the stability list, so `settled` here means
+   observed, not promised. The fourth row is the promised one:
+   U+FFFE is a PERMANENT noncharacter, guaranteed never to be assigned
+   anything, so `false` there is not a reading of today's table but a
+   statement about every future one. That is the kind of lookup that
+   can safely go in a test.
+
+4. AND THE ONE THIS PROGRAM REFUSES TO ANSWER
+------------------------------------------------------------------------
+   U+1E030 MODIFIER LETTER CYRILLIC SMALL A arrived in Unicode 15.0
+   (2022). A rustc built before that says `false`; one built after
+   says `true`. Same source, same machine, same input, and no bug.
+   So the row is described and not printed. Ask your own compiler:
+
+       fn main() { println!("{}", '\u{1E030}'.is_alphabetic()); }
+
+5. ONE MORE THE TABLE DECIDES FOR YOU
+------------------------------------------------------------------------
+   'ß'.to_uppercase()               "SS"   (2 chars)
+   U+1E9E exists as a single char   Some('ẞ')
+
+   Uppercasing ß gives two characters, not the single one that has
+   existed since 2008. That is not arithmetic and not an oversight --
+   it is a line in SpecialCasing.txt, which is to say a row in the
+   table, which is to say something that has a version.

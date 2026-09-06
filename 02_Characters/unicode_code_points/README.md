@@ -210,6 +210,7 @@ Which gives the last mnemonic, and it is the useful kind because it names both t
 - [A character is a number](../a_character_is_a_number/README.md) — where 65 meaning `A` came from
 - [Control characters](../control_characters/README.md) — the first 32, and the three that still decide how a file is cut up
 - [Code pages](../code_pages/README.md) — the 256-entry tables the first 256 code points came from
+- [The table has a version](../the_table_has_a_version/README.md) — whose copy of the table answered the questions above, and why the whitespace scan is safe when a count would not be
 - [A code point is not a character](../a_code_point_is_not_a_character/README.md) — why this number still is not what a person calls a character
 - [UTF-8 by hand](../../03_Encodings/utf8_by_hand/README.md) — turning one of these numbers into bytes
 - [UTF-16 and surrogates](../../03_Encodings/utf16_and_surrogates/README.md) — what the 2,048-slot hole is for

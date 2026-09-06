@@ -1,0 +1,65 @@
+1. ONE MODULE, TWO UNICODE TABLES
+------------------------------------------------------------------------
+   unicodedata               the table this interpreter was built with
+   unicodedata.ucd_3_2_0     Unicode 3.2.0, sealed in 2002
+
+   The frozen one is here because IDNA and stringprep pinned their table
+   on purpose: a domain name must not change meaning when Unicode grows.
+   That makes it the one Unicode table whose answers are the same on
+   every machine under every Python -- which is why this program may
+   print them, and may not print the other one's.
+
+2. THE SAME QUESTION, ASKED OF BOTH TABLES
+------------------------------------------------------------------------
+   code point  char   name, from whichever table knows it   in 2002?
+   U+00E9      é      LATIN SMALL LETTER E WITH ACUTE       yes
+   U+017C      ż      LATIN SMALL LETTER Z WITH DOT ABOVE   yes
+   U+20AC      €      EURO SIGN                             yes
+   U+0CA0      ಠ      KANNADA LETTER TTHA                   yes
+   U+1E9E      ẞ      LATIN CAPITAL LETTER SHARP S          no
+   U+1F600     😀      GRINNING FACE                         no
+   U+20BD      ₽      RUBLE SIGN                            no
+   U+20BF      ₿      BITCOIN SIGN                          no
+
+   4 of the 8 are missing from the 2002 table.
+   Nothing was ever removed from Unicode -- these had not arrived yet.
+
+3. GROWING IS THE ONLY THING THE TABLE EVER DID
+------------------------------------------------------------------------
+   code points the 2002 table and this one name differently:  0
+   code points this table has names for, over 100,000:        True
+
+   The zero is not luck. A Name is one of Unicode's stability guarantees:
+   once a code point is assigned, its name may never change and the code
+   point may never be reused. So a NAME is safe to put in an answer key.
+   The count beside it is not -- which is why it is printed as a question
+   with a stable answer rather than as a number.
+
+4. THE VERSION IS THE ONE THING THIS PROGRAM WILL NOT PRINT
+------------------------------------------------------------------------
+   unicodedata.unidata_version is a str in three parts:   True
+   and it is newer than the frozen table:               True
+
+   The value itself -- '16.0.0', '17.0.0', whatever yours says -- is
+   deliberately absent. Recording it would put the machine that built
+   this page into the answer key, and the next machine would then fail
+   a check about nothing. Ask your own copy instead:
+
+       python3 -c 'import unicodedata; print(unicodedata.unidata_version)'
+
+5. WHAT SURVIVES THE VERSION, AND WHAT DOES NOT
+------------------------------------------------------------------------
+   arithmetic -- true under every version ever published:
+      usable scalar values, 0x110000 minus 2,048 surrogates   1112064
+
+   guaranteed -- Unicode promises these never change:
+      the name of an assigned code point   LATIN SMALL LETTER E WITH ACUTE
+      the code point of that character     U+00E9
+
+   a lookup -- true today, in this table, on this machine:
+      how many code points are assigned
+      whether U+1E030 is one of them
+      whether a character is alphabetic, uppercase, whitespace
+
+   The first two groups belong in a test.
+   The third belongs in a sentence with a date on it.

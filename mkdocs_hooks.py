@@ -78,6 +78,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "control_characters",
         "code_pages",
         "unicode_code_points",
+        "the_table_has_a_version",
         "a_code_point_is_not_a_character",
     ],
     # The number is settled; now how to write it as bytes.

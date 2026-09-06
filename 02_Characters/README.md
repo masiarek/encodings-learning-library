@@ -10,7 +10,8 @@ A byte is a number. Text is characters. The only bridge between them is a **tabl
 | 2 | [Control characters](control_characters/README.md) | What are the first 32, which three still matter every day, and where does a C string end? | written |
 | 3 | [Code pages](code_pages/README.md) | What did everybody do with the unclaimed 128, and why do the tables agree just enough to hide the bug? | written, 2026-09-05 |
 | 4 | [Unicode code points](unicode_code_points/README.md) | What is `U+00E9`, and why is it a number rather than a byte? | written, 2026-09-05 |
-| 5 | [A code point is not a character](a_code_point_is_not_a_character/README.md) | Why does `len()` still not count what a person calls a character? | stub |
+| 5 | [The table has a version](the_table_has_a_version/README.md) | Whose copy of Unicode is your program actually reading, and what may you write down? | written, 2026-09-06 |
+| 6 | [A code point is not a character](a_code_point_is_not_a_character/README.md) | Why does `len()` still not count what a person calls a character? | stub |
 
 ## The through-line
 

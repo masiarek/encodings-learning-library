@@ -15,6 +15,7 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [Control characters](02_Characters/control_characters/README.md) | written, 2026-09-05 — the first page with a *C view* (`examples/*.c`, compiled by the runner since the same day) |
 | [Code pages](02_Characters/code_pages/README.md) | written, 2026-09-05 — Python, Rust and shell; the agreement matrix is the original bit |
 | [Unicode code points](02_Characters/unicode_code_points/README.md) | written, 2026-09-05 — the neighbourhood map: read `U+XXXX` as a block plus a house number, and measure the whitespace runs instead of memorising them |
+| [The table has a version](02_Characters/the_table_has_a_version/README.md) | written, 2026-09-06 — Python and Rust; `python3` and `rustc` on one machine were a Unicode release apart, and the page is about which of the three kinds of fact may go in a key |
 | [A code point is not a character](02_Characters/a_code_point_is_not_a_character/README.md) | stub |
 | [UTF-8 by hand](03_Encodings/utf8_by_hand/README.md) | stub — the checkpoint page |
 | [Validation is a boundary](03_Encodings/validation_is_a_boundary/README.md) | written, 2026-09-05 — all four languages, and the second *C view* |

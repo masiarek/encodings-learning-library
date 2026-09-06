@@ -189,6 +189,7 @@ The two everyone reaches for that are *not* on this list are `bat` and `rg` — 
 | [Unicode code converter ↗](https://r12a.github.io/app-conversion/) — Richard Ishida, W3C | Paste anything; see it as code points, UTF-8, UTF-16, escapes in six languages, at once. The tool this library's viewer exercise imitates. |
 | [Compart Unicode ↗](https://www.compart.com/en/unicode/) | One page per character with every encoding, block, and property. |
 | [FileFormat.info ↗](https://www.fileformat.info/info/unicode/char/e9/index.htm) | The same, older, and the page linked from that Stack Overflow answer. That link is `é`. |
+| [`uni` ↗](https://github.com/arp242/uni) — Martin Tournoij | The command-line one, and the only tool in this table that will tell you *which* Unicode it is answering from — it ships its own copy of the database and `uni version` prints the release. `brew install uni`; then `uni identify`, `uni search`, `uni print`. Why that matters is [The table has a version](02_Characters/the_table_has_a_version/README.md). |
 | [Awesome Unicode ↗](https://github.com/jagracey/Awesome-Unicode) | A curated list of the strange corners: zero-width characters, homoglyphs, the emoji that break things. |
 
 
