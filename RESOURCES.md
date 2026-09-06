@@ -73,6 +73,7 @@ Dated in one place, and usefully so: it puts the Web at "over 90%" UTF-8 while q
 | [`unicodedata` ↗](https://docs.python.org/3/library/unicodedata.html) — `name()`, `category()`, `normalize()` | [`str` ↗](https://doc.rust-lang.org/std/primitive.str.html) · [`String` ↗](https://doc.rust-lang.org/std/string/struct.String.html) — `from_utf8`, `from_utf8_lossy`, `as_bytes`, `is_char_boundary` |
 | [Fluent Python, 2nd ed. — example code ↗](https://github.com/fluentpython/example-code-2e) — the `04-text-byte` folder is the book's Unicode chapter, runnable | [`unicode-segmentation` ↗](https://docs.rs/unicode-segmentation/latest/unicode_segmentation/) — the grapheme-cluster crate std deliberately lacks |
 | | [`core::str::validations` ↗](https://github.com/rust-lang/rust/blob/master/library/core/src/str/validations.rs) — the actual UTF-8 validator behind `from_utf8`, 300 lines, readable |
+| [PEP 540 — UTF-8 Mode ↗](https://peps.python.org/pep-0540/) — why `sys.flags.utf8_mode` is already `1` under the `C` locale, with nothing set; behind [Locale and `LC_CTYPE`](06_Terminal/locale_and_lc_ctype/README.md) | |
 | [ABAP keyword documentation ↗](https://help.sap.com/doc/abapdocu_latest_index_htm/latest/en-US/index.htm) — search *code page*, *xstring*, `cl_abap_codepage`; the reference for every ABAP claim on the [07_Real_Data](07_Real_Data/README.md) pages | |
 
 ## Books
@@ -176,6 +177,10 @@ GNU invents `C`, `)`, `b` and `,` — four characters that appear nowhere in the
 
 
 The two everyone reaches for that are *not* on this list are `bat` and `rg` — excellent tools, and neither is about encodings: `bat` is a syntax-highlighting `cat` and `rg` is a fast grep. They read text; they do not tell you what the text is made of.
+
+## The terminal itself
+
+- [Display high-bit characters in Terminal on Mac ↗](https://support.apple.com/guide/terminal/display-high-bit-characters-trmlxxx/mac) — Apple. Terminal's three encoding-adjacent settings: the text-encoding menu, the locale-variables checkbox, and the Control-V input escape. Read it for *what the settings are*; the advice to change them is written for a world in which UTF-8 was not already the default, and only one of the three is visible to a running program. Which one, and why, is [Locale and `LC_CTYPE`](06_Terminal/locale_and_lc_ctype/README.md).
 
 ## Tools for looking a character up
 
