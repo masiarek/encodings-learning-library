@@ -46,12 +46,16 @@
 
 4. AND THE ONE THIS PROGRAM REFUSES TO ANSWER
 ------------------------------------------------------------------------
-   U+1E030 MODIFIER LETTER CYRILLIC SMALL A arrived in Unicode 15.0
-   (2022). A rustc built before that says `false`; one built after
-   says `true`. Same source, same machine, same input, and no bug.
-   So the row is described and not printed. Ask your own compiler:
+   U+11DB0 TOLONG SIKI LETTER I arrived in Unicode 17.0, in September
+   2025. A rustc built before that says `false`; one built after says
+   `true`. Same source, same machine, same input, and no bug -- so the
+   row is described here and not printed. Ask your own compiler:
 
-       fn main() { println!("{}", '\u{1E030}'.is_alphabetic()); }
+       fn main() { println!("{}", '\u{11DB0}'.is_alphabetic()); }
+
+   Then ask the python3 next to it. On the machine this page was
+   written on the two did not agree, and the page says so in a fence
+   with a date on it, because that is the only honest place for it.
 
 5. ONE MORE THE TABLE DECIDES FOR YOU
 ------------------------------------------------------------------------

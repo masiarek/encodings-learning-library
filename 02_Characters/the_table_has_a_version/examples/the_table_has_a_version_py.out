@@ -35,7 +35,27 @@
    The count beside it is not -- which is why it is printed as a question
    with a stable answer rather than as a number.
 
-4. THE VERSION IS THE ONE THING THIS PROGRAM WILL NOT PRINT
+4. AN OLD TABLE DOES NOT SAY "I DO NOT KNOW"
+------------------------------------------------------------------------
+   the frozen 2002 table, asked about four very different code points:
+
+   code point  category  name          what it actually is
+   U+1F600     Cn        ValueError    GRINNING FACE, real since 2010
+   U+1E9E      Cn        ValueError    CAPITAL SHARP S, real since 2008
+   U+0378      Cn        ValueError    genuinely unassigned, still is
+   U+FFFE      Cn        ValueError    a noncharacter -- never will be
+
+   Four different truths and one answer. Cn means UNASSIGNED, so on the
+   top two rows the table is not reporting a gap in its own knowledge --
+   it is making a false statement about Unicode, with no hedge in it.
+
+   That is the whole hazard in a line. An out-of-date table does not
+   fail, and it does not say it is out of date. It answers confidently
+   and wrongly, the way od -a invents a letter for a byte it cannot
+   name -- and you cannot tell the four cases apart from the answer,
+   because the answer is the same.
+
+5. THE VERSION IS THE ONE THING THIS PROGRAM WILL NOT PRINT
 ------------------------------------------------------------------------
    unicodedata.unidata_version is a str in three parts:   True
    and it is newer than the frozen table:               True
@@ -47,7 +67,7 @@
 
        python3 -c 'import unicodedata; print(unicodedata.unidata_version)'
 
-5. WHAT SURVIVES THE VERSION, AND WHAT DOES NOT
+6. WHAT SURVIVES THE VERSION, AND WHAT DOES NOT
 ------------------------------------------------------------------------
    arithmetic -- true under every version ever published:
       usable scalar values, 0x110000 minus 2,048 surrogates   1112064
@@ -58,7 +78,7 @@
 
    a lookup -- true today, in this table, on this machine:
       how many code points are assigned
-      whether U+1E030 is one of them
+      whether U+11DB0 is one of them
       whether a character is alphabetic, uppercase, whitespace
 
    The first two groups belong in a test.

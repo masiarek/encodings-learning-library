@@ -37,6 +37,27 @@ $ sw_vers -productVersion                # macOS's own Character Viewer database
 
 Read the first two again. `python3` and `rustc`, on one laptop, in one repository, running the examples on one page — **a full release apart**. Not a broken install; both are current. Python 3.14 was cut before Unicode 17.0 landed and Rust's was cut after, and neither has any reason to care what the other thinks.
 
+## What a release apart actually costs
+
+A version string is easy to shrug at. Here are the same three tools asked about one code point that exists and one that does not:
+
+```text title="Measured on the same Mac, 2026-09-06 — not machine-checked, and not machine-checkable: uni is on neither CI runner and the toolchains differ per runner"
+                             U+11DB0                    U+0378
+                             TOLONG SIKI LETTER I       nothing, in any version
+                             (new in Unicode 17.0)      (reserved, never assigned)
+      -------------------------------------------------------------------------
+  uni 2.9.0        UCD 17.0  TOLONG SIKI LETTER I       uni: unknown codepoint
+  rustc 1.98.0     UCD 17.0  is_alphabetic() -> true    is_alphabetic() -> false
+  python3 3.14.2   UCD 16.0  category() -> 'Cn'         category() -> 'Cn'
+                             name() -> ValueError       name() -> ValueError
+```
+
+Read the bottom two rows across. **Python gives the identical answer to both columns** — and one of those columns is a letter somebody writes their language in. `Cn` does not mean *"not in my edition"*; it means *unassigned*, a claim about Unicode rather than about the interpreter, and it comes with no hedge. The older table does not report a gap in its knowledge. It reports a fact, confidently, and the fact is false.
+
+That is the same failure this library has already met twice: [`od -a`](../../06_Terminal/inspecting_a_file/README.md) inventing the letter `C` for a byte it cannot name, and [`file`](../../06_Terminal/file_guesses/README.md) guessing rather than declining. A tool that says *"I don't know"* costs you five minutes. A tool that answers wrongly costs you the afternoon, because there is nothing in the output to investigate.
+
+One thing the row does *not* explain away: Rust's `is_alphabetic` is the Alphabetic property, a superset of Python's `isalpha` (`L*`), so a `true`/`false` split between them is normally suspect on definitional grounds alone. Not here — a `Cn` code point is in neither set. That disagreement is the table edition and nothing else.
+
 The fourth line is the one that should make you uneasy, and it is the reason `uni` is in the list at all. `uni` ships its own copy of the Unicode Character Database, so it can *tell you* which one — 17.0, dated. macOS's Character Viewer reads `CharacterDB.sqlite3` out of a private framework, and there is nothing to ask: no version string, no date, and names that are Apple's rather than the standard's. A tool that cannot name its table is a tool you cannot quote.
 
 ## Two tables in one interpreter
@@ -84,7 +105,27 @@ Python ships the frozen table as well as the live one, and that is a gift, becau
    The count beside it is not -- which is why it is printed as a question
    with a stable answer rather than as a number.
 
-4. THE VERSION IS THE ONE THING THIS PROGRAM WILL NOT PRINT
+4. AN OLD TABLE DOES NOT SAY "I DO NOT KNOW"
+------------------------------------------------------------------------
+   the frozen 2002 table, asked about four very different code points:
+
+   code point  category  name          what it actually is
+   U+1F600     Cn        ValueError    GRINNING FACE, real since 2010
+   U+1E9E      Cn        ValueError    CAPITAL SHARP S, real since 2008
+   U+0378      Cn        ValueError    genuinely unassigned, still is
+   U+FFFE      Cn        ValueError    a noncharacter -- never will be
+
+   Four different truths and one answer. Cn means UNASSIGNED, so on the
+   top two rows the table is not reporting a gap in its own knowledge --
+   it is making a false statement about Unicode, with no hedge in it.
+
+   That is the whole hazard in a line. An out-of-date table does not
+   fail, and it does not say it is out of date. It answers confidently
+   and wrongly, the way od -a invents a letter for a byte it cannot
+   name -- and you cannot tell the four cases apart from the answer,
+   because the answer is the same.
+
+5. THE VERSION IS THE ONE THING THIS PROGRAM WILL NOT PRINT
 ------------------------------------------------------------------------
    unicodedata.unidata_version is a str in three parts:   True
    and it is newer than the frozen table:               True
@@ -96,7 +137,7 @@ Python ships the frozen table as well as the live one, and that is a gift, becau
 
        python3 -c 'import unicodedata; print(unicodedata.unidata_version)'
 
-5. WHAT SURVIVES THE VERSION, AND WHAT DOES NOT
+6. WHAT SURVIVES THE VERSION, AND WHAT DOES NOT
 ------------------------------------------------------------------------
    arithmetic -- true under every version ever published:
       usable scalar values, 0x110000 minus 2,048 surrogates   1112064
@@ -107,7 +148,7 @@ Python ships the frozen table as well as the live one, and that is a gift, becau
 
    a lookup -- true today, in this table, on this machine:
       how many code points are assigned
-      whether U+1E030 is one of them
+      whether U+11DB0 is one of them
       whether a character is alphabetic, uppercase, whitespace
 
    The first two groups belong in a test.
@@ -173,12 +214,16 @@ Section 3 is the load-bearing one. **Zero renames across the whole number line**
 
 4. AND THE ONE THIS PROGRAM REFUSES TO ANSWER
 ------------------------------------------------------------------------
-   U+1E030 MODIFIER LETTER CYRILLIC SMALL A arrived in Unicode 15.0
-   (2022). A rustc built before that says `false`; one built after
-   says `true`. Same source, same machine, same input, and no bug.
-   So the row is described and not printed. Ask your own compiler:
+   U+11DB0 TOLONG SIKI LETTER I arrived in Unicode 17.0, in September
+   2025. A rustc built before that says `false`; one built after says
+   `true`. Same source, same machine, same input, and no bug -- so the
+   row is described here and not printed. Ask your own compiler:
 
-       fn main() { println!("{}", '\u{1E030}'.is_alphabetic()); }
+       fn main() { println!("{}", '\u{11DB0}'.is_alphabetic()); }
+
+   Then ask the python3 next to it. On the machine this page was
+   written on the two did not agree, and the page says so in a fence
+   with a date on it, because that is the only honest place for it.
 
 5. ONE MORE THE TABLE DECIDES FOR YOU
 ------------------------------------------------------------------------
@@ -204,7 +249,7 @@ Three groups, and the whole discipline is telling them apart.
 |---|---|---|
 | **Arithmetic** | `0x110000 − 2048 = 1,112,064`; `char::MAX`; the surrogate hole | yes, under every version ever published |
 | **Guaranteed** | a name (`LATIN SMALL LETTER E WITH ACUTE`); a code point (`U+00E9`); `U+FFFE` is a noncharacter | yes — these are written into the stability policy |
-| **A lookup** | how many code points are assigned; whether `U+1E030` is one; `is_alphabetic`, `is_uppercase`, `is_whitespace` | no — put it in a sentence with a date on it |
+| **A lookup** | how many code points are assigned; whether `U+11DB0` is one; `is_alphabetic`, `is_uppercase`, `is_whitespace` | no — put it in a sentence with a date on it |
 
 The middle row is doing more work than it looks. `is_alphabetic('é')` has been `true` since 1991 and will be `true` next year too, but *nothing promises that* — General_Category is not on the stability list. It is observed, not guaranteed, which is a different word and belongs in a different column.
 
@@ -221,7 +266,7 @@ The one measured survivor is worth knowing: [Unicode code points](../unicode_cod
 ## Try it
 
 - Run the two commands in the fence above on your own machine. If your `python3` and your `rustc` agree, wait a September.
-- `python3 -c "import unicodedata as u; print(u.name(chr(0x1E030), 'not in your table'))"` — the character this page's Rust program deliberately refuses to answer for.
+- `python3 -c "import unicodedata as u; print(u.name(chr(0x11DB0), 'not in your table'))"` — the character this page's Rust program deliberately refuses to answer for. Then ask `rustc` the same thing, and see whether your two agree.
 - Find a test in your own work that asserts on a character property rather than a character name, and decide which of the three rows of the table above it belongs in.
 - Ask the frozen table something modern: `unicodedata.ucd_3_2_0.name('😀', 'nope')`. Then ask why a 2002 table is still shipped in 2026.
 

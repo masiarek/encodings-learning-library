@@ -67,12 +67,16 @@ fn main() {
 
     println!("4. AND THE ONE THIS PROGRAM REFUSES TO ANSWER");
     rule();
-    println!("   U+1E030 MODIFIER LETTER CYRILLIC SMALL A arrived in Unicode 15.0");
-    println!("   (2022). A rustc built before that says `false`; one built after");
-    println!("   says `true`. Same source, same machine, same input, and no bug.");
-    println!("   So the row is described and not printed. Ask your own compiler:");
+    println!("   U+11DB0 TOLONG SIKI LETTER I arrived in Unicode 17.0, in September");
+    println!("   2025. A rustc built before that says `false`; one built after says");
+    println!("   `true`. Same source, same machine, same input, and no bug -- so the");
+    println!("   row is described here and not printed. Ask your own compiler:");
     println!();
-    println!("       fn main() {{ println!(\"{{}}\", '\\u{{1E030}}'.is_alphabetic()); }}");
+    println!("       fn main() {{ println!(\"{{}}\", '\\u{{11DB0}}'.is_alphabetic()); }}");
+    println!();
+    println!("   Then ask the python3 next to it. On the machine this page was");
+    println!("   written on the two did not agree, and the page says so in a fence");
+    println!("   with a date on it, because that is the only honest place for it.");
     println!();
 
     println!("5. ONE MORE THE TABLE DECIDES FOR YOU");

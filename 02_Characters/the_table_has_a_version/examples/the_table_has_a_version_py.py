@@ -61,7 +61,37 @@ print("   The count beside it is not -- which is why it is printed as a question
 print("   with a stable answer rather than as a number.")
 print()
 
-print("4. THE VERSION IS THE ONE THING THIS PROGRAM WILL NOT PRINT")
+print("4. AN OLD TABLE DOES NOT SAY \"I DO NOT KNOW\"")
+print(RULE)
+print("   the frozen 2002 table, asked about four very different code points:")
+print()
+print("   code point  category  name          what it actually is")
+for cp, truth in (
+    (0x1F600, "GRINNING FACE, real since 2010"),
+    (0x1E9E, "CAPITAL SHARP S, real since 2008"),
+    (0x0378, "genuinely unassigned, still is"),
+    (0xFFFE, "a noncharacter -- never will be"),
+):
+    ch = chr(cp)
+    try:
+        FROZEN.name(ch)
+        answer = "(a name)"
+    except ValueError:
+        answer = "ValueError"
+    print("   %-11s %-9s %-13s %s" % ("U+%04X" % cp, FROZEN.category(ch), answer, truth))
+print()
+print("   Four different truths and one answer. Cn means UNASSIGNED, so on the")
+print("   top two rows the table is not reporting a gap in its own knowledge --")
+print("   it is making a false statement about Unicode, with no hedge in it.")
+print()
+print("   That is the whole hazard in a line. An out-of-date table does not")
+print("   fail, and it does not say it is out of date. It answers confidently")
+print("   and wrongly, the way od -a invents a letter for a byte it cannot")
+print("   name -- and you cannot tell the four cases apart from the answer,")
+print("   because the answer is the same.")
+print()
+
+print("5. THE VERSION IS THE ONE THING THIS PROGRAM WILL NOT PRINT")
 print(RULE)
 v = MODERN.unidata_version
 print("   unicodedata.unidata_version is a %s in three parts:   %s" % (
@@ -77,7 +107,7 @@ print()
 print("       python3 -c 'import unicodedata; print(unicodedata.unidata_version)'")
 print()
 
-print("5. WHAT SURVIVES THE VERSION, AND WHAT DOES NOT")
+print("6. WHAT SURVIVES THE VERSION, AND WHAT DOES NOT")
 print(RULE)
 print("   arithmetic -- true under every version ever published:")
 print("      usable scalar values, 0x110000 minus 2,048 surrogates   %d" % (0x110000 - 2048))
@@ -88,7 +118,7 @@ print("      the code point of that character     U+%04X" % ord("é"))
 print()
 print("   a lookup -- true today, in this table, on this machine:")
 print("      how many code points are assigned")
-print("      whether U+1E030 is one of them")
+print("      whether U+11DB0 is one of them")
 print("      whether a character is alphabetic, uppercase, whitespace")
 print()
 print("   The first two groups belong in a test.")
