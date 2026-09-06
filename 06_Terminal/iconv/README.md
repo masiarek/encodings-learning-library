@@ -18,10 +18,10 @@
 
 Shell: a Latin-1 file made with `printf`, converted to UTF-8 and to CP1252, each step dumped with `xxd`; one deliberate failure.
 
-Already demonstrated elsewhere, so this page should link rather than repeat it: the UTF-8 → UTF-16 round trip, the byte order `iconv` picks when you do not name one, and the size arithmetic are in [Inspecting a file with `od`](../inspecting_a_file/README.md). What is left for this page is `iconv`'s own behaviour — `-l`, the alias lists, `//TRANSLIT` and `//IGNORE`, and what its refusal means.
+Already demonstrated elsewhere, so this page should link rather than repeat it: the UTF-8 → UTF-16 round trip, the byte order `iconv` picks when you do not name one, and the size arithmetic are in [Inspecting a file](../inspecting_a_file/README.md). What is left for this page is `iconv`'s own behaviour — `-l`, the alias lists, `//TRANSLIT` and `//IGNORE`, and what its refusal means.
 
 ## See also
 
-- [Inspecting a file with `od`](../inspecting_a_file/README.md) — `iconv` to UTF-16, dumped before and after
+- [Inspecting a file](../inspecting_a_file/README.md) — `iconv` to UTF-16, dumped before and after
 - [Code pages](../../02_Characters/code_pages/README.md)
 - [Encode, decode and errors](../../04_Python/encode_decode_and_errors/README.md)

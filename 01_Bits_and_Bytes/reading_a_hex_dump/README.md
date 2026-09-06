@@ -188,4 +188,4 @@ Then dump something real: `xxd ~/.zshrc | head`, or any file on your disk. Find 
 
 - [Hex is a shorthand](../hex_is_a_shorthand/README.md) — why each byte is two digits, and why `41` on screen is not `'41'` in the file
 - [A character is a number](../../02_Characters/a_character_is_a_number/README.md) — the agreement the right-hand column is applying
-- [Inspecting a file with `od`](../../06_Terminal/inspecting_a_file/README.md) — which of these columns is the file, and which is the tool guessing
+- [Inspecting a file](../../06_Terminal/inspecting_a_file/README.md) — which of these columns is the file, and which is the tool guessing

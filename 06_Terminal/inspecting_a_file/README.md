@@ -1,8 +1,8 @@
-# Inspecting a file with `od`
+# Inspecting a file
 
 **Level:** 101 → 201 · for anyone with a terminal
 
-**One line:** In a hex dump one column is the file — the hex, printed one byte at a time — and everything else is a tool answering a question you did not ask: the names change with your locale and your operating system, and `hexdump`'s own default reorders the bytes to suit your CPU.
+**One line:** Every one of these tools shows you a *reading* of the bytes — `od -a`'s names change with your locale and your operating system, `hexdump`'s default reorders bytes to suit your CPU, `cat -v` respells them in ASCII, `file` is guessing — and exactly one column, the hex printed one byte at a time, is the file itself.
 
 ## The session
 
@@ -97,6 +97,39 @@ One practical note on reaching for them, measured on a bare `ubuntu:24.04` conta
 | `xxd -g1` | reading, and any time you want to edit bytes and put them back | the default pairs bytes; `-r` needs `-p` if the hex has no offsets |
 | `hexdump -C` | reading, or `-e` when you want a specific layout | **plain `hexdump` swaps every pair** |
 | `od -An -tx1` | a machine with nothing else installed | `-a` invents names; `-c` needs `LC_ALL=C` |
+| `cat -v` | a whole file at reading speed, without your terminal obeying it | `M-x` means the high bit is set; GNU's `-A` is rejected on macOS, so `-vet` |
+| `file` | asking what a file probably is, in one word | it is a *guess*: `data` for BOM-less UTF-16, `ISO-8859 text` for any 8-bit table |
+
+## `cat -v`, and why plain `cat` is not a way to look at a file
+
+`cat` does not show you a file. It hands the file to your terminal, and the terminal *obeys* what it finds: an escape sequence sets a colour or moves the cursor, `07` rings the bell, and a stray sequence in binary data can leave the terminal in a state that needs `reset`. That is not a hypothetical — it is the usual way people discover that `cat` on a `.o` file was a bad idea.
+
+`cat -v` renders those bytes instead of performing them. `^[` is an ESC, `^G` is the bell, and `^I` a tab under `-vet`, which is the portable spelling of "show me everything" — GNU has `-A` for it and macOS rejects that flag outright.
+
+For bytes above 127 `cat -v` writes `M-` and then an ASCII character, meaning *the high bit is set on this one*: `M-C` is `0x43` with the top bit turned on, which is `0xc3`. That makes it the same arithmetic GNU `od -a` performs, except that `cat -v` shows its working, so the notation is reversible instead of misleading. And it makes the encoding visible at a glance:
+
+| Bytes | `cat -v` | |
+|---|---|---|
+| `63 61 66 c3 a9` | `cafM-CM-)` | `é` in UTF-8 — **two** `M-` groups |
+| `63 61 66 e9` | `cafM-i` | `é` in Latin-1 — **one** |
+
+`M-C M-)` is `c3 a9`, which a Latin-1 reader shows as `Ã` and `©` — so `cat -v` is spelling out, in pure ASCII you can paste into an email, exactly the [mojibake](../../03_Encodings/mojibake/README.md) that a wrong reader would produce. It is the fastest one-line check of "is this file UTF-8 or an 8-bit table", and unlike a dump it stays readable for a whole paragraph of text.
+
+## `file`: the guess, and the three shapes it takes
+
+The fourth question — *what encoding is this?* — has no answer in the bytes, so `file` is doing something more interesting than looking it up. Its answers come in three shapes, and they are worth telling apart, because only one of them is evidence:
+
+| Input | `file -b -` says | What kind of claim that is |
+|---|---|---|
+| BOM, then UTF-8 | `Unicode text, UTF-8 (with BOM) text` | **evidence** — the mark is a fact in the file |
+| BOM, then UTF-16BE | `Unicode text, UTF-16, big-endian text` | **evidence**, and the byte order too |
+| `caf` + `c3 a9` | `Unicode text, UTF-8 text` | **inference** — the bytes are valid UTF-8, which is strong and still not proof |
+| `caf` + `e9` | `ISO-8859 text` | **proof of a negative** — not valid UTF-8, so some 8-bit table; *which* is unanswerable and it does not pretend |
+| UTF-16LE, no BOM | `data` | **surrender** — perfectly good text called a binary blob |
+
+That last row is the whole page in one word. The file contains nine characters of readable text; nothing in it says so; `file` says `data`, and `file --mime-encoding` says `binary`. Use `--mime-encoding` when you want the one-word answer — it is spelled the same on both platforms, unlike `-I` on macOS and `-i` on GNU.
+
+None of this makes `file` useless — a BOM sniff and a UTF-8 validity check are exactly the two things worth automating, and `file` does them in one word. It just means the answer is a *reading* of the bytes, like every other column on this page. How it does it, and where its magic-number database ends, is [its own page](../file_guesses/README.md).
 
 ## In the terminal
 
@@ -230,6 +263,77 @@ $ printf 'caf\303\251: 1\342\202\254\n' | xxd -p | sed 's/c3a9/e9/' | xxd -r -p 
 the edit: INVALID UTF-8
    One byte edited by hand, and the file stopped being text. That is the whole
    reason to look at bytes before blaming a program.
+
+10. cat -v: LOOKING AT A FILE WITHOUT HANDING IT TO YOUR TERMINAL
+   Plain cat does not show you a file, it FEEDS it to your terminal, which
+   obeys what it finds — colours, a bell, cursor moves, and on binary input
+   an escape sequence that can leave the terminal needing 'reset'.
+   cat -v renders those bytes instead of performing them:
+
+$ printf 'tab\there\033[31mred\033[0m\007\n' | cat -v
+tab	here^[[31mred^[[0m^G
+   ^[ is the ESC that would have started the colour; ^G is the bell that
+   would have rung. -vet also marks tabs as ^I and line ends as $ — and it
+   is the portable spelling, because GNU's -A is rejected by macOS:
+
+$ printf 'tab\there\033[31mred\033[0m\007\n' | cat -vet
+tab^Ihere^[[31mred^[[0m^G$
+
+   For high bytes, cat -v writes M- meaning 'the high bit is set': M-C is
+   0x43 with the top bit on, which is 0xc3. So the encoding is visible at a
+   glance — a UTF-8 é is TWO M- groups, a Latin-1 é is ONE:
+
+$ printf 'caf\303\251\n' | cat -v
+cafM-CM-)
+
+$ printf 'caf\351\n' | cat -v
+cafM-i
+   M-C M-) is 0xc3 0xa9, which in Latin-1 reads as Ã and © — so cat -v is
+   spelling out the mojibake a Latin-1 reader would show you, in pure ASCII
+   you can paste into a bug report. The whole demo line:
+
+$ printf 'caf\303\251: 1\342\202\254\n' | cat -v
+cafM-CM-): 1M-bM-^BM-,
+
+11. file: THE GUESS, AND THE THREE SHAPES IT TAKES
+   EVIDENCE — a BOM is a fact in the file, and file reports it:
+
+$ printf '\357\273\277caf\303\251\n' | file -b -
+Unicode text, UTF-8 (with BOM) text
+
+$ { printf '\376\377'; printf 'caf\303\251: 1\342\202\254\n' | iconv -f UTF-8 -t UTF-16BE; } | file -b -
+Unicode text, UTF-16, big-endian text
+   INFERENCE — no BOM, but the bytes happen to be valid UTF-8, which is
+   strong evidence and still not proof:
+
+$ printf 'plain ascii\n' | file -b -
+ASCII text
+
+$ printf 'caf\303\251: 1\342\202\254\n' | file -b -
+Unicode text, UTF-8 text
+   PROOF OF A NEGATIVE — these bytes are NOT valid UTF-8, so it must be some
+   8-bit table. Which one is unanswerable, and file does not pretend:
+
+$ printf 'caf\351\n' | file -b -
+ISO-8859 text
+   SURRENDER — UTF-16LE with no BOM is perfectly good text, and file calls it
+   a binary blob, because nothing in the bytes says otherwise:
+
+$ printf 'caf\303\251: 1\342\202\254\n' | iconv -f UTF-8 -t UTF-16LE | file -b -
+data
+   --mime-encoding gives the one-word answer, and is spelled the same on both
+   platforms (unlike -I on macOS and -i on GNU):
+
+$ printf 'caf\303\251: 1\342\202\254\n' | file --mime-encoding -b -
+utf-8
+
+$ printf 'caf\351\n' | file --mime-encoding -b -
+iso-8859-1
+
+$ printf 'caf\303\251: 1\342\202\254\n' | iconv -f UTF-8 -t UTF-16LE | file --mime-encoding -b -
+binary
+   That last answer is the honest one for the whole page: an encoding is an
+   agreement about how to read bytes, and it is not stored in the file.
 ```
 <!-- /output -->
 

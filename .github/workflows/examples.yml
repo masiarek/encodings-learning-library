@@ -4,7 +4,7 @@
 # This library has three kinds of example, and this job runs all of them:
 #   examples/*.py   stdlib-only Python, run with the python3 on the runner
 #   examples/*.rs   compiled with bare rustc (no cargo, no crates)
-#   examples/*.sh   bash, using xxd / od / hexdump / iconv / printf
+#   examples/*.sh   bash, using xxd / od / hexdump / cat / file / iconv / printf
 #   examples/*.c    compiled with cc (clang on macOS, gcc on Ubuntu), no libraries
 #
 # It runs on BOTH Ubuntu and macOS on purpose. The shell examples call BSD tools
@@ -28,9 +28,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: Make sure xxd is present (a separate package on Ubuntu)
+      - name: Make sure xxd, hexdump and file are present (separate packages on Ubuntu)
         if: runner.os == 'Linux'
-        run: command -v xxd || sudo apt-get install -y xxd
+        run: |
+          command -v xxd || sudo apt-get install -y xxd
+          command -v hexdump || sudo apt-get install -y bsdextrautils
+          command -v file || sudo apt-get install -y file
       - name: Show toolchain
         run: |
           python3 --version

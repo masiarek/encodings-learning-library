@@ -18,11 +18,11 @@
 
 Shell: the same `wc -m` and `tr` under `LC_ALL=C` and under `LC_ALL=en_US.UTF-8`, side by side. (Only if both locales exist on every CI runner; otherwise the UTF-8 half is prose.)
 
-One worked instance is already measured: `od -a` on macOS asks `isprint()` in the current locale, so the same command on the same file prints a different row under `LC_ALL=C` than under a UTF-8 locale — and `wc -m` counts bytes in the C locale and characters in a UTF-8 one. Both are in [Inspecting a file with `od`](../inspecting_a_file/README.md).
+One worked instance is already measured: `od -a` on macOS asks `isprint()` in the current locale, so the same command on the same file prints a different row under `LC_ALL=C` than under a UTF-8 locale — and `wc -m` counts bytes in the C locale and characters in a UTF-8 one. Both are in [Inspecting a file](../inspecting_a_file/README.md).
 
 ## See also
 
-- [Inspecting a file with `od`](../inspecting_a_file/README.md) — two tools whose output changes with `LC_CTYPE`
+- [Inspecting a file](../inspecting_a_file/README.md) — two tools whose output changes with `LC_CTYPE`
 
 - [Opening a file](../../04_Python/opening_a_file/README.md)
 - [`printf` writes bytes](../printf_writes_bytes/README.md)

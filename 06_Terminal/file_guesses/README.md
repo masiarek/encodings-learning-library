@@ -18,7 +18,11 @@
 
 Shell: four small files made with `printf`, `file --mime-encoding` on each.
 
+Already demonstrated elsewhere, so this page should link rather than repeat it: the three shapes `file`'s answer takes — evidence from a BOM, inference from valid UTF-8, proof of a negative, and the flat `data` it returns for BOM-less UTF-16 — are a table in [Inspecting a file](../inspecting_a_file/README.md), along with `--mime-encoding` as the portable spelling. What is left for this page is *how* it decides: the magic-number database, where that database ends, and the difference between a signature it knows and a heuristic it is running.
+
 ## See also
+
+- [Inspecting a file](../inspecting_a_file/README.md) — what `file` says about the same text in five encodings, and what kind of claim each answer is
 
 - [Byte order and the BOM](../../03_Encodings/byte_order_and_bom/README.md)
 - [`iconv`](../iconv/README.md)
