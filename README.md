@@ -50,6 +50,47 @@ Chapters 1, 9, 10 and 11 are written, along with the first pages of chapter 2, h
 
 **In a hurry?** [10_Best_Practices](10_Best_Practices/README.md) is the whole modern answer on one page, and [Why UTF-8 won](09_History/why_utf8_won/README.md) is why it is that short.
 
+## Six tools worth installing
+
+The library needs none of these and CI has none of them, so nothing in this section is an answer key: each block is dated and names the machine it ran on. [11_Tools](11_Tools/README.md) measures every one of them against the tool you already have, because half the value is knowing exactly where the free answer stops.
+
+**[`uni`](11_Tools/uni/README.md) earns its place immediately.** It prints every column at once — including the one no dump tool has, the character's *name*, which is the answer to "what **is** this?"
+
+```text title="Measured 2026-09-06 — uni (Unicode 17.0, brew), macOS 26.6"
+$ uni identify 'żé€'
+             Dec    UTF8        HTML       Name
+'ż'  U+017C  380    c5 bc       &zdot;     LATIN SMALL LETTER Z WITH DOT ABOVE
+'é'  U+00E9  233    c3 a9       &eacute;   LATIN SMALL LETTER E WITH ACUTE
+'€'  U+20AC  8364   e2 82 ac    &euro;     EURO SIGN
+```
+
+`UTF8` is the column a hex dump already gives you; the other four are in no dump. It runs backwards too — `uni print U+017C` from the code point, `uni search 'z with dot'` from the name. It matches the *name*, mind: `uni search polish` finds NAIL POLISH before it finds a Polish letter.
+
+The other five each answer one question the base toolbox answers badly:
+
+| Tool | Try it | What you get that you did not have |
+|---|---|---|
+| [`hexyl`](11_Tools/worth_installing/README.md) | `hexyl demo.txt` | `×` non-ASCII, `_` whitespace, `⋄` NUL, each in its own colour — where `xxd`'s text column draws `.` for all three alike |
+| [`uchardet`](11_Tools/worth_installing/README.md) | `uchardet demo.txt` | a real detector. [`file`](06_Terminal/file_guesses/README.md) can only prove a file is *not* valid UTF-8; `uchardet` names the 8-bit table — and is still guessing |
+| [`recode`](11_Tools/worth_installing/README.md) | `recode utf8..latin1 file.txt` | `é` converted from two bytes to one — and a **refusal**, file untouched, when the target table cannot carry a character. macOS `iconv` transliterates instead, silently |
+| [`dos2unix`](11_Tools/worth_installing/README.md) | `dos2unix -i mixed.txt` | DOS, Unix and bare-CR line counts plus the BOM column, in one line, changing nothing |
+| [`coreutils`](11_Tools/worth_installing/README.md) | `brew install coreutils` | the GNU tools beside the BSD ones, so a platform split stops being something only CI can see |
+
+**`coreutils` paid off best, and the result is folded back into the library.** These pages document that BSD and GNU `od -a` disagree about every byte above 127 — but until now the disagreement could only show one side per machine, with CI as the sole witness. Now both sides run in the same second, on one file:
+
+```text title="Measured 2026-09-06 — BSD od beside GNU coreutils 9.11 (brew), macOS 26.6, LC_ALL=C. The file is café in Latin-1."
+$ xxd -p latin1.txt
+636166e90a
+
+$ od -A n -a latin1.txt        # BSD — the od already on your Mac
+           c   a   f  e9  nl
+
+$ god -A n -a latin1.txt       # GNU — the same flags, from coreutils
+   c   a   f   i  nl
+```
+
+One byte, `e9`, and two answers. GNU masks the high bit off and names what is left — `0xe9 & 0x7f` is `0x69`, so it prints `i`, and `cafi` is a wrong answer that reads like a word. BSD asks `isprint()` in your locale, cannot print it, and gives you the byte's number. [Inspecting a file](06_Terminal/inspecting_a_file/README.md) takes that apart; the short version is that the `-a` row of a hex dump is the one column you should not trust.
+
 ## Why three languages
 
 The code is the illustration, never the subject. Each is here for what it shows that the other two cannot:
