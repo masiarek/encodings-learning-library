@@ -13,7 +13,7 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 | | The question | Why it bites |
 |---|---|---|
 | 1 | Does it work in **bytes** or in **characters**? | `.` means one byte to `grep` in the C locale and one character to `grep` in a UTF-8 locale — [same file, two counts](grep/README.md) |
-| 2 | **Who decided** — the locale, a flag, or the tool itself? | `grep` asks the locale; [`rg` never does](ripgrep/README.md); `find` asks nobody and compares bytes |
+| 2 | **Who decided** — the locale, a flag, or the tool itself? | `grep` asks the locale; [`rg` asks the first bytes of the file](ripgrep/README.md) and never the locale; `find` asks nobody and compares bytes |
 | 3 | What does it do when the text is **not valid**? | The three answers are refuse, guess, and *silently skip* — and [the third one has no exit code](grep/README.md) |
 
 ## The pages
@@ -70,7 +70,7 @@ Two things to take from it. **`grep` is the only one that says nothing and still
 | Install | What it adds |
 |---|---|
 | [`uni`](uni/README.md) | the character's **name**, and search *by* name — the column no dump tool has |
-| [`rg`](ripgrep/README.md) | one implementation on every platform, no locale, and it can read a UTF-16 file |
+| [`rg`](ripgrep/README.md) | one implementation on every platform, no locale — and it reads a UTF-16 file, [as long as it has a BOM](ripgrep/README.md): three marks are tested and UTF-32 is not one of them |
 | [`hexyl`](worth_installing/README.md) | `xxd` with colour by byte category |
 | [`uchardet`](worth_installing/README.md) | a real encoding detector, where `file` only tells valid-UTF-8 from not |
 | [`recode`](worth_installing/README.md) | `iconv` with a bigger table set and a syntax you can type |

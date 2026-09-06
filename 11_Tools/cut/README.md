@@ -143,6 +143,8 @@ Section 5 of the example above is the real-world version, and it is worth readin
 
 Nothing reports it. You get a field; it is the wrong field; and it is only visibly wrong here because the record ends in digits. That is [the fixed-width byte field problem](../../07_Real_Data/fixed_width_byte_fields/README.md) in its natural habitat, and the reason interface specifications have to say **bytes or characters** in so many words. "Position 16 to 18" is not a specification.
 
+The same choice turns up wherever a tool reports a position. [`rg --column`](../ripgrep/README.md) counts **bytes** and its manual says so outright — `X` is the sixth character of `café X` and `rg` calls it column 7. That is the honest version of what `cut -b` does: pick bytes, and say in the documentation that you picked bytes.
+
 ## If you are coming from Python or ABAP
 
 **Python**: `text[15:18]` on a `str` is character slicing and always means characters; `data[15:18]` on `bytes` is always bytes; and there is no flag, locale or implementation that blurs them. That is the whole `-c`/`-b` question answered by picking a type. For fixed-width records the useful habit is to open the file in **binary** and slice `bytes`, because the layout was written in bytes by whoever wrote the file — then decode each field. Decoding first and slicing after is what produces the off-by-an-accent bug.
