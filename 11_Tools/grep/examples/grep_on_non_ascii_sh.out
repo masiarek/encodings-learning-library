@@ -1,0 +1,63 @@
+1. IN THE C LOCALE, A 'CHARACTER' IS A BYTE
+$ cat cafe.txt
+café
+$ xxd -p cafe.txt
+636166c3a90a
+$ grep -o . cafe.txt | wc -l
+5
+   Four characters on the screen. Five answers from grep, because in this
+   locale '.' means one byte and 'é' is two of them. Nothing warned you.
+
+2. THE PORTABLE WAY TO FIND NON-ASCII LINES
+$ grep -n "[^ -~]" mixed.txt
+2:café here
+   The class is 'any byte outside space through tilde' — the printable
+   half of ASCII. It needs no -P, so it works on BSD grep too, where -P
+   does not exist at all. It also flags tabs, which are outside that range
+   and are usually worth seeing anyway.
+
+3. -c COUNTS LINES, NOT MATCHES
+$ grep -c a mixed.txt
+3
+$ grep -o a mixed.txt | wc -l
+4
+   Three lines contain an 'a'; there are four of them. -c answers the
+   first question. If you wanted the second, -o and wc are the pair.
+
+4. ONE NUL BYTE, AND THE FILE STOPS BEING TEXT
+$ xxd withnul.txt
+00000000: 6865 6c6c 6f00 776f 726c 640a 6865 6c6c  hello.world.hell
+00000010: 6f20 6167 6169 6e0a                      o again.
+$ grep -c hello withnul.txt
+2
+$ grep -a hello withnul.txt | cat -v
+hello^@world
+hello again
+   grep found both lines — -c proves it — and without -a it will not show
+   you either one. What it prints instead is a notice, and the wording and
+   even the STREAM of that notice differ between the two greps; the page
+   has both. -a (--binary-files=text) is the flag that says 'show me anyway'.
+   One NUL is enough. High bytes alone are not: a UTF-8 file of accented
+   letters is still text to grep.
+
+5. UTF-16: THE WORD IS RIGHT THERE AND GREP CANNOT SEE IT
+$ xxd u16.txt
+00000000: fffe 6300 6100 6600 e900 0a00            ..c.a.f.....
+$ grep -a caf u16.txt   # -a, so this is not the binary rule
+   (no match — exit 1)
+   'caf' is in that dump: 63 00 61 00 66 00. It is not in the FILE as the
+   three bytes 63 61 66, and grep searches bytes, so there is no match and
+   no error. A clean exit 1 that means 'not present' when the truth is
+   'present, spelled differently'.
+
+6. THE FIX IS TO DECODE FIRST, NOT TO SEARCH HARDER
+$ iconv -f UTF-16LE -t UTF-8 u16.txt | grep -a caf
+﻿café
+$ iconv -f UTF-16LE -t UTF-8 u16.txt | grep -a caf | xxd -p
+efbbbf636166c3a90a
+   It matches. Name the encoding, convert, then search — grep is a byte
+   tool, so hand it bytes it can answer about.
+   The hex shows what the text line hides: the first three bytes are
+   ef bb bf, the byte-order mark, converted along with everything else and
+   now sitting invisibly at the front of your search result. Naming
+   UTF-16LE told iconv the order, so it treated the mark as content.

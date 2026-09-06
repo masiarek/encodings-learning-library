@@ -58,6 +58,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "08_Build_Your_Own",
         "09_History",
         "10_Best_Practices",
+        "11_Tools",
         "CAST.md",
         "GLOSSARY.md",
         "RESOURCES.md",
@@ -134,6 +135,17 @@ NAV_ORDER: dict[str, list[str]] = {
         "rust_strings_in_practice",
         "python_text_in_practice",
         "interfaces_and_storage",
+    ],
+    # The tools you already run over text every day, then the ones worth
+    # installing. Ordered by how often the tool is reached for, not by depth.
+    "11_Tools": [
+        "README.md",
+        "grep",
+        "ripgrep",
+        "find",
+        "tr_and_sort",
+        "uni",
+        "worth_installing",
     ],
     "07_Real_Data": [
         "README.md",

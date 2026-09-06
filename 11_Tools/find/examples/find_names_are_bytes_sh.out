@@ -1,0 +1,54 @@
+1. ONE WORD, TWO SPELLINGS, DIFFERENT BYTES
+   NFC  ż ó ł w        : c5bcc3b3c58277
+   NFD  z+ ̇ o+ ́ ł w     : 7acc876fcc81c58277
+   same on screen?     : yes on screen, NOT equal as bytes
+   Seven bytes against nine. A reader sees one word; every tool on this
+   page sees two different names. This is normalization, and it is the
+   reason the next section behaves the way it does.
+
+2. -name IS A BYTE COMPARISON
+$ find . -name <the NFC bytes>
+./żółw
+$ find . -name <the NFD bytes>; echo "exit $?"
+   (printed nothing)
+   exit 0
+   The file exists. You typed its name. find matched nothing, because it
+   compared your nine bytes against the seven on disk — and it still exits
+   0, because find's status answers 'did the walk succeed', never 'did
+   anything match'. There is no error to notice and no status to test.
+
+3. WHAT find ACTUALLY PRINTED, IN HEX
+$ find . -name "*w" | xxd -p
+2e2fc5bcc3b3c582770a
+   2e2f is './', then the seven bytes of the name, then 0a for the newline
+   find added. There is no encoding in that stream — a filename is a bag
+   of bytes with two forbidden values, 0x00 and 0x2f ('/'), and newline is
+   not one of them.
+
+4. WHICH IS WHY COUNTING LINES IS NOT COUNTING FILES
+   one file, whose name contains a newline
+$ find . -type f | wc -l                      : 2
+$ find . -type f -print0 | tr -dc "\0" | wc -c : 1
+   Two against one. -print0 ends each name with the one byte that cannot
+   occur inside a name, so the count is right and so is everything
+   downstream: find … -print0 | xargs -0, and never find … | xargs.
+
+5. THE PATTERN IS BYTES TOO, SO GLOBBING IS BYTE GLOBBING
+$ find . -name "*ó*"     # o + COMBINING ACUTE, two characters
+   (printed nothing)
+$ find . -name "*ó*"     # U+00F3, one character
+./żółw
+   Both patterns are the letter o with an acute accent. One is two
+   characters, the other is one. Only the spelling on disk matches, and
+   your keyboard decides which one you typed — on a Mac, an option-key
+   accent and a paste from a web page can differ.
+
+6. THE HABIT
+   Search by the part you are sure of. ASCII substrings are safe:
+$ find . -name "*w" -o -name "*.txt"
+./żółw
+   And when a name must be matched exactly, do not retype it — let the
+   shell hand you the bytes that are already there:
+$ for f in *; do find . -name "$f"; done
+./sub
+./żółw

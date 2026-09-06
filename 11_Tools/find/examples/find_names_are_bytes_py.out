@@ -1,0 +1,48 @@
+1. TWO STRINGS, ONE WORD, AND == SAYS NO
+   NFC                                      'żółw'  len=4
+   NFD                                      'żółw'  len=6
+   they look the same on screen             żółw  żółw
+   NFC == NFD                               False
+   as UTF-8, NFC                            c5bcc3b3c58277
+   as UTF-8, NFD                            7acc876fcc81c58277
+   Four characters against six, seven bytes against nine. Python is not
+   wrong to say False — they are different sequences of code points. It
+   is the same answer find gives, arrived at one level up.
+
+2. THE FIX IS normalize(), AND IT HAS TO BE APPLIED TO BOTH SIDES
+   normalize('NFC', NFD) == NFC             True
+   normalize('NFD', NFC) == NFD             True
+   casefold() alone is not enough           False
+   Pick one form, put every name through it, then compare. Which form
+   does not matter; that everything agrees does. This is the only
+   comparison on this page that answers the question a human asked.
+
+3. WHAT THE FILESYSTEM GAVE BACK
+   we asked for                             c5bcc3b3c58277
+   listdir returned                         c5bcc3b3c58277
+   unchanged?                               True
+   the NFD spelling is in listdir?          False
+   ...after normalising both                True
+   The bytes came back as they went in — both of the machines this
+   library is tested on store the name they are given. What differs is
+   what happens when you then ASK for the other spelling, and that is on
+   the page: one of the two filesystems will hand you the same file.
+
+4. A FILENAME IS BYTES, AND PYTHON SAYS SO WHEN PUSHED
+   the bytes                                636166e92e747874
+   os.fsdecode(raw)                         'caf\udce9.txt'
+   round trips to the same bytes            True
+   len() of that name                       8
+   is it printable?                         False
+   \udce9 is a lone surrogate — the surrogateescape trick, which parks an
+   undecodable byte in a code point that can never come from real text, so
+   the name survives a trip through str and back. It is why os.listdir()
+   can hand you every file on a Linux box, including the ones nobody can
+   name. print() on it raises UnicodeEncodeError; that is the cost.
+
+5. THE RULE
+   Compare filenames after normalizing BOTH sides, never by retyping a
+   name you read off a screen — and when you pass names to another
+   program, pass the bytes you were given rather than a spelling of them.
+   In the shell that is find -print0 | xargs -0; in Python it is passing
+   the listdir/os.scandir entry itself, not a string you rebuilt.

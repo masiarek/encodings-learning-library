@@ -1,0 +1,51 @@
+RULE 1. A BOM NAMES THE ENCODING, AND IS ACTED ON
+   utf-16le + BOM: sniffed                utf-16-le
+   utf-16le + BOM: 'caf' in the BYTES     False
+   utf-16le + BOM: 'caf' after decoding   True
+   utf-8, no BOM: sniffed                 (nothing — assume UTF-8)
+   utf-8, no BOM: 'caf' in the BYTES      True
+   utf-8, no BOM: 'caf' after decoding    True
+   The first file answers False then True: the word is present and the
+   bytes do not contain it. That gap is the whole difference between
+   grep and rg on this file — rg looks at the first two bytes, decodes,
+   and searches the text. grep searches the bytes and finds nothing.
+   Note the sniff order: UTF-32LE's mark ff fe 00 00 STARTS with UTF-16LE's
+   ff fe, so a shorter-first sniffer reads every UTF-32LE file as UTF-16.
+
+RULE 2. NO BOM: SEARCH THE RAW BYTES, AND A UNICODE CLASS SKIPS
+         WHAT IT CANNOT DECODE
+   latin-1 bytes                          636166e9206c6174696e310a
+   bytes that are not a newline           11
+   of those, decodable characters         10
+   b'caf' present in the raw bytes        True
+   the e9 became U+FFFD?                  False
+   Eleven and ten. The e9 is a byte that no character class can match,
+   because there is no character there to match — and it did NOT become
+   U+FFFD, which is the mistake to avoid: nothing decoded it, nothing
+   replaced it, it is simply skipped by anything Unicode-aware and seen
+   by anything byte-oriented. Those are rg's two modes: '.' matches ten,
+   and '(?-u).' or --no-unicode matches eleven.
+   So 'caf' matches (three ASCII bytes, present as bytes) and 'caf.' does
+   not (the fourth position is not a character). Naming the encoding is
+   the only real fix; rg spells it -E latin1, and then it re-encodes what
+   it prints, so the match comes back out of the pipe as UTF-8.
+
+RULE 3. A NUL MEANS BINARY — AND SAY WHERE IT WAS
+   first NUL at offset                    5
+   lines containing 'hello'               2
+   Both greps and rg agree that one NUL reclassifies the file. They
+   differ in what they tell you: the two greps name the file, rg names
+   the file AND the offset — 'found "\0" byte around offset 5' — which
+   is the difference between a refusal and a diagnosis. You now know
+   where to look, and xxd -s 0 -l 16 will show you.
+
+RULE 4. INVALID BYTES DO NOT REMOVE A LINE
+   lines in the file                      3
+   lines after decoding the bad bytes     3
+   lines containing 'line'                3
+   Three, three, three. Whatever you do with the two bad bytes — keep
+   them, replace them, refuse to look at them — the LINE is still there
+   and is still searched. That is the rule rg follows and the rule BSD
+   grep does not: measured on the grep page, the same file loses a line
+   in a UTF-8 locale and grep still exits 0. A line is a run of bytes
+   between newlines, and no decoding question changes where they are.

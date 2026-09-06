@@ -40,10 +40,18 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [Rust strings in practice](10_Best_Practices/rust_strings_in_practice/README.md) | written, 2026-09-05 |
 | [Python text in practice](10_Best_Practices/python_text_in_practice/README.md) | written, 2026-09-05 |
 | [Interfaces and storage](10_Best_Practices/interfaces_and_storage/README.md) | stub |
+| [`grep` on text that is not ASCII](11_Tools/grep/README.md) | written, 2026-09-06 — shell and Python; the silent skip, measured, and the binary notice's two streams |
+| [`ripgrep` — the Rust grep](11_Tools/ripgrep/README.md) | written, 2026-09-06 — no rg on either runner, so the session is dated and a Python example checks the rules |
+| [`find`, and filenames that are bytes](11_Tools/find/README.md) | written, 2026-09-06 — shell and Python; `cat` opens what `find -name` cannot see |
+| [`tr` and `sort` work a byte at a time](11_Tools/tr_and_sort/README.md) | written, 2026-09-06 — shell; deleting `é` damages the word next door |
+| [`uni` — the character's name](11_Tools/uni/README.md) | written, 2026-09-06 — dated sessions plus a `unicodedata` example printing the same columns |
+| [The five worth installing](11_Tools/worth_installing/README.md) | written, 2026-09-06 — each optional tool measured against a machine-checked baseline |
 | [Tribit — the specification](08_Build_Your_Own/tribit/README.md) | written, 2026-09-05 — the Rust implementation is Adam's project |
 | [RESOURCES.md](RESOURCES.md) | written, 2026-09-05 — re-check the links when a page graduates and cites one |
 
 ## Written out of order, on purpose
+
+Chapter 11 was written on 2026-09-06, before chapters 4–7, for the same reason chapters 9 and 10 were: it does not depend on them. It is also the chapter a reader arrives at from outside — somebody whose search did not match, or whose `find` came up empty, has a concrete problem today and no reason to have read chapter 3 first. Each page states what it needs and links back.
 
 Chapters 9 and 10 were written before chapters 3–7 because they are the two that do not depend on them. [09_History](09_History/README.md) explains the *shape* of everything the stubs will say, so it makes the remaining pages read as conclusions rather than commandments; [10_Best_Practices](10_Best_Practices/README.md) is the answer a reader most often arrives wanting, and leaving it until last would have meant a library that could explain every trap and never say what to do. Both link forward into the stubs, so filling those in adds detail under an argument that is already made.
 

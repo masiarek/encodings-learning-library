@@ -144,18 +144,22 @@ Every example in this library runs on tools that ship with both macOS and Ubuntu
 | `piconv` | Perl's `iconv`, already installed, with Perl's encoding names and aliases |
 | `python3 -c 'import unicodedata; …'` | the character's **name** and properties — the column no dumper gives you |
 | `man ascii` | the table, offline, in octal, decimal and hex |
+| `grep` | search — and [the locale decides what a character is](11_Tools/grep/README.md), so use `LC_ALL=C` on a file you did not write |
+| `find` | walk a directory — and [`-name` is a byte comparison](11_Tools/find/README.md), which is why `cat` can open what it cannot see |
+| `sort` / `uniq` | order and deduplicate — [byte order in `LC_ALL=C`, collation order in any other](11_Tools/tr_and_sort/README.md) |
+| `cut -b` | slice by byte; `cut -c` promises characters and delivers bytes unless the locale is a UTF-8 one |
 
 **Worth installing.** Nothing in the library depends on these and CI does not have them, so no page records their output — but each one answers a question the base set answers badly or not at all.
 
 | Install | What it adds |
 |---|---|
-| `brew install uni` | *"Unicode database query tool for the command-line"* — search characters **by name**, print their properties, the offline answer to what the lookup websites above do. The one to install first. |
-| `brew install hexyl` | *"Command-line hex viewer"* — `xxd` with colour by byte category, so NUL, ASCII, and high bytes are visible at a glance instead of counted. |
-| `brew install recode` | *"Convert character set (charsets)"* — `iconv` with a much larger table set and a surface-syntax (`recode utf8..latin1`) that is easier to type than `-f`/`-t`. |
-| `brew install uchardet` | *"Encoding detector library"* — a real detector where `file` only distinguishes valid-UTF-8 from not. Still a guess; a better-informed one. |
-| `brew install dos2unix` | The [CRLF](07_Real_Data/crlf_vs_lf/README.md) repair kit as one command, with `unix2dos` and a `-i` flag that reports line-ending counts without changing anything. |
+| `brew install uni` | *"Unicode database query tool for the command-line"* — search characters **by name**, print their properties, the offline answer to what the lookup websites above do. The one to install first, and it has [a page](11_Tools/uni/README.md). |
+| `brew install hexyl` | [Measured against the base toolbox](11_Tools/worth_installing/README.md). *"Command-line hex viewer"* — `xxd` with colour by byte category, so NUL, ASCII, and high bytes are visible at a glance instead of counted. |
+| `brew install recode` | [Measured against the base toolbox](11_Tools/worth_installing/README.md). *"Convert character set (charsets)"* — `iconv` with a much larger table set and a surface-syntax (`recode utf8..latin1`) that is easier to type than `-f`/`-t`. |
+| `brew install uchardet` | [Measured against the base toolbox](11_Tools/worth_installing/README.md). *"Encoding detector library"* — a real detector where `file` only distinguishes valid-UTF-8 from not. Still a guess; a better-informed one. |
+| `brew install dos2unix` | [Measured against the base toolbox](11_Tools/worth_installing/README.md). The [CRLF](07_Real_Data/crlf_vs_lf/README.md) repair kit as one command, with `unix2dos` and a `-i` flag that reports line-ending counts without changing anything. |
 | `brew install icu4c` | Brings `uconv` — ICU's converter, which does normalization (`-x nfc`) as well as transcoding, so it is the one that can answer whether two visually identical strings are the same string. Keg-only: add its `bin` to your `PATH`. |
-| `brew install coreutils` | The **GNU** versions, prefixed `g` — `god`, `gwc`, `gtr`. Worth having for one library-specific reason: this repo documents [the places where BSD and GNU tools disagree](CONTRIBUTING.md), and with coreutils installed you can run both sides on the same machine instead of taking CI's word for it. Demonstration below. |
+| `brew install coreutils` | [Measured against the base toolbox](11_Tools/worth_installing/README.md). The **GNU** versions, prefixed `g` — `god`, `gwc`, `gtr`. Worth having for one library-specific reason: this repo documents [the places where BSD and GNU tools disagree](CONTRIBUTING.md), and with coreutils installed you can run both sides on the same machine instead of taking CI's word for it. Demonstration below. |
 
 The `coreutils` row is the one to actually act on, so here is the payoff. The [named-character row](06_Terminal/inspecting_a_file/README.md) is the sharpest disagreement in the whole toolbox, and until now this repo could only show one half of it per machine:
 
@@ -176,7 +180,7 @@ GNU invents `C`, `)`, `b` and `,` — four characters that appear nowhere in the
 
 
 
-The two everyone reaches for that are *not* on this list are `bat` and `rg` — excellent tools, and neither is about encodings: `bat` is a syntax-highlighting `cat` and `rg` is a fast grep. They read text; they do not tell you what the text is made of.
+`bat` is the one everyone reaches for that is genuinely not about encodings — a syntax-highlighting `cat`. **`rg` is not in that category, and this list used to say it was.** It is a fast grep, which is why people install it; what you get with it is a search that has no locale, gives the same answer on every platform, and reads a UTF-16 file that `grep` cannot see. That is a set of encoding decisions, and [11_Tools](11_Tools/README.md) is where all of them — `rg`'s and `grep`'s and `find`'s — are measured against each other.
 
 ## The terminal itself
 

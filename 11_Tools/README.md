@@ -1,0 +1,65 @@
+# 11_Tools — the toolbox for character data
+
+**Level:** 201 · for anyone with a terminal
+
+Chapters 1 to 10 are about what text *is*. This chapter is about the programs you already run over it every day — `grep`, `find`, `sort`, `tr` — plus the handful worth installing. None of them is *about* encodings. Every one of them has already made an encoding decision on your behalf before it printed its first line, and not one of them tells you which.
+
+That is the chapter in a sentence, and it is why these pages exist separately from [06_Terminal](../06_Terminal/README.md). Chapter 6 is the tools whose *job* is bytes — `xxd`, `od`, `iconv`, `file`. This chapter is the tools whose job is something else entirely, and which turn out to have an opinion about your text anyway.
+
+## The three questions
+
+Ask these of any tool before you trust its answer about non-ASCII text. Each page here answers all three for one tool.
+
+| | The question | Why it bites |
+|---|---|---|
+| 1 | Does it work in **bytes** or in **characters**? | `.` means one byte to `grep` in the C locale and one character to `grep` in a UTF-8 locale — [same file, two counts](grep/README.md) |
+| 2 | **Who decided** — the locale, a flag, or the tool itself? | `grep` asks the locale; [`rg` never does](ripgrep/README.md); `find` asks nobody and compares bytes |
+| 3 | What does it do when the text is **not valid**? | The three answers are refuse, guess, and *silently skip* — and [the third one has no exit code](grep/README.md) |
+
+## The pages
+
+| # | Page | The question it answers | Status |
+|---|---|---|---|
+| 1 | [`grep` on text that is not ASCII](grep/README.md) | Why did my search miss a line that is plainly there? | written |
+| 2 | [`ripgrep` — the Rust grep](ripgrep/README.md) | What does `rg` decide differently, and when does that matter? | written |
+| 3 | [`find`, and filenames that are bytes](find/README.md) | Why does `cat` open the file that `find -name` cannot see? | written |
+| 4 | [`tr` and `sort` work a byte at a time](tr_and_sort/README.md) | Why did deleting `é` damage a different word? | written |
+| 5 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
+| 6 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
+
+## What you already have
+
+Nothing on this list needs installing on either macOS or Ubuntu, and the pages above are about the second column, not the first.
+
+| Tool | Its actual job | Its opinion about your text |
+|---|---|---|
+| `grep` | search | a character is whatever the **locale** says; invalid bytes are handled [two different ways by the two greps](grep/README.md) |
+| `find` | walk a directory | filenames are **bytes**, and `-name` is a byte comparison — even where [the filesystem disagrees](find/README.md) |
+| `sort` | order lines | the **locale** picks the order, and byte order is not alphabetical order |
+| `tr` | substitute or delete | **bytes only**, always — which is why [it damages the word next door](tr_and_sort/README.md) |
+| `sed`, `awk`, `cut` | edit and slice | `cut -c` is characters or bytes depending on the locale; `cut -b` is honest |
+| `wc` | count | `-c` bytes, `-m` characters, `-l` [newlines](../06_Terminal/trailing_newline/README.md) — three questions, three answers |
+
+## What is worth installing
+
+Two of these earn their place immediately; the other four are for a specific bad day. Each is covered on [the five worth installing](worth_installing/README.md), except `uni`, which gets [its own page](uni/README.md) because it answers a question nothing else here can.
+
+| Install | What it adds |
+|---|---|
+| [`uni`](uni/README.md) | the character's **name**, and search *by* name — the column no dump tool has |
+| [`rg`](ripgrep/README.md) | one implementation on every platform, no locale, and it can read a UTF-16 file |
+| [`hexyl`](worth_installing/README.md) | `xxd` with colour by byte category |
+| [`uchardet`](worth_installing/README.md) | a real encoding detector, where `file` only tells valid-UTF-8 from not |
+| [`recode`](worth_installing/README.md) | `iconv` with a bigger table set and a syntax you can type |
+| [`dos2unix`](worth_installing/README.md) | the [CRLF](../07_Real_Data/crlf_vs_lf/README.md) kit, with a report mode that changes nothing |
+| [`coreutils`](worth_installing/README.md) | the **GNU** tools on a Mac, so you can run both sides of a BSD/GNU split yourself |
+
+## A note on what is machine-checked here
+
+Every other chapter's claims are backed by a program CI runs on Ubuntu *and* macOS. Every page here keeps that contract for what it can, and three of them — [`ripgrep`](ripgrep/README.md), [`uni`](uni/README.md) and [the five worth installing](worth_installing/README.md) — are about tools neither operating system ships, so CI has none of them and no answer key can be recorded from the tool itself. Those pages put the tool's real output in a fence that is **labelled and dated with the two machines it was measured on**, and keep a machine-checked example beside it doing the same job in the standard library — so the claim is still tested, just not by the tool it is about.
+
+## See also
+
+- [06_Terminal](../06_Terminal/README.md) — the tools whose job *is* bytes
+- [10_Best_Practices](../10_Best_Practices/README.md) — what to do on Monday, once you can see the problem
+- [RESOURCES.md](../RESOURCES.md) — the reading list, and the install table these pages expand

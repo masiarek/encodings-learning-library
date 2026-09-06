@@ -1,0 +1,49 @@
+1. WHAT IS IN THESE FILES
+   utf8.txt    636166c3a92031e282ac0a
+   latin1.txt  636166e90a
+   cp1252.txt  507265697320313030800a
+   mixed.txt   646f73206c696e650d0a756e6978206c696e650a6c6173740d0a
+
+2. file --mime-encoding — THE ANSWER YOU ALREADY HAVE
+$ file --mime-encoding utf8.txt latin1.txt cp1252.txt
+utf8.txt:   utf-8
+latin1.txt: iso-8859-1
+cp1252.txt: unknown-8bit
+   Three files, three qualities of answer. utf-8 is an inference from
+   valid structure and is nearly always right. iso-8859-1 is a proof of a
+   NEGATIVE — 'not valid UTF-8' — with a plausible 8-bit table named, and
+   file cannot tell 8859-1 from 8859-2 or 8859-15 because on this byte
+   they agree. unknown-8bit is the honest surrender: 0x80 is unassigned in
+   every ISO 8859 table, so file will not name one. uchardet names it.
+
+3. xxd's TEXT COLUMN — ONE GLYPH FOR EVERY PROBLEM
+$ printf "caf\\303\\251 1\\342\\202\\254\\n\\000A" | xxd
+00000000: 6361 66c3 a920 31e2 82ac 0a00 41         caf.. 1.....A
+   Look at the right-hand column: caf.. 1.....A. Five dots, standing in
+   for two continuation bytes of é, three of €, a newline and a NUL. They
+   are four completely different kinds of byte and xxd draws them all the
+   same. That is what hexyl fixes — see the page.
+
+4. iconv AS A YES/NO VALIDATOR — THE ONE PORTABLE USE
+   utf8.txt    valid UTF-8
+   latin1.txt  NOT valid UTF-8
+   cp1252.txt  NOT valid UTF-8
+   That is the whole of what the base toolbox can prove. Which table the
+   invalid two are in is not a question iconv answers — it is the question
+   uchardet exists for, and the answer is still a guess.
+
+5. LINE ENDINGS WITHOUT dos2unix
+$ cat -vet mixed.txt
+dos line^M$
+unix line$
+last^M$
+   lines ending CRLF : 2
+   lines in total    : 3
+$ sed "s/\r$//" mixed.txt | cat -vet
+dos line$
+unix line$
+last$
+   ^M$ is a CRLF line and $ alone is an LF line, so cat -vet is the free
+   diagnosis and sed is the free repair. dos2unix -i gives you the same
+   counts in one line, and dos2unix does the repair without a regex you
+   have to get right — which matters on the day the file is UTF-16.

@@ -1,0 +1,45 @@
+1. EVERY COLUMN uni PRINTS, FROM unicodedata
+   char   code point     dec  utf-8        html       name
+   A      U+0041          65  41           &#x41;     LATIN CAPITAL LETTER A
+   é      U+00E9         233  c3 a9        &eacute;   LATIN SMALL LETTER E WITH ACUTE
+   ż      U+017C         380  c5 bc        &#x17c;    LATIN SMALL LETTER Z WITH DOT ABOVE
+   €      U+20AC        8364  e2 82 ac     &euro;     EURO SIGN
+   ß      U+00DF         223  c3 9f        &szlig;    LATIN SMALL LETTER SHARP S
+   The utf-8 column is what `xxd -p` gives you. The other four are the
+   ones no dump tool has, and the last one — the NAME — is the answer to
+   'what is this character?', which is a different question from 'how is
+   it stored?' and has a different answer for every character above A.
+   One column is not identical to uni's: ż comes out as the numeric
+   &#x17c; here and as &zdot; there, because html.entities carries the
+   HTML 4 set and uni carries HTML 5's. Both render the same character.
+
+2. THE COLUMN THAT SETTLES AN NFC/NFD ARGUMENT
+   NFC   'é'   1 code point(s), 2 bytes
+        U+00E9  LATIN SMALL LETTER E WITH ACUTE
+   NFD   'é'   2 code point(s), 3 bytes
+        U+0065  LATIN SMALL LETTER E
+        U+0301  COMBINING ACUTE ACCENT
+   One é and one é. Reading the names is how you find out which one is
+   in front of you, and it is the fastest end to the argument about why
+   a filename or a search 'does not match' when it plainly should.
+
+3. GOING THE OTHER WAY: FROM A NAME TO A CHARACTER
+   EURO SIGN                              -> '€'  U+20AC  e2 82 ac
+   LATIN SMALL LETTER Z WITH DOT ABOVE    -> 'ż'  U+017C  c5 bc
+   NO-BREAK SPACE                         -> '\xa0'  U+00A0  c2 a0
+   unicodedata.lookup() needs the name EXACTLY, which is the difference
+   from `uni search`: uni does a substring search over the whole database
+   and Python has no index to do that with. The standard library answers
+   'what is this?'; the tool also answers 'what was it called again?'.
+
+4. THE PROPERTIES BEHIND THE OTHER TOOLS' BEHAVIOUR
+   char   category   combining  bidi  numeric
+   A      Lu                 0  L     -
+   é      Ll                 0  L     -
+   ◌́     Mn               230  NSM   -
+   €      Sc                 0  ET    -
+   5      Nd                 0  EN    5.0
+   'Mn' is a non-spacing mark — the combining acute — and its combining
+   class of 230 is why it draws on top of the previous letter instead of
+   beside it. That single row is why 'e' + U+0301 takes one column on
+   screen and two positions in every string type in this library.

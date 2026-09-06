@@ -1,0 +1,80 @@
+1. tr -d DELETES BYTES, AND THE BYTES ARE SHARED
+$ cat two_words.txt
+café naïve
+$ xxd -p two_words.txt
+636166c3a9206e61c3af76650a
+$ tr -d "é" < two_words.txt
+caf na\xafve
+$ tr -d "é" < two_words.txt | xxd -p
+636166206e61af76650a
+   You asked it to delete é from café. It also damaged naïve, which
+   contains no é at all. The hex says why: é is c3 a9 and ï is c3 af, and
+   tr does not take a character — it takes a SET OF BYTES, here {c3, a9}.
+   In café both bytes were in the set, so the letter went. In naïve only
+   the c3 was, so half of ï went and the orphaned af stayed. One word is
+   short a letter; the other is no longer valid UTF-8 at all.
+
+2. WHICH IS NOT A BUG, IT IS THE DOCUMENTED CONTRACT
+$ printf "abc" | tr "abc" "xyz"
+xyz
+   tr maps a set of single-byte values to another set of single-byte
+   values. There is no multi-byte character in that description anywhere.
+   For anything above U+007F the tool you want is sed, which matches a
+   whole pattern, not a byte set:
+$ sed "s/é//" < two_words.txt | xxd -p
+636166206e61c3af76650a
+   café lost its é; naïve is untouched, and both are still valid UTF-8.
+
+3. sort IN THE C LOCALE IS BYTE ORDER, NOT ALPHABETICAL ORDER
+$ cat words.txt
+zebra
+żaba
+aaa
+éclair
+Echo
+$ sort words.txt
+Echo
+aaa
+zebra
+éclair
+żaba
+   Echo before aaa, because 'E' is 0x45 and 'a' is 0x61 — every capital
+   sorts before every lowercase. And éclair and żaba are at the bottom,
+   after every ASCII word, because their first byte is above 0x7f. This
+   is a correct byte ordering and nobody's idea of alphabetical.
+
+4. uniq COMPARES BYTES, SO TWO SPELLINGS ARE TWO VALUES
+$ cat turtles.txt      # the same word twice, NFC then NFD
+żółw
+żółw
+$ sort turtles.txt | uniq -c | sed "s/^ *//"
+1 żółw
+1 żółw
+   (the leading spaces are stripped — BSD and GNU uniq pad the count to
+    different widths, which is the kind of thing this library records)
+   Two groups of one. On the screen they are the same word; uniq is
+   comparing seven bytes against nine. Normalize before you deduplicate,
+   or the count is fiction.
+
+5. cut -c AND cut -b, AND WHY THE HONEST ONE IS -b
+$ cut -c1-4 < two_words.txt | xxd -p
+636166c30a
+$ cut -b1-4 < two_words.txt | xxd -p
+636166c30a
+   Identical here, because in the C locale a character IS a byte, and both
+   cut through the middle of é: 63 61 66 c3 is three letters and half of a
+   fourth. -b promises bytes and keeps the promise everywhere; -c promises
+   characters and delivers bytes whenever the locale is not a UTF-8 one.
+   For fixed-width records, -b is the one that means what you meant.
+
+6. tr AND CASE: [:upper:] IS AN ASCII PROMISE HERE
+$ cat shout.txt
+ŻÓŁW
+$ tr "[:upper:]" "[:lower:]" < shout.txt
+ŻÓŁw
+   ŻÓŁw. Exactly one letter changed — the ASCII W — because in the C
+   locale [:upper:] is A-Z and none of Ż, Ó, Ł is in it. That is the worst
+   possible outcome: not a refusal, not a conversion, a word that is now
+   half lowercased and looks like a typo rather than an encoding bug.
+   In a UTF-8 locale the two machines this library runs on give two
+   different answers to this same command — the page has both.

@@ -1,0 +1,47 @@
+1. THE DOT: THE CHOICE IS A TYPE, NOT A LOCALE
+   len('café')                        4
+   len(b'caf\xc3\xa9')                5
+   len(re.findall('.', 'café'))       4
+   len(re.findall(b'.', ...utf-8))    5
+   Four and five, from one file, and nothing in between decided it for
+   you: the str pattern searched characters, the bytes pattern searched
+   bytes. grep makes the same choice from the locale, silently.
+
+2. FINDING THE NON-ASCII LINES
+   line 1: ascii only  plain ascii
+   line 2: NON-ASCII   café here
+   line 3: ascii only  more ascii
+   The class is the same idea as the shell's [^ -~], written the way a
+   language with escapes lets you write it. grep's BSD build has no -P,
+   so it cannot take \x escapes at all — hence the printable-range trick.
+
+3. A NUL IS JUST A CHARACTER
+   b'...' contains a NUL              True
+   lines matching 'hello'             2
+   Python refused to show them?       False
+   grep calls this file binary and prints a notice instead of the lines.
+   Python has no such rule — the NUL is character U+0000 and the search
+   works. A rule that protects a terminal from control bytes is not a
+   rule about what the text is.
+
+4. UTF-16 — THE SEARCH THAT NEEDS A DECODE, NOT A BETTER PATTERN
+   the bytes                          fffe630061006600e9000a00
+   b'caf' in the bytes                False
+   'caf' in decoded utf-16            True
+   The first answer is False and the second is True, for one file. This is
+   exactly grep's failure on the same file, and the fix is the same: name
+   the encoding and decode, then search. Note that decoding as 'utf-16'
+   with no LE/BE suffix consumed the mark; 'utf-16-le' would have handed
+   it back as a leading U+FEFF, which is the shell example's last section.
+
+5. THE BYTES THAT ARE NOT VALID TEXT
+   strict decode                      UnicodeDecodeError at byte 14
+   strict decode raised               True
+   surrogateescape: lines kept        3
+   ...lines containing 'line'         3
+   re-encodes to the same bytes       True
+   Three lines in, three lines out, and the file round-trips byte for
+   byte. Python's three answers to invalid input are: raise (strict),
+   replace (lose the bytes), or surrogateescape (keep them). One of the
+   two greps has a fourth answer — skip the line and say nothing — and
+   the page names which.
