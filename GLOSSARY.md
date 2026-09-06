@@ -17,6 +17,7 @@ Short entries, each with the page that explains it in full. Alphabetical.
 | **CRLF** | The two-byte Windows line ending, `0D 0A`; Unix uses LF alone, `0A` | [CRLF vs LF](07_Real_Data/crlf_vs_lf/README.md) |
 | **decode** | Bytes → code points, under a named table. The inverse of encode | [Encode and decode are verbs](03_Encodings/encode_and_decode_are_verbs/README.md) |
 | **encode** | Code points → bytes, under a named table | [Encode and decode are verbs](03_Encodings/encode_and_decode_are_verbs/README.md) |
+| **encoded-word** | The MIME form `=?charset?B?payload?=` that carries non-ASCII text in an email header — and the only escape in common use that names the charset it wrapped | [Escaping into ASCII](03_Encodings/escaping_into_ascii/README.md) |
 | **encoding** | The rule for writing code points as bytes: UTF-8, UTF-16, Latin-1 … Also, loosely, any code page | [03_Encodings](03_Encodings/README.md) |
 | **endianness** | Which byte of a multi-byte number is written first: big-endian (most significant first) or little-endian | [Byte order and the BOM](03_Encodings/byte_order_and_bom/README.md) |
 | **grapheme cluster** | What a person calls one character: possibly several code points (`e` + combining acute; a flag; a family emoji) | [A code point is not a character](02_Characters/a_code_point_is_not_a_character/README.md) |
@@ -28,6 +29,8 @@ Short entries, each with the page that explains it in full. Alphabetical.
 | **nibble** | Four bits; one hex digit; half a byte | [Hex is a shorthand](01_Bits_and_Bytes/hex_is_a_shorthand/README.md) |
 | **normalization** | Rewriting a string to one canonical code-point sequence (NFC, NFD …) so that two spellings of `é` compare equal | [Normalization](04_Python/normalization/README.md) |
 | **overlong form** | A code point written in more bytes than it needs — `C0 AF` for `/`, `C1 BD` for `}` — which the templates decode fine and every validator rejects, because one character must have exactly one encoding. Why `C0` and `C1` never appear in real UTF-8 | [Overlong sequences](03_Encodings/overlong_sequences/README.md) |
+| **percent-encoding** | `%XX` per byte, the escape a URL uses — the hex dump with a sign in front. Nothing in the URL records which encoding produced those bytes | [Escaping into ASCII](03_Encodings/escaping_into_ascii/README.md) |
+| **punycode** | The ASCII re-spelling of a domain label (`żółw` → `w-uga1v8h`, written `xn--w-uga1v8h`). Defined over code points, not bytes, so there is no encoding to guess | [Escaping into ASCII](03_Encodings/escaping_into_ascii/README.md) |
 | **replacement character** | `U+FFFD` `�`, what a decoder writes in place of bytes it cannot read, if told to replace rather than raise | [Encode, decode and errors](04_Python/encode_decode_and_errors/README.md) |
 | **scalar value** | A code point that is *not* a surrogate: `U+0000`–`U+D7FF` and `U+E000`–`U+10FFFF`. What UTF-8 can encode, and exactly what Rust's `char` can hold | [Validation is a boundary](03_Encodings/validation_is_a_boundary/README.md) |
 | **surrogate pair** | Two 16-bit UTF-16 units (`D800–DBFF` then `DC00–DFFF`) standing for one code point above `U+FFFF` | [UTF-16 and surrogates](03_Encodings/utf16_and_surrogates/README.md) |

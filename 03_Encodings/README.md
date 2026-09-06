@@ -2,7 +2,7 @@
 
 **Level:** 101 → 201 · the chapter this library is built around
 
-A code point is a number, and a file is bytes. An **encoding** is the rule for writing one as the other, there are several rules, and — the fact the last two lessons exist for — **the file does not record which rule was used**. This chapter is UTF-8 done by hand, then who checks that a file really follows it, then the sequences it may never contain, then the other rules you will meet, then what it looks like when a file is read under the wrong one.
+A code point is a number, and a file is bytes. An **encoding** is the rule for writing one as the other, there are several rules, and — the fact the last two lessons exist for — **the file does not record which rule was used**. This chapter is UTF-8 done by hand, then who checks that a file really follows it, then the sequences it may never contain, then the other rules you will meet, then what it looks like when a file is read under the wrong one — and last, the channels that will not carry bytes at all, where the text is encoded a second time to get through.
 
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|
@@ -13,6 +13,7 @@ A code point is a number, and a file is bytes. An **encoding** is the rule for w
 | 5 | [Byte order and the BOM](byte_order_and_bom/README.md) | Which byte of a two-byte number comes first, and what are `EF BB BF` doing at the top of my CSV? | written, 2026-09-05 |
 | 6 | [Encode and decode are verbs](encode_and_decode_are_verbs/README.md) | What exactly are the two operations, and where in a program do they belong? | written, 2026-09-05 |
 | 7 | [Mojibake](mojibake/README.md) | Why `Ã©`, and how do I name the culprit from the garbage alone? | written, 2026-09-05 |
+| 8 | [Escaping into ASCII](escaping_into_ascii/README.md) | Why is one emoji `\ud83d\ude00` in JSON, `%F0%9F%98%80` in a URL, and neither in an email header? | written, 2026-09-06 |
 
 ## The through-line
 

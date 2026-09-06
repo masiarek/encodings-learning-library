@@ -1,0 +1,57 @@
+
+1. TWO ITERATORS, TWO SCHEMES, ONE STRING
+------------------------------------------------------------------------
+   "żółw" -- chars 4, bytes 7, utf-16 units 4
+     .bytes()          -> %C5%BC%C3%B3%C5%82w
+     .encode_utf16()   -> \u017c\u00f3\u0142w
+   "😀" -- chars 1, bytes 4, utf-16 units 2
+     .bytes()          -> %F0%9F%98%80
+     .encode_utf16()   -> \ud83d\ude00
+
+   Same text, two escapes, and neither can be turned into the
+   other without decoding first. `len()` is bytes and is what a
+   URL counts; `encode_utf16().count()` is code units and is what
+   a JSON escape counts; `chars().count()` is neither, and is the
+   only one of the three a person would call the length.
+
+2. ABOVE U+FFFF THE PAIR BECOMES VISIBLE
+------------------------------------------------------------------------
+   U+0041   1 byte(s)  1 unit(s)   json A              "A"
+   U+00E9   2 byte(s)  1 unit(s)   json \u00e9         "é"
+   U+017C   2 byte(s)  1 unit(s)   json \u017c         "ż"
+   U+20AC   3 byte(s)  1 unit(s)   json \u20ac         "€"
+   U+1F600  4 byte(s)  2 unit(s)   json \ud83d\ude00   "😀"
+
+   One `char` is always one Unicode scalar value and always four
+   bytes wide in memory, but it is one OR TWO code units on the
+   wire. \ud83d\ude00 is not two characters sitting together; it
+   is one character UTF-16 cannot hold in a single unit, written
+   into a format whose files are UTF-8 and contain no surrogates
+   anywhere.
+
+3. STD REFUSES HALF A PAIR -- A JSON PARSER WILL HAND YOU ONE
+------------------------------------------------------------------------
+   String::from_utf16(&[d83d, de00])  -> Ok("😀")
+   String::from_utf16(&[d83d])        -> Err("invalid utf-16: lone surrogate found")
+
+   char::decode_utf16 names the offending unit rather than the string:
+     unit 0: unpaired surrogate U+D83D
+
+   That is the guard the escape form itself does not have.
+   "\ud83d" alone is valid JSON syntax, so a parser may legally
+   hand a program half a character. In Rust it cannot become a
+   `String`, so the failure lands at the parse boundary instead of
+   three layers later at somebody else's encode.
+
+4. UNESCAPING A URL ENDS AT THE VALIDATOR EVERY OTHER READ ENDS AT
+------------------------------------------------------------------------
+   %C5%BC      -> [c5, bc] -> String::from_utf8 Ok("ż")
+   %C5         -> [c5] -> String::from_utf8 Err(valid_up_to = 0)
+   caf%C3%A9   -> [63, 61, 66, c3, a9] -> String::from_utf8 Ok("café")
+
+   `percent_decode` returns `Vec<u8>` because that is honestly all
+   it knows: percent-decoding produces bytes, and the URL never
+   said what encoding made them. A truncated escape leaves a lead
+   byte with nothing behind it -- the same truncation case as a
+   short read from a file, arriving through a query string, and
+   caught by the same one line of validation.

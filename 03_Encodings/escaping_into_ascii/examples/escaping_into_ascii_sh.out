@@ -1,0 +1,53 @@
+
+1. PERCENT-ENCODING IS THE HEX DUMP WITH A % IN FRONT
+------------------------------------------------------------------------
+
+   the text               żółw
+   xxd -p                 c5bcc3b3c58277
+   sed s/../%&/g          %C5%BC%C3%B3%C5%82%77
+
+   That is the whole scheme: every byte becomes three characters,
+   %XX. This pipe escapes all seven, including the ASCII w -- a real
+   encoder leaves the unreserved set (letters, digits, - . _ ~) alone,
+   which is why Python printed %C5%BC%C3%B3%C5%82w with a bare w on the
+   end. RFC 3986 asks for upper-case hex digits, which is the tr.
+
+2. AND BACK, WITH printf
+------------------------------------------------------------------------
+
+   %C5%BC                 -> ż
+   %63%61%66%C3%A9        -> café
+
+   The pipe turns every % into \x and lets printf write the bytes.
+   Note what did NOT happen: nothing checked that those bytes are
+   valid UTF-8, and nothing could have -- a URL does not say what
+   encoding its bytes came from. The terminal is doing the decoding,
+   and it is guessing.
+
+3. THE SAME WORD, TWO CHARSETS, ONE URL SYNTAX
+------------------------------------------------------------------------
+
+   as utf-8       %C5%BC%C3%B3%C5%82%77
+   as iso-8859-2  %BF%F3%B3%77
+
+   Two different URLs for one word, both well-formed, and no part of
+   either says which table produced it. A server that guesses wrong
+   gets mojibake out of a perfectly valid query string. This is the
+   one real weakness of percent-encoding and it is a design choice:
+   the syntax has nowhere to put the answer.
+
+4. AN ENCODED-WORD PUTS THE ANSWER IN THE HEADER
+------------------------------------------------------------------------
+
+   =?utf-8?B?xbzDs8WCdw==?=
+   =?iso-8859-2?B?v/Ozdw==?=
+
+   Same two byte strings as section 3, base64 instead of %XX, and
+   the charset written in between the question marks. That is the
+   difference that matters: a mail client reading either line knows
+   what to decode it with, thirty years later, with no convention to
+   agree on and nothing to guess.
+
+   Reading one back is the same pipe in reverse:
+     c5bcc3b3c58277
+     ^ the payload decoded to the bytes we started from

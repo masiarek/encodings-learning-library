@@ -1,0 +1,138 @@
+
+1. ONE WORD, FOUR CHANNELS, FOUR ANSWERS
+------------------------------------------------------------------------
+   the text                'żółw'   4 characters
+   its UTF-8 bytes         c5 bc c3 b3 c5 82 77   7 bytes
+
+   in a JSON string        "\u017c\u00f3\u0142w"
+   in a URL                %C5%BC%C3%B3%C5%82w
+   in an email header      =?utf-8?b?xbzDs8WCdw==?=
+   in a domain name        xn--w-uga1v8h.pl
+
+   Four channels that carry ASCII only, four schemes invented
+   separately to get the same four letters through them. None of the
+   four outputs shares a single character with any other, and that is
+   not cosmetic: they are escaping different things.
+
+2. JSON ESCAPES UTF-16 CODE UNITS -- IN A FORMAT THAT IS UTF-8
+------------------------------------------------------------------------
+   json.dumps('😀ż')
+     default              "\ud83d\ude00\u017c"
+     ensure_ascii=False   "😀ż"
+
+   the same string as UTF-16BE   d8 3d de 00 01 7c
+   escapes in the default form   3
+   UTF-16 code units in it       3
+
+   The same number, because they are the same thing. A JSON \uXXXX is
+   one UTF-16 code unit, so a character above U+FFFF is written as a
+   SURROGATE PAIR -- \ud83d\ude00 for one emoji. JSON itself is UTF-8
+   by RFC 8259, which has no surrogates in it at all; the escape form
+   is the one place UTF-16 still leaks into a modern UTF-8 stack, and
+   it is there because JavaScript strings were UTF-16 in 1999.
+
+   The leak has a sharp edge. Half a pair is valid JSON syntax:
+     json.loads('"\ud83d"')  ->  '\ud83d'   1 character
+     .encode('utf-8')        ->  UnicodeEncodeError: surrogates not allowed
+
+   So a parser accepts it, a str holds it, and the very next encode
+   raises -- a payload that is legal JSON and cannot be written to a
+   UTF-8 file. Reject lone surrogates at the parse boundary, not later.
+
+3. PERCENT-ENCODING ESCAPES BYTES, AND NEVER SAYS WHICH KIND
+------------------------------------------------------------------------
+   urllib.parse.quote('żółw')      %C5%BC%C3%B3%C5%82w
+   'żółw'.encode().hex()           c5 bc c3 b3 c5 82 77
+
+   Line up the two rows: %C5%BC%C3%B3%C5%82w is the hex dump with a %
+   in front of every byte, and the ASCII 'w' left alone because it did
+   not need one. A URL is bytes; the escape says nothing whatever about
+   which encoding produced them. RFC 3986 recommends UTF-8 for new
+   schemes and cannot enforce it, so a %F3 from a Latin-2 form is just
+   as well-formed and decodes to a different letter.
+
+   Two details that cause real bugs:
+     quote('a b')            a%20b   a path: space becomes %20
+     quote_plus('a b')       a+b     a form field: space becomes +
+     quote('a/b')            a/b     safe='/' by default, so a path survives
+     quote('a/b', safe='')   a%2Fb   for ONE path segment
+
+   And the one that fills bug trackers -- escaping something already escaped:
+     encoded once              %C5%BC%C3%B3%C5%82w
+     encoded twice             %25C5%25BC%25C3%25B3%25C5%2582w
+     unquote(twice)            %C5%BC%C3%B3%C5%82w
+     unquote(unquote(twice))   żółw
+
+   The %25 is a percent sign that was itself escaped. One unquote
+   returns the string to its previous layer, not to text -- which is
+   why the fix is counting layers, not adding another unquote.
+
+4. A MIME ENCODED-WORD IS THE ONE THAT NAMES ITS CHARSET
+------------------------------------------------------------------------
+   as utf-8        =?utf-8?b?xbzDs8WCdw==?=
+   as iso-8859-2   =?iso-8859-2?B?v/Ozdw==?=
+
+   the payload is base64 of the bytes:  c5 bc c3 b3 c5 82 77   (utf-8, 7 bytes)
+                                        bf f3 b3 77            (latin-2, 4 bytes)
+
+   =?charset?encoding?payload?= -- and the charset is IN the header,
+   which none of the other three schemes manage. That is why an email
+   subject in a code page nobody uses any more still decodes correctly
+   thirty years later, and a URL from the same era does not.
+
+   Reading one back gives you bytes plus the name to decode them with:
+     decode_header  ->  b'\xc5\xbc\xc3\xb3\xc5\x82w', 'utf-8'
+     raw.decode(charset)  ->  'żółw'
+
+   'B' is base64 and 'Q' is quoted-printable, a Latin-1-flavoured cousin
+   of percent-encoding that uses = instead of %. The letter is
+   case-insensitive, which is why Python writes ?b? and most mail
+   clients write ?B?.
+
+5. PUNYCODE MOVES CODE POINTS, AND TOUCHES NO BYTES AT ALL
+------------------------------------------------------------------------
+   'żółw.pl'.encode('idna')   xn--w-uga1v8h.pl
+   'żółw'.encode('punycode')   w-uga1v8h
+
+   Read the output: 'w-uga1v8h'. The 'w' is the one ASCII letter of
+   żółw, kept in place and in order; everything after the hyphen is a
+   base-36 description of which characters were removed and where they
+   go back. Nothing here is a byte -- punycode is defined over code
+   points, so there is no encoding to guess and no mojibake to have.
+   The 'xn--' prefix is what marks a label as encoded rather than a
+   domain that really is called that.
+
+   IDNA normalises the label it has to encode, and passes an ASCII
+   label through untouched -- case included, since DNS ignores case:
+     'żółw.pl'    -> xn--w-uga1v8h.pl
+     'ŻÓŁW.pl'    -> xn--w-uga1v8h.pl
+     'Żółw.PL'    -> xn--w-uga1v8h.PL
+
+   Normalising is not always harmless. The stdlib codec implements
+   IDNA2003, whose nameprep step rewrites ß as ss before encoding:
+     'straße.de'.encode('idna')      -> strasse.de
+     the same name under IDNA2008    -> xn--strae-oqa.de
+
+   Those are two different domains -- not two spellings of one. Under
+   IDNA2008 ß is a letter and survives into the label; under IDNA2003
+   it was a way of writing ss and does not. Python's built-in codec
+   gives the 2003 answer, the `idna` package on PyPI gives the 2008
+   one, and neither call site mentions a version.
+
+   Which is the useful half and the dangerous half at once: two names
+   that a person cannot tell apart can still be two different domains,
+   because 'a' and the Cyrillic 'а' are different code points and
+   punycode preserves the difference perfectly.
+
+6. THE SAME FOUR LETTERS, SIX SIZES
+------------------------------------------------------------------------
+   the text itself        żółw                                4 characters
+   UTF-8 bytes            c5 bc c3 b3 c5 82 77                7 bytes
+   JSON, ensure_ascii     "\u017c\u00f3\u0142w"              21 characters
+   percent-encoded        %C5%BC%C3%B3%C5%82w                19 characters
+   MIME encoded-word      =?utf-8?b?xbzDs8WCdw==?=           24 characters
+   punycode label         w-uga1v8h                           9 characters
+
+   A database column, a fixed-width field or a 63-character DNS label
+   is measured on ONE of those rows, and it is rarely the first. Ask
+   which layer the limit applies to before you size the field.

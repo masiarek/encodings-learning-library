@@ -80,6 +80,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "code_pages",
         "unicode_code_points",
         "the_table_has_a_version",
+        "preparing_a_string",
         "a_code_point_is_not_a_character",
     ],
     # The number is settled; now how to write it as bytes.
@@ -92,6 +93,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "byte_order_and_bom",
         "encode_and_decode_are_verbs",
         "mojibake",
+        "escaping_into_ascii",
     ],
     "04_Python": [
         "README.md",
