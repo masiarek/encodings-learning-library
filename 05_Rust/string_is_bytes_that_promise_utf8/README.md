@@ -123,6 +123,8 @@ Python has the same two types and calls them `str` and `bytes`. What it does not
 
 Section 3 is the difference, in one number. Python builds the truncated `bytes` object without a murmur and will hold it forever; the complaint arrives at `.decode()`, and it arrives with `start=4` — **the same index** Rust's `valid_up_to()` reported. Same check, same answer, different moment. Rust puts it at the point where the bytes claim to be text; Python puts it at the point where you finally ask them to behave like text.
 
+Section 4 is the one line on this page whose *glyph* may not survive the trip to your screen. `errors='replace'` stands **U+FFFD REPLACEMENT CHARACTER** in for the two orphaned bytes — one U+FFFD for the whole broken sequence, not one per bad byte — and fonts draw it as a black diamond with a white question mark inside, or as an empty box if they have no glyph for it at all. Either way it is a real character now, with real bytes: six bytes went in, `EF BF BD` came out where `E0 B2` had been, and the result is seven bytes long. Nothing downstream can tell that anything was ever wrong, which is exactly the trade [`from_utf8_lossy`](../from_utf8_and_lossy/README.md) makes for you.
+
 Section 5 is the other half of that trade. `poodles[0]` in Python returns `'ಠ'`, because Python indexes by character. It is friendlier, and it means a Python programmer can work for years without ever meeting the question this page is about.
 
 ## In the terminal
