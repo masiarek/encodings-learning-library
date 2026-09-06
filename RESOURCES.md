@@ -154,7 +154,26 @@ Every example in this library runs on tools that ship with both macOS and Ubuntu
 | `brew install uchardet` | *"Encoding detector library"* — a real detector where `file` only distinguishes valid-UTF-8 from not. Still a guess; a better-informed one. |
 | `brew install dos2unix` | The [CRLF](07_Real_Data/crlf_vs_lf/README.md) repair kit as one command, with `unix2dos` and a `-i` flag that reports line-ending counts without changing anything. |
 | `brew install icu4c` | Brings `uconv` — ICU's converter, which does normalization (`-x nfc`) as well as transcoding, so it is the one that can answer whether two visually identical strings are the same string. Keg-only: add its `bin` to your `PATH`. |
-| `brew install coreutils` | The **GNU** versions, prefixed `g` — `god`, `gwc`, `giconv-less`. Worth having for one library-specific reason: this repo documents [the places where BSD and GNU tools disagree](CONTRIBUTING.md), and with coreutils installed you can run both sides of every one of them on the same machine and see the difference yourself rather than taking CI's word for it. |
+| `brew install coreutils` | The **GNU** versions, prefixed `g` — `god`, `gwc`, `gtr`. Worth having for one library-specific reason: this repo documents [the places where BSD and GNU tools disagree](CONTRIBUTING.md), and with coreutils installed you can run both sides on the same machine instead of taking CI's word for it. Demonstration below. |
+
+The `coreutils` row is the one to actually act on, so here is the payoff. The [named-character row](06_Terminal/inspecting_a_file/README.md) is the sharpest disagreement in the whole toolbox, and until now this repo could only show one half of it per machine:
+
+```text title="Measured 2026-09-06 on macOS 25.6, en_US.UTF-8, coreutils 9.x — one file, one machine, two implementations. Not machine-checked; that is the point."
+$ printf 'caf\303\251 1\342\202\254\n' > demo.txt
+
+$ od -a demo.txt          # BSD, the one that ships with macOS
+0000000    c   a   f   ?   ?  sp   1   ?  82   ?  nl
+
+$ god -a demo.txt         # GNU, from coreutils, same file, same second
+0000000   c   a   f   C   )  sp   1   b stx   ,  nl
+
+$ od -An -tx1 demo.txt    # and the row that is actually the file
+           63  61  66  c3  a9  20  31  e2  82  ac  0a
+```
+
+GNU invents `C`, `)`, `b` and `,` — four characters that appear nowhere in the file — by masking the high bit off each byte (`c3 & 0x7f` is `0x43`, which is `C`). BSD asks `isprint()` in your locale, says yes, and emits the raw byte, which your terminal then fails to decode and draws as `?`. Neither row is the file. The third one is.
+
+
 
 The two everyone reaches for that are *not* on this list are `bat` and `rg` — excellent tools, and neither is about encodings: `bat` is a syntax-highlighting `cat` and `rg` is a fast grep. They read text; they do not tell you what the text is made of.
 

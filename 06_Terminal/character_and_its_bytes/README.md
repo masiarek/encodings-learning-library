@@ -142,7 +142,17 @@ The shell version runs three programs to put a character beside its bytes. Pytho
 
 `c5bc` is the character's **spelling in UTF-8**. It is not the character's **number**, which is `U+017C`. For `A` the two coincide — `41` and `U+0041` — and that coincidence is why the distinction can stay hidden for an entire career of working in ASCII. For anything above `U+007F` they diverge completely, and no amount of staring at `c5bc` will reveal `017C`.
 
-So this one-liner answers *"how is it stored?"* and never *"what is it?"*. For the second question you need a table lookup, which is what [`unicodedata` in Python](../../02_Characters/unicode_code_points/README.md) does, and what a tool like `uni` does in the terminal — see [RESOURCES.md](../../RESOURCES.md).
+So this one-liner answers *"how is it stored?"* and never *"what is it?"*. For the second question you need a table lookup, which is what [`unicodedata` in Python](../../02_Characters/unicode_code_points/README.md) does — and in the terminal, what `uni` does. It is the one tool worth installing purely for this chapter, because it prints every column at once:
+
+```text title="Measured 2026-09-06 — uni 2.9.0, `brew install uni`. Not machine-checked: CI has only the tools macOS and Ubuntu both ship, so no example on this page uses it."
+$ uni identify 'żé€'
+             Dec    UTF8        HTML       Name
+'ż'  U+017C  380    c5 bc       &zdot;     LATIN SMALL LETTER Z WITH DOT ABOVE
+'é'  U+00E9  233    c3 a9       &eacute;   LATIN SMALL LETTER E WITH ACUTE
+'€'  U+20AC  8364   e2 82 ac    &euro;     EURO SIGN
+```
+
+The `UTF8` column is what the one-liner above prints. The `U+` column is the number, the `Name` column is the answer to *"what is it?"*, and no amount of staring at `c5bc` produces either of them. `uni search polish` goes the other way, from a word to the characters. See [RESOURCES.md](../../RESOURCES.md) for the rest of the terminal toolbox.
 
 ## If you are coming from Python or ABAP
 
