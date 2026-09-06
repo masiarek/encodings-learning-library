@@ -15,6 +15,7 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 | 1 | Does it work in **bytes** or in **characters**? | `.` means one byte to `grep` in the C locale and one character to `grep` in a UTF-8 locale — [same file, two counts](grep/README.md) |
 | 2 | **Who decided** — the locale, a flag, or the tool itself? | `grep` asks the locale; [`rg` asks the first bytes of the file](ripgrep/README.md) and never the locale; `find` asks nobody and compares bytes |
 | 3 | What does it do when the text is **not valid**? | The three answers are refuse, guess, and *silently skip* — and [the third one has no exit code](grep/README.md) |
+| 3b | …and when the **pattern** is not valid? | `rg` names the flag that would help; [`rg -P` matches nothing and says nothing](pcre2/README.md) |
 
 ## The pages
 
@@ -22,14 +23,15 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 |---|---|---|---|
 | 1 | [`grep` on text that is not ASCII](grep/README.md) | Why did my search miss a line that is plainly there? | written |
 | 2 | [`ripgrep` — the Rust grep](ripgrep/README.md) | What does `rg` decide differently, and when does that matter? | written |
-| 3 | [`find`, and filenames that are bytes](find/README.md) | Why does `cat` open the file that `find -name` cannot see? | written |
-| 4 | [`xargs` splits on the wrong things](xargs/README.md) | Why does one apostrophe stop my `find` pipeline? | written |
-| 5 | [`sed` matches patterns, not bytes](sed/README.md) | Why does `sed` get right what `tr` gets wrong? | written |
-| 6 | [`awk` is three programs](awk/README.md) | Whose `awk` is this, and why does it disagree with itself? | written |
-| 7 | [`cut` counts what it is told to count](cut/README.md) | `-b` or `-c`? And why does the same command differ per machine? | written |
-| 8 | [`tr` and `sort` work a byte at a time](tr_and_sort/README.md) | Why did deleting `é` damage a different word? | written |
-| 9 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
-| 10 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
+| 3 | [PCRE2 — the other regex engine](pcre2/README.md) | What does `rg -P` buy, and what does it cost? | written |
+| 4 | [`find`, and filenames that are bytes](find/README.md) | Why does `cat` open the file that `find -name` cannot see? | written |
+| 5 | [`xargs` splits on the wrong things](xargs/README.md) | Why does one apostrophe stop my `find` pipeline? | written |
+| 6 | [`sed` matches patterns, not bytes](sed/README.md) | Why does `sed` get right what `tr` gets wrong? | written |
+| 7 | [`awk` is three programs](awk/README.md) | Whose `awk` is this, and why does it disagree with itself? | written |
+| 8 | [`cut` counts what it is told to count](cut/README.md) | `-b` or `-c`? And why does the same command differ per machine? | written |
+| 9 | [`tr` and `sort` work a byte at a time](tr_and_sort/README.md) | Why did deleting `é` damage a different word? | written |
+| 10 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
+| 11 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
 
 ## What you already have
 
@@ -37,7 +39,7 @@ Nothing on this list needs installing on either macOS or Ubuntu, and the pages a
 
 | Tool | Its actual job | Its opinion about your text |
 |---|---|---|
-| `grep` | search | a character is whatever the **locale** says; invalid bytes are handled [two different ways by the two greps](grep/README.md) |
+| `grep` | search | a character is whatever the **locale** says; invalid bytes are handled [two different ways by the two greps](grep/README.md); `-P` is GNU-only and [absent from a Mac entirely](pcre2/README.md) |
 | `find` | walk a directory | filenames are **bytes**, and `-name` is a byte comparison — even where [the filesystem disagrees](find/README.md) |
 | `sort` | order lines | the **locale** picks the order, and byte order is not alphabetical order |
 | `tr` | substitute or delete | **bytes only**, always — which is why [it damages the word next door](tr_and_sort/README.md) |

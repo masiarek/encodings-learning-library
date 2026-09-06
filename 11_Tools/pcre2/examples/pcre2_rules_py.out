@@ -1,0 +1,54 @@
+RULE 1. FOUR ANSWERS TO 'HOW LONG IS café'
+   NFC  café: UTF-8 bytes                   5
+   NFC  café: UTF-16 code units             4
+   NFC  café: code points                   4
+   NFC  café: grapheme clusters             4
+   NFD  cafe+U+0301: UTF-8 bytes            6
+   NFD  cafe+U+0301: UTF-16 code units      5
+   NFD  cafe+U+0301: code points            5
+   NFD  cafe+U+0301: grapheme clusters      4
+   NFC(NFD form) is the NFC form?           True
+   but the two literals compare equal?      False
+   The NFD row is why this page exists. Five code points, four graphemes,
+   and a regex quantifier has to mean one or the other. rg's default
+   engine counts code points, so '^.{5}$' matches and '^.{4}$' does not;
+   PCRE2's \X counts grapheme clusters, so '^\X{4}$' matches. Both are
+   right about different questions, and only one of them is the question
+   a person asking 'how many characters' means.
+
+RULE 2. A BACKTRACKING ENGINE ACCEPTS PATTERNS AN AUTOMATON REFUSES
+   lookbehind '(?<=caf)e' on NFD            True
+   backreference r'(\w)\1' on 'aa'          True
+   does Python's re have \X?                no -- bad escape \X
+   Python's re is backtracking, like PCRE2, so the first two work here and
+   in `rg -P`, and rg's default engine rejects both by design: it is a
+   finite automaton and guarantees linear time, which those features cost.
+   But the third line is the one to read twice. \X is not something you
+   get for free by backtracking -- Python backtracks and does not have it.
+   It is a feature PCRE2 chose to implement, which is why 'rg -P' can
+   count graphemes and no other tool in this chapter can.
+
+RULE 3. A PATTERN CAN COMPILE AND STILL NEVER MATCH
+   pattern compiles?                        True
+   matches the whole text?                  True
+   matches any single LINE?                 False
+   Both greps and rg search a line at a time, and a line by definition has
+   no newline in it -- so a pattern containing one can never match, however
+   well it compiles. That is the whole of 'rg -P "a\nb"' printing nothing.
+   rg's default engine refuses the pattern up front and says so in four
+   lines, naming the -U flag; PCRE2 compiles it and returns no match, which
+   is indistinguishable from the file not containing what you asked for.
+   --engine=auto inherits the silence, because 'the default engine could
+   not compile it' is exactly its rule for switching to PCRE2.
+
+RULE 4. ON ENCODING QUESTIONS THE TWO ENGINES AGREE
+   U+212A is the letter K?                  False
+   U+212A lowercases to 'k'?                True
+   'żółw' matches ^\w+$ on str              True
+   ...and on bytes (the --no-unicode model) False
+   '٤٢' matches ^\d+$ on str                True
+   Measured on the page: rg's two engines give the same answer to every one
+   of these -- same case folding, same Unicode \w and \d, same reduction to
+   ASCII under --no-unicode, and the same behaviour on a file of invalid
+   UTF-8. So -P is not a different opinion about your text. It is a
+   different set of questions you may ask about it, at a different price.

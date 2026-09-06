@@ -1,6 +1,6 @@
 """Build-time fixes that would otherwise cost a pinned plugin dependency.
 
-Two jobs, both about the sidebar:
+Three jobs, all about the sidebar:
 
 1. **Clean chapter labels.** MkDocs derives a section label from the folder name
    on disk, so `01_Bits_and_Bytes/` reads as "01 Bits And Bytes". The numeric prefix exists
@@ -10,6 +10,10 @@ Two jobs, both about the sidebar:
 
 2. **Order the sections.** `NAV_ORDER` states the intended reading order per
    folder, keyed by folder path, listing children by their on-disk name.
+
+3. **Fix acronym labels.** A lesson folder's label is its folder name
+   title-cased, so `utf8_by_hand` reads as "Utf8 by hand" and `pcre2` as
+   "Pcre2". `LABEL_OVERRIDES` restores the page's own H1 casing.
 
 Why order here rather than by renaming files: a filename is a permanent URL.
 Renumbering `03_` to `04_` to insert a lesson would move every page after it and
@@ -42,6 +46,22 @@ FIXUPS = {
     "Of": "of",
 }
 
+# Lesson folders whose sidebar label the title-caser gets wrong, because the
+# name holds an acronym: MkDocs turns `utf8_by_hand` into "Utf8 by hand". Each
+# value is that page's own H1 casing, so the tree and the page agree. Keyed by
+# on-disk folder name -- a folder name is a permanent URL, so the fix belongs
+# here rather than in a rename. Like NAV_ORDER, an entry naming a folder that no
+# longer exists is a silent no-op.
+LABEL_OVERRIDES: dict[str, str] = {
+    "utf8_by_hand": "UTF-8 by hand",
+    "utf16_and_surrogates": "UTF-16 and surrogates",
+    "byte_order_and_bom": "Byte order and the BOM",
+    "bom_in_a_csv": "A BOM in a CSV",
+    "crlf_vs_lf": "CRLF vs LF",
+    "sap_code_pages": "SAP code pages",
+    "pcre2": "PCRE2",
+}
+
 # Reading order per folder path. Children named by on-disk name; anything not
 # listed sorts alphabetically after the listed ones.
 NAV_ORDER: dict[str, list[str]] = {
@@ -59,6 +79,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "09_History",
         "10_Best_Practices",
         "11_Tools",
+        "RIPGREP.md",
         "CAST.md",
         "GLOSSARY.md",
         "RESOURCES.md",
@@ -148,6 +169,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "README.md",
         "grep",
         "ripgrep",
+        "pcre2",
         "find",
         "xargs",
         "sed",
@@ -222,7 +244,9 @@ def _visit(items: list, path: str, depth: int) -> None:
         # section label already comes from its page H1, which is authored prose;
         # title-casing it here would turn "Significant figures" into
         # "Significant Figures" and fight the page it points at.
-        if PREFIX.match(name):
+        if name in LABEL_OVERRIDES:
+            child.title = LABEL_OVERRIDES[name]
+        elif PREFIX.match(name):
             child.title = _label(name)
 
     items.sort(key=lambda c: _order_key(path, _on_disk_name(c, depth)))
