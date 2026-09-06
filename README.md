@@ -52,7 +52,7 @@ Chapters 1, 9, 10 and 11 are written, along with the first pages of chapter 2, h
 
 ## Tools worth installing
 
-The library needs none of these and CI has none of them, so nothing in this section is an answer key: each block is dated and names the machine it ran on. [11_Tools](11_Tools/README.md) measures every one of them against the tool you already have, because half the value is knowing exactly where the free answer stops. It covers one more that this section does not, [`rg`](11_Tools/ripgrep/README.md) — a grep with no locale, one implementation on every platform, and it reads a BOM'd UTF-16 file that `grep` returns nothing for.
+The library needs none of these and CI has none of them, so nothing in this section is an answer key: each block is dated and names the machine it ran on. [11_Tools](11_Tools/README.md) measures every one of them against the tool you already have, because half the value is knowing exactly where the free answer stops. It puts one more tool in the same first rank as `uni`, and this section does not cover it: [`rg`](11_Tools/ripgrep/README.md) — a grep with no locale, one implementation on every platform, and it reads a BOM'd UTF-16 file that `grep` returns nothing for.
 
 **[`uni`](11_Tools/uni/README.md) earns its place immediately.** It prints every column at once — including the one no dump tool has, the character's *name*, which is the answer to "what **is** this?"
 
