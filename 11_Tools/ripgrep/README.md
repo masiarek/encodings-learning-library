@@ -153,7 +153,7 @@ end
 
 In bash or zsh it is a function rather than an alias, because an alias cannot take arguments in the middle: `rgp() { rg --pre "$HOME/.local/bin/rg-pre" --pre-glob '*.pdf' "$@"; }`.
 
-The same hole and the same fix apply to every zip-shaped document — `.docx`, `.xlsx`, `.pptx`, `.epub`, `.odt` — each needing its own branch in the shim, or [ripgrep-all ↗](https://github.com/phiresky/ripgrep-all) instead of writing any of it. The one container `rg` opens unaided is a compressed *stream*: `-z` reads gzip, bzip2, xz, lz4, Brotli and zstd, which is why it helps with `access.log.2.gz` and not with a PDF.
+The same hole and the same fix apply to every zip-shaped document — `.docx`, `.xlsx`, `.pptx`, `.epub`, `.odt` — each needing its own branch in the shim, or [ripgrep-all ↗](https://github.com/phiresky/ripgrep-all) instead of writing any of it. The one container `rg` seems to open unaided is a compressed *stream* — `-z` helps with `access.log.2.gz` and not with a PDF — but it does not open that one unaided either: `-z` shells out to `gzip`, `xz`, `zstd` and the rest, decides which from the **file extension** rather than the bytes, and when the binary is missing falls back to reading the file uncompressed without saying so. That is the exact opposite of how `--pre` fails, and [`--pre` and `-z` — decompress, then decode](../decompress_then_decode/README.md) is the page for both halves.
 
 [rg — the menu](../../RIPGREP.md) carries the rest: what it costs on a large folder, the `-u`/`-uu`/`-uuu` ladder behind the `.gitignore` note below, and the one case no preprocessor reaches — a scanned PDF, which has no text layer for `pdftotext` to return.
 

@@ -163,7 +163,21 @@ ownership
 
 — and so do `.xlsx`, `.pptx`, `.epub`, `.odt`, and `.jar`. Each needs its own branch in the preprocessor. If you want all of them without writing any of it, [ripgrep-all ↗](https://github.com/phiresky/ripgrep-all) is `rg` plus a preprocessor for PDF, Office, ebooks, archives, subtitles and media metadata; `brew install ripgrep-all` gives you `rga`, which takes `rg`'s flags.
 
-One container `rg` *does* handle by itself: `-z` / `--search-zip` reads gzip, bzip2, xz, lz4, Brotli and zstd. It is for compressed **streams** — `access.log.2.gz` — not for archives with several files inside, which is why it does nothing for a PDF or a `.docx`.
+One container `rg` appears to handle by itself: `-z` / `--search-zip`, for compressed **streams** — `access.log.2.gz` — rather than archives with several files inside, which is why it does nothing for a PDF or a `.docx`. Read what the man page's format list actually is before you lean on it, though. `-z` **shells out**, so gzip, bzip2, xz, lz4, LZMA, Brotli and zstd is a list of *binaries that must be on your PATH*, not of things `rg` can do — and when one is missing it does not say so. It falls back to reading the file uncompressed, and only `--debug` mentions it:
+
+```text title="Measured 2026-09-06 — macOS 26.6.2, rg 15.1.0, PATH holding nothing but rg. Not machine-checked: CI has no rg."
+$ PATH=<only rg> rg -z -o 'café' plain.txt.gz
+exit=1
+
+$ PATH=<only rg> rg -z --debug -o 'café' plain.txt.gz 2>&1 | grep falling
+rg: DEBUG|grep_cli::decompress|.../decompress.rs:234: plain.txt.gz: error spawning
+command '"gzip" "-d" "-c" "plain.txt.gz"': No such file or directory (os error 2)
+(falling back to uncompressed reader)
+```
+
+Which wrong answer you get depends on how well the file compressed. The `.gz` above returns nothing and exits 1. The same 11-byte text as a 24-byte `.zst` is stored almost raw, so the same broken setup found the word inside the "compressed" bytes and reported `binary file matches (found "\0" byte around offset 7)` at **exit 0**. One missing binary, two plausible wrong answers, neither of them an error. This is not hypothetical on a build machine: on a bare `ubuntu:24.04` image, **`gzip` is the only one of the seven installed** (measured the same day, `docker run --rm ubuntu:24.04`), so `rg -z` in a container handles `.gz` and silently mis-answers the rest.
+
+Note the contrast with the paragraph below on a failing `--pre`, which names the file, names the command, reproduces the child's stderr and exits 2. Same tool, two opposite answers to "I could not do what you asked" — and if you write both flags, the **last one wins**. [`--pre` and `-z` — decompress, then decode](11_Tools/decompress_then_decode/README.md) is the page for that seam: what both flags do to the decode stage, how each decides whether to run, and how each fails.
 
 ## What stays out of reach
 
@@ -173,11 +187,12 @@ A **scanned** PDF has no text layer at all: the page is a photograph, and `pdfto
 for f in *.pdf; do printf '%8s  %s\n' "$(pdftotext -q "$f" - 2>/dev/null | wc -c)" "$f"; done | sort -n | head
 ```
 
-Anything near zero at the top of that list is a file your search silently could not read. Run over a shelf of 92 Rust books on 2026-09-06 it turned up none: the smallest extraction was 1,031 bytes, and that file is a one-page container cheat sheet which really does hold about that much text. A clean result looks like that — small numbers that match small documents — rather than zeros. The same check catches an **encrypted** PDF, where `pdftotext` fails outright — `rg` reports the preprocessor's failure rather than swallowing it, which is the behaviour you want.
+Anything near zero at the top of that list is a file your search silently could not read. Run over a shelf of 92 Rust books on 2026-09-06 it turned up none: the smallest extraction was 1,031 bytes, and that file is a one-page container cheat sheet which really does hold about that much text. A clean result looks like that — small numbers that match small documents — rather than zeros. The same check catches an **encrypted** PDF, where `pdftotext` fails outright. `rg` reports that rather than swallowing it — it names the file, repeats the exact command, prints the child's stderr between two rules and exits **2** — which, measured against the silent `-z` fallback above, is the behaviour you want and not one to assume you have.
 
 ## See also
 
 - [`ripgrep` — the Rust grep](11_Tools/ripgrep/README.md) — the encoding half: the BOM it reads, the locale it ignores, the UTF-32 file it gets wrong.
+- [`--pre` and `-z` — decompress, then decode](11_Tools/decompress_then_decode/README.md) — the same two flags asked the chapter's three questions: what they do to the decode stage, how each decides whether to run, and the two opposite ways they fail.
 - [`grep` on text that is not ASCII](11_Tools/grep/README.md) — where the two tools part company, including the line BSD `grep` drops without saying so.
 - [The five worth installing](11_Tools/worth_installing/README.md) — the rest of the toolbox.
 - [ripgrep's own guide ↗](https://github.com/BurntSushi/ripgrep/blob/master/GUIDE.md) — Andrew Gallant's, and the place to read about configuration files (`RIPGREP_CONFIG_PATH`), which is where `-S` belongs once you have decided you want it everywhere.
