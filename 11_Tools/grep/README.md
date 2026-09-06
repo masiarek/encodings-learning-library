@@ -182,7 +182,7 @@ You lose Unicode-aware character classes, which you almost never needed, and you
 
 ### 2. The "binary file" notice has two wordings, on two different streams
 
-```text title="Measured 2026-09-06 — same two machines, file = printf 'hello\\000world\\nhello again\\n'."
+```text title="Measured 2026-09-06 — same two machines, file = printf 'hello\000world\nhello again\n'."
 # macOS, BSD grep — the notice goes to STDOUT
 $ grep hello withnul.txt
 Binary file withnul.txt matches
