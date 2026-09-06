@@ -80,7 +80,21 @@ $ printf 'caf\303\251 1\342\202\254\n\000A' | xxd
 00000000: 6361 66c3 a920 31e2 82ac 0a00 41         caf.. 1.....A
 ```
 
-Compare the two text columns. `caf.. 1.....A` against `caf×× 1×┊××_⋄A`: `×` is a non-ASCII byte, `_` is whitespace, `⋄` is a NUL, and ASCII prints as itself. Four kinds of byte, four glyphs, where `xxd` had one — and on a real terminal they are four colours, which is faster still.
+Compare the two text columns. `caf.. 1.....A` against `caf×× 1×┊××_⋄A`: where `xxd` draws one `.`, hexyl draws a glyph per category and paints it.
+
+```text title="Measured 2026-09-06 — hexyl 0.17.0, macOS 26.6, ANSI codes read off `hexyl f | cat -v` on the bytes 41 00 09 0a 1b 7f 20 c3 a9."
+byte          glyph   colour
+41  'A'       A       cyan      printable ASCII, drawn as itself
+00  NUL       ⋄       dim
+09  TAB       _       green
+0a  LF        _       green
+20  SPACE     (space) green
+1b  ESC       •       green
+7f  DEL       •       green
+c3  a9        ×       yellow    any byte above 127
+```
+
+**Five glyphs, four colours** — and note that they do not line up one to one: whitespace and the other ASCII controls share green and are told apart only by `_` against `•`. That is still four more distinctions than `xxd` offers, and on a real terminal the colour is the part you read without looking.
 
 ```bash
 brew install hexyl          # macOS
