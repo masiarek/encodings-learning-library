@@ -37,7 +37,89 @@
    open a file -- it is a value guaranteed never to mean anything, and
    a reader that sees it knows for certain it has the order backwards.
 
-3. UTF-8 HAS NO BYTE ORDER, AND GETS THE MARK ANYWAY
+3. THE CODEC NAME DECIDES WHETHER A MARK IS WRITTEN
+------------------------------------------------------------------------
+   one code point, U+1F600, written seven ways:
+     utf-8     4 bytes   f0 9f 98 80
+     utf-16be  4 bytes   d8 3d de 00
+     utf-16le  4 bytes   3d d8 00 de
+     utf-32be  4 bytes   00 01 f6 00
+     utf-32le  4 bytes   00 f6 01 00
+     utf-16    6 bytes   starts with codecs.BOM_UTF16: True
+     utf-32    8 bytes   starts with codecs.BOM_UTF32: True
+
+   The bytes of those last two are not printed, on purpose: the mark
+   is followed by whichever order THIS machine runs, so the answer
+   depends on who ran the script and a recorded key must not. What
+   holds everywhere is the shape --
+     the rest of the utf-16 form is one of the two suffixed forms: True
+     the rest of the utf-32 form is one of the two suffixed forms: True
+
+   So the rule is the name, and that is the whole of it:
+     WITH a suffix (utf-16le, utf-32be) -- you have already said which
+       order, there is nothing left to announce, and no mark is added
+     WITHOUT one (utf-16, utf-32) -- the codec picks an order for you
+       and writes a mark at the front to say which one it picked
+
+   The mark is a header, not text, and it is written even when there
+   is no text at all:
+     len(''.encode('utf-16le')) = 0
+     len(''.encode('utf-16'))   = 2
+     len(''.encode('utf-32le')) = 0
+     len(''.encode('utf-32'))   = 4
+
+4. AND THE NAME HAS TO SURVIVE THE ALIAS TABLE
+------------------------------------------------------------------------
+   'utf-16le'   -> codecs.lookup(..).name = 'utf-16-le'
+   'utf-16-le'  -> codecs.lookup(..).name = 'utf-16-le'
+   'utf_16_le'  -> codecs.lookup(..).name = 'utf-16-le'
+   'UTF 16 LE'  -> codecs.lookup(..).name = 'utf-16-le'
+   'utf16-le'   -> LookupError: unknown encoding: utf16-le
+   'utf16le'    -> LookupError: unknown encoding: utf16le
+
+   Four spellings work and two do not, and the difference is not the
+   hyphen -- 'UTF 16 LE' is fine. Python turns every run of
+   non-alphanumeric characters into a single underscore and looks the
+   result up in encodings.aliases, so 'utf-16le', 'utf 16le' and
+   'utf_16_le' all arrive as a name that table knows. 'utf16-le' has
+   nothing at all between 'utf' and '16', so it normalises to a name
+   the table has never contained. Two spellings that look equally
+   reasonable, and only one of them exists.
+
+5. READING BACK: THE SAME NAME DECIDES WHO EATS THE MARK
+------------------------------------------------------------------------
+   a little-endian file with a mark   ff fe 3d d8 00 de
+     .decode('utf-16')     -> '😀'
+     .decode('utf-16le')   -> '\ufeff😀'
+
+   The unsuffixed codec consumes the mark; the suffixed one hands it
+   back as a character, because you told it the order and it has no
+   reason to think the first two bytes are anything but text. That is
+   the utf-8-sig asymmetry of section 8, one encoding up -- and it is
+   where an invisible U+FEFF welded to your first field comes from.
+
+   The other way round is worse, and cannot be shown here for the
+   same reason as section 3: a file with NO mark, decoded by the
+   unsuffixed 'utf-16', is read in this machine's order. Right half
+   the time, silently wrong the other half, and the half you get
+   depends on the hardware -- which is the exact bug the mark was
+   invented to prevent, reintroduced by a codec default.
+
+6. FF FE IS NOT ENOUGH TO IDENTIFY A FILE
+------------------------------------------------------------------------
+   codecs.BOM_UTF16_LE   ff fe
+   codecs.BOM_UTF32_LE   ff fe 00 00   <- the line above, plus two NULs
+   a UTF-32LE file       ff fe 00 00 41 00 00 00 7e 00 00 00
+     .decode('utf-32')   -> 'A~'
+     .decode('utf-16')   -> '\x00A\x00~\x00'
+
+   No exception. A sniffer that tests the two-byte mark first calls
+   every little-endian UTF-32 file UTF-16, and what it hands back is
+   the right letters with a NUL welded to each one -- which then
+   survives a strip(), fails every comparison, and looks like a
+   database problem. Test the four-byte mark before the two-byte one.
+
+7. UTF-8 HAS NO BYTE ORDER, AND GETS THE MARK ANYWAY
 ------------------------------------------------------------------------
    the same code point as UTF-8   ef bb bf
    codecs.BOM_UTF8                b'\xef\xbb\xbf'
@@ -54,7 +136,7 @@
 
    Same file. Three bytes of difference, and they are content.
 
-4. utf-8-sig: FORGIVING ON THE WAY IN, LOUD ON THE WAY OUT
+8. utf-8-sig: FORGIVING ON THE WAY IN, LOUD ON THE WAY OUT
 ------------------------------------------------------------------------
    ef bb bf 69 64 as utf-8: '\ufeffid'   as utf-8-sig: 'id'
    69 64          as utf-8: 'id'         as utf-8-sig: 'id'
@@ -65,7 +147,7 @@
    it always adds one -- so write plain 'utf-8' unless you have decided
    on purpose that the consumer needs the flag.
 
-5. WHAT THE THREE BYTES BREAK
+9. WHAT THE THREE BYTES BREAK
 ------------------------------------------------------------------------
    Invisible to a reader that expects it. To everyone else it is just
    the first three bytes of the file:
@@ -84,7 +166,7 @@
    returns None, the comparison returns False, the strip does nothing,
    and a header that looks identical on screen goes on not matching.
 
-6. THE DECISION, IN ONE QUESTION
+10. THE DECISION, IN ONE QUESTION
 ------------------------------------------------------------------------
    Who reads this file?
 

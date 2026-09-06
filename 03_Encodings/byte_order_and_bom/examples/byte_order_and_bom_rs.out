@@ -24,7 +24,23 @@
    point at the front and the reader can work the order out
    instead of being told it out of band.
 
-3. A SIGNATURE IS VALID UTF-8, SO NOTHING REJECTS IT
+3. AND THERE IS NO UNSUFFIXED OPTION TO GET WRONG
+------------------------------------------------------------------------
+   let face = "\u{1F600}";
+     face.encode_utf16()       [d83d, de00]   2 units -- a surrogate pair
+     ..each unit to_le_bytes   [3d, d8, 00, de]
+     ..each unit to_be_bytes   [d8, 3d, de, 00]
+     bytes either way          4, and no mark before either
+
+   `encode_utf16` stops at code UNITS and hands the byte question
+   straight back, so what Python spells as a codec name is a
+   method name here -- and there is no third method that picks an
+   order for you and writes a mark to announce it. Nothing in std
+   emits a BOM at all: if a consumer needs one you write those
+   bytes yourself, which is also why you cannot emit one by
+   accident and wonder later where it came from.
+
+4. A SIGNATURE IS VALID UTF-8, SO NOTHING REJECTS IT
 ------------------------------------------------------------------------
    bytes                     [ef, bb, bf, 69, 64]
    String::from_utf8(..)     Ok("\u{feff}id")
@@ -36,7 +52,7 @@
    cannot help: the mark is a legitimate code point and the bytes
    are well formed. Validity was never the question.
 
-4. trim() WILL NOT REMOVE IT
+5. trim() WILL NOT REMOVE IT
 ------------------------------------------------------------------------
    first char                '\u{feff}'
      first.is_whitespace()   false
@@ -47,7 +63,7 @@
    in terms of that property -- steps straight over it. A field
    that was trimmed and still does not match is this.
 
-5. SO YOU WRITE THE STRIP, AND IT IS ONE LINE
+6. SO YOU WRITE THE STRIP, AND IT IS ONE LINE
 ------------------------------------------------------------------------
    s.strip_prefix('\u{feff}')  Some("id")
    ..unwrap_or(&s) on a clean string leaves it alone:

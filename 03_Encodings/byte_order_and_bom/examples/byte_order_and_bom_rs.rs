@@ -42,7 +42,27 @@ fn main() {
     println!("   instead of being told it out of band.");
 
     // -------------------------------------------------------------- 3
-    head(3, "A SIGNATURE IS VALID UTF-8, SO NOTHING REJECTS IT");
+    head(3, "AND THERE IS NO UNSUFFIXED OPTION TO GET WRONG");
+    let face = "\u{1F600}";
+    let units: Vec<u16> = face.encode_utf16().collect();
+    println!("   let face = \"\\u{{1F600}}\";");
+    println!("     face.encode_utf16()       {units:04x?}   2 units -- a surrogate pair");
+    let le: Vec<u8> = units.iter().flat_map(|u| u.to_le_bytes()).collect();
+    let be: Vec<u8> = units.iter().flat_map(|u| u.to_be_bytes()).collect();
+    println!("     ..each unit to_le_bytes   {le:02x?}");
+    println!("     ..each unit to_be_bytes   {be:02x?}");
+    println!("     bytes either way          {}, and no mark before either", le.len());
+    println!();
+    println!("   `encode_utf16` stops at code UNITS and hands the byte question");
+    println!("   straight back, so what Python spells as a codec name is a");
+    println!("   method name here -- and there is no third method that picks an");
+    println!("   order for you and writes a mark to announce it. Nothing in std");
+    println!("   emits a BOM at all: if a consumer needs one you write those");
+    println!("   bytes yourself, which is also why you cannot emit one by");
+    println!("   accident and wonder later where it came from.");
+
+    // -------------------------------------------------------------- 4
+    head(4, "A SIGNATURE IS VALID UTF-8, SO NOTHING REJECTS IT");
     let bytes = vec![0xEF, 0xBB, 0xBF, b'i', b'd'];
     println!("   bytes                     {bytes:02x?}");
     let s = String::from_utf8(bytes).expect("a BOM is valid UTF-8");
@@ -55,8 +75,8 @@ fn main() {
     println!("   cannot help: the mark is a legitimate code point and the bytes");
     println!("   are well formed. Validity was never the question.");
 
-    // -------------------------------------------------------------- 4
-    head(4, "trim() WILL NOT REMOVE IT");
+    // -------------------------------------------------------------- 5
+    head(5, "trim() WILL NOT REMOVE IT");
     let first = s.chars().next().unwrap();
     println!("   first char                {first:?}");
     println!("     first.is_whitespace()   {}", first.is_whitespace());
@@ -67,8 +87,8 @@ fn main() {
     println!("   in terms of that property -- steps straight over it. A field");
     println!("   that was trimmed and still does not match is this.");
 
-    // -------------------------------------------------------------- 5
-    head(5, "SO YOU WRITE THE STRIP, AND IT IS ONE LINE");
+    // -------------------------------------------------------------- 6
+    head(6, "SO YOU WRITE THE STRIP, AND IT IS ONE LINE");
     println!("   s.strip_prefix('\\u{{feff}}')  {:?}", s.strip_prefix('\u{feff}'));
     println!("   ..unwrap_or(&s) on a clean string leaves it alone:");
     let clean = String::from("id");

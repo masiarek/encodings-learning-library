@@ -18,6 +18,31 @@ This is the part usually left out, and it is the reason the scheme works at all.
 
 If the mark were an ordinary character, a reader seeing the reversed bytes would face a second ambiguity: is this a little-endian mark, or a big-endian file that happens to begin with some other letter? `U+FFFE` — the mirror image of `U+FEFF` — is a **permanent noncharacter**. Unicode reserves it and guarantees it will never be assigned to anything, precisely so that it can serve as this signal. A reader that decodes `FFFE` has not found a rare character; it has found a value that cannot legitimately exist, and it knows for certain the order is backwards. Section 2 of the Python run below decodes the little-endian bytes as big-endian on purpose and asks Unicode for the resulting character's name; there is no name, because there is deliberately nothing there.
 
+## Which name you type decides whether there is a mark
+
+Everything above is about the *file*. This is about the one line of code that produces it — which is where a mark is most often added by accident, because in Python the decision is not a flag, an argument or a setting. It is the codec's **name**. Anthony Sottile's [what is a BOM (byte-order-marker) ↗](https://youtu.be/OrtNMystCgM) is eleven minutes of exactly this at the REPL: one character through `utf-16le` and `utf-16be`, and then the same character through a bare `utf-32`, where the byte count jumps and the extra bytes are the mark.
+
+| you encode with | what comes out |
+|---|---|
+| `utf-16le` · `utf-16be` · `utf-32le` · `utf-32be` | the payload, and nothing else |
+| `utf-16` · `utf-32` | **a mark**, then the payload — in whichever order the machine running your code happens to use |
+| `utf-8` | the payload |
+| `utf-8-sig` | **`EF BB BF`**, then the payload |
+
+The logic is consistent once you see it. A suffix is a promise you have already made, so there is nothing left to announce and no mark is written. A bare `utf-16` is you declining to choose, so the codec chooses for you — and then has to say which way it went. `'😀'.encode('utf-16')` is six bytes where `'😀'.encode('utf-16le')` is four, and `''.encode('utf-16')` is two bytes for the empty string: the mark is a header, not text.
+
+The same name decides the other direction, and that is the half that bites. **The unsuffixed codec eats a leading mark; the suffixed one hands it back as a character** — you told it the order, so it has no reason to think the first two bytes are anything but content. That is the `utf-8` / `utf-8-sig` asymmetry below, one encoding up, and it is where an invisible `U+FEFF` welded to the first field of a header comes from.
+
+Reading a file that has **no** mark with the unsuffixed `utf-16` is worse than either, because it always works. Python falls back to the byte order of the machine doing the reading: right whenever writer and reader happen to agree, wrong when they do not, and in both cases a decode that *succeeds*. That is the original problem the mark exists to solve, reintroduced as a default.
+
+Nothing about this is Python's alone. `iconv` has the identical rule — `-t UTF-16` writes a mark and picks an order, `-t UTF-16LE` writes neither — which is why the note under the shell run below is a consequence rather than a quirk of one tool. Rust has no unsuffixed form to reach for: `encode_utf16()` stops at code *units* and makes you name `to_le_bytes` or `to_be_bytes` yourself, and nothing in `std` will emit a mark on your behalf.
+
+### Two smaller traps in the same line of code
+
+**`FF FE` is not enough to identify a file.** The UTF-32LE mark is `FF FE 00 00` — the UTF-16LE mark entire, plus two NULs. A sniffer that tests the two-byte form first therefore calls every little-endian UTF-32 file UTF-16, and gets no error for it: `'A~'` comes back as `'\x00A\x00~\x00'`, the right letters with a NUL welded to each one. It then survives `.strip()`, fails every comparison, and looks like a database problem. Test the four-byte mark before the two-byte one.
+
+**The name has to survive the alias table.** `'utf16-le'` raises `LookupError: unknown encoding: utf16-le` while `'utf-16le'` is fine — and the difference is not the hyphen, because `'UTF 16 LE'` works too. Python collapses every run of non-alphanumeric characters into a single underscore and looks the result up in `encodings.aliases`, which holds `utf_16le` and `utf_16_le` and has never held `utf16_le`: in `utf16-le` there is nothing between `utf` and `16` to collapse. Two spellings that look equally reasonable, and only one of them exists.
+
 ## What the three bytes cost
 
 To a reader expecting a signature, the mark is invisible. To every other reader it is simply the first three bytes of the file — and the whole difficulty is that this is nearly always silent:
@@ -87,7 +112,89 @@ The question is answerable rather than a matter of taste: grep for who opens the
    open a file -- it is a value guaranteed never to mean anything, and
    a reader that sees it knows for certain it has the order backwards.
 
-3. UTF-8 HAS NO BYTE ORDER, AND GETS THE MARK ANYWAY
+3. THE CODEC NAME DECIDES WHETHER A MARK IS WRITTEN
+------------------------------------------------------------------------
+   one code point, U+1F600, written seven ways:
+     utf-8     4 bytes   f0 9f 98 80
+     utf-16be  4 bytes   d8 3d de 00
+     utf-16le  4 bytes   3d d8 00 de
+     utf-32be  4 bytes   00 01 f6 00
+     utf-32le  4 bytes   00 f6 01 00
+     utf-16    6 bytes   starts with codecs.BOM_UTF16: True
+     utf-32    8 bytes   starts with codecs.BOM_UTF32: True
+
+   The bytes of those last two are not printed, on purpose: the mark
+   is followed by whichever order THIS machine runs, so the answer
+   depends on who ran the script and a recorded key must not. What
+   holds everywhere is the shape --
+     the rest of the utf-16 form is one of the two suffixed forms: True
+     the rest of the utf-32 form is one of the two suffixed forms: True
+
+   So the rule is the name, and that is the whole of it:
+     WITH a suffix (utf-16le, utf-32be) -- you have already said which
+       order, there is nothing left to announce, and no mark is added
+     WITHOUT one (utf-16, utf-32) -- the codec picks an order for you
+       and writes a mark at the front to say which one it picked
+
+   The mark is a header, not text, and it is written even when there
+   is no text at all:
+     len(''.encode('utf-16le')) = 0
+     len(''.encode('utf-16'))   = 2
+     len(''.encode('utf-32le')) = 0
+     len(''.encode('utf-32'))   = 4
+
+4. AND THE NAME HAS TO SURVIVE THE ALIAS TABLE
+------------------------------------------------------------------------
+   'utf-16le'   -> codecs.lookup(..).name = 'utf-16-le'
+   'utf-16-le'  -> codecs.lookup(..).name = 'utf-16-le'
+   'utf_16_le'  -> codecs.lookup(..).name = 'utf-16-le'
+   'UTF 16 LE'  -> codecs.lookup(..).name = 'utf-16-le'
+   'utf16-le'   -> LookupError: unknown encoding: utf16-le
+   'utf16le'    -> LookupError: unknown encoding: utf16le
+
+   Four spellings work and two do not, and the difference is not the
+   hyphen -- 'UTF 16 LE' is fine. Python turns every run of
+   non-alphanumeric characters into a single underscore and looks the
+   result up in encodings.aliases, so 'utf-16le', 'utf 16le' and
+   'utf_16_le' all arrive as a name that table knows. 'utf16-le' has
+   nothing at all between 'utf' and '16', so it normalises to a name
+   the table has never contained. Two spellings that look equally
+   reasonable, and only one of them exists.
+
+5. READING BACK: THE SAME NAME DECIDES WHO EATS THE MARK
+------------------------------------------------------------------------
+   a little-endian file with a mark   ff fe 3d d8 00 de
+     .decode('utf-16')     -> '😀'
+     .decode('utf-16le')   -> '\ufeff😀'
+
+   The unsuffixed codec consumes the mark; the suffixed one hands it
+   back as a character, because you told it the order and it has no
+   reason to think the first two bytes are anything but text. That is
+   the utf-8-sig asymmetry of section 8, one encoding up -- and it is
+   where an invisible U+FEFF welded to your first field comes from.
+
+   The other way round is worse, and cannot be shown here for the
+   same reason as section 3: a file with NO mark, decoded by the
+   unsuffixed 'utf-16', is read in this machine's order. Right half
+   the time, silently wrong the other half, and the half you get
+   depends on the hardware -- which is the exact bug the mark was
+   invented to prevent, reintroduced by a codec default.
+
+6. FF FE IS NOT ENOUGH TO IDENTIFY A FILE
+------------------------------------------------------------------------
+   codecs.BOM_UTF16_LE   ff fe
+   codecs.BOM_UTF32_LE   ff fe 00 00   <- the line above, plus two NULs
+   a UTF-32LE file       ff fe 00 00 41 00 00 00 7e 00 00 00
+     .decode('utf-32')   -> 'A~'
+     .decode('utf-16')   -> '\x00A\x00~\x00'
+
+   No exception. A sniffer that tests the two-byte mark first calls
+   every little-endian UTF-32 file UTF-16, and what it hands back is
+   the right letters with a NUL welded to each one -- which then
+   survives a strip(), fails every comparison, and looks like a
+   database problem. Test the four-byte mark before the two-byte one.
+
+7. UTF-8 HAS NO BYTE ORDER, AND GETS THE MARK ANYWAY
 ------------------------------------------------------------------------
    the same code point as UTF-8   ef bb bf
    codecs.BOM_UTF8                b'\xef\xbb\xbf'
@@ -104,7 +211,7 @@ The question is answerable rather than a matter of taste: grep for who opens the
 
    Same file. Three bytes of difference, and they are content.
 
-4. utf-8-sig: FORGIVING ON THE WAY IN, LOUD ON THE WAY OUT
+8. utf-8-sig: FORGIVING ON THE WAY IN, LOUD ON THE WAY OUT
 ------------------------------------------------------------------------
    ef bb bf 69 64 as utf-8: '\ufeffid'   as utf-8-sig: 'id'
    69 64          as utf-8: 'id'         as utf-8-sig: 'id'
@@ -115,7 +222,7 @@ The question is answerable rather than a matter of taste: grep for who opens the
    it always adds one -- so write plain 'utf-8' unless you have decided
    on purpose that the consumer needs the flag.
 
-5. WHAT THE THREE BYTES BREAK
+9. WHAT THE THREE BYTES BREAK
 ------------------------------------------------------------------------
    Invisible to a reader that expects it. To everyone else it is just
    the first three bytes of the file:
@@ -134,7 +241,7 @@ The question is answerable rather than a matter of taste: grep for who opens the
    returns None, the comparison returns False, the strip does nothing,
    and a header that looks identical on screen goes on not matching.
 
-6. THE DECISION, IN ONE QUESTION
+10. THE DECISION, IN ONE QUESTION
 ------------------------------------------------------------------------
    Who reads this file?
 
@@ -156,7 +263,7 @@ The question is answerable rather than a matter of taste: grep for who opens the
 
 ## In the terminal
 
-One command is missing from the script below on purpose, and its absence is this page's point made by accident. `iconv -t UTF-16` — with no `BE` or `LE` — does add a mark, and **it picks the order itself: big-endian on macOS, little-endian on GNU.** The same command on two machines writes two different files, so there is no single answer key for it, and there is no way to know which you got except to look at the bytes. Everything below is pinned to `UTF-16BE` or `UTF-16LE` and is byte-identical on both platforms.
+One command is missing from the script below on purpose, and its absence is the codec-name rule above, in a second tool. `iconv -t UTF-16` — with no `BE` or `LE` — does add a mark, and **it picks the order itself: big-endian on macOS, little-endian on GNU.** The same command on two machines writes two different files, so there is no single answer key for it, and there is no way to know which you got except to look at the bytes. Everything below is pinned to `UTF-16BE` or `UTF-16LE` and is byte-identical on both platforms.
 
 <!-- output:byte_order_and_bom_sh -->
 *Verified output of [`byte_order_and_bom_sh.sh`](examples/byte_order_and_bom_sh.sh) — regenerated by `tools/run_examples.py`, never hand-typed.*
@@ -273,7 +380,23 @@ Rust splits the byte order into two method names, so a program that serialises a
    point at the front and the reader can work the order out
    instead of being told it out of band.
 
-3. A SIGNATURE IS VALID UTF-8, SO NOTHING REJECTS IT
+3. AND THERE IS NO UNSUFFIXED OPTION TO GET WRONG
+------------------------------------------------------------------------
+   let face = "\u{1F600}";
+     face.encode_utf16()       [d83d, de00]   2 units -- a surrogate pair
+     ..each unit to_le_bytes   [3d, d8, 00, de]
+     ..each unit to_be_bytes   [d8, 3d, de, 00]
+     bytes either way          4, and no mark before either
+
+   `encode_utf16` stops at code UNITS and hands the byte question
+   straight back, so what Python spells as a codec name is a
+   method name here -- and there is no third method that picks an
+   order for you and writes a mark to announce it. Nothing in std
+   emits a BOM at all: if a consumer needs one you write those
+   bytes yourself, which is also why you cannot emit one by
+   accident and wonder later where it came from.
+
+4. A SIGNATURE IS VALID UTF-8, SO NOTHING REJECTS IT
 ------------------------------------------------------------------------
    bytes                     [ef, bb, bf, 69, 64]
    String::from_utf8(..)     Ok("\u{feff}id")
@@ -285,7 +408,7 @@ Rust splits the byte order into two method names, so a program that serialises a
    cannot help: the mark is a legitimate code point and the bytes
    are well formed. Validity was never the question.
 
-4. trim() WILL NOT REMOVE IT
+5. trim() WILL NOT REMOVE IT
 ------------------------------------------------------------------------
    first char                '\u{feff}'
      first.is_whitespace()   false
@@ -296,7 +419,7 @@ Rust splits the byte order into two method names, so a program that serialises a
    in terms of that property -- steps straight over it. A field
    that was trimmed and still does not match is this.
 
-5. SO YOU WRITE THE STRIP, AND IT IS ONE LINE
+6. SO YOU WRITE THE STRIP, AND IT IS ONE LINE
 ------------------------------------------------------------------------
    s.strip_prefix('\u{feff}')  Some("id")
    ..unwrap_or(&s) on a clean string leaves it alone:

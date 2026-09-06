@@ -11,7 +11,7 @@
 - The anatomy of `UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe9 in position 3` — every word of it is a clue
 - `strict` / `replace` / `ignore` / `backslashreplace` / `surrogateescape` on the same bad input, side by side
 - `surrogateescape`: how Python reads a filename it cannot decode and still writes it back byte-for-byte
-- Codec names and aliases: `latin-1` = `iso-8859-1` = `latin1`; `cp1252` ≠ `latin-1`; `utf-8-sig`; `utf-16` with and without the suffix
+- Codec names and aliases: `latin-1` = `iso-8859-1` = `latin1`; `cp1252` ≠ `latin-1`; `utf-8-sig`; `utf-16` with and without the suffix — that last one, and why `utf16-le` raises `LookupError` where `utf-16le` does not, is already done in [Byte order and the BOM](../../03_Encodings/byte_order_and_bom/README.md)
 - `bytes.decode` vs `str(b, 'utf-8')` vs `codecs.open`: three spellings, one operation
 
 ## The example it will run

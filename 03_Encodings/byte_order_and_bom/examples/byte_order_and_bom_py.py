@@ -8,6 +8,10 @@ told. UTF-8 has no order to resolve and gets the mark anyway, as a signature
 meaning "this is UTF-8" -- which is useful to a guessing reader and is three
 bytes of content to everyone else.
 
+In Python the choice is made by the codec NAME: a name with a byte-order
+suffix writes no mark, a name without one picks an order for you and writes a
+mark to say which -- and the same name on the way back decides who eats it.
+
 Run:  python3 byte_order_and_bom_py.py
 """
 
@@ -67,7 +71,94 @@ print("   open a file -- it is a value guaranteed never to mean anything, and")
 print("   a reader that sees it knows for certain it has the order backwards.")
 
 # ------------------------------------------------------------------ 3
-head(3, "UTF-8 HAS NO BYTE ORDER, AND GETS THE MARK ANYWAY")
+head(3, "THE CODEC NAME DECIDES WHETHER A MARK IS WRITTEN")
+face = "\U0001F600"
+print("   one code point, U+1F600, written seven ways:")
+for name in ("utf-8", "utf-16be", "utf-16le", "utf-32be", "utf-32le"):
+    raw = face.encode(name)
+    print(f"     {name:<9} {len(raw)} bytes   {raw.hex(' ')}")
+raw16, raw32 = face.encode("utf-16"), face.encode("utf-32")
+print(f"     {'utf-16':<9} {len(raw16)} bytes   "
+      f"starts with codecs.BOM_UTF16: {raw16[:2] == codecs.BOM_UTF16}")
+print(f"     {'utf-32':<9} {len(raw32)} bytes   "
+      f"starts with codecs.BOM_UTF32: {raw32[:4] == codecs.BOM_UTF32}")
+print()
+print("   The bytes of those last two are not printed, on purpose: the mark")
+print("   is followed by whichever order THIS machine runs, so the answer")
+print("   depends on who ran the script and a recorded key must not. What")
+print("   holds everywhere is the shape --")
+print(f"     the rest of the utf-16 form is one of the two suffixed forms: "
+      f"{raw16[2:] in (face.encode('utf-16le'), face.encode('utf-16be'))}")
+print(f"     the rest of the utf-32 form is one of the two suffixed forms: "
+      f"{raw32[4:] in (face.encode('utf-32le'), face.encode('utf-32be'))}")
+print()
+print("   So the rule is the name, and that is the whole of it:")
+print("     WITH a suffix (utf-16le, utf-32be) -- you have already said which")
+print("       order, there is nothing left to announce, and no mark is added")
+print("     WITHOUT one (utf-16, utf-32) -- the codec picks an order for you")
+print("       and writes a mark at the front to say which one it picked")
+print()
+print("   The mark is a header, not text, and it is written even when there")
+print("   is no text at all:")
+for name in ("utf-16le", "utf-16", "utf-32le", "utf-32"):
+    call = f"len(''.encode({name!r}))"
+    print(f"     {call:<26} = {len(''.encode(name))}")
+
+# ------------------------------------------------------------------ 4
+head(4, "AND THE NAME HAS TO SURVIVE THE ALIAS TABLE")
+for name in ("utf-16le", "utf-16-le", "utf_16_le", "UTF 16 LE", "utf16-le", "utf16le"):
+    try:
+        print(f"   {name!r:<12} -> codecs.lookup(..).name = {codecs.lookup(name).name!r}")
+    except LookupError as e:
+        print(f"   {name!r:<12} -> LookupError: {e}")
+print()
+print("   Four spellings work and two do not, and the difference is not the")
+print("   hyphen -- 'UTF 16 LE' is fine. Python turns every run of")
+print("   non-alphanumeric characters into a single underscore and looks the")
+print("   result up in encodings.aliases, so 'utf-16le', 'utf 16le' and")
+print("   'utf_16_le' all arrive as a name that table knows. 'utf16-le' has")
+print("   nothing at all between 'utf' and '16', so it normalises to a name")
+print("   the table has never contained. Two spellings that look equally")
+print("   reasonable, and only one of them exists.")
+
+# ------------------------------------------------------------------ 5
+head(5, "READING BACK: THE SAME NAME DECIDES WHO EATS THE MARK")
+marked = codecs.BOM_UTF16_LE + face.encode("utf_16_le")
+print(f"   a little-endian file with a mark   {marked.hex(' ')}")
+print(f"     .decode('utf-16')     -> {marked.decode('utf_16')!r}")
+print(f"     .decode('utf-16le')   -> {marked.decode('utf_16_le')!r}")
+print()
+print("   The unsuffixed codec consumes the mark; the suffixed one hands it")
+print("   back as a character, because you told it the order and it has no")
+print("   reason to think the first two bytes are anything but text. That is")
+print("   the utf-8-sig asymmetry of section 8, one encoding up -- and it is")
+print("   where an invisible U+FEFF welded to your first field comes from.")
+print()
+print("   The other way round is worse, and cannot be shown here for the")
+print("   same reason as section 3: a file with NO mark, decoded by the")
+print("   unsuffixed 'utf-16', is read in this machine's order. Right half")
+print("   the time, silently wrong the other half, and the half you get")
+print("   depends on the hardware -- which is the exact bug the mark was")
+print("   invented to prevent, reintroduced by a codec default.")
+
+# ------------------------------------------------------------------ 6
+head(6, "FF FE IS NOT ENOUGH TO IDENTIFY A FILE")
+print(f"   codecs.BOM_UTF16_LE   {codecs.BOM_UTF16_LE.hex(' ')}")
+print(f"   codecs.BOM_UTF32_LE   {codecs.BOM_UTF32_LE.hex(' ')}"
+      f"   <- the line above, plus two NULs")
+utf32_file = codecs.BOM_UTF32_LE + "A~".encode("utf_32_le")
+print(f"   a UTF-32LE file       {utf32_file.hex(' ')}")
+print(f"     .decode('utf-32')   -> {utf32_file.decode('utf_32')!r}")
+print(f"     .decode('utf-16')   -> {utf32_file.decode('utf_16')!r}")
+print()
+print("   No exception. A sniffer that tests the two-byte mark first calls")
+print("   every little-endian UTF-32 file UTF-16, and what it hands back is")
+print("   the right letters with a NUL welded to each one -- which then")
+print("   survives a strip(), fails every comparison, and looks like a")
+print("   database problem. Test the four-byte mark before the two-byte one.")
+
+# ------------------------------------------------------------------ 7
+head(7, "UTF-8 HAS NO BYTE ORDER, AND GETS THE MARK ANYWAY")
 print(f"   the same code point as UTF-8   {mark.encode('utf_8').hex(' ')}")
 print(f"   codecs.BOM_UTF8                {codecs.BOM_UTF8!r}")
 print()
@@ -83,8 +174,8 @@ for label, data in (("plain UTF-8   ", "id,name\n"), ("with signature", "﻿id,n
 print()
 print("   Same file. Three bytes of difference, and they are content.")
 
-# ------------------------------------------------------------------ 4
-head(4, "utf-8-sig: FORGIVING ON THE WAY IN, LOUD ON THE WAY OUT")
+# ------------------------------------------------------------------ 8
+head(8, "utf-8-sig: FORGIVING ON THE WAY IN, LOUD ON THE WAY OUT")
 for raw in (b"\xef\xbb\xbfid", b"id"):
     got_plain = raw.decode("utf_8")
     got_sig = raw.decode("utf_8_sig")
@@ -96,8 +187,8 @@ print("   so it is the safe reader for a file of unknown origin. Writing with")
 print("   it always adds one -- so write plain 'utf-8' unless you have decided")
 print("   on purpose that the consumer needs the flag.")
 
-# ------------------------------------------------------------------ 5
-head(5, "WHAT THE THREE BYTES BREAK")
+# ------------------------------------------------------------------ 9
+head(9, "WHAT THE THREE BYTES BREAK")
 bom_text = "﻿"
 print("   Invisible to a reader that expects it. To everyone else it is just")
 print("   the first three bytes of the file:")
@@ -123,8 +214,8 @@ print("   the fix in its own error message. The rest fail silently: the match")
 print("   returns None, the comparison returns False, the strip does nothing,")
 print("   and a header that looks identical on screen goes on not matching.")
 
-# ------------------------------------------------------------------ 6
-head(6, "THE DECISION, IN ONE QUESTION")
+# ------------------------------------------------------------------ 10
+head(10, "THE DECISION, IN ONE QUESTION")
 print("   Who reads this file?")
 print()
 print("     a program, by exact bytes    -> plain 'utf-8'. A parser, a config,")
