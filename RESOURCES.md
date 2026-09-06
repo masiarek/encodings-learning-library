@@ -123,6 +123,41 @@ No page here asks how `grep` or `rg` is fast. That question starts in these.
 | [Fast Conversion From UTF-8 with C++, DFAs, and SSE Intrinsics ↗](https://www.youtube.com/watch?v=5FQ87-Ecb-A) — Bob Steagall, CppCon 2018 | 60 | What it costs to do by machine what [UTF-8 by hand](03_Encodings/utf8_by_hand/README.md) does by pencil, in a language that hands you nothing. The first twenty minutes are the encoding itself — the *Valid Sequence Example* slide is where [Validation is a boundary](03_Encodings/validation_is_a_boundary/README.md) starts, and the three that follow it — *Overlong Sequence Example*, *Boundary Conditions*, *Finding the Transitions* — are [Overlong sequences](03_Encodings/overlong_sequences/README.md) — then it becomes a DFA, then SSE intrinsics. Watchable to the DFA and stoppable there. Code: [BobSteagall/CppCon2018 ↗](https://github.com/BobSteagall/CppCon2018). |
 | Pragmatic Unicode — Ned Batchelder, PyCon 2012 | 35 | Linked from [his page ↗](https://nedbatchelder.com/text/unipain.html) above; the Python talk. |
 
+## Command-line tools, and which ones you already have
+
+Every example in this library runs on tools that ship with both macOS and Ubuntu, on purpose — a lesson you cannot run is a lesson you have to believe. So the base set below is the whole vocabulary the pages use, and nothing further down is required to follow any of them.
+
+**Already on a Mac, no install:**
+
+| Tool | The question it answers |
+|---|---|
+| `xxd` | what are the bytes? — and `xxd -r -p` is the only reverse gear of the three dumpers |
+| `od -An -tx1` | the same, portably; `od -c` for octal escapes ([never `od -a`](06_Terminal/inspecting_a_file/README.md)) |
+| `hexdump -C` | the same again; plain `hexdump` [reorders bytes to suit your CPU](06_Terminal/inspecting_a_file/README.md) |
+| `wc -c` / `wc -m` / `wc -l` | bytes / characters / [newline-terminated lines](06_Terminal/trailing_newline/README.md) — three different questions |
+| `file --mime-encoding` | a guess, and [an honest one](06_Terminal/file_guesses/README.md) |
+| `iconv` | re-encode, or use `-f X -t X` as a yes/no validator |
+| `cat -v` / `cat -vet` | high bits as `M-`, line ends as `$` — the fastest one-line encoding check |
+| `strings` | the readable runs inside a binary |
+| `tr -d`, `sed`, `tail -c` | byte surgery when you know which byte |
+| `piconv` | Perl's `iconv`, already installed, with Perl's encoding names and aliases |
+| `python3 -c 'import unicodedata; …'` | the character's **name** and properties — the column no dumper gives you |
+| `man ascii` | the table, offline, in octal, decimal and hex |
+
+**Worth installing.** Nothing in the library depends on these and CI does not have them, so no page records their output — but each one answers a question the base set answers badly or not at all.
+
+| Install | What it adds |
+|---|---|
+| `brew install uni` | *"Unicode database query tool for the command-line"* — search characters **by name**, print their properties, the offline answer to what the lookup websites above do. The one to install first. |
+| `brew install hexyl` | *"Command-line hex viewer"* — `xxd` with colour by byte category, so NUL, ASCII, and high bytes are visible at a glance instead of counted. |
+| `brew install recode` | *"Convert character set (charsets)"* — `iconv` with a much larger table set and a surface-syntax (`recode utf8..latin1`) that is easier to type than `-f`/`-t`. |
+| `brew install uchardet` | *"Encoding detector library"* — a real detector where `file` only distinguishes valid-UTF-8 from not. Still a guess; a better-informed one. |
+| `brew install dos2unix` | The [CRLF](07_Real_Data/crlf_vs_lf/README.md) repair kit as one command, with `unix2dos` and a `-i` flag that reports line-ending counts without changing anything. |
+| `brew install icu4c` | Brings `uconv` — ICU's converter, which does normalization (`-x nfc`) as well as transcoding, so it is the one that can answer whether two visually identical strings are the same string. Keg-only: add its `bin` to your `PATH`. |
+| `brew install coreutils` | The **GNU** versions, prefixed `g` — `god`, `gwc`, `giconv-less`. Worth having for one library-specific reason: this repo documents [the places where BSD and GNU tools disagree](CONTRIBUTING.md), and with coreutils installed you can run both sides of every one of them on the same machine and see the difference yourself rather than taking CI's word for it. |
+
+The two everyone reaches for that are *not* on this list are `bat` and `rg` — excellent tools, and neither is about encodings: `bat` is a syntax-highlighting `cat` and `rg` is a fast grep. They read text; they do not tell you what the text is made of.
+
 ## Tools for looking a character up
 
 | | Does |
@@ -132,7 +167,6 @@ No page here asks how `grep` or `rg` is fast. That question starts in these.
 | [FileFormat.info ↗](https://www.fileformat.info/info/unicode/char/e9/index.htm) | The same, older, and the page linked from that Stack Overflow answer. That link is `é`. |
 | [Awesome Unicode ↗](https://github.com/jagracey/Awesome-Unicode) | A curated list of the strange corners: zero-width characters, homoglyphs, the emoji that break things. |
 
-On your own machine: `man ascii`, `xxd`, `od`, `iconv -l`, `python3 -c 'import unicodedata; print(unicodedata.name("é"))'`.
 
 ## Katas — write the real thing
 

@@ -1,0 +1,38 @@
+1. TWO STRINGS, ONE CHARACTER, ONE BYTE APART
+   no_nl    c5 bc         2 bytes
+   with_nl  c5 bc 0a      3 bytes
+   The letter is two bytes (C5 BC). The newline is the third.
+
+2. splitlines() CANNOT SEE THE DIFFERENCE
+   'ż'     .splitlines()  -> ['ż']
+   'ż\n'   .splitlines()  -> ['ż']
+   Identical. splitlines() treats a newline as a TERMINATOR: it closes the
+   line before it and does not open one after it. That is the right answer
+   for reading a file, and it is why the difference never reaches your code.
+
+3. split('\n') CAN — BECAUSE IT ASKS A DIFFERENT QUESTION
+   'ż'     .split(chr(10))  -> ['ż']
+   'ż\n'   .split(chr(10))  -> ['ż', '']
+   split() treats it as a SEPARATOR, so a trailing one opens an empty last
+   field. Neither function is wrong; they answer 'what are the lines?' and
+   'what is between the newlines?', and only the second is a byte question.
+
+4. THE TEST TO WRITE, AND THE ONE THAT LIES
+   no_nl    endswith(b'\n') -> False  len(splitlines()) -> 1  count('\n') -> 0
+   with_nl  endswith(b'\n') -> True   len(splitlines()) -> 1  count('\n') -> 1
+   Ask the bytes. Counting lines cannot tell you, because both files have
+   exactly one line — that is what section 2 just proved.
+
+5. WRITING IT: WHICH CALL ADDS THE BYTE
+   print(x, file=f)      adds it   (end='\n' is the default)
+   print(x, file=f, end='')  does not
+   f.write(x)            does not — write() writes exactly what you gave it
+   f.writelines(lines)   does not — the name promises a newline it never adds
+   The shell's pair is the same pair: echo adds it, printf does not.
+
+6. READING A FILE THAT LACKS IT
+   the file: 'ż\nż'
+   readlines() -> ['ż\n', 'ż']
+   Every element ends in a newline except the last, so code that strips a
+   fixed number of characters off the end damages exactly one row — the
+   last. Use .rstrip(chr(10)), or splitlines(), and never [:-1].

@@ -1,0 +1,27 @@
+1. TWO STRINGS, ONE CHARACTER, ONE BYTE APART
+   no_nl    c5 bc         2 bytes
+   with_nl  c5 bc 0a      3 bytes
+   len() is bytes, always — the letter is two of them.
+
+2. lines() CANNOT SEE THE DIFFERENCE
+   "ż"     .lines() -> ["ż"]
+   "ż\n"   .lines() -> ["ż"]
+   Identical, and the docs say so: the final line ending is optional.
+   lines() also strips a \r before the \n, so it reads CRLF files too.
+
+3. split('\n') CAN
+   "ż"     .split() -> ["ż"]
+   "ż\n"   .split() -> ["ż", ""]
+   The trailing newline opens an empty last field. Same split as Python's.
+
+4. THE TEST TO WRITE
+   no_nl    ends_with('\n') -> false  lines().count() -> 1
+   with_nl  ends_with('\n') -> true   lines().count() -> 1
+   Ask the bytes. Both strings have one line.
+
+5. WRITING IT
+   println!(..)  adds it
+   print!(..)    does not — and stdout is line-buffered when it is a
+                 terminal, so a print! with no newline may sit in the
+                 buffer looking like nothing happened until you flush.
+   this line was printed with print! and an explicit \n

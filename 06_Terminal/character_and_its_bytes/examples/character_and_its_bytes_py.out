@@ -1,0 +1,28 @@
+1. THE ONE-LINER
+   ż = c5bc
+   .encode('utf-8') is the step the shell does not show you: a str has no
+   bytes until you name an encoding. xxd -p only ever saw the result.
+
+2. THE TABLE
+   char   bytes  hex            code point name
+   A      1      41             U+0041     LATIN CAPITAL LETTER A
+   ż      2      c5 bc          U+017C     LATIN SMALL LETTER Z WITH DOT ABOVE
+   €      3      e2 82 ac       U+20AC     EURO SIGN
+   😀      4      f0 9f 98 80    U+1F600     GRINNING FACE
+   The last two columns are the ones no terminal tool gives you for free:
+   the code point is the character's NUMBER, the hex is its UTF-8 SPELLING,
+   and confusing the two is the single most common mistake in this subject.
+
+3. THE REVERSE GEAR
+   bytes.fromhex('c5bc')          -> b'\xc5\xbc'
+   bytes.fromhex('c5bc').decode() -> 'ż'
+   Python's pair for xxd -p and xxd -r -p, and it fails loudly on bad input
+   where the shell would hand you a broken file and say nothing.
+
+4. WHY THE HEX IS NOT THE CODE POINT
+   A  U+0041  ->  41
+   ż  U+017C  ->  c5 bc
+   €  U+20AC  ->  e2 82 ac
+   For 'A' they look identical (41 and U+0041) and that coincidence is why
+   ASCII hides the distinction for a whole career. For 'ż' the number is
+   U+017C and the bytes are C5 BC — nothing about one is readable in the other.

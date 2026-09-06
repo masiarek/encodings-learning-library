@@ -1,0 +1,48 @@
+1. THE ONE-LINER
+$ printf "%s = " "$(cat one.txt)"; xxd -p one.txt
+ż = c5bc
+   Three parts, and each one is doing a job:
+     printf '%s = '   writes the character and NO newline, so the line stays open
+     $(cat one.txt)   substitution — hands over the text, trailing newlines stripped
+     xxd -p           bare hex, no offset column, no ascii column — and it ends the line
+
+2. WITHOUT A FILE: THE SAME THING ON A PIPE
+$ printf "ż" | xxd -p
+c5bc
+
+3. WHY -p, AND NOT PLAIN xxd
+$ xxd one.txt
+00000000: c5bc                                     ..
+$ xxd -p one.txt
+c5bc
+   Plain xxd is for READING: an offset, byte pairs, and a text column.
+   -p ('postscript') is for USING: just the hex, which is what you paste into
+   a bug report, an email, or the next command.
+
+4. THE REVERSE GEAR
+$ echo c5bc | xxd -r -p
+ż
+   xxd -r -p turns the hex back into bytes — the only one of xxd/od/hexdump
+   that goes both ways, which makes the pair a round trip you can test.
+   The letter above sits on its own line only because this script printed a
+   newline after it — xxd -r -p wrote the two bytes and stopped, which is the
+   previous lesson happening inside this one.
+
+5. A TABLE, WHICH IS THE ONE-LINER IN A LOOP
+   char     bytes   hex
+   A        1       41
+   ż       2       c5bc
+   €      3       e282ac
+   😀     4       f09f9880
+   One character each, one to four bytes each. That column is UTF-8's whole
+   design, and this loop is how you check it on any character you meet.
+   (The char column looks ragged because printf pads by BYTES, not by how
+    wide the glyph is — a two-byte letter eats two of its eight columns.)
+
+6. THE TRAP IN THE SUBSTITUTION
+$ printf "abc\n\n\n" > blanks.txt   # six bytes: a b c and three newlines
+   file on disk : 6162630a0a0a
+   $(cat file)  : 616263
+   The substitution ate all three newlines, not just one. That is exactly what
+   you want when you are printing a character beside its bytes — and exactly
+   wrong if you were trying to measure the file. Measure files with wc -c.

@@ -1,0 +1,75 @@
+1. THE SAME CHARACTER, TWO FILES
+
+$ xxd no_nl.txt
+00000000: c5bc                                     ..
+
+$ xxd with_nl.txt
+00000000: c5bc 0a                                  ...
+   Same letter. The second file has a third byte, 0a, and that byte is the
+   whole subject of this page.
+
+2. HOW BIG, AND HOW MANY LINES
+
+$ wc -c < no_nl.txt   | tr -d ' '
+2
+
+$ wc -l < no_nl.txt   | tr -d ' '
+0
+
+$ wc -l < with_nl.txt | tr -d ' '
+1
+   A file with a letter in it has ZERO lines. wc -l counts newline bytes,
+   and POSIX says a line is characters ENDING WITH one — so the letter sits
+   in what POSIX calls an incomplete last line, and nothing counts it.
+
+3. THE CHECK: WHAT IS THE LAST BYTE?
+
+$ tail -c 1 no_nl.txt   | xxd -p
+bc
+
+$ tail -c 1 with_nl.txt | xxd -p
+0a
+   0a means the file ends in a newline. Anything else means it does not.
+
+4. WHY CONCATENATION GLUES
+
+$ cat no_nl.txt no_nl.txt | xxd
+00000000: c5bc c5bc                                ....
+
+$ cat with_nl.txt with_nl.txt | xxd
+00000000: c5bc 0ac5 bc0a                           ......
+   Without the terminator, cat runs the two files together into one line.
+   That is the same fact as section 2, seen from the other side: the newline
+   is not a decoration at the end, it is what closes the line.
+
+5. COMMAND SUBSTITUTION ERASES THE DIFFERENCE
+
+$ a=$(cat no_nl.txt); b=$(cat with_nl.txt)
+  a is 2 bytes, b is 2 bytes
+  a = b  -> the same string
+   $(...) strips EVERY trailing newline, so the difference the whole page is
+   about cannot survive being put in a variable. Useful when you want the
+   text; a trap when you were trying to measure the file.
+
+6. A READ LOOP SILENTLY DROPS THE LAST LINE
+$ printf "one\ntwo\nthree" > three.txt   # no trailing newline
+$ while read -r line; do echo "  got: $line"; done < three.txt
+  got: one
+  got: two
+   Two of three. read returns false on the incomplete last line, so the loop
+   ends before the body runs — the classic way a data file loses its last row.
+$ while read -r line || [ -n "$line" ]; do ...   # the fix
+  got: one
+  got: two
+  got: three
+
+7. ADDING THE BYTE
+
+$ printf '\n' >> no_nl.txt
+
+$ xxd no_nl.txt
+00000000: c5bc 0a                                  ...
+
+$ wc -l < no_nl.txt | tr -d ' '
+1
+   One byte appended, and the file now has a line in it.

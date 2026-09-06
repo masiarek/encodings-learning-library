@@ -109,6 +109,8 @@ NAV_ORDER: dict[str, list[str]] = {
     "06_Terminal": [
         "README.md",
         "printf_writes_bytes",
+        "trailing_newline",
+        "character_and_its_bytes",
         "inspecting_a_file",
         "iconv",
         "locale_and_lc_ctype",
