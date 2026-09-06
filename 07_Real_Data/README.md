@@ -1,8 +1,8 @@
-# 07_Real_Data — the six ways it goes wrong at work
+# 07_Real_Data — the seven ways it goes wrong at work
 
 **Level:** 201 · for SAP and interface work
 
-Everything before this chapter is mechanism. This chapter is the six shapes the mechanism takes when a file crosses an interface: a code page named by number, mojibake that can or cannot be reversed, a BOM at the top of a CSV, a field measured in bytes, the 32 bytes where two tables disagree, and the second byte at the end of every Windows line. Each page reproduces the damage in Python so it can be checked, and says what the ABAP side is doing in prose.
+Everything before this chapter is mechanism. This chapter is the seven shapes the mechanism takes on the way to or from somebody else's system: a code page named by number, mojibake that can or cannot be reversed, a BOM at the top of a CSV, a field measured in bytes, the 32 bytes where two tables disagree, the second byte at the end of every Windows line, and a list of names that no two locales agree how to order. Each page reproduces the damage in Python so it can be checked, and says what the ABAP side is doing in prose.
 
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|
@@ -12,5 +12,6 @@ Everything before this chapter is mechanism. This chapter is the six shapes the 
 | 4 | [Fixed-width byte fields](fixed_width_byte_fields/README.md) | Why does a 10-byte field hold five Polish letters, and how do I truncate without cutting one in half? | stub |
 | 5 | [Windows-1252 vs Latin-1](windows_1252_vs_latin1/README.md) | Why is the text almost right except for `€` and the quotes? | stub |
 | 6 | [CRLF vs LF](crlf_vs_lf/README.md) | Where do the `^M`s come from? | stub |
+| 7 | [Sorting and collation](sorting_and_collation/README.md) | Why does `sorted()` put `Łódź` after `Zebra`, and which locale is right? | stub |
 
 *(ABAP claims on these pages are prose — CI cannot run ABAP — and the Python reproduction beside each one is the checked half.)*

@@ -13,6 +13,9 @@ A byte is a number. Text is characters. The only bridge between them is a **tabl
 | 5 | [The table has a version](the_table_has_a_version/README.md) | Whose copy of Unicode is your program actually reading, and what may you write down? | written, 2026-09-06 |
 | 6 | [Preparing a string](preparing_a_string/README.md) | Are these two strings the same name, and who decides which differences count? | written, 2026-09-06 |
 | 7 | [A code point is not a character](a_code_point_is_not_a_character/README.md) | Why does `len()` still not count what a person calls a character? | stub |
+| 8 | [Confusables and scripts](confusables_and_scripts/README.md) | Two strings, one picture, different code points — why does no normalization form merge them? | stub |
+| 9 | [Logical and visual order](logical_and_visual_order/README.md) | Why is the order you store not the order you see, and why is a screenshot not evidence? | stub |
+| 10 | [Unicode in identifiers](unicode_in_identifiers/README.md) | Why does `ﬁle = 2` define `file`, and why does Rust refuse to do that? | stub |
 
 ## The through-line
 

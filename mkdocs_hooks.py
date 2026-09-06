@@ -82,6 +82,9 @@ NAV_ORDER: dict[str, list[str]] = {
         "the_table_has_a_version",
         "preparing_a_string",
         "a_code_point_is_not_a_character",
+        "confusables_and_scripts",
+        "logical_and_visual_order",
+        "unicode_in_identifiers",
     ],
     # The number is settled; now how to write it as bytes.
     "03_Encodings": [
@@ -102,6 +105,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "opening_a_file",
         "normalization",
         "bytes_hex_and_int",
+        "str_in_memory",
     ],
     "05_Rust": [
         "README.md",
@@ -160,6 +164,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "fixed_width_byte_fields",
         "windows_1252_vs_latin1",
         "crlf_vs_lf",
+        "sorting_and_collation",
     ],
 }
 

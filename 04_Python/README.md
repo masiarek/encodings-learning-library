@@ -11,3 +11,4 @@ Python draws the text/bytes line as a type boundary and refuses to cross it sile
 | 3 | [Opening a file](opening_a_file/README.md) | Why is `open(path)` a bet, and what is the portable call? | stub |
 | 4 | [Normalization](normalization/README.md) | Why can `'é' == 'é'` be `False`, and what do I run before comparing? | written, 2026-09-06 |
 | 5 | [Bytes, hex and int](bytes_hex_and_int/README.md) | How do I read a binary format by hand with four conversions? | stub |
+| 6 | [A str in memory](str_in_memory/README.md) | Why can one emoji quadruple what a string costs, and why is `len()` still O(1)? | stub |
