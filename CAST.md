@@ -57,7 +57,7 @@ Two more are named but never *used*, because they cannot be: `U+D800`, a lone su
 |---|---|---|---|---|---|
 | 13 | 13 | 13 | 13 | `Hello, World!` | the baseline: every ruler agrees |
 | 4 | 5 | 4 | 4 | `café` | the house string — one accent, so bytes and characters part company |
-| 5 | 6 | 5 | 4 | `café` | its decomposed twin: identical on screen, unequal in memory |
+| 5 | 6 | 5 | 4 | `café` | its decomposed twin: identical on screen, unequal in memory |
 | 4 | 7 | 4 | 4 | `żółw` | Polish: three of four letters cost two bytes |
 | 3 | 9 | 3 | 6 | `日本語` | three characters, nine bytes, six columns |
 | 5 | 18 | 8 | 6 | `👨‍👩‍👧` | one family: three people, two joiners, one grapheme — and four different answers |
@@ -84,9 +84,9 @@ That is mojibake in three lines, and `Ã©` is the shape to recognise in the wil
 | UTF-8 widths | `A`, `é`, `日`, `😀` — one, two, three, four bytes |
 | code pages, and what a table cannot hold | `é` (in Latin-1), `ż` (not), `€` (1252 only) |
 | Windows-1252 against ISO-8859-1 | `€` at `0x80` |
-| mojibake | `C3 A9` read as Latin-1 |
+| mojibake | `é` — its UTF-8 bytes `C3 A9` read as Latin-1, which prints `Ã©` |
 | UTF-16, surrogates, and the BMP | `😀` |
-| normalization | `café` against `café` |
+| normalization | `café` against `café` — composed `U+00E9` against `e` + `U+0301`, identical on screen |
 | grapheme clusters | `👨‍👩‍👧` |
 | case mapping | `ß` |
 | C strings and the NUL boundary | `U+0000` |
