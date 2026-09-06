@@ -4,7 +4,7 @@
 
 **One line:** `-z` and `--pre` add a stage *before* everything else ripgrep does — a `.gz` gets decompressed, a PDF gets converted — and then the encoding machinery runs on the result exactly as it always did, which is why a UTF-32 file is still unreadable through gzip, and why `--pre` is how you finally read it.
 
-> **Two pages, two halves.** The *how* of `--pre` — the `pdftotext` shim, `--pre-glob`, the shell wrapper, what it costs over a hundred PDFs — is [rg — the menu](../../RIPGREP.md) and the [`--pre` section of the ripgrep page](../ripgrep/README.md). This page is the other half: what these two flags do to the **encoding** stage, how each of them decides whether to run at all, and how each of them fails.
+> **Two pages, two halves.** The *how* of `--pre` — the `pdftotext` shim, `--pre-glob`, the shell wrapper, what it costs over a hundred PDFs — is [rg — the menu](../../RIPGREP.md) and [the file whose text is not there](../ripgrep/README.md#the-file-whose-text-is-not-there). This page is the other half: what these two flags do to the **encoding** stage, how each of them decides whether to run at all, and how each of them fails.
 
 ## Why it is on this list at all
 
