@@ -170,6 +170,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "grep",
         "ripgrep",
         "pcre2",
+        "decompress_then_decode",
         "find",
         "xargs",
         "sed",

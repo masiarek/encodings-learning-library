@@ -24,14 +24,15 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 | 1 | [`grep` on text that is not ASCII](grep/README.md) | Why did my search miss a line that is plainly there? | written |
 | 2 | [`ripgrep` — the Rust grep](ripgrep/README.md) | What does `rg` decide differently, and when does that matter? | written |
 | 3 | [PCRE2 — the other regex engine](pcre2/README.md) | What does `rg -P` buy, and what does it cost? | written |
-| 4 | [`find`, and filenames that are bytes](find/README.md) | Why does `cat` open the file that `find -name` cannot see? | written |
-| 5 | [`xargs` splits on the wrong things](xargs/README.md) | Why does one apostrophe stop my `find` pipeline? | written |
-| 6 | [`sed` matches patterns, not bytes](sed/README.md) | Why does `sed` get right what `tr` gets wrong? | written |
-| 7 | [`awk` is three programs](awk/README.md) | Whose `awk` is this, and why does it disagree with itself? | written |
-| 8 | [`cut` counts what it is told to count](cut/README.md) | `-b` or `-c`? And why does the same command differ per machine? | written |
-| 9 | [`tr` and `sort` work a byte at a time](tr_and_sort/README.md) | Why did deleting `é` damage a different word? | written |
-| 10 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
-| 11 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
+| 4 | [`--pre` and `-z` — decompress, then decode](decompress_then_decode/README.md) | Why does `rg -z` find nothing in a file `file` calls gzip? | written |
+| 5 | [`find`, and filenames that are bytes](find/README.md) | Why does `cat` open the file that `find -name` cannot see? | written |
+| 6 | [`xargs` splits on the wrong things](xargs/README.md) | Why does one apostrophe stop my `find` pipeline? | written |
+| 7 | [`sed` matches patterns, not bytes](sed/README.md) | Why does `sed` get right what `tr` gets wrong? | written |
+| 8 | [`awk` is three programs](awk/README.md) | Whose `awk` is this, and why does it disagree with itself? | written |
+| 9 | [`cut` counts what it is told to count](cut/README.md) | `-b` or `-c`? And why does the same command differ per machine? | written |
+| 10 | [`tr` and `sort` work a byte at a time](tr_and_sort/README.md) | Why did deleting `é` damage a different word? | written |
+| 11 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
+| 12 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
 
 ## What you already have
 

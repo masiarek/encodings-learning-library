@@ -1,0 +1,45 @@
+RULE 1. TWO STAGES, AND THE SECOND ONE DOES NOT KNOW ABOUT THE FIRST
+   utf-8: gzipped to                          31 bytes
+   utf-8: 'café' found after decoding         True
+   utf-16+BOM: gzipped to                     43 bytes
+   utf-16+BOM: 'café' found after decoding    True
+   utf-32+BOM: gzipped to                     51 bytes
+   utf-32+BOM: 'café' found after decoding    False
+   True, True, False -- and the False is not about compression. Decompress
+   first, then hand the result to the same sniffer, and a UTF-32 file fails
+   exactly the way it fails uncompressed: the mark ff fe 00 00 begins with
+   UTF-16LE's ff fe, so it is read as UTF-16 and every letter gets a NUL.
+   That is the point of the ordering. -z and --pre are a stage BEFORE the
+   encoding stage; they add a step and change nothing about the step after.
+
+RULE 2. THE DETECTOR READS THE NAME; THE MAGIC IS IN THE BYTES
+   plain.txt.gz: suffix says gzip?            True
+   plain.txt.gz: first two bytes say gzip?    True
+   notgz.txt: suffix says gzip?               False
+   notgz.txt: first two bytes say gzip?       True
+   Identical bytes, two names, two answers. rg -z asks the first question
+   and `file` asks the second, which is why `file` can call notgz.txt
+   application/gzip on the very run where rg searches it as text. Neither
+   is buggy; only one of them opened the file to find out.
+
+RULE 3. AN OFFSET IS INTO THE LAST STREAM, NOT THE FILE
+   'utf16' at byte N of the FILE              12
+   'utf16' at byte N after decoding           6
+   file is this many bytes                    24
+   decoded text is this many bytes            12
+   Twelve and six. rg -b reports the second, because that is the stream it
+   printed from -- and the same applies after -z or --pre, where the file
+   on disk may share no bytes at all with what was searched. So a -b offset
+   is a position in rg's output, not a `dd skip=` argument, unless nothing
+   transformed the input.
+
+RULE 4. THE FALLBACK ANSWERS. IT DOES NOT COMPLAIN
+   searching the COMPRESSED bytes, level 0    True
+   searching the COMPRESSED bytes, level 9    False
+   True then False, from the same query against the same content. When the
+   decompressor is missing, rg silently falls back to reading the file
+   uncompressed -- and what you get back depends on how well the file
+   happened to compress. A small or already-compact payload is stored
+   almost verbatim, so the search 'works'; a real one does not, and reports
+   no match. Two different wrong answers, one missing binary, and neither
+   run says a word about it unless you pass --debug.
