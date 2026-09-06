@@ -149,6 +149,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "grep",
         "ripgrep",
         "find",
+        "xargs",
         "sed",
         "awk",
         "cut",

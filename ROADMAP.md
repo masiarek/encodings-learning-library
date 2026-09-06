@@ -49,6 +49,7 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [`grep` on text that is not ASCII](11_Tools/grep/README.md) | written, 2026-09-06 — shell and Python; the silent skip, measured, and the binary notice's two streams |
 | [`ripgrep` — the Rust grep](11_Tools/ripgrep/README.md) | written, 2026-09-06 — no rg on either runner, so the session is dated and a Python example checks the rules |
 | [`find`, and filenames that are bytes](11_Tools/find/README.md) | written, 2026-09-06 — shell and Python; `cat` opens what `find -name` cannot see |
+| [`xargs` splits on the wrong things](11_Tools/xargs/README.md) | written, 2026-09-06 — shell; one apostrophe breaks the pipeline, and `-s` is a byte budget so the encoding sets the batch count |
 | [`sed` matches patterns, not bytes](11_Tools/sed/README.md) | written, 2026-09-06 — shell; a sequence beats a byte set, and `-i` has no portable spelling |
 | [`awk` is three programs](11_Tools/awk/README.md) | written, 2026-09-06 — shell, verified identical under BWK awk, mawk *and* gawk; BWK awk disagrees with itself |
 | [`cut` counts what it is told to count](11_Tools/cut/README.md) | written, 2026-09-06 — shell; `-c` returns four bytes on Ubuntu and five on a Mac |
