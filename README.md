@@ -78,7 +78,7 @@ The other five each answer one question the base toolbox answers badly:
 
 **`coreutils` paid off best, and the result is folded back into the library.** These pages document that BSD and GNU `od -a` disagree about every byte above 127 — but until now the disagreement could only show one side per machine, with CI as the sole witness. Now both sides run in the same second, on one file:
 
-```text title="Measured 2026-09-06 — BSD od beside GNU coreutils 9.11 (brew), macOS 26.6, LC_ALL=C. The file is café in Latin-1."
+```text title="Measured 2026-09-06 — BSD od beside GNU coreutils 9.11 (brew), macOS 26.6, LC_ALL=C, on café in Latin-1. Trailing padding trimmed for width; the leading indent is real."
 $ xxd -p latin1.txt
 636166e90a
 
@@ -89,7 +89,7 @@ $ god -An -a latin1.txt       # GNU — the same flags, from coreutils
    c   a   f   i  nl
 ```
 
-One byte, `e9`, and two answers. GNU masks the high bit off and names what is left — `0xe9 & 0x7f` is `0x69`, so it prints `i`, and `cafi` is a wrong answer that reads like a word. BSD asks `isprint()` in your locale, cannot print it, and gives you the byte's number. [Inspecting a file](06_Terminal/inspecting_a_file/README.md) takes that apart; the short version is that the `-a` row of a hex dump is the one column you should not trust.
+One byte, `e9`, and two answers. GNU masks the high bit off and names what is left — `0xe9 & 0x7f` is `0x69`, so it prints `i`, and `cafi` is a wrong answer that reads like a word. BSD asks `isprint()` in your locale, cannot print it, and gives you the byte's number. [Inspecting a file](06_Terminal/inspecting_a_file/README.md) takes that apart and shows the same run untrimmed — BSD indents eleven spaces, pads the line to 72 characters and adds a blank line after it; GNU indents three and does none of that. The short version is that the `-a` row of a hex dump is the one column you should not trust.
 
 ## Why three languages
 
