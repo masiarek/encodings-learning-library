@@ -89,6 +89,14 @@ Every lesson has a section **If you are coming from Python or ABAP**. Those are 
 
 The ABAP half is prose. CI cannot run ABAP, so every page says so in the bridge: *(Not machine-checked — CI cannot run ABAP.)* Keep ABAP claims to things you would bet on — type widths, `xstring` vs `string`, the `cl_abap_codepage` and `cl_abap_char_utilities` names — and never quote an SAP code-page number without saying it should be verified against the system.
 
+## The cast
+
+**Demonstrate with a character from [CAST.md](CAST.md).** Nine characters, seven invisibles and six strings, each earning its place by a property no other member has — `é` for mojibake, `ż` for what a Latin-1 table cannot hold, `€` for Windows-1252, `😀` for the BMP boundary, `ß` for case mapping that changes length, `café` against `café` for normalization.
+
+The reason is compounding rather than tidiness: a reader who has already met `é` knows it is `C3 A9`, one byte in Latin-1, and `Ã©` when the two are confused, so your page can spend its words on its own subject. When the measurement was taken, 90 of the library's 156 distinct non-ASCII characters appeared once or twice in the whole repo — that tail is what the cast replaces.
+
+If no cast member has the property your page needs, use what you need, say in a line why, and add a row to CAST.md if it will be wanted again. Its byte columns are generated from a program, so a new row goes in that program too.
+
 ## Stubs
 
 A **stub** is a lesson page with no example behind it yet: an H1, a `**Level:**`, the notice, a `**One line:**`, and the questions the finished page has to answer. It exists so the plan has a shape and every page has its permanent URL before the prose does. Every stub carries this notice directly under its `**Level:**` line:

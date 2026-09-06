@@ -12,7 +12,7 @@
 - `chars()`, `bytes()`, `char_indices()`: three walks over the same string, and what each yields for `café`
 - Why `char` cannot hold a surrogate, and what `char::from_u32(0xD800)` returns
 - `'\u{1F600}'`: writing a code point in source, and `.escape_unicode()` for reading one back
-- The Rust library's [Meet the `char` ↗](https://masiarek.github.io/rust-learning-library/14_Strings/meet_the_char/index.html) covers the type; this page connects it to chapter 2's code points and chapter 3's bytes
+- The Rust library's [Meet the `char` ↗](https://masiarek.github.io/rust-learning-library/14_Strings/meet_the_char/index.html) covers the type and [Why a `char` is 32 bits wide ↗](https://masiarek.github.io/rust-learning-library/14_Strings/why_char_is_32_bits/index.html) covers the width — U+10FFFF needs 21 bits, rounded up to an addressable 32; this page connects both to chapter 2's code points and chapter 3's bytes
 
 ## The example it will run
 

@@ -58,6 +58,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "08_Build_Your_Own",
         "09_History",
         "10_Best_Practices",
+        "CAST.md",
         "GLOSSARY.md",
         "RESOURCES.md",
         "ROADMAP.md",

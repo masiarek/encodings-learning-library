@@ -93,6 +93,6 @@ python3 tools/run_examples.py --check    # write nothing, fail on drift (what CI
 
 There is a second block kind, `source:`, which pastes the program itself for pages where the code *is* the lesson.
 
-Conventions for anyone writing a page: [CONTRIBUTING.md](CONTRIBUTING.md). Terms: [GLOSSARY.md](GLOSSARY.md). Links, books, videos, tools and katas, each one checked: [RESOURCES.md](RESOURCES.md). What is planned and deliberately not written yet: [ROADMAP.md](ROADMAP.md).
+Conventions for anyone writing a page: [CONTRIBUTING.md](CONTRIBUTING.md). The characters and strings every page demonstrates with: [CAST.md](CAST.md). Terms: [GLOSSARY.md](GLOSSARY.md). Links, books, videos, tools and katas, each one checked: [RESOURCES.md](RESOURCES.md). What is planned and deliberately not written yet: [ROADMAP.md](ROADMAP.md).
 
 <!-- --8<-- [end:below-hero] -->
