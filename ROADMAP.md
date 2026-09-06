@@ -20,7 +20,7 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [A code point is not a character](02_Characters/a_code_point_is_not_a_character/README.md) | stub |
 | [Confusables and scripts](02_Characters/confusables_and_scripts/README.md) | written, 2026-09-06 — Python and Rust; eight of nine look-alikes survive every normalization form, `east_asian_width` is a red herring that splits Latin against itself, and the whole-script confusable defeats the detector |
 | [Logical and visual order](02_Characters/logical_and_visual_order/README.md) | stub — added 2026-09-06; UAX #9, and why a terminal screenshot is not evidence about a string |
-| [Unicode in identifiers](02_Characters/unicode_in_identifiers/README.md) | stub — added 2026-09-06; Python NFKC-folds your variable names and Rust deliberately does not |
+| [Unicode in identifiers](02_Characters/unicode_in_identifiers/README.md) | written, 2026-09-06 — Python and Rust; NFKC vs NFC on identifiers, the three-row table where they agree once and diverge twice, and rustc's three UTS #39 lints on by default |
 | [UTF-8 by hand](03_Encodings/utf8_by_hand/README.md) | stub — the checkpoint page |
 | [Validation is a boundary](03_Encodings/validation_is_a_boundary/README.md) | written, 2026-09-05 — all four languages, and the second *C view* |
 | [Overlong sequences](03_Encodings/overlong_sequences/README.md) | written, 2026-09-05 — all four languages; the shortest-form rule, Table 3-7, and the three formats that break it on purpose |

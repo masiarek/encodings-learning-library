@@ -1,0 +1,56 @@
+
+1. RUST TAKES THEM TOO
+------------------------------------------------------------------------
+   let żółw = 4;   ->   4
+
+   Stable since Rust 1.53, from the same UAX #31 rule Python
+   uses. So far the two languages agree completely.
+
+2. AND NORMALIZES THEM -- TO NFC, NOT NFKC
+------------------------------------------------------------------------
+   bound as   caf\u{e9}       (composed, 4 chars)
+   read as    cafe\u{301}     (e + COMBINING ACUTE U+0301, 5 chars)
+   value      1
+
+   Two spellings, one binding -- the compiler put the source
+   into NFC before it looked at any name. This is the half
+   Rust and Python agree on, and it is the uncontroversial
+   half: the two spellings really are the same character.
+
+3. BUT THE LIGATURE IS A DIFFERENT NAME
+------------------------------------------------------------------------
+   let ﬁle  = 1;   (U+FB01 LATIN SMALL LIGATURE FI)   ->  1
+   let file = 2;   (f, i as ASCII)                    ->  2
+   they are the same binding                          ->  false
+
+   Python binds ONE variable here, because NFKC expands the
+   ligature. Rust binds TWO, because NFC does not. Neither is
+   wrong; they answer different questions about what a name is.
+
+4. AND SO IS THE CYRILLIC LOOK-ALIKE
+------------------------------------------------------------------------
+   let а = ...;   (U+0430)   ->  cyrillic
+   let a = ...;   (U+0061)   ->  latin
+   same binding              ->  false
+
+   Here the two languages AGREE on the outcome -- two
+   variables -- and disagree completely about what to do next.
+
+5. THE DIFFERENCE THAT MATTERS IS THE WARNING
+------------------------------------------------------------------------
+   With the allow() at the top of this file removed, rustc
+   emits three lints, all warn-by-default:
+
+      uncommon_codepoints        the ligature is Not_NFKC
+      confusable_idents          two names that look alike
+      mixed_script_confusables   a script used only for these
+
+   That is UTS #39 machinery, shipped in a compiler, on by
+   default. Python has no equivalent and cannot easily have
+   one -- having normalized the ligature away, there are no
+   longer two names for it to compare.
+
+   So the trade runs: NORMALIZE and the surprise is silent,
+   PRESERVE and you owe the user a warning. Rust chose to owe
+   the warning. It is the same argument IDNA2008 had with
+   IDNA2003 about a domain name, one floor down.

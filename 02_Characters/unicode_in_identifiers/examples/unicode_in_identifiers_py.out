@@ -1,0 +1,82 @@
+
+1. AN IDENTIFIER DOES NOT HAVE TO BE ASCII
+------------------------------------------------------------------------
+   żółw = 4   ->   4
+
+   Legal since Python 3.0. The rule is Unicode's own, not Python's:
+   a name starts with an XID_Start character and continues with
+   XID_Continue, which is UAX #31 and is what most languages that
+   allow this use. The boolean comes first below because a CJK
+   character is two columns wide and would break the alignment:
+
+      isidentifier() True   'żółw'
+      isidentifier() True   'café'
+      isidentifier() True   '日本語'
+      isidentifier() True   '_x'
+      isidentifier() True   'ﬁle'
+      isidentifier() True   '𝑎'
+      isidentifier() False  '2fast'
+      isidentifier() False  'a-b'
+
+2. AND PYTHON NORMALIZES IT BEFORE BINDING IT
+------------------------------------------------------------------------
+   typed '𝑎'        (U+1D44E)
+      bound as ['a']
+   typed 'ﬁle'      (U+FB01 U+006C U+0065)
+      bound as ['file']
+   typed 'Ⅰ'        (U+2160)
+      bound as ['I']
+
+   Nothing you typed is what the namespace holds. The compiler
+   applies NFKC to every identifier, so a mathematical italic letter
+   becomes an ordinary one and a ligature becomes two letters --
+   which is NFKC -- normalization's aggressive form -- doing exactly
+   what it says on the tin, in a place nobody expects to find it.
+
+3. SO TWO SPELLINGS CAN BE ONE VARIABLE
+------------------------------------------------------------------------
+   exec("ﬁle = ...")  then  ns['file']  ->  'assigned through the ligature'
+
+   exec("file = ...")  then  is 'ﬁle' a key?  False
+                             ns['file'] ->  'reassigned through ASCII'
+
+   One variable, two spellings, and the ligature spelling is not even
+   a key. A reader who greps the file for `file` finds one of the two
+   assignments; a reader who greps for the ligature finds the other.
+
+4. AND THE LOOK-ALIKE IT DOES *NOT* MERGE
+------------------------------------------------------------------------
+   after binding both spellings of `a`:
+      names in the namespace   ['a', 'а']
+      how many                 2
+      U+0061 LATIN SMALL LETTER A         -> 'latin'
+      U+0430 CYRILLIC SMALL LETTER A      -> 'cyrillic'
+
+   NFKC('а') == 'a'   False
+
+   TWO variables, rendered identically, and Python said nothing at
+   all. This is the same rule as the previous page: NFKC merges what
+   Unicode declared COMPATIBILITY-equivalent -- ligatures, italic
+   letters, Roman numerals -- and never merges two letters that are
+   merely drawn alike, because they are different letters.
+
+   Put sections 3 and 4 together and the shape is uncomfortable:
+   normalization SURPRISES you where the characters are related, and
+   ABANDONS you where they are not. The first costs you an afternoon
+   of confusion; the second is the one that gets into a code review.
+
+5. WHAT THIS MEANS FOR A DIFF
+------------------------------------------------------------------------
+   Two assignments that no reviewer can tell apart:
+
+       total = compute()      # ASCII a
+       tоtal = compute()      # U+043E CYRILLIC SMALL LETTER O
+
+      'total'    U+0074 U+006F U+0074 U+0061 U+006C
+      'tоtal'    U+0074 U+043E U+0074 U+0061 U+006C
+      equal?   False
+
+   Python will bind both, run both, and warn about neither. The
+   defence is not a language feature here -- it is a linter, a
+   pre-commit hook, or a rule that identifiers stay ASCII and the
+   other languages live in the strings.
