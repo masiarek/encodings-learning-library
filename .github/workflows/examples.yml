@@ -45,3 +45,7 @@ jobs:
         run: python3 tools/run_examples.py --check
       - name: Check that every external link is marked as external
         run: python3 tools/check_link_style.py
+      - name: Check that every string called decomposed really is
+        run: |
+          python3 tools/check_decomposed_literals.py --selftest
+          python3 tools/check_decomposed_literals.py

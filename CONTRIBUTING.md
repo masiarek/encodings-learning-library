@@ -104,6 +104,8 @@ The reason is compounding rather than tidiness: a reader who has already met `é
 
 If no cast member has the property your page needs, use what you need, say in a line why, and add a row to CAST.md if it will be wanted again. Its byte columns are generated from a program, so a new row goes in that program too.
 
+**A string you call *decomposed* has to be decomposed** — machine-checked (`python3 tools/check_decomposed_literals.py`). `café` and `café` are the same picture, so nothing but a program can tell them apart, and the odds run one way: **you cannot type a decomposed string**. Keyboard, editor and clipboard all hand you the composed spelling, so a hand-written "decomposed" example is composed unless somebody deliberately pasted the mark. When the check was written, all three of the library's hand-authored decomposed literals were composed, each sitting under counts (6 bytes, 5 code points) its own string does not produce. Paste the real spelling — `python3 -c "import unicodedata as u; print(u.normalize('NFD', 'café'))"` — or write the mark out (`U+0301`, `\u{301}`, `65 cc 81`), which is the better answer inside a fence where a bare mark is invisible to the author too. Generated blocks are exempt: their numbers come from the program that printed them.
+
 ## Stubs
 
 A **stub** is a lesson page with no example behind it yet: an H1, a `**Level:**`, the notice, a `**One line:**`, and the questions the finished page has to answer. It exists so the plan has a shape and every page has its permanent URL before the prose does. Every stub carries this notice directly under its `**Level:**` line:
@@ -130,7 +132,8 @@ Sidebar reading order lives in `NAV_ORDER` in `mkdocs_hooks.py`, keyed by folder
 ```bash
 python3 tools/run_examples.py --check
 python3 tools/check_link_style.py
+python3 tools/check_decomposed_literals.py
 uv run --group docs mkdocs build --strict
 ```
 
-All three are what CI runs. `--strict` fails on a broken internal link, which is the failure most likely to reach the published site unnoticed. The examples job also runs on macOS in CI; a shell example that passes here and fails there is a BSD/GNU difference, not a flake.
+All four are what CI runs. `--strict` fails on a broken internal link, which is the failure most likely to reach the published site unnoticed. The examples job also runs on macOS in CI; a shell example that passes here and fails there is a BSD/GNU difference, not a flake.
