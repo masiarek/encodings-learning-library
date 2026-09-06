@@ -2,7 +2,7 @@
 
 **Level:** 101 → 201 · for anyone with a terminal
 
-**One line:** In a hex dump exactly one column is the file — the hex — and every other column is a tool answering a question you did not ask, in a dialect that changes with your locale and your operating system.
+**One line:** In a hex dump one column is the file — the hex, printed one byte at a time — and everything else is a tool answering a question you did not ask: the names change with your locale and your operating system, and `hexdump`'s own default reorders the bytes to suit your CPU.
 
 ## The session
 
@@ -74,6 +74,30 @@ It also silently picks a byte order. On macOS the session above got `fe ff` — 
 
 One last look at the UTF-16 dump, because it is the sharpest thing in the session. The `€` became the single code unit `20 ac`, and `od` names that first byte **`sp`** — a space — because `0x20` *is* the code point of a space. `xxd` does the same thing more quietly: its text column shows an actual blank there. A byte-oriented tool cannot see characters, and in UTF-16 it does not even get the boundaries right by accident the way it does in ASCII.
 
+## The other two tools, and the fiction in the other default
+
+`od` is not the only one with a lying default. **Plain `hexdump`, with no `-C`, reads two bytes at a time as a 16-bit number and prints it in your CPU's own byte order.** The file above starts `63 61`; `hexdump` prints `6163`. Every pair is swapped, on any little-endian machine, which today means almost any machine:
+
+| Command | First eight bytes | |
+|---|---|---|
+| `xxd -g1` | `63 61 66 c3 a9 3a 20 31` | the file |
+| `hexdump -C` | `63 61 66 c3 a9 3a 20 31` | the file |
+| `hexdump` | `6163 c366 3aa9 3120` | pairs swapped, because your CPU is little-endian |
+
+It is the same confusion UTF-16 has — *which end of a two-byte number comes first* — turning up in a tool that was only asked to show bytes. Use `-C`. And when you want the layout under your own control, `hexdump -e '16/1 "%02x " "\n"'` takes a format string and, unlike `od`'s columns, prints identically on macOS and Linux.
+
+`xxd` earns its place by being **the only one of the three that goes back**. `xxd -r` turns a dump into bytes, so the workflow is dump → edit → undump, which is how you make a file with exactly the bytes a bug needs. `xxd -p` gives plain hex with no columns (the form to paste into a bug report), `-r -p` reads it back, `-g1` stops the default pairing that draws 16-bit groups UTF-8 does not have, `-b` shows the bits (in the example below, both bytes of `é` visibly start with a `1` — that is UTF-8 marking them as a multi-byte character), and `-s`/`-l` open a window into a large file instead of dumping all of it.
+
+The round trip is worth doing once, because it is the shortest demonstration on this page of why any of it matters: take the `é`, replace its two UTF-8 bytes with the single byte Latin-1 uses, put the bytes back, and the file has stopped being text. `iconv -f UTF-8 -t UTF-8` — the portable yes/no validator, judged on its exit status — accepts the original and rejects the edit. One byte, changed by hand, and every program that reads the file is now entitled to a different opinion about it. What those programs do next is [mojibake](../../03_Encodings/mojibake/README.md) and [validation is a boundary](../../03_Encodings/validation_is_a_boundary/README.md).
+
+One practical note on reaching for them, measured on a bare `ubuntu:24.04` container on 2026-09-05: **`od` and `iconv` are there and `xxd` and `hexdump` are not.** `od` is POSIX, `iconv` comes with the C library, `xxd` ships with vim (`apt-get install xxd`), and `hexdump` is in `bsdextrautils`. So on a stripped-down container or a rescue shell, the tool you are left with is the one whose named-character row cannot be trusted — which is the practical reason to know that `od -An -tx1` is the incantation and `-a` is not.
+
+| Reach for | When | Watch out for |
+|---|---|---|
+| `xxd -g1` | reading, and any time you want to edit bytes and put them back | the default pairs bytes; `-r` needs `-p` if the hex has no offsets |
+| `hexdump -C` | reading, or `-e` when you want a specific layout | **plain `hexdump` swaps every pair** |
+| `od -An -tx1` | a machine with nothing else installed | `-a` invents names; `-c` needs `LC_ALL=C` |
+
 ## In the terminal
 
 <!-- output:inspecting_a_file_sh -->
@@ -140,6 +164,72 @@ $ { printf '\376\377'; printf 'caf\303\251: 1\342\202\254\n' | iconv -f UTF-8 -t
    12 bytes became 20: two for the BOM, two per character, for text that was
    mostly ASCII. Look at the € — its code unit is 20 ac, and xxd's text column
    shows a SPACE for that 20, because half a character still looks like a byte.
+
+7. WHAT xxd SHOWS THAT THE OTHERS DO NOT
+   The default pairs bytes, which draws 16-bit groups UTF-8 does not have:
+
+$ printf 'caf\303\251: 1\342\202\254\n' | xxd
+00000000: 6361 66c3 a93a 2031 e282 ac0a            caf..: 1....
+   -g1 ungroups them, so each column is one byte, the way UTF-8 works:
+
+$ printf 'caf\303\251: 1\342\202\254\n' | xxd -g1
+00000000: 63 61 66 c3 a9 3a 20 31 e2 82 ac 0a              caf..: 1....
+   -b for the bits (the é's two bytes both start 1, which is how UTF-8 marks them):
+
+$ printf 'caf\303\251: 1\342\202\254\n' | xxd -b
+00000000: 01100011 01100001 01100110 11000011 10101001 00111010  caf..:
+00000006: 00100000 00110001 11100010 10000010 10101100 00001010   1....
+   -p for plain hex with no columns at all — the form you paste into a bug report:
+
+$ printf 'caf\303\251: 1\342\202\254\n' | xxd -p
+636166c3a93a2031e282ac0a
+   -s 3 -l 2 to look at two bytes 3 in, instead of dumping a whole large file:
+
+$ printf 'caf\303\251: 1\342\202\254\n' | xxd -s 3 -l 2
+00000003: c3a9                                     ..
+
+8. THE TRAP IN hexdump's DEFAULT: no -C means 16-bit words in the CPU's OWN order
+
+$ printf 'caf\303\251: 1\342\202\254\n' | hexdump
+0000000 6163 c366 3aa9 3120 82e2 0aac          
+000000c
+   The file starts 63 61. That dump says 6163. Every pair is SWAPPED, because
+   plain hexdump reads two bytes at a time as a number and this machine is
+   little-endian. It is the same confusion UTF-16 has, in a tool that was only
+   asked to show bytes. Always -C:
+
+$ printf 'caf\303\251: 1\342\202\254\n' | hexdump -C
+00000000  63 61 66 c3 a9 3a 20 31  e2 82 ac 0a              |caf..: 1....|
+0000000c
+   -e takes a format string when you want the layout under your own control,
+   and unlike od's columns it comes out identical on macOS and Linux:
+
+$ printf 'caf\303\251: 1\342\202\254\n' | hexdump -e '16/1 "%02x " "\n"'
+63 61 66 c3 a9 3a 20 31 e2 82 ac 0a            
+
+9. xxd -r: THE ONLY ONE THAT GOES BACK
+   Hex in, bytes out — how to build a test file with exactly the bytes you want:
+
+$ echo '63 61 66 c3 a9 0a' | xxd -r -p | xxd
+00000000: 6361 66c3 a90a                           caf...
+   And a whole dump round-trips to the file it came from:
+
+$ printf 'caf\303\251: 1\342\202\254\n' | xxd | xxd -r | xxd -p
+636166c3a93a2031e282ac0a
+   The point of going back is EDITING. Replace the é's two UTF-8 bytes with the
+   single byte Latin-1 uses, and the file is no longer valid UTF-8:
+
+$ printf 'caf\303\251: 1\342\202\254\n' | xxd -p | sed 's/c3a9/e9/' | xxd -r -p | xxd
+00000000: 6361 66e9 3a20 31e2 82ac 0a              caf.: 1....
+   Ask iconv whether it decodes (exit status only — the message differs per platform):
+
+$ printf 'caf\303\251: 1\342\202\254\n' | iconv -f UTF-8 -t UTF-8 >/dev/null 2>&1 && echo 'the original: valid UTF-8' || echo 'the original: INVALID'
+the original: valid UTF-8
+
+$ printf 'caf\303\251: 1\342\202\254\n' | xxd -p | sed 's/c3a9/e9/' | xxd -r -p | iconv -f UTF-8 -t UTF-8 >/dev/null 2>&1 && echo 'the edit: valid UTF-8' || echo 'the edit: INVALID UTF-8'
+the edit: INVALID UTF-8
+   One byte edited by hand, and the file stopped being text. That is the whole
+   reason to look at bytes before blaming a program.
 ```
 <!-- /output -->
 
