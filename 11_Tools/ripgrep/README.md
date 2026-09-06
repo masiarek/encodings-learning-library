@@ -167,10 +167,16 @@ RULE 1. A BOM NAMES THE ENCODING, AND IS ACTED ON
    three marks, not five: utf-8-sig, utf-16-le, utf-16-be.
    marks rg does not test                 utf-32-le, utf-32-be
    utf-32le + BOM: what it decoded to     '\x00c\x00a\x00f\x00é\x00\n\x00'
+   that string, as UTF-8 bytes            00630061006600c3a9000a00
+   what rg prints — a LINE, so up to \n   00630061006600c3a9000a
    UTF-32LE's mark ff fe 00 00 STARTS with UTF-16LE's ff fe, so a sniffer
    that does not test the four-byte form calls the file UTF-16 and welds a
    NUL to every letter. rg is such a sniffer, and the NULs then make it
    call the file binary — measured on the page above, both machines.
+   The last two lines differ by one byte, and the byte is the lesson:
+   UTF-32LE's \n is 0a 00 00 00, which as UTF-16LE code units is a newline
+   THEN a NUL — so that NUL opens the next line. rg prints a line and stops
+   at the newline; this program prints the whole decoded string.
 
 RULE 2. NO BOM: SEARCH THE RAW BYTES, AND A UNICODE CLASS SKIPS
          WHAT IT CANNOT DECODE
