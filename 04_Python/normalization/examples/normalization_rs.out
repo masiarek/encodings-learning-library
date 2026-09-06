@@ -1,0 +1,62 @@
+1. THE TYPE SYSTEM DOES NOT HELP HERE
+------------------------------------------------------------------------
+   Both of these are a &str, both are valid UTF-8, and both
+   print as the same word:
+
+   composed     café    5 bytes  4 chars  U+0063 U+0061 U+0066 U+00E9
+   decomposed   café    6 bytes  5 chars  U+0063 U+0061 U+0066 U+0065 U+0301
+
+   composed == decomposed            false
+
+   `String` promises the bytes are valid UTF-8. It promises
+   nothing at all about WHICH valid sequence you got, and == is
+   a byte comparison, so the answer above is correct and useless.
+
+2. STD DOES THE CASE AXIS, IN FULL
+------------------------------------------------------------------------
+   char  to_lowercase  to_uppercase  note
+   ß     ß             SS            one char in, two out
+   ẞ     ß             ẞ             capital sharp S lowercases to the small one
+   İ     i̇            İ             and this one GROWS A COMBINING MARK
+
+   The last row is the trap, and it is not Python's:
+
+     '\u{130}'.to_lowercase()  ->  U+0069 U+0307
+
+   Lowercasing produced a combining mark that was not in the
+   input, so lowercase-then-compare has the same ordering
+   problem in Rust as it has everywhere else.
+
+3. AND STD DOES NOT DO THE NORMALIZATION AXIS AT ALL
+------------------------------------------------------------------------
+   There is no `str::normalize`. The one caseless comparison in
+   std is ASCII-only, and says so in its name:
+
+     "CAFÉ".eq_ignore_ascii_case("café")   false
+     "CAFE".eq_ignore_ascii_case("cafe")   true
+
+   That is not a gap somebody forgot. Normalization needs the
+   Unicode decomposition tables, and Rust keeps its standard
+   library free of data that has a yearly release. The crate is
+   `unicode-normalization`, and it is the answer.
+
+4. WHAT THE CRATE IS ACTUALLY CARRYING
+------------------------------------------------------------------------
+   The algorithm fits on a screen. Here is NFD for five letters:
+
+     café       -> café        U+0063 U+0061 U+0066 U+0065 U+0301
+     żółw       -> żółw       U+007A U+0307 U+006F U+0301 U+0142 U+0077
+     Ångström   -> Ångström    U+0041 U+030A U+006E U+0067 U+0073 U+0074 U+0072 U+00F6 U+006D
+
+   It is right on the first two words and wrong on the third:
+   ö is not in the table, so it comes through composed. That is
+   the whole difficulty in one line -- not the loop, the data.
+
+   A real implementation adds three things this has none of:
+     - every decomposable code point, not five
+     - canonical ordering, so two marks on one letter sort into
+       a fixed order and compare equal
+     - composition exclusions, for the NFC direction
+
+   Which is why you take the crate. The point of writing the
+   loop is to see that the table is the library.

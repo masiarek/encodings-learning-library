@@ -24,7 +24,8 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [Byte order and the BOM](03_Encodings/byte_order_and_bom/README.md) | written, 2026-09-05 — Python, Rust and shell; why `U+FFFE` makes the mirror proof rather than convention |
 | [Encode and decode are verbs](03_Encodings/encode_and_decode_are_verbs/README.md) | written, 2026-09-05 — Python, Rust and shell |
 | [Mojibake](03_Encodings/mojibake/README.md) | written, 2026-09-05 — Python and shell; the Rust point is the previous page's |
-| [04_Python](04_Python/README.md) — five pages | stubs |
+| [Normalization](04_Python/normalization/README.md) | written, 2026-09-06 — Python and Rust; chapter 4's first, and the one Unicode table lookup the stability policy lets an answer key hold |
+| [04_Python](04_Python/README.md) — the other four pages | stubs |
 | [`String` is bytes that promise UTF-8](05_Rust/string_is_bytes_that_promise_utf8/README.md) | written, 2026-09-05 — Rust, Python and shell; the one figure in the repo, and `valid_up_to()` matched against Python's `UnicodeDecodeError.start` |
 | [05_Rust](05_Rust/README.md) — the other three pages | stubs |
 | [Inspecting a file](06_Terminal/inspecting_a_file/README.md) | written, 2026-09-05 — the named-character row is fiction in two dialects, and the `?` is the terminal's, not od's |

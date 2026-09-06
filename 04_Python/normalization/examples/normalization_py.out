@@ -1,0 +1,156 @@
+1. THE LITERAL YOU CANNOT TRUST
+------------------------------------------------------------------------
+   This page's whole subject is two strings that print the same. So the
+   two spellings CANNOT be pasted into the source as literals -- an
+   editor, a terminal, a paste buffer or a filesystem may quietly
+   normalize one of them on the way in, and then the program proves
+   nothing while still looking correct.
+
+   Both of these were typed as 'cafe' plus an accent:
+     COMPOSED    = "caf\u00e9"     U+0063 U+0061 U+0066 U+00E9
+     DECOMPOSED  = "cafe\u0301"    U+0063 U+0061 U+0066 U+0065 U+0301
+
+   They render as café and café, and: COMPOSED == DECOMPOSED -> False
+
+2. THE FOUR FORMS, ON ONE WORD
+------------------------------------------------------------------------
+   form   code points  bytes  the code points themselves
+   NFC    4            5      U+0063 U+0061 U+0066 U+00E9
+   NFD    5            6      U+0063 U+0061 U+0066 U+0065 U+0301
+   NFKC   4            5      U+0063 U+0061 U+0066 U+00E9
+   NFKD   5            6      U+0063 U+0061 U+0066 U+0065 U+0301
+
+   C is composed, D is decomposed, and the K forms are a second axis
+   entirely -- section 6. On a plain accented word the K forms have
+   nothing to do, so NFKC == NFC here: True
+
+   All four are idempotent -- running one twice changes nothing:
+     True
+
+3. NFC IS NOT 'PUT THE ACCENTS BACK ON'
+------------------------------------------------------------------------
+   Two characters with no combining mark anywhere in them, which NFC
+   nevertheless replaces -- they are SINGLETONS, code points Unicode
+   encoded twice by accident of history and now folds together:
+
+   code point  name           NFC gives  which is
+   U+212B      ANGSTROM SIGN  U+00C5     LATIN CAPITAL LETTER A WITH RING ABOVE
+   U+2126      OHM SIGN       U+03A9     GREEK CAPITAL LETTER OMEGA
+
+   So NFC can change a string that contains no accent at all. If you
+   are comparing an angstrom against an angstrom, this is the reason
+   one of them lost.
+
+4. AND IT IS NOT A ROUND TRIP
+------------------------------------------------------------------------
+   NFC(NFD(x)) == x looks like it must hold. It does not, for two
+   groups: the singletons above, and the COMPOSITION EXCLUSIONS --
+   characters NFD takes apart and NFC is forbidden to reassemble.
+
+   code point  name                    NFD gives      round trips?
+   U+0958      DEVANAGARI LETTER QA    U+0915 U+093C  False
+   U+0F43      TIBETAN LETTER GHA      U+0F42 U+0FB7  False
+   U+00E9      LATIN SMALL LETTER E WI U+0065 U+0301  True
+
+   The last row is a normal character, for contrast. For the first two,
+   NFD is a one-way door -- which is why 'normalize on the way in' means
+   pick ONE form and keep it, not 'convert freely in both directions'.
+
+5. THE ACCENT THAT COMES OFF, AND THE ONE THAT DOES NOT
+------------------------------------------------------------------------
+   A Polish word, letter by letter. Not every diacritic is a combining
+   mark -- a stroke through a letter is part of the letter's own shape:
+
+   char  code point  name                                 NFD
+   ż     U+017C      LATIN SMALL LETTER Z WITH DOT ABOVE  U+007A U+0307
+   ó     U+00F3      LATIN SMALL LETTER O WITH ACUTE      U+006F U+0301
+   ł     U+0142      LATIN SMALL LETTER L WITH STROKE     U+0142
+   w     U+0077      LATIN SMALL LETTER W                 U+0077
+
+   z-with-dot and o-with-acute come apart. l-with-stroke does not, and
+   never will: there is no COMBINING STROKE to peel off it.
+
+   Polish has 9 letters with a diacritic. Exactly 1 of them has no
+   decomposed form at all: ł. So a rule that says 'strip the combining
+   marks to get ASCII' quietly leaves one letter standing.
+
+6. COMPATIBILITY IS A DIFFERENT QUESTION, AND IT IS LOSSY
+------------------------------------------------------------------------
+   NFKC does everything NFC does, then also replaces characters with
+   whatever is 'the same, roughly'. Read the fourth column and decide
+   whether roughly is good enough:
+
+   input     NFKC       cp   what was lost
+   ﬁ         fi         2    the ligature was a typographic choice
+   x²        x2         2    x squared became x 2 -- the meaning, not the look
+   ½         1⁄2        3    one character became three, including a slash
+   １２３       123        3    fullwidth digits, common in Japanese input
+   ℀         a/c        3    one character became a slash -- a path separator
+   \u00a0    \u0020     1    a NO-BREAK SPACE became an ordinary space
+   ．         .          1    a FULLWIDTH FULL STOP became a plain dot
+
+   The last three are why NFKC belongs on a search index and a username
+   uniqueness check, and NOT on text you will store and hand back. Two
+   of them turn a harmless character into a path separator or a dot.
+
+7. CASE IS A SEPARATE AXIS, AND IT MOVES FIRST
+------------------------------------------------------------------------
+   Normalizing does not fold case, and folding case does not normalize.
+
+   char  lower   upper   casefold  code points of casefold
+   ß     ß       SS      ss        U+0073 U+0073
+   ẞ     ß       ẞ       ss        U+0073 U+0073
+   İ     i̇      İ       i̇        U+0069 U+0307
+   ς     ς       Σ       σ         U+03C3
+   σ     σ       Σ       σ         U+03C3
+
+   Row 1: lower() leaves eszett alone; casefold() gives 'ss'. That is
+   the difference, and it is why a caseless comparison uses casefold.
+   Rows 4 and 5 are Greek final sigma and ordinary sigma. lower()
+   keeps them apart; casefold() makes them one letter, which is what
+   a search box wants and what == will not give you.
+
+   Row 3 is the one that decides the ORDER. Casefolding a Turkish
+   dotted capital I emits a combining mark that was not there before:
+
+     '\u0130'.casefold()  ->  U+0069 U+0307
+
+   So casefold can CREATE the very thing normalization exists to
+   reconcile. Normalize after folding, not before:
+
+     s.casefold() then NFC   -- correct
+     NFC then s.casefold()   -- leaves a stray combining mark
+
+   Unicode's own definition of a caseless match puts an NFD on both
+   sides of the fold for the same reason. In practice, for a login
+   name or a search key:
+
+     key = unicodedata.normalize('NFC', s.casefold())
+
+8. THE ONE THING ON THIS PAGE YOU MAY WRITE DOWN
+------------------------------------------------------------------------
+   Chapter 2 said no Unicode table lookup belongs in an answer key,
+   because two machines carry two tables. Normalization is the
+   exception, and it is an exception on purpose.
+
+   Unicode's Normalization Stability Policy, in force since 4.1:
+   if a string holds only characters your table already knows, its
+   normalized form is the same under every later version, forever.
+
+   Asked of the 2002 table and this one, on characters both know:
+
+   char  frozen 3.2 NFD       live NFD              agree
+   é     U+0065 U+0301         U+0065 U+0301         True
+   ż     U+007A U+0307         U+007A U+0307         True
+   Å     U+0041 U+030A         U+0041 U+030A         True
+
+   And the one place the old table is wrong -- a character it never
+   had, so it has no decomposition to apply and returns it untouched:
+
+     U+1B06  BALINESE LETTER AKARA TEDUNG
+       frozen 3.2 NFD   U+1B06             (unchanged -- not in that table)
+       live NFD         U+1B05 U+1B35
+
+   Read the guarantee's condition again: 'only characters your table
+   already knows'. The stability policy is a promise about the past,
+   not about characters that had not been invented yet.

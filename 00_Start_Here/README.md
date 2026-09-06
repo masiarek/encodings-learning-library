@@ -38,11 +38,11 @@ flowchart LR
 | Chapter | What it settles | Written / stub |
 |---|---|---|
 | [01_Bits_and_Bytes](../01_Bits_and_Bytes/README.md) | A byte is 0..255 with no meaning of its own; hex is bits four at a time; a hex dump is three columns | 3 / 0 |
-| [02_Characters](../02_Characters/README.md) | A character is a number by agreement — 128, then 256 with everybody's own top half, then one numbering for all | 3 / 2 |
-| [03_Encodings](../03_Encodings/README.md) | How a code point becomes bytes: UTF-8 by hand, UTF-16, byte order, and mojibake as the wrong table | 4 / 3 |
-| [04_Python](../04_Python/README.md) | `str` vs `bytes`, the `errors` policies, `open()`, normalization, binary formats | 0 / 5 |
-| [05_Rust](../05_Rust/README.md) | `String` is bytes that promise UTF-8; `char` is a code point; the three `from_utf8`s; byte slicing | 0 / 4 |
-| [06_Terminal](../06_Terminal/README.md) | `printf`, `iconv`, the locale, and why `file` only guesses | 0 / 4 |
+| [02_Characters](../02_Characters/README.md) | A character is a number by agreement — 128, then 256 with everybody's own top half, then one numbering for all | 5 / 1 |
+| [03_Encodings](../03_Encodings/README.md) | How a code point becomes bytes: UTF-8 by hand, UTF-16, byte order, and mojibake as the wrong table | 5 / 2 |
+| [04_Python](../04_Python/README.md) | `str` vs `bytes`, the `errors` policies, `open()`, normalization, binary formats | 1 / 4 |
+| [05_Rust](../05_Rust/README.md) | `String` is bytes that promise UTF-8; `char` is a code point; the three `from_utf8`s; byte slicing | 1 / 3 |
+| [06_Terminal](../06_Terminal/README.md) | `printf`, `iconv`, the locale, and why `file` only guesses | 4 / 3 |
 | [07_Real_Data](../07_Real_Data/README.md) | SAP code pages, mojibake repair, the BOM in a CSV, byte-width fields, 1252 vs Latin-1, CRLF | 1 / 5 |
 | [08_Build_Your_Own](../08_Build_Your_Own/README.md) | A project: the Tribit format — your own code points, a 3-bit variable-length encoding, a container, a viewer — specified with test vectors for a Rust implementation | 1 / 0 |
 
