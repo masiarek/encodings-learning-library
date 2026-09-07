@@ -111,6 +111,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "reading_a_hex_dump",
         "grouping_is_a_choice",
         "hex_number_or_bytes",
+        "arithmetic_has_its_own_width",
     ],
     # A character is a number by agreement; the agreements got bigger.
     "02_Characters": [

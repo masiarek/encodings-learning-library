@@ -1,0 +1,39 @@
+1. THERE IS NO WIDTH TO OVERFLOW
+   c                     = 255    1111 1111, the largest value a byte holds
+   c << 2                = 1020   and Python simply keeps the ninth and tenth bits
+   (c << 2) has          = 10     bits, so it no longer fits in a byte
+   (1 << 1000) has       = 1001   bits, and that is not an error either
+   An int here is as wide as its value needs. Nothing wraps, because there
+   is no edge to wrap at -- the memory is the only limit.
+
+2. SO THE BYTE ANSWER HAS TO BE ASKED FOR BY NAME
+   (c << 2) & 0xFF       = 252    mask to eight bits by hand
+   ((c << 2) & 0xFF)     = 0b11111100
+   int.to_bytes(1, ...)  = b'\xfc'   the width named in the call
+   Both spellings say `eight bits` out loud. In a language where the type
+   carries the width, that sentence is in the declaration instead -- and in C
+   it is in neither, which is why the C aside on this page exists.
+
+3. SIGNEDNESS IS AN ARGUMENT, NOT A PROPERTY OF THE BYTES
+   the byte              = b'\x9c'  ->  10011100
+   from_bytes(signed=False) = 156
+   from_bytes(signed=True)  = -100
+   One byte, two numbers, and the byte does not know which you meant. The
+   keyword is where the reading lives; nothing about the storage decides it.
+
+4. >> AND // AGREE HERE, AND IN C THEY DO NOT
+   x = -5  x >> 3 = -1  x // 8 = -1  x % 8 = 3   int(x / 8) = 0
+   x = -8  x >> 3 = -1  x // 8 = -1  x % 8 = 0   int(x / 8) = -1
+   x = 5   x >> 3 = 0   x // 8 = 0   x % 8 = 5   int(x / 8) = 0
+   Counted over -8..-1: `>>` and `//` differ on 0 of 8 values, because both
+   round toward minus infinity. `>>` and C's truncating division differ on 7.
+   Python's `%` follows its `//`, so it is never negative for a positive
+   divisor -- which is the half of this that most often surprises a C reader.
+
+5. THE ONE PLACE PYTHON DOES INSIST ON A WIDTH
+   (255).to_bytes(1, 'big') -> b'\xff'
+   (256).to_bytes(1, 'big') -> raises OverflowError
+   (-1).to_bytes(1, 'big') -> raises OverflowError
+   The width is not in the int; it is in the request to become bytes. That
+   is the boundary this whole chapter is about, and it is the only place a
+   Python program is made to say how many bits it meant.

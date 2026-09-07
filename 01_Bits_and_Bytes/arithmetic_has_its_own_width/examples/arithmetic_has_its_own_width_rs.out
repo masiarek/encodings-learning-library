@@ -1,0 +1,36 @@
+1. THE WIDTH IS IN THE TYPE, AND THE OPERATOR STAYS INSIDE IT
+   c                       = 255    1111 1111
+   c << 2                  = 252    still a u8, so the two high bits are gone
+   size_of_val(&(c << 2))  = 1      the expression did not become anything wider
+   There is no promotion here. `c << 2` is a u8 because `c` is a u8, and the
+   answer 252 is the whole answer -- nothing was computed and then thrown away.
+
+2. WIDENING IS A CAST YOU HAVE TO WRITE DOWN
+   (c as u32) << 2         = 1020   the number C would have computed for you
+   Same bits, same operator, different answer -- and the difference is one
+   visible `as u32`. That is the whole trade: Rust makes you say which
+   arithmetic you meant, and in exchange the expression cannot surprise you.
+
+3. THE TYPE PICKS THE SHIFT. THE BITS DO NOT.
+   s: i8  = -5    bits 11111011
+   u: u8  = 251   bits 11111011   <- the same eight bits
+   s >> 3 = -1    arithmetic: the sign bit is copied in on the left
+   u >> 3 = 31    logical:    zeros are shifted in on the left
+   One byte, one operator, two answers. Nothing in `>>` chose between them;
+   the declaration did, several lines earlier.
+
+4. DIVISION FOLLOWS C, AND PYTHON'S ANSWER HAS ITS OWN NAME
+   -5 / 8                  = 0      rounds toward zero, exactly as C does
+   -5 % 8                  = -5     so the remainder is negative
+   (-5).div_euclid(8)      = -1     rounds down, exactly as Python's // does
+   (-5).rem_euclid(8)      = 3      so this remainder never is
+   Counted over -8..-1: `>>` differs from `/` on 7 values and from
+   `div_euclid` on 0. Four spellings of division, and you pick one by name.
+
+5. WHAT RUST CHECKS, AND THE ONE THING IT DOES NOT
+   250u8.checked_add(10)   = None   overflow of + is caught
+   255u8.checked_shl(2)    = Some(252) but checked_shl only checks the AMOUNT,
+   255u8.checked_shl(8)    = None   and 8 is not a legal shift for a u8
+   So a left shift drops bits off the top in silence while an addition that
+   overflows by one bit is refused. The rule is narrower than `Rust checks
+   arithmetic`: a shift is checked for asking too much, not for losing data.

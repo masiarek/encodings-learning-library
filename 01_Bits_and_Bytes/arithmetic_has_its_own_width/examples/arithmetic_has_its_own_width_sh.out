@@ -1,0 +1,50 @@
+1. THE SHIFT THAT LEAVES THE BYTE, AND NOTHING NOTICES
+
+$ echo $(( 255 << 2 ))          # 1111 1111 shifted twice -- ten bits now
+1020
+
+$ echo $(( (255 << 2) & 0xFF )) # the byte answer, masked by hand
+252
+   There is no byte in this script. $(( )) has one integer type, and the only
+   way to say 'eight bits' is to write the mask yourself.
+
+2. WHICH DIVISION THE SHELL CHOSE
+
+$ echo $(( -5 / 8 ))            # rounds toward zero
+0
+
+$ echo $(( -5 % 8 ))            # so the remainder is negative
+-5
+
+$ echo $(( -5 >> 3 ))           # rounds down: a shift is not a division here either
+-1
+   The shell follows C, not Python. That is not a coincidence: $(( )) is C
+   arithmetic, evaluated with the host's own integer operators.
+
+3. THE BASE IS NOT A TYPE
+
+$ x=0xFF; echo $(( x + 1 ))     # hex in, decimal out, no declaration anywhere
+256
+
+$ echo $(( 2#11111111 + 1 ))    # base#digits is the shell's own spelling for binary
+256
+
+$ z=010; echo $(( z + 1 ))      # and a LEADING ZERO means octal, so 010 is 8
+9
+   Three literals, three bases, one type. The last one is the trap: a zero-padded
+   number out of a log file or a date becomes octal without being asked, and 08
+   is then an error rather than eight.
+
+4. THE WIDTH APPEARS ONLY WHERE THE NUMBER BECOMES BYTES
+
+$ echo $(( 255 << 2 ))                      # the shell's answer, as a number
+1020
+
+$ printf '%d' $(( 255 << 2 )) | xxd         # written out as text: four bytes
+00000000: 3130 3230                                1020
+
+$ printf '\374' | xxd                       # written out as the byte 252: one byte
+00000000: fc                                       .
+   Same value, four bytes and one, and only the last two commands ever had
+   to know how wide anything was. That boundary is where Python makes you
+   call to_bytes() and where a C declaration made the choice long before.

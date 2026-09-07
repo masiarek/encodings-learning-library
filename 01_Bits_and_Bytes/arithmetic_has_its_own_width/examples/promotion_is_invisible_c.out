@@ -1,0 +1,37 @@
+1. THE STORE IS EIGHT BITS. THE OPERATOR IS NOT.
+   sizeof(c)               = 1   the variable really is one byte
+   sizeof(c << 2)          = 4   the EXPRESSION is an int, 4 bytes wide here
+   Before any arithmetic operator runs, C converts every operand narrower
+   than int to int. It is called integer promotion, it is not optional, and
+   there is no syntax for it -- nothing in `c << 2` says a widening happened.
+
+2. WHICH IS WHY A SHIFT CAN OUTGROW THE VARIABLE IT CAME FROM
+   c                       = 255    1111 1111
+   c << 2                  = 1020   <- what the operator produced, as an int
+   (unsigned char)(c << 2) = 252    <- what survives the store back into a byte
+   Both numbers are right. The narrowing happens at the STORE, not in the
+   shift, so ((c << 2) > 255) is 1 while d is only 252.
+
+3. TWO OPERATORS THAT LOOK LIKE DIVISION AND DISAGREE ON NEGATIVES
+   s                       = -5     1111 1011 read as a signed byte
+   s >> 3                  = -1     <- shifts round DOWN, toward minus infinity
+   s / 8                   = 0      <- division rounds toward ZERO (C99 onward)
+   s % 8                   = -5     <- and the remainder carries the sign of s
+   Counted, not assumed: over the 8 values -8..-1 the two answers differ on
+   7 of them, and over the 256 values 0..255 they agree on 256. So `>> 3` is a
+   fast `/ 8` exactly while the value cannot be negative.
+
+4. ONE BYTE, TWO READINGS -- AND ONLY ONE DIRECTION IS PROMISED
+   signed char neg         = -100   the value stored
+   (unsigned char)neg      = 156    the same eight bits, read unsigned
+   Converting TO an unsigned type is defined by the standard: reduce modulo
+   2^8 and you are done. Going back the other way -- putting 156 into a signed
+   char -- is implementation-defined in C11, so this program does not do it.
+
+5. THE ONE THING THIS PROGRAM DELIBERATELY WILL NOT PRINT
+   Whether plain `char` is signed. C leaves that to the implementation, so it
+   is a property of the machine and the compiler rather than of the language,
+   and an answer key here could only be right on the machine that recorded it.
+   Ask your own compiler with one line -- printf("%d\n", CHAR_MIN); -- and
+   until you have, write `signed char` or `unsigned char` whenever the byte is
+   a NUMBER. Plain `char` is for text, where the question does not arise.
