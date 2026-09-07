@@ -2,7 +2,7 @@
 
 **Level:** 101 → 201 · for anyone starting from zero
 
-A byte is a number. Text is characters. The only bridge between them is a **table**, and this chapter is the history of that table getting bigger: 128 entries, then 256 with everybody's own second half, then a million with one numbering for all of them.
+A [byte](../01_Bits_and_Bytes/a_byte_is_eight_bits/README.md) is a number. Text is characters. The only bridge between them is a **table**, and this chapter is the history of that table getting bigger: 128 entries, then 256 with everybody's own second half, then a million with one numbering for all of them.
 
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|
@@ -22,4 +22,4 @@ A byte is a number. Text is characters. The only bridge between them is a **tabl
 
 ## The through-line
 
-**The number is settled before the bytes are.** By the end of this chapter every character you can name has one agreed number, its code point, and nothing has been said yet about how that number is written into a file. Keeping *code point* and *byte* apart is most of the subject, and chapter 3 is where they finally meet.
+**The number is settled before the bytes are.** By the end of this chapter every character you can name has one agreed number, its code point, and nothing has been said yet about how that number is written into a file. Keeping *code point* and *byte* apart is most of the subject, and [chapter 3](../03_Encodings/README.md) is where they finally meet.
