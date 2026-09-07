@@ -273,6 +273,21 @@ So the SHA you typed is the SHA it prints, and a mismatch needs no comparison by
 
 **Getting it wrong fails safe.** "Push a specific SHA" sounds like the dangerous option and is the opposite: if a colleague landed first, the literal push is **rejected** as `non-fast-forward` rather than rewinding their work. The failure mode is a refusal, not a loss.
 
+**A rejection is normal here, so do the three steps as one command.** With several sessions committing, `origin/master` moves between your `git fetch` and your `git push` often enough that a rejection is routine rather than exceptional — observed twice in a row on 2026-09-07, once in the seconds between rebasing and pushing. Rebase and retry; the window is what you are shrinking:
+
+```bash
+git fetch --quiet && git rebase --quiet origin/master && git push origin "$(git rev-parse HEAD):master"
+```
+
+**And confirm it landed before you clean anything up.** The mistake that produced this paragraph: a worktree removed and its branch deleted after a rejection, on the assumption the push had gone — which orphaned the commit until it was recovered by SHA from the object database. Removing a worktree deletes the only checkout of that work, and `git branch -D` deletes the only ref to it. Confirm first:
+
+```bash
+git fetch --quiet
+git merge-base --is-ancestor "$sha" origin/master; echo "landed=$?"   # 0 = yes, 1 = no
+```
+
+**Fetch first, and compare against `origin/master`, not against `git ls-remote`.** That check has *three* exit codes and only two of them are answers: `0` landed, `1` not landed, and **`128` could not tell you** — `fatal: Not a valid commit name` — which is what you get when the remote tip is an object you have not fetched. In this repo that is the *likely* case, because a colleague has usually pushed since. A naive `if ! git merge-base …` reads 128 as "not landed" — **a check that errored and a check that answered *no* look identical**, which is finding 15's shape (`grep -l PAT $(cat filelist)` past `ARG_MAX`: "no matches and nothing that reads as an error") in a different tool. Fetching first makes `origin/master` a local ref, and 128 cannot arise. The general form is worth carrying: **when a check can fail to run, test its status against the specific code that means *no*, never against empty output or a bare `if !`.**
+
 **What a refspec cannot do is separate an ANCESTOR**, and the line above is deliberately narrow — *nothing made after it* can ride along, not *nothing at all*. If a colleague committed **before** you and you committed on top, their commit is in your history by definition and no refspec on earth excludes it. That case is not hypothetical and not rare: it was live while this very paragraph was being written, with `a7a9ab3` sitting committed-but-unpushed on the shared `master`, so any commit made on top of it could only ship by shipping it too. It then resolved on its own, because that commit's author pushed first — which is the ordinary outcome and the reason the ancestor case is so easy to never notice. Had they been a minute slower it would have travelled under someone else's push, exactly as `186de1f` did. So the closing line below is not a backstop for this section, it is the **only** check that covers the ancestor case at all — read what you are about to carry, and gate what actually landed.
 
 **Reconstructing one of these afterwards: use parentage, not the clock.** `git rev-parse <sha>^` is the only authoritative answer to which of two commits landed first — `186de1f`'s parent being `d511962` is what settled the case above. If you do reach for a timestamp, ask for the **committer** date (`%cd`): `git log --date=…` prints the **author** date (`%ad`) by default, and that is the one that moves under `--amend` and rebase. Measured here on 2026-09-07: across 60 parent/child pairs there were **zero** committer-date inversions and exactly **one** author-date inversion — a rebased commit showing `author=09:29:52` against `committer=09:31:50`. So the clocks in this repo are not scrambled by concurrency, and a reader who goes looking for that will not find it; the single thing that misleads is `%ad` after history editing.
