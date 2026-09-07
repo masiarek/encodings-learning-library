@@ -16,7 +16,7 @@ Seven lessons, and after them a hex dump is readable — and you know which part
 
 ## The through-line
 
-**A byte means nothing on its own.** `0100 0001` is 65, or `A`, or a quarter of a float, and the byte does not know which. Every later chapter is about the *agreements* that give bytes meaning — ASCII, the code pages, Unicode, UTF-8 — and this chapter is about seeing the bytes before any agreement is applied. That is the skill: when text looks wrong, dump the bytes, and only then argue about whose reading was at fault.
+**A byte means nothing on its own.** `0100 0001` is 65, or `A`, or a quarter of a float, and the byte does not know which. Every later chapter is about the *agreements* that give bytes meaning — [ASCII](../02_Characters/a_character_is_a_number/README.md), [the code pages](../02_Characters/code_pages/README.md), [Unicode](../02_Characters/unicode_code_points/README.md), [UTF-8](../03_Encodings/utf8_by_hand/README.md) — and this chapter is about seeing the bytes before any agreement is applied. That is the skill: when text looks wrong, dump the bytes, and only then argue about whose reading was at fault.
 
 ## A note on the code
 
