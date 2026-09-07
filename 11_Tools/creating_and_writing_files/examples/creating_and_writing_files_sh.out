@@ -1,0 +1,107 @@
+1. SEVEN WAYS TO MAKE AN EMPTY FILE, AND SEVEN ZEROS
+   a.txt  0 bytes
+   b.txt  0 bytes
+   c.txt  0 bytes
+   d.txt  0 bytes
+   e.txt  0 bytes
+   f.txt  0 bytes
+   g.txt  0 bytes
+   Seven commands, seven empty files, and on a fresh name that really is
+   all there is to say. The list is worth having because the file you
+   want to empty usually already exists — and that is a different
+   question, which is section 2.
+
+2. THE SAME SEVEN, POINTED AT A FILE THAT ALREADY HAS SOMETHING IN IT
+   command                         t.txt     its 2nd name mode (was 600)
+   touch t.txt                     kept      still 12b   600
+   : > t.txt                       emptied   emptied     600
+   truncate -s 0 t.txt             emptied   emptied     600
+   cp /dev/null t.txt              emptied   emptied     600
+   install -m 644 /dev/null t.txt  emptied   still 12b   644
+   dd if=/dev/null of=t.txt        emptied   emptied     600
+   printf '' > t.txt               emptied   emptied     600
+   Row 1 is the one everybody knows: touch does not empty anything, it
+   sets timestamps, and creating the file is what it does when there is
+   nothing to timestamp. Rows 2, 3, 4, 6 and 7 all TRUNCATE the file that
+   is already there: the mode survives, and so does the second name,
+   because what changed is the file both names point at. Those five are
+   interchangeable and choosing between them is a matter of taste.
+   Row 5 is not in that family at all. install REPLACES: it unlinks the
+   name, puts a new file there, and -m decides the mode rather than
+   preserving it. The old file is still twelve bytes and still reachable
+   through the other name — and through any process that had it open.
+   That is install doing its job, and it is only a surprise when it is
+   being used as a seventh way to type ': >'.
+
+3. THE COLUMN THAT LOOKS LIKE IT WOULD ANSWER THIS, AND DOES NOT
+   after install, link.txt still holds 12 bytes: not the same file
+   and the inode number of t.txt? that one is not printed here.
+   It is not printed because it is not stable enough to be an answer key,
+   and that is the lesson rather than an inconvenience. Measured on
+   2026-09-07: this same install came back with a DIFFERENT number six
+   times out of six on APFS and on overlayfs when run in a clean
+   directory, and with the SAME number inside this script, where the
+   earlier sections had already freed one for it to reuse. An inode
+   number is unique among the files that exist right now, not across
+   time: unlink a file and the number goes back in the pool, and the
+   very next create may be handed it. So a number that did not change
+   is not evidence that the file survived, and a number that did change
+   is not evidence that anything was lost. The second name is evidence.
+   When the question is whether this is still the same file, ask
+   something that holds it open — another link, or a descriptor — and
+   not a number that is only promised to be unique today.
+
+4. WHAT EACH WAY OF WRITING A LINE ACTUALLY PUTS IN THE FILE
+   echo 'text' > f                            746578740a
+   printf 'text' > f                          74657874
+   printf 'line 1\nline 2\n' > f              6c696e6520310a6c696e6520320a
+   cat <<< 'text' > f                         746578740a
+   echo 'text' | tee f                        746578740a
+   echo -n text   (a POSIX echo)              2d6e20746578740a
+   echo -n text   (bash builtin)              74657874
+   74 65 78 74 is text. Four of the seven append an 0a you did not type:
+   echo, the here-string, and tee-behind-echo all end the line for you,
+   and that is usually right, because a text file's last byte is normally
+   a newline. printf writes what it is given and nothing else.
+   The last two rows are the same six characters twice. A POSIX echo has
+   no -n option, so it prints the flag as text AND ends the line anyway:
+   2d 6e 20 is '-n ', and the file is six bytes longer than the file you
+   asked for. bash's builtin, and zsh's, and dash's, all honour -n. This
+   is not a Linux-versus-Mac split; it is a which-shell split, and the
+   shell in question is whatever /bin/sh happens to be where the script
+   finally runs. printf is the way to write bytes without a newline.
+
+5. THE HEREDOC DELIMITER IS A QUOTING DECISION
+   << EOF    -> hello Adam, and a command
+   << 'EOF'  -> hello $NAME, and $(echo a command)
+   Same three lines of typing, and the quotes around the word EOF are the
+   whole difference. Unquoted, the body is a double-quoted string: $NAME
+   expands and $( ) runs. Quoted, the body is literal. Neither is the
+   default you should assume — when the heredoc is a config file, a
+   Dockerfile or somebody else's script, quote the delimiter, and when it
+   is a template you are filling in, do not.
+
+6. THE REDIRECT THAT REFUSES, AND THE ONE THAT CANNOT
+$ bash -c "set -o noclobber; echo one > n.txt; echo two > n.txt"
+   exit=1
+$ bash -c "set -o noclobber; echo one > n2.txt; : > n2.txt"
+   exit=1
+$ bash -c "set -o noclobber; echo one > n3.txt; echo two >| n3.txt"
+   exit=0
+$ bash -c "set -o noclobber; echo one > n4.txt; truncate -s 0 n4.txt"
+   exit=0
+   noclobber makes > refuse to overwrite an existing file, and ': >' is
+   not an exception to it: the ':' is a command that runs no risk, but
+   the redirection beside it is the same redirection. The override is
+   '>|'. And the last row is the reason to know which of these idioms is
+   a shell feature and which is a program — truncate is a program, so
+   noclobber has no opinion about it and the file is emptied regardless.
+
+7. AN EMPTY FILE, AND A FILE FULL OF NOTHING
+   truncate -s 0  -> 0 bytes, hex: (nothing)
+   truncate -s 5  -> 5 bytes, hex: 0000000000
+   truncate sets a length, and growing is as much a length change as
+   shrinking. The five bytes it invents are NUL, which makes this the
+   fastest way to turn a text file into one that diff will call binary
+   and that most tools will stop reading at. An empty file holds no
+   bytes; this one holds five, and prints as nothing either way.

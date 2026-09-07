@@ -205,6 +205,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "tr_and_sort",
         "diff_and_cmp",
         "look_paste_tee_split",
+        "creating_and_writing_files",
         "hexdump",
         "xxd",
         "od",

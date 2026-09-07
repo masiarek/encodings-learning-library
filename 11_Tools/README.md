@@ -37,12 +37,13 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 | 10 | [`tr` and `sort` work a byte at a time](tr_and_sort/README.md) | Why did deleting `é` damage a different word? | written |
 | 11 | [`diff` compares lines, `cmp` compares bytes](diff_and_cmp/README.md) | Why does `diff` say the line changed when both sides look identical? | written, 2026-09-07 |
 | 12 | [`split`, `paste`, `look` and `tee`](look_paste_tee_split/README.md) | Why is the piece my splitter wrote not valid UTF-8 any more? | written, 2026-09-07 |
-| 13 | [`hexdump` is a format engine wearing six presets](hexdump/README.md) | Why is my dump showing the bytes in the wrong order? | written |
-| 14 | [`xxd` is the dump you can put back](xxd/README.md) | Which column of a dump is the file, and how do I get the file back? | written |
-| 15 | [`od` reads types, not bytes](od/README.md) | Nothing else is installed. What are the two flags that make `od` honest? | written, 2026-09-07 |
-| 16 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
-| 17 | [Typing a character you cannot type](typing_a_character/README.md) | There is no `ż` on my keyboard — how do I produce one? | written, 2026-09-07 |
-| 18 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
+| 13 | [`touch`, `: >` and `install` are not three spellings of one command](creating_and_writing_files/README.md) | Seven ways to blank a file — which of them does the *file* and which does the *name*? | written, 2026-09-07 |
+| 14 | [`hexdump` is a format engine wearing six presets](hexdump/README.md) | Why is my dump showing the bytes in the wrong order? | written |
+| 15 | [`xxd` is the dump you can put back](xxd/README.md) | Which column of a dump is the file, and how do I get the file back? | written |
+| 16 | [`od` reads types, not bytes](od/README.md) | Nothing else is installed. What are the two flags that make `od` honest? | written, 2026-09-07 |
+| 17 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
+| 18 | [Typing a character you cannot type](typing_a_character/README.md) | There is no `ż` on my keyboard — how do I produce one? | written, 2026-09-07 |
+| 19 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
 
 ## The whole toolkit, one row each
 
