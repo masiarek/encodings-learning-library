@@ -1,0 +1,38 @@
+1. THE CORPUS: THREE PAGES, AND WHICH ONE SAYS WHAT
+   utf8.5             The UTF-8 encoding represents UCS-4 characters
+   iconv.1            iconv -- codeset conversion utility.  Converts
+   banner.1           banner -- print large banner on printer.
+
+2. BUILD THE FILE LIST FIRST, THEN SWEEP IT
+$ find man -type f | sort > list.txt; wc -l < list.txt
+   3
+
+$ xargs < list.txt grep -l -i 'UTF-8'
+   man/man1/iconv.1
+   man/man5/utf8.5
+
+   Two of the three.  banner names no encoding, which is the answer we
+   wanted: a sweep tells you WHICH pages to open, not what they say.
+
+3. THE SAME QUESTION, ONE TERM AT A TIME
+   UTF-8      2 file(s)
+   codeset    1 file(s)
+   locale     0 file(s)
+   octets     1 file(s)
+
+   That loop is the whole method.  Point list.txt at /usr/share/man and
+   the same four lines inventory every man page on your machine.
+
+4. THE TRAP: TWO PIPELINES THAT FIND NOTHING AND SAY SO WITH EXIT 0
+$ grep -l -i 'UTF-8' $(cat list.txt)     # argv, not stdin
+   man/man1/iconv.1
+   man/man5/utf8.5
+   Correct here -- three files fit in argv.  At 17,000 they do not, and
+   the shell fails the whole command rather than the grep: no matches,
+   and nothing that looks like an error.  Always build the list, then
+   feed it through xargs, which splits it into as many runs as it needs.
+
+$ grep -c -i 'UTF-8' list.txt            # greps the LIST, not the pages
+   0
+   Zero.  A filename is not its contents, and a list of filenames is a
+   text file like any other -- so this reads as a real answer.

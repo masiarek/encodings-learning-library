@@ -67,12 +67,15 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [Two people, one account](12_Adversarial/collisions_by_design/README.md) | written, 2026-09-06 — Python and Rust; four folds, five pairs, and the row where only the uppercase fold merges them |
 | [The byte that means something to somebody else](12_Adversarial/in_band_signals/README.md) | written, 2026-09-06 — C, Python and shell; 32 bytes stored and 14 bytes long, and a log line that erases itself |
 | [What you see is not what runs](12_Adversarial/trojan_source/README.md) | written, 2026-09-06 — Python and Rust; rustc denies two of the five lints by default and replaces the override with U+FFFD in its own error |
+| [The encoding man pages nobody opens](13_Documentation/the_encoding_man_pages/README.md) | written, 2026-09-07 — shell; the section-5 encoding pages, `multibyte(3)`, and a sweep recipe over a corpus the script builds |
+| [A page has a date](13_Documentation/a_page_has_a_date/README.md) | written, 2026-09-07 — Python; `man 5 utf8` is dated 2004 and cites RFC 2279, and both tables are regenerated from arithmetic |
+| [What the page does not say](13_Documentation/what_the_page_does_not_say/README.md) | written, 2026-09-07 — Python; `//TRANSLIT` works and appears in none of the 17,264 man pages on this Mac |
 | [Tribit — the specification](08_Build_Your_Own/tribit/README.md) | written, 2026-09-05 — the Rust implementation is Adam's project |
 | [RESOURCES.md](RESOURCES.md) | written, 2026-09-05 — re-check the links when a page graduates and cites one |
 
 ## Written out of order, on purpose
 
-Chapter 11 was written on 2026-09-06, before chapters 4–7, for the same reason chapters 9 and 10 were: it does not depend on them. It is also the chapter a reader arrives at from outside — somebody whose search did not match, or whose `find` came up empty, has a concrete problem today and no reason to have read chapter 3 first. Each page states what it needs and links back.
+Chapter 11 was written on 2026-09-06, before chapters 4–7, for the same reason chapters 9 and 10 were: it does not depend on them. **Chapter 13 followed on 2026-09-07 for a third reason:** it is the only chapter whose subject is on the reader's machine already, so it can be read before anything else and costs nothing to try. It is also the chapter a reader arrives at from outside — somebody whose search did not match, or whose `find` came up empty, has a concrete problem today and no reason to have read chapter 3 first. Each page states what it needs and links back.
 
 Chapters 9 and 10 were written before chapters 3–7 because they are the two that do not depend on them. [09_History](09_History/README.md) explains the *shape* of everything the stubs will say, so it makes the remaining pages read as conclusions rather than commandments; [10_Best_Practices](10_Best_Practices/README.md) is the answer a reader most often arrives wanting, and leaving it until last would have meant a library that could explain every trap and never say what to do. Both link forward into the stubs, so filling those in adds detail under an argument that is already made.
 

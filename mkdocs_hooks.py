@@ -89,6 +89,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "10_Best_Practices",
         "11_Tools",
         "12_Adversarial",
+        "13_Documentation",
         "RIPGREP.md",
         "CAST.md",
         "GLOSSARY.md",
@@ -208,6 +209,14 @@ NAV_ORDER: dict[str, list[str]] = {
         "collisions_by_design",
         "in_band_signals",
         "trojan_source",
+    ],
+    # What is installed, then how old it is, then what it leaves out --
+    # inventory, provenance, gaps.
+    "13_Documentation": [
+        "README.md",
+        "the_encoding_man_pages",
+        "a_page_has_a_date",
+        "what_the_page_does_not_say",
     ],
     "07_Real_Data": [
         "README.md",

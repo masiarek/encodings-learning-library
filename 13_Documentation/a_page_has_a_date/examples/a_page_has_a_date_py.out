@@ -1,0 +1,40 @@
+1. THE TABLE utf8(5) PRINTS -- RFC 2279, 1 TO 6 BYTES
+   n  bits  highest       template
+   1     7  0x0000007F    0bbbbbbb
+   2    11  0x000007FF    110bbbbb, 10bbbbbb
+   3    16  0x0000FFFF    1110bbbb, 10bbbbbb, 10bbbbbb
+   4    21  0x001FFFFF    11110bbb, 10bbbbbb, 10bbbbbb, 10bbbbbb
+   5    26  0x03FFFFFF    111110bb, 10bbbbbb, 10bbbbbb, 10bbbbbb, 10bbbbbb
+   6    31  0x7FFFFFFF    1111110b, 10bbbbbb, 10bbbbbb, 10bbbbbb, 10bbbbbb, 10bbbbbb
+   The last row reaches 0x7FFFFFFF: 31 bits, six bytes.
+
+2. THE TABLE IN FORCE -- RFC 3629, 2003, 1 TO 4 BYTES
+   n  bits  highest       still reachable
+   1     7  0x0000007F    0x0000007F
+   2    11  0x000007FF    0x000007FF
+   3    16  0x0000FFFF    0x0000FFFF
+   4    21  0x001FFFFF    0x0010FFFF  (row truncated)
+   5    26  0x03FFFFFF    -             (row deleted)
+   6    31  0x7FFFFFFF    -             (row deleted)
+
+3. WHAT THE 2003 CAP ACTUALLY REMOVED
+   highest code point, 1998 rule   0x7FFFFFFF  = 2,147,483,647
+   highest code point, 2003 rule   0x0010FFFF  =  1,114,111
+   numbers no longer encodable                 2,146,369,536
+   that is 99.9% of the old space, and the
+   whole of the 5- and 6-byte forms.  A decoder written from the older
+   table accepts every one of them, which is why 'valid UTF-8' is not
+   one question -- see 03_Encodings/validation_is_a_boundary.
+
+4. THE ARITHMETIC, CHECKED AGAINST PYTHON'S OWN CODEC
+   U+000041  41           == codec
+   U+0000E9  c3 a9        == codec
+   U+00017C  c5 bc        == codec
+   U+0020AC  e2 82 ac     == codec
+   U+01F600  f0 9f 98 80  == codec
+   U+10FFFF  f4 8f bf bf  == codec
+   U+110000  U+110000 is not encodable under RFC 3629
+   U+200000  U+200000 is not encodable under RFC 3629
+
+   Six agreements and two refusals.  The refusals are the rows the
+   1998 table has and the 2004 man page still prints.
