@@ -10,12 +10,12 @@
 
 | | `grep` | `rg` |
 |---|---|---|
-| what is a character? | whatever the **locale** says | always a **UTF-8 character**; `--no-unicode` for bytes |
-| a UTF-16 file? | invisible — searches bytes, finds nothing | **reads the BOM and transcodes** |
-| a UTF-32 file? | invisible | *worse than invisible* — [read as UTF-16 and called binary](#what-rg-does-not-sniff) |
-| an undecodable byte? | BSD **drops the line**; GNU keeps it | keeps the line; no Unicode class matches the byte |
-| a NUL? | "binary file matches" | "binary file matches (found `\0` byte around offset 5)" |
-| BSD vs GNU split? | [a documented list of them](../../CONTRIBUTING.md), and growing | none — one codebase, same binary behaviour |
+| [what is a character?](../../02_Characters/a_code_point_is_not_a_character/README.md) | whatever the **[locale](../../06_Terminal/locale_and_lc_ctype/README.md)** says | always a **UTF-8 character**; `--no-unicode` for bytes |
+| [a UTF-16 file?](../../03_Encodings/utf16_and_surrogates/README.md) | invisible — searches bytes, finds nothing | **reads the BOM and transcodes** |
+| [a UTF-32 file?](../../03_Encodings/byte_order_and_bom/README.md) | invisible | *worse than invisible* — [read as UTF-16 and called binary](#what-rg-does-not-sniff) |
+| [an undecodable byte?](../../03_Encodings/validation_is_a_boundary/README.md) | BSD **drops the line**; GNU keeps it | keeps the line; no Unicode class matches the byte |
+| [a NUL?](../../02_Characters/the_nul_byte/README.md) | "binary file matches" | "binary file matches (found `\0` byte around offset 5)" |
+| [BSD vs GNU split?](../../CONTRIBUTING.md) | a documented list of them, and growing | none — one codebase, same binary behaviour |
 
 The last row is the quiet one. Every other page in this library has to say *"measured on two machines, and here is where they disagree"*. On `rg` the two machines agree, byte for byte, which is what a single implementation buys you.
 
@@ -96,7 +96,7 @@ $ rg -a -E utf-16le c u32.txt | xxd -p    # the same, asked for on purpose
 
 **The last two commands are the proof.** Forcing UTF-16LE produces byte-for-byte what `auto` produced, so `auto` read this file as UTF-16LE — it matched `FF FE`, stopped looking, and never tested the four-byte form. Each 4-byte code unit then came apart into a letter and a NUL (`00 63` is a NUL and a `c`), and those NULs are why the file is reported as **binary**: `rg`'s binary heuristic is looking at text it invented.
 
-Two things follow. First, `caf` and `c` behave differently on the same file — `c` matches and `caf` does not — for the same reason as point 3, except that here the thing between the letters is a NUL that was never in the file. Second, this is the *good* shape of failure: `rg` says `binary file matches` on a file you know is text, which is a usable clue. Convert rather than force — `iconv -f UTF-32LE -t UTF-8` — because `-a` will hand you the invented NULs and everything downstream will inherit them.
+Two things follow. First, `caf` and `c` behave differently on the same file — `c` matches and `caf` does not — for the same reason as point 3, except that here the thing between the letters is a NUL that was never in the file. Second, this is the *good* shape of failure: `rg` says `binary file matches` on a file you know is text, which is a usable clue. Convert rather than force — [`iconv -f UTF-32LE -t UTF-8`](../../06_Terminal/iconv/README.md) — because `-a` will hand you the invented NULs and everything downstream will inherit them.
 
 [Byte order and the BOM](../../03_Encodings/byte_order_and_bom/README.md) gives the general rule: test the four-byte mark before the two-byte one. This is that rule with a name on it. The fastest search tool in common use is a shorter-first sniffer, which is why the rule is worth carrying rather than delegating.
 
