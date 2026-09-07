@@ -130,10 +130,16 @@ Sidebar reading order lives in `NAV_ORDER` in `mkdocs_hooks.py`, keyed by folder
 ## Before you commit
 
 ```bash
-python3 tools/run_examples.py --check
-python3 tools/check_link_style.py
-python3 tools/check_decomposed_literals.py
-uv run --group docs mkdocs build --strict
+python3 tools/check_all.py              # all four gates, in CI's order
+python3 tools/check_all.py --committed  # the same, against what CI will check out
 ```
 
-All four are what CI runs. `--strict` fails on a broken internal link, which is the failure most likely to reach the published site unnoticed. The examples job also runs on macOS in CI; a shell example that passes here and fails there is a BSD/GNU difference, not a flake.
+That runs the four commands CI runs — `run_examples.py --check`, `check_link_style.py`, `check_decomposed_literals.py` (with its `--selftest` first), and `uv run --group docs mkdocs build --strict` — and you can still run any of them alone. `--strict` fails on a broken internal link, which is the failure most likely to reach the published site unnoticed. The examples job also runs on macOS in CI; a shell example that passes here and fails there is a BSD/GNU difference, not a flake.
+
+**Two reasons to use the runner rather than the four commands.**
+
+The first is that these gates print a line per example, so the natural way to run one by hand is to pipe it — and **a pipeline's exit status is the last command's**, so `run_examples.py --check | tail -1` reports success no matter what the gate said. A red gate then scrolls past under a green-looking summary line. `set -o pipefail` fixes it in bash if you remember it every time; `check_all.py` does not pipe at all, keeps each status, and prints a failing gate's output only when there is one.
+
+The second is `--committed`, which extracts `git archive HEAD` into a temporary directory and runs the gates there. That is what CI checks out, and it differs from your working directory in **both** directions. An untracked file makes your tree red where CI is green — somebody else's half-built lesson in a shared checkout does this constantly. And an untracked file that a *committed* page links to makes CI red where your tree is green, because `--strict` resolves the link against a tree where the target exists. Only the second one reddens the build for everybody, and only `--committed` can see it coming.
+
+`python3 tools/check_all.py --selftest` proves the runner still reports a failure, in the same spirit as `check_decomposed_literals.py --selftest`.
