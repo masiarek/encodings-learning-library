@@ -12,7 +12,7 @@
 - Padding: what the space character is under each encoding, and why a UTF-16 field padded with `0x20` is corrupt
 - Cutting inside a sequence: what Python (`errors=`), Rust (`from_utf8` error), `iconv`, and SAP each do with the half a character left behind
 - Truncating correctly: back up to the last character boundary — `is_char_boundary` in Rust, a loop over `char_indices` in either language
-- ABAP: `c LENGTH 10` is ten *characters* — twenty bytes in UTF-16 — and the conversion to a byte-counted file format is where the width changes
+- ABAP: `c LENGTH 10` is ten *characters* — and always exactly twenty bytes, because [the language is UCS-2](../../09_History/why_utf16_stayed/README.md) and a character is always two — so the conversion to a byte-counted file format is where the width changes
 - The mainframe aside: EBCDIC fixed-width records, where even `A` is a different byte
 
 ## The example it will run

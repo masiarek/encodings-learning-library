@@ -13,7 +13,7 @@
 - **CSV**: the format with no declaration at all. The BOM as Excel's de-facto marker; `utf-8-sig` to read and `utf-8` to write; `newline=''`; the separator that changes with the Windows regional setting
 - **Databases**: MySQL's `utf8` meaning a three-byte subset that cannot store an emoji, versus `utf8mb4` which is real UTF-8 and the default since MySQL 8.0; PostgreSQL's `UTF8` and the `client_encoding` setting; and why a `VARCHAR(50)` counts different things in different engines
 - **Filesystems**: bytes on Unix, UTF-16 on Windows, and the historical NFD normalization of HFS+ filenames on macOS that makes a Polish filename compare unequal after a copy
-- **SAP**: the Unicode system storing UTF-16 internally, `OPEN DATASET … ENCODING`, and the code-page number belonging to the interface specification rather than the file — full table in [SAP code pages](../../07_Real_Data/sap_code_pages/README.md)
+- **SAP**: the Unicode system whose system code page is UTF-16 while [the ABAP language is UCS-2](../../09_History/why_utf16_stayed/README.md), `OPEN DATASET … ENCODING`, and the code-page number belonging to the interface specification rather than the file — full table in [SAP code pages](../../07_Real_Data/sap_code_pages/README.md)
 - The through-line: **name the encoding at every boundary you control**, and when you receive from a boundary you do not control, find out which of the above declared it
 
 ## The example it will run

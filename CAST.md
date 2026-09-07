@@ -62,7 +62,7 @@ Two more are named but never *used*, because they cannot be: `U+D800`, a lone su
 | 3 | 9 | 3 | 6 | `日本語` | three characters, nine bytes, six columns |
 | 5 | 18 | 8 | 6 | `👨‍👩‍👧` | one family: three people, two joiners, one grapheme — and four different answers |
 
-**chars** counts code points; **UTF-16** counts 16-bit units, which is what Java, JavaScript and ABAP call a character; **cols** is the width a terminal gives it. No two of the four are the same question, which is why the family emoji is on the list.
+**chars** counts code points; **UTF-16** counts 16-bit units, which is what Java, JavaScript and ABAP call a character — ABAP by way of [UCS-2](09_History/why_utf16_stayed/README.md), which reads a surrogate pair as two characters rather than as one; **cols** is the width a terminal gives it. No two of the four are the same question, which is why the family emoji is on the list.
 
 Longer Polish text, when a page needs a sentence rather than a word: **`zażółć gęślą jaźń`** — a pangram for the diacritics, and the string to reach for when demonstrating a code page that has to hold all nine of them.
 

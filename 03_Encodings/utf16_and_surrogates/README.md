@@ -13,7 +13,7 @@
 - Why those 2,048 code points are reserved and can never be characters — and why Rust's `char` refuses them
 - UCS-2: the 1990s belief that 65,536 would be enough, and the systems still living with it
 - UTF-32: one unit per code point, four bytes each, simple and almost never on disk
-- SAP: a Unicode system's `string` is UTF-16 internally, so `strlen( )` counts units — an emoji is 2, a Polish letter is 1
+- SAP: the *system code page* is UTF-16, but [the ABAP language is the UCS-2 subset](../../09_History/why_utf16_stayed/README.md) — "mainly UTF-16 without surrogates" — so `strlen( )` counts units and an emoji is 2 **because the pair was never assembled into one character**, not because ABAP knows it is one. `charlen( )` is the one function that does see it
 
 ## The example it will run
 
