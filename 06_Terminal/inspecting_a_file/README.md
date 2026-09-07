@@ -114,7 +114,7 @@ One practical note on reaching for them, measured on a bare `ubuntu:24.04` conta
 
 | Reach for | When | Watch out for |
 |---|---|---|
-| [`xxd -g1`](#the-other-two-tools-and-the-fiction-in-the-other-default) | reading, and any time you want to edit bytes and put them back | the default pairs bytes; `-r` needs `-p` if the hex has no offsets |
+| [`xxd -g1`](../../11_Tools/xxd/README.md) | reading, and any time you want to edit bytes and put them back | the default pairs bytes; `-r` needs `-p` if the hex has no offsets |
 | [`hexdump -C`](../../11_Tools/hexdump/README.md) | reading, or `-e` when you want a specific layout | **plain `hexdump` swaps every pair** |
 | [`od -An -tx1`](#the-row-that-makes-things-up) | a machine with nothing else installed | `-a` invents names; `-c` needs `LC_ALL=C` |
 | [`cat -v`](#why-plain-cat-is-not-a-way-to-look-at-a-file) | a whole file at reading speed, without your terminal obeying it | `M-x` means the high bit is set; GNU's `-A` is rejected on macOS, so `-vet` |

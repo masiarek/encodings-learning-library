@@ -34,6 +34,7 @@ jobs:
       # The sidebar reading order and the page-footer prev/next arrows are
       # computed at different times and drifted apart unnoticed for 13
       # chapters. This asserts they agree; see tools/check_nav_chain.py.
+      - run: uv run python tools/check_nav_chain.py --selftest
       - run: uv run python tools/check_nav_chain.py
       - run: uv run mkdocs build --strict
       - uses: actions/upload-pages-artifact@v3

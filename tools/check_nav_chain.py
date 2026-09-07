@@ -1,31 +1,41 @@
 #!/usr/bin/env python3
-"""The sidebar and the prev/next arrows must tell the same story.
+"""The sidebar and the footer arrows must tell the same story.
 
-`mkdocs_hooks.py` states the reading order in NAV_ORDER and applies it in
-on_nav(). That sorts the sidebar. It does NOT, on its own, move the arrows at
-the foot of each page: MkDocs computes previous_page/next_page inside
-get_navigation(), which runs before any hook, so a hook that only sorts leaves
-the sidebar in reading order and the arrows in alphabetical order.
+`NAV_ORDER` in `mkdocs_hooks.py` states the reading order and `on_nav` applies
+it. Sorting `nav.items` fixes the **sidebar**. It does not, on its own, fix the
+two arrows at the foot of the page: MkDocs sets every page's `previous_page` /
+`next_page` inside `get_navigation()`, which runs *before* any hook, so a hook
+that only re-sorts leaves the arrows walking the default alphabetical order.
 
-That was live here on all 13 chapters until 2026-09-07 -- the published
-11_Tools page offered "awk" as its next page where NAV_ORDER says "grep" --
-and nothing caught it, because each half is internally consistent and the two
-are only comparable side by side. This gate compares them.
+That shipped on all thirteen chapters until 2026-09-07 -- the published
+`11_Tools` page offered *awk* as the page after it while the sidebar beside it
+read *grep* first. Nothing caught it because each half is internally
+consistent, `--strict` has no opinion about a hook that reorders a nav without
+re-linking it, and only a reader who already knew what came next could tell.
 
-It walks the nav tree itself for the expected order rather than importing the
-hook's own helper, so the fix is not being checked with the code under test.
+This gate checks three things, and walks the nav itself rather than importing
+the hook's helper, so the fix is not checked with the code under test:
 
-It also checks a second, older hazard that `mkdocs_hooks.py` names in its own
-comments twice: **an entry naming something that no longer exists is a silent
-no-op.** `_order_key` simply never matches a stale name, and `LABEL_OVERRIDES`
-never fires for a renamed folder, so a rename quietly demotes a page to the
-alphabetical tail with nothing printed. (That second check came from a parallel
-session that reached the same bug independently.)
+1. **The forward chain follows the sidebar.** `next_page` from the first page
+   must visit exactly the pages a depth-first walk of the sidebar visits, in
+   that order.
+2. **`previous_page` mirrors it.** The hook sets both in one loop today, so
+   they cannot diverge now -- but a half-rebuilt chain is precisely the
+   regression this gate exists to catch, so it is asserted rather than assumed.
+3. **`nav.pages` matches.** `on_nav` promises to rewrite it; templates and
+   plugins read it.
+
+Plus a fourth, older hazard that `mkdocs_hooks.py` flags in its own comments
+twice: **an entry naming something that no longer exists is a silent no-op.**
+`_order_key` never matches a stale name and `LABEL_OVERRIDES` never fires for a
+renamed folder, so the page quietly drops to the alphabetical tail with nothing
+printed. (That check came from a parallel session that reached the same bug.)
 
     python3 tools/check_nav_chain.py
+    python3 tools/check_nav_chain.py --selftest   # prove it still bites
 
-Needs the docs group (it loads MkDocs): run it under `uv run --group docs`,
-which is how check_all.py and CI invoke it.
+Needs the docs group: run under `uv run --group docs`, which is how
+`check_all.py` and CI invoke it.
 """
 
 from __future__ import annotations
@@ -47,8 +57,69 @@ def walk(items: list) -> list:
     return out
 
 
-def _stale_entries() -> list[tuple[str, str | None, str]]:
-    """NAV_ORDER / LABEL_OVERRIDES names with nothing on disk behind them."""
+def uri(page) -> str:
+    """Compare pages by source path: Page defines __eq__ but not __hash__."""
+    return page.file.src_uri
+
+
+def build_nav():
+    from mkdocs.config import load_config
+    from mkdocs.structure.files import get_files
+    from mkdocs.structure.nav import get_navigation
+
+    config = load_config(str(REPO / "mkdocs.yml"))
+    config.plugins.on_startup(command="build", dirty=False)
+    files = config.plugins.on_files(get_files(config), config=config)
+    nav = get_navigation(files, config)
+    return config.plugins.on_nav(nav, config=config, files=files)
+
+
+def follow(start, attr: str) -> list:
+    """Follow `attr` from `start` until it ends or repeats."""
+    out, seen, page = [], set(), start
+    while page is not None and id(page) not in seen:
+        seen.add(id(page))
+        out.append(page)
+        page = getattr(page, attr)
+    return out
+
+
+def check_chain(nav) -> list[str]:
+    """Problems with the prev/next chain. Empty list means all three hold."""
+    sidebar = walk(nav.items)
+    if not sidebar:
+        return ["the nav has no pages -- nothing to check"]
+    problems = []
+
+    forward = [uri(p) for p in follow(sidebar[0], "next_page")]
+    want = [uri(p) for p in sidebar]
+    if forward != want:
+        detail = f"the arrows reach {len(forward)} pages, the sidebar has {len(want)}"
+        for i, (a, b) in enumerate(zip(want, forward)):
+            if a != b:
+                detail = (f"first divergence at position {i}:\n"
+                          f"    sidebar says  {a}\n"
+                          f"    arrows say    {b}")
+                break
+        problems.append("next_page does not follow the sidebar -- " + detail)
+
+    backward = [uri(p) for p in follow(sidebar[-1], "previous_page")]
+    if backward != want[::-1]:
+        problems.append(
+            f"previous_page is not the mirror of next_page: it reaches "
+            f"{len(backward)} pages walking back from {want[-1]}, expected "
+            f"{len(want)}")
+
+    if [uri(p) for p in nav.pages] != want:
+        problems.append(
+            "nav.pages is not in sidebar order -- on_nav promises to rewrite "
+            "it, and templates and plugins read it")
+
+    return problems
+
+
+def stale_entries() -> list[tuple[str, str | None, str]]:
+    """NAV_ORDER / LABEL_OVERRIDES names with nothing behind them."""
     sys.path.insert(0, str(REPO))
     import mkdocs_hooks
 
@@ -61,7 +132,6 @@ def _stale_entries() -> list[tuple[str, str | None, str]]:
         for name in names:
             if not (base / name).exists():
                 bad.append(("NAV_ORDER", key, name))
-    # A label override is keyed by on-disk folder name, anywhere in the tree.
     folders = {d.name for d in REPO.rglob("*")
                if d.is_dir() and ".git" not in d.parts and "site" not in d.parts}
     for name in mkdocs_hooks.LABEL_OVERRIDES:
@@ -70,70 +140,64 @@ def _stale_entries() -> list[tuple[str, str | None, str]]:
     return bad
 
 
-def main() -> int:
+def selftest() -> int:
+    """Re-chain the pages alphabetically and prove the gate reports it."""
+    nav = build_nav()
+    pages = sorted(walk(nav.items), key=uri)
+    for i, page in enumerate(pages):
+        page.previous_page = pages[i - 1] if i else None
+        page.next_page = pages[i + 1] if i + 1 < len(pages) else None
+    nav.pages[:] = pages
+    problems = check_chain(nav)
+    if not problems:
+        print("selftest FAILED: an alphabetical chain was reported as correct.")
+        return 1
+    print(f"selftest ok: an alphabetical chain is reported "
+          f"({len(problems)} problem(s), first: "
+          f"{problems[0].splitlines()[0]}).")
+    return 0
+
+
+def main(argv: list[str]) -> int:
     try:
-        from mkdocs.config import load_config
-        from mkdocs.structure.files import get_files
-        from mkdocs.structure.nav import get_navigation
+        import mkdocs  # noqa: F401
     except ImportError:
         print("check_nav_chain: MkDocs not importable -- run under "
               "`uv run --group docs`", file=sys.stderr)
         return 2
 
-    config = load_config(str(REPO / "mkdocs.yml"))
-    config.plugins.on_startup(command="build", dirty=False)
-    files = get_files(config)
-    files = config.plugins.on_files(files, config=config)
-    nav = get_navigation(files, config)
-    nav = config.plugins.on_nav(nav, config=config, files=files)
+    if "--selftest" in argv:
+        return selftest()
 
-    stale = _stale_entries()
+    stale = stale_entries()
     if stale:
         print("nav tables name things that do not exist:\n")
         for table, key, name in stale:
             where = f"{table}[{key!r}]" if key is not None else table
             print(f"  {where} lists {name!r} -- no such file or folder")
         print("\n  These are silent no-ops: the hook skips a name it cannot")
-        print("  match, so the page drops to the alphabetical tail and nothing")
-        print("  is printed. Usually the tail of a rename.")
+        print("  match, so the page drops to the alphabetical tail and")
+        print("  nothing is printed.\n")
+        print("  Two ways this happens. A rename left the entry behind --")
+        print("  update it. Or the folder exists on disk but is not committed")
+        print("  yet, in which case the entry is ahead of its page: commit")
+        print("  them together, as CONTRIBUTING's 'Nav order' section says.")
         return 1
 
-    sidebar = walk(nav.items)
-    if not sidebar:
-        print("check_nav_chain: the nav has no pages -- nothing to check",
-              file=sys.stderr)
-        return 2
-
-    # Follow next_page from the first page and see where it lands.
-    chain, seen, page = [], set(), sidebar[0]
-    while page is not None and id(page) not in seen:
-        seen.add(id(page))
-        chain.append(page)
-        page = page.next_page
-
-    def uri(p) -> str:
-        return p.file.src_uri
-
-    if [uri(p) for p in chain] == [uri(p) for p in sidebar]:
-        print(f"nav chain: the arrows follow the sidebar, all "
-              f"{len(sidebar)} pages.")
+    nav = build_nav()
+    problems = check_chain(nav)
+    if not problems:
+        print(f"nav chain: the arrows follow the sidebar, both ways, all "
+              f"{len(nav.pages)} pages.")
         return 0
 
-    print("nav chain: the prev/next arrows do NOT follow the sidebar.\n")
-    print("  This is the failure mkdocs_hooks.on_nav re-chains against: the")
-    print("  sidebar is sorted by NAV_ORDER, the arrows are not. Check that")
-    print("  on_nav still reassigns previous_page/next_page after _visit().\n")
-    for i, (want, got) in enumerate(zip(sidebar, chain)):
-        if uri(want) != uri(got):
-            print(f"  first divergence at position {i}:")
-            print(f"    sidebar says  {uri(want)}")
-            print(f"    arrows say    {uri(got)}")
-            break
-    else:
-        print(f"  the arrows reach {len(chain)} pages, the sidebar has "
-              f"{len(sidebar)}")
+    print("nav chain: the sidebar and the arrows disagree.\n")
+    print("  Check that mkdocs_hooks.on_nav still reassigns previous_page,")
+    print("  next_page and nav.pages after _visit() re-sorts the tree.\n")
+    for problem in problems:
+        print(f"  {problem}")
     return 1
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(main(sys.argv[1:]))
