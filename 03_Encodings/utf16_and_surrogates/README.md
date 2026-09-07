@@ -2,25 +2,215 @@
 
 **Level:** 201 · working knowledge
 
-> **Stub — an outline, not a lesson.** There is no runnable example behind this page yet, so nothing on it has been through [the check that backs every other claim in this library](../../CONTRIBUTING.md). The bullets below are the questions the finished page has to answer.
+**One line:** UTF-16 writes most code points as one 16-bit unit and everything above `U+FFFF` as a *surrogate pair* of two units — which is why Windows, Java, JavaScript and SAP all report an emoji's length as 2, why 2,048 code points can never be characters, and why Unicode stops at `U+10FFFF`.
 
-**One line:** UTF-16 writes most code points as one 16-bit unit and everything above `U+FFFF` as a *surrogate pair* of two units — which is why Windows, Java, JavaScript and SAP all report an emoji's length as 2.
+## The one distinction
 
-## What the finished page has to answer
+UTF-8 lets you ignore the difference between a **code point** (a character's number) and a **code unit** (the fixed-width piece the encoding is written in), because it never asks you to count units. UTF-16 cannot let you ignore it. Below `U+FFFF` one code point is one unit; above it, one code point is *two*, and every language built on UTF-16 reports the unit count when you ask for a length.
 
-- Code unit vs code point: the distinction UTF-8 lets you ignore and UTF-16 does not
-- The surrogate ranges `D800–DBFF` and `DC00–DFFF`, and the arithmetic that turns `U+1F600` into `D83D DE00`
-- Why those 2,048 code points are reserved and can never be characters — and why Rust's `char` refuses them
-- UCS-2: the 1990s belief that 65,536 would be enough, and the systems still living with it
-- UTF-32: one unit per code point, four bytes each, simple and almost never on disk
-- SAP: the *system code page* is UTF-16, but [the ABAP language is the UCS-2 subset](../../09_History/why_utf16_stayed/README.md) — "mainly UTF-16 without surrogates" — so `strlen( )` counts units and an emoji is 2 **because the pair was never assembled into one character**, not because ABAP knows it is one. `charlen( )` is the one function that does see it
+That is the entire subject. Everything below is a consequence.
 
-## The example it will run
+## The arithmetic
 
-Python: `.encode('utf-16-be')` for the same four characters as the UTF-8 page, and the pair arithmetic in ten lines; Rust: `encode_utf16().count()` vs `chars().count()`.
+A code point above `U+FFFF` is written as a **high** surrogate followed by a **low** one. The recipe is four steps, and the program below runs it against Python's own encoder to prove it:
+
+```text
+U  = U+1F600
+U' = U − 0x10000        →  0x0F600     (20 bits, no more)
+high = 0xD800 + (U' >> 10)     = 0xD83D
+low  = 0xDC00 + (U' & 0x3FF)   = 0xDE00
+```
+
+Subtracting the BMP first is what makes 20 bits enough. Ten of them go in each half, and each half is offset into its own reserved block so that a decoder can always tell which is which — a unit in `D800`–`DBFF` means *a pair starts here*, a unit in `DC00`–`DFFF` means *a pair ends here*, and neither can be mistaken for an ordinary character.
+
+Going back is the same arithmetic in reverse: `0x10000 + ((high − 0xD800) << 10) + (low − 0xDC00)`.
+
+## The 2,048 that can never be characters
+
+`U+D800`–`U+DFFF` is 2,048 code points held permanently empty. Not "unassigned for now" — **unassignable**, because assigning one would make UTF-16 ambiguous. They are the price UTF-16 charges the whole standard, paid by every encoding whether it uses them or not.
+
+The asymmetry that follows is where the bugs live. **UTF-8 refuses to encode a lone surrogate**, correctly, because a surrogate is not a character and there is nothing to encode. **UTF-16 hands one back happily**, because in UTF-16 it is just a unit. So any UTF-16 system can produce a value that no UTF-8 system will accept — from a truncated string, a bad concatenation, a file cut at the wrong offset — and the failure appears at the boundary rather than where it was made.
+
+Two well-known encodings exist purely to carry the halves anyway: **CESU-8**, which UTF-8-encodes each surrogate separately and is [what SAP HANA stores](../../09_History/why_utf16_stayed/README.md), and Java's **Modified UTF-8**, which does the same and also writes `U+0000` as an overlong `C0 80`. Both fail a strict UTF-8 validator, and both are correct to.
+
+## Why Unicode stops at U+10FFFF
+
+This is the fact worth carrying away, because it looks like a decision about the world and is not:
+
+```text
+a high surrogate carries 10 bits     →     1,024 values
+a low  surrogate carries 10 bits     →     1,024 values
+the pair therefore addresses            1,048,576 code points  =  16 planes
+plus the BMP itself                                               1 plane
+                                        1,114,112  =  0x110000
+```
+
+So the last code point is `U+10FFFF`, and `sys.maxunicode` agrees. **That ceiling is UTF-16's number.** It is not how many characters anyone thought would be needed — it is the largest value two 16-bit surrogates can reach. [UTF-8 as originally designed ↗](https://www.cl.cam.ac.uk/~mgk25/ucs/utf-8-history.txt) ran to six bytes and `U+7FFFFFFF`, and was cut back to match. The encoding that lost the format war set the size of the character set.
+
+For the history of how four platforms ended up here and could not leave, see [Why UTF-16 stayed](../../09_History/why_utf16_stayed/README.md). This page is the mechanism; that one is the dates.
+
+## In Python
+
+<!-- output:utf16_and_surrogates_py -->
+*Verified output of [`utf16_and_surrogates_py.py`](examples/utf16_and_surrogates_py.py) — regenerated by `tools/run_examples.py`, never hand-typed.*
+
+```text
+1. CODE POINT VS CODE UNIT: THE DISTINCTION UTF-8 LETS YOU IGNORE
+------------------------------------------------------------------------
+   char   code point     utf-8   utf-16   utf-32
+                         bytes    units    units
+   A      U+0041             1        1        1
+   é      U+00E9             2        1        1
+   ż      U+017C             2        1        1
+   €      U+20AC             3        1        1
+   日     U+65E5             3        1        1
+   ಠ      U+0CA0             3        1        1
+   😀     U+1F600            4        2        1
+
+   Every row is ONE code point. UTF-32 always agrees; UTF-8 varies but
+   never asks you to count units; UTF-16 is the only one where a single
+   character can be two of the things the language calls a character.
+
+2. THE ARITHMETIC: ONE CODE POINT INTO TWO UNITS
+------------------------------------------------------------------------
+   Encoding U+1F600 (😀) as a surrogate pair, step by step:
+
+     subtract the BMP   0x1f600 - 0x10000 = 0x0f600   (16 bits, max 20)
+     top 10 bits        0x0f600 >> 10    = 0x03d
+     bottom 10 bits     0x0f600 &  0x3FF = 0x200
+     high surrogate     0xD800 + 0x03d  = 0xD83D
+     low  surrogate     0xDC00 + 0x200  = 0xDE00
+
+     by hand            D83DDE00
+     Python's encoder   D83DDE00
+     agree              True
+
+   And back again: 0x10000 + ((0xD83D-0xD800) << 10) + (0xDE00-0xDC00) = U+1F600
+
+3. THE 2,048 CODE POINTS THAT CAN NEVER BE CHARACTERS
+------------------------------------------------------------------------
+     high surrogates  U+D800..U+DBFF    1024
+     low  surrogates  U+DC00..U+DFFF    1024
+     reserved total                     2048
+
+   They are permanently unassigned so that UTF-16 is unambiguous: a unit
+   in D800-DBFF always means 'a pair starts here', and nothing else can.
+   The cost is that they leak into every format that grew up around
+   UTF-16 and must then be refused elsewhere:
+     lone.encode('utf-8')                     -> UnicodeEncodeError: surrogates not allowed
+     lone.encode('utf-8', 'surrogatepass')    -> ed a0 bd
+     lone.encode('utf-16-be')                 -> UnicodeEncodeError: surrogates not allowed
+
+   UTF-8 refuses, correctly — a surrogate is not a character, so there is
+   nothing to encode. UTF-16 hands it back happily, because in UTF-16 it
+   is just a unit. That asymmetry is the whole bug class.
+
+4. AND WHY UNICODE STOPS AT U+10FFFF
+------------------------------------------------------------------------
+     a high surrogate carries 10 bits  ->    1024 values
+     a low  surrogate carries 10 bits  ->    1024 values
+     so the pair addresses                1048576 code points
+     which is exactly                          16 planes of 65,536
+     plus the BMP itself                        1 plane
+     total                                1114112 = 0x110000
+
+   The last code point is therefore U+10FFFF, and sys.maxunicode agrees:
+   0x10ffff. That ceiling is not a decision about how many characters
+   the world needs — it is the largest number two 16-bit surrogates can
+   address. UTF-8 as originally designed ran to six bytes and U+7FFFFFFF;
+   it was cut back to match what UTF-16 could reach.
+
+5. UTF-32: THE ONE WITH NO SURROGATES, AND ALMOST NO USERS
+------------------------------------------------------------------------
+     utf_8       5 bytes   41 f0 9f 98 80
+     utf_16_be   6 bytes   00 41 d8 3d de 00
+     utf_32_be   8 bytes   00 00 00 41 00 01 f6 00
+
+   In UTF-32 every character is one unit — len(s) == 2 matches the unit
+   count exactly, and there is no pair to split. It costs four bytes for
+   an 'A' and carries a byte order, which is why it is a fine in-memory
+   representation and almost never a file.
+```
+<!-- /output -->
+
+## In Rust
+
+Rust never stores UTF-16, so every step is an explicit call you can watch — including the one that fails.
+
+<!-- output:utf16_and_surrogates_rs -->
+*Verified output of [`utf16_and_surrogates_rs.rs`](examples/utf16_and_surrogates_rs.rs) — regenerated by `tools/run_examples.py`, never hand-typed.*
+
+```text
+1. ONE char IN, ONE OR TWO UNITS OUT
+------------------------------------------------------------------------
+   A  U+0041  len_utf16 = 1   units [0041]
+   é  U+00E9  len_utf16 = 1   units [00E9]
+   ż  U+017C  len_utf16 = 1   units [017C]
+   日  U+65E5  len_utf16 = 1   units [65E5]
+   😀  U+1F600  len_utf16 = 2   units [D83D DE00]
+
+   The buffer has to be two long. That is the whole difference: a
+   char is one code point, and asking for its UTF-16 form can give
+   you back two of the things UTF-16 calls a character.
+
+2. READING THE UNITS BACK
+------------------------------------------------------------------------
+   "A😀B"
+     chars().count()        = 3
+     encode_utf16().count() = 4
+     units                  = [0041 D83D DE00 0042]
+
+   char::decode_utf16 -> Ok('A') Ok('😀') Ok('B')
+   Three code points out of four units, and the pair was rejoined.
+
+3. THE SAME STRING, CUT ONE UNIT SHORT
+------------------------------------------------------------------------
+   Keeping the first 2 of 4 units: [0041 D83D]
+   char::decode_utf16 -> Ok('A') Err(unpaired D83D)
+
+   That error IS the failure SAP warns about for ABAP — a string
+   truncated in the middle of a surrogate representation. The cut
+   landed at a legal unit boundary and an illegal character
+   boundary, and only a decoder that knows about pairs can tell.
+   In UTF-8 the equivalent cut is detectable from the bytes alone.
+
+4. THE RESERVED BLOCK IS A HOLE IN THE char TYPE
+------------------------------------------------------------------------
+   U+D7FF  Some('\u{d7ff}')
+   U+D800  None
+   U+DBFF  None
+   U+DC00  None
+   U+DFFF  None
+   U+E000  Some('\u{e000}')
+
+   2,048 numbers with no character behind them, reserved so that a
+   UTF-16 decoder can never be in doubt about where a pair starts.
+   Rust spends a type invariant to keep them out; the languages
+   that store UTF-16 cannot, because in UTF-16 they are just units.
+```
+<!-- /output -->
+
+## If you are coming from Python or ABAP
+
+**Python.** `len()` counts code points, so you are mostly insulated — but the surrogate range reaches you at every boundary with a UTF-16 system. `json.dumps` emits the surrogate pair `"\ud83d\ude00"` by default and the character itself only under `ensure_ascii=False` — UTF-16 escapes inside a format that is UTF-8 by specification; `'utf-16'` with no suffix writes a BOM where `'utf-16-le'` does not; and `errors='surrogatepass'` is the switch that lets a lone surrogate through `encode`, which is how you deliberately produce CESU-8-shaped bytes. `surrogateescape` is a *different* mechanism for a different problem — smuggling undecodable bytes, not UTF-16 halves — and the two are easy to confuse because both put surrogates in a `str`.
+
+**ABAP.** SAP's own glossary is exact, and worth quoting to yourself before debugging: the ABAP language supports UCS-2, "which means mainly UTF-16 without surrogates, and interprets a surrogate character as two characters." So `strlen( )` over an emoji is `2` — the same number Java gives, for the opposite reason: Java assembled the pair and counted its units, ABAP never assembled it. The one function that does see the pair is `charlen( )`, documented as returning 1 for a single Unicode character and 2 for a surrogate pair. The practical consequence is the failure in section 3 of the Rust program above, which SAP names directly: trouble arises when a string is truncated in the middle of a surrogate representation, or when individual characters are compared. An offset that is always safe for BMP text can cut a character in half exactly once, and nothing in the type says which strings are at risk. *(Not machine-checked — CI cannot run ABAP.)*
+
+## Try it
+
+```bash
+cd 03_Encodings/utf16_and_surrogates/examples
+python3 utf16_and_surrogates_py.py
+rustc --edition 2024 utf16_and_surrogates_rs.rs -o /tmp/surro && /tmp/surro
+```
+
+Without the machine: you are handed the four units `0041 D83D DE00 0042` and asked how many characters they are. Then the first three only. Which answer changed, and what does a program have to know to give it? Then: `D83D` on its own arrives in a field you must write to a UTF-8 file. What are your three options, and which one loses information?
 
 ## See also
 
-- [UTF-8 by hand](../utf8_by_hand/README.md)
-- [Byte order and the BOM](../byte_order_and_bom/README.md)
+- [UTF-8 by hand](../utf8_by_hand/README.md) — the other encoding's bit-packing, done the same way
+- [Byte order and the BOM](../byte_order_and_bom/README.md) — the other thing two-byte units cost you
 - [Why UTF-16 stayed](../../09_History/why_utf16_stayed/README.md) — why four platforms are still built on this, dated
+- [Overlong sequences](../overlong_sequences/README.md) — Modified UTF-8 and the other way to be almost-UTF-8
+- [Unicode code points](../../02_Characters/unicode_code_points/README.md) — what a code point is, before encodings
+- [UTF-8, UTF-16, UTF-32 & BOM FAQ ↗](https://www.unicode.org/faq/utf_bom.html) — the Consortium's own answers on the surrogate blocks

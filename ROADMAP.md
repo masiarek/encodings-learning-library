@@ -32,7 +32,7 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [UTF-8 by hand](03_Encodings/utf8_by_hand/README.md) | stub — the checkpoint page |
 | [Validation is a boundary](03_Encodings/validation_is_a_boundary/README.md) | written, 2026-09-05 — all four languages, and the second *C view* |
 | [Overlong sequences](03_Encodings/overlong_sequences/README.md) | written, 2026-09-05 — all four languages; the shortest-form rule, Table 3-7, and the three formats that break it on purpose |
-| [UTF-16 and surrogates](03_Encodings/utf16_and_surrogates/README.md) | stub |
+| [UTF-16 and surrogates](03_Encodings/utf16_and_surrogates/README.md) | written, 2026-09-07 |
 | [Byte order and the BOM](03_Encodings/byte_order_and_bom/README.md) | written, 2026-09-05 — Python, Rust and shell; why `U+FFFE` makes the mirror proof rather than convention |
 | [Encode and decode are verbs](03_Encodings/encode_and_decode_are_verbs/README.md) | written, 2026-09-05 — Python, Rust and shell |
 | [Mojibake](03_Encodings/mojibake/README.md) | written, 2026-09-05 — Python and shell; the Rust point is the previous page's |

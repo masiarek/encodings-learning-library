@@ -1,0 +1,47 @@
+
+1. ONE char IN, ONE OR TWO UNITS OUT
+------------------------------------------------------------------------
+   A  U+0041  len_utf16 = 1   units [0041]
+   é  U+00E9  len_utf16 = 1   units [00E9]
+   ż  U+017C  len_utf16 = 1   units [017C]
+   日  U+65E5  len_utf16 = 1   units [65E5]
+   😀  U+1F600  len_utf16 = 2   units [D83D DE00]
+
+   The buffer has to be two long. That is the whole difference: a
+   char is one code point, and asking for its UTF-16 form can give
+   you back two of the things UTF-16 calls a character.
+
+2. READING THE UNITS BACK
+------------------------------------------------------------------------
+   "A😀B"
+     chars().count()        = 3
+     encode_utf16().count() = 4
+     units                  = [0041 D83D DE00 0042]
+
+   char::decode_utf16 -> Ok('A') Ok('😀') Ok('B')
+   Three code points out of four units, and the pair was rejoined.
+
+3. THE SAME STRING, CUT ONE UNIT SHORT
+------------------------------------------------------------------------
+   Keeping the first 2 of 4 units: [0041 D83D]
+   char::decode_utf16 -> Ok('A') Err(unpaired D83D)
+
+   That error IS the failure SAP warns about for ABAP — a string
+   truncated in the middle of a surrogate representation. The cut
+   landed at a legal unit boundary and an illegal character
+   boundary, and only a decoder that knows about pairs can tell.
+   In UTF-8 the equivalent cut is detectable from the bytes alone.
+
+4. THE RESERVED BLOCK IS A HOLE IN THE char TYPE
+------------------------------------------------------------------------
+   U+D7FF  Some('\u{d7ff}')
+   U+D800  None
+   U+DBFF  None
+   U+DC00  None
+   U+DFFF  None
+   U+E000  Some('\u{e000}')
+
+   2,048 numbers with no character behind them, reserved so that a
+   UTF-16 decoder can never be in doubt about where a pair starts.
+   Rust spends a type invariant to keep them out; the languages
+   that store UTF-16 cannot, because in UTF-16 they are just units.

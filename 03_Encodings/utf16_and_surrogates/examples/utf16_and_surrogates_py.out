@@ -1,0 +1,76 @@
+
+1. CODE POINT VS CODE UNIT: THE DISTINCTION UTF-8 LETS YOU IGNORE
+------------------------------------------------------------------------
+   char   code point     utf-8   utf-16   utf-32
+                         bytes    units    units
+   A      U+0041             1        1        1
+   é      U+00E9             2        1        1
+   ż      U+017C             2        1        1
+   €      U+20AC             3        1        1
+   日     U+65E5             3        1        1
+   ಠ      U+0CA0             3        1        1
+   😀     U+1F600            4        2        1
+
+   Every row is ONE code point. UTF-32 always agrees; UTF-8 varies but
+   never asks you to count units; UTF-16 is the only one where a single
+   character can be two of the things the language calls a character.
+
+2. THE ARITHMETIC: ONE CODE POINT INTO TWO UNITS
+------------------------------------------------------------------------
+   Encoding U+1F600 (😀) as a surrogate pair, step by step:
+
+     subtract the BMP   0x1f600 - 0x10000 = 0x0f600   (16 bits, max 20)
+     top 10 bits        0x0f600 >> 10    = 0x03d
+     bottom 10 bits     0x0f600 &  0x3FF = 0x200
+     high surrogate     0xD800 + 0x03d  = 0xD83D
+     low  surrogate     0xDC00 + 0x200  = 0xDE00
+
+     by hand            D83DDE00
+     Python's encoder   D83DDE00
+     agree              True
+
+   And back again: 0x10000 + ((0xD83D-0xD800) << 10) + (0xDE00-0xDC00) = U+1F600
+
+3. THE 2,048 CODE POINTS THAT CAN NEVER BE CHARACTERS
+------------------------------------------------------------------------
+     high surrogates  U+D800..U+DBFF    1024
+     low  surrogates  U+DC00..U+DFFF    1024
+     reserved total                     2048
+
+   They are permanently unassigned so that UTF-16 is unambiguous: a unit
+   in D800-DBFF always means 'a pair starts here', and nothing else can.
+   The cost is that they leak into every format that grew up around
+   UTF-16 and must then be refused elsewhere:
+     lone.encode('utf-8')                     -> UnicodeEncodeError: surrogates not allowed
+     lone.encode('utf-8', 'surrogatepass')    -> ed a0 bd
+     lone.encode('utf-16-be')                 -> UnicodeEncodeError: surrogates not allowed
+
+   UTF-8 refuses, correctly — a surrogate is not a character, so there is
+   nothing to encode. UTF-16 hands it back happily, because in UTF-16 it
+   is just a unit. That asymmetry is the whole bug class.
+
+4. AND WHY UNICODE STOPS AT U+10FFFF
+------------------------------------------------------------------------
+     a high surrogate carries 10 bits  ->    1024 values
+     a low  surrogate carries 10 bits  ->    1024 values
+     so the pair addresses                1048576 code points
+     which is exactly                          16 planes of 65,536
+     plus the BMP itself                        1 plane
+     total                                1114112 = 0x110000
+
+   The last code point is therefore U+10FFFF, and sys.maxunicode agrees:
+   0x10ffff. That ceiling is not a decision about how many characters
+   the world needs — it is the largest number two 16-bit surrogates can
+   address. UTF-8 as originally designed ran to six bytes and U+7FFFFFFF;
+   it was cut back to match what UTF-16 could reach.
+
+5. UTF-32: THE ONE WITH NO SURROGATES, AND ALMOST NO USERS
+------------------------------------------------------------------------
+     utf_8       5 bytes   41 f0 9f 98 80
+     utf_16_be   6 bytes   00 41 d8 3d de 00
+     utf_32_be   8 bytes   00 00 00 41 00 01 f6 00
+
+   In UTF-32 every character is one unit — len(s) == 2 matches the unit
+   count exactly, and there is no pair to split. It costs four bytes for
+   an 'A' and carries a byte order, which is why it is a fine in-memory
+   representation and almost never a file.
