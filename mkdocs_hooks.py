@@ -59,6 +59,7 @@ LABEL_OVERRIDES: dict[str, str] = {
     "bom_in_a_csv": "A BOM in a CSV",
     "crlf_vs_lf": "CRLF vs LF",
     "sap_code_pages": "SAP code pages",
+    "writing_a_code_point": "Writing a code point",
     "pcre2": "PCRE2",
     # 12_Adversarial: the folder names say what the page is ABOUT (and are
     # permanent URLs); the H1s say what it CLAIMS, which is what belongs in a
@@ -112,6 +113,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "the_nul_byte",
         "code_pages",
         "unicode_code_points",
+        "writing_a_code_point",
         "the_table_has_a_version",
         "preparing_a_string",
         "a_code_point_is_not_a_character",
