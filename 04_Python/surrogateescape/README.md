@@ -417,7 +417,7 @@ Four lines, no error. Anything that parses JSON and then builds a path can write
 
 ## See also
 
-- [Encode, decode and errors](../encode_decode_and_errors/README.md) — the five `errors=` policies side by side; this page is the one of them that is reversible
+- [Encode, decode and errors](../encode_decode_and_errors/README.md) — all eight `errors=` policies in both directions; this page is the one of them that is reversible
 - [Validation is a boundary](../../03_Encodings/validation_is_a_boundary/README.md) — where the UTF-8 check runs, and the same four handlers on the same bad byte
 - [UTF-16 and surrogates](../../03_Encodings/utf16_and_surrogates/README.md) — what the `D800–DFFF` range is reserved *for*
 - [`find`, and filenames that are bytes](../../11_Tools/find/README.md) — the filesystem half, measured: APFS refuses invalid UTF-8, Linux takes any bytes

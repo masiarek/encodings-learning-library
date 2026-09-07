@@ -1,0 +1,208 @@
+1. TWO ARGUMENTS, AND THE SECOND ONE HAS A DEFAULT
+------------------------------------------------------------------------
+     bytes.decode(encoding, errors='strict')
+     str.encode(encoding, errors='strict')
+
+   The first names a table. The second names what to do when the table
+   has no answer. Leaving it out is not neutrality -- it is a choice,
+   and the choice is to raise:
+
+     .decode('utf-8') and .decode('utf-8','strict') raise the
+     same exception with the same message:  True
+
+2. THE EXCEPTION IS A REPORT, NOT A COMPLAINT
+------------------------------------------------------------------------
+     'utf-8' codec can't decode byte 0xe9 in position 3: invalid continuation byte
+
+   Every clause of that sentence is an attribute you can read:
+
+     .encoding  'utf-8'                        the table that was asked
+     .object    b'caf\xe9 au lait'             the whole input, not just the bad part
+     .start     3                              the offset where it went wrong
+     .end       4                              and where the trouble stops
+     .reason    'invalid continuation byte'    which rule was broken
+
+     .object[.start:.end]  ->  b'\xe9'
+
+   So a handler for this does not have to guess. And the class is
+   a ValueError, which is what a bare `except ValueError` catches:
+
+     UnicodeDecodeError -> UnicodeError -> ValueError -> Exception
+
+   Encoding fails the same way, with a different reason:
+
+     'latin-1' codec can't encode character '\u20ac' in position 3: ordinal not in range(256)
+     .reason is 'ordinal not in range(256)' -- Latin-1 has 256 slots and no more,
+     and this character's number is 8364.
+
+3. THE HANDLERS, BOTH DIRECTIONS
+------------------------------------------------------------------------
+   Python registers eight by name. They are not interchangeable and
+   they are not symmetrical -- two of them do not work on decode at
+   all, and refuse with a TypeError rather than a UnicodeError:
+
+     handler            decode utf-8 of          encode latin-1 of
+                        b'caf\xe9 au lait'       '10 \u20ac'
+     ------------------------------------------------------------------
+     strict             ! UnicodeDecodeError     ! UnicodeEncodeError
+     ignore             'caf au lait'            b'10 '
+     replace            'caf\ufffd au lait'      b'10 ?'
+     backslashreplace   'caf\\xe9 au lait'       b'10 \\u20ac'
+     xmlcharrefreplace  ! TypeError              b'10 &#8364;'
+     namereplace        ! TypeError              b'10 \\N{EURO SIGN}'
+     surrogateescape    'caf\udce9 au lait'      ! UnicodeEncodeError
+     surrogatepass      ! UnicodeDecodeError     ! UnicodeEncodeError
+
+   Three things to read off it. `xmlcharrefreplace` and `namereplace`
+   are ENCODE-ONLY: there is no sensible XML entity for a byte that is
+   not a character. `surrogatepass` fails BOTH columns here, because
+   it handles surrogate code points and neither of these inputs has
+   one -- it is not a general-purpose escape. And `surrogateescape`
+   works on the left and raises on the right, which is correct: it
+   only re-encodes the surrogates it made.
+
+4. `replace` MEANS TWO DIFFERENT CHARACTERS
+------------------------------------------------------------------------
+     decoding    'caf\ufffd au lait'
+     encoding    b'10 ?'
+
+   U+FFFD REPLACEMENT CHARACTER on the way in; the ASCII question
+   mark, 0x3F, on the way out. One policy name, two markers, and only
+   one of them is rare enough in real text to grep for.
+
+5. EVERY MARKER IS FORGEABLE
+------------------------------------------------------------------------
+   This is the finding that decides which policy to use, and it is
+   easy to miss because each handler looks like it leaves a trace.
+   For each of the three lossy ones, here is an input containing NO
+   bad bytes at all that decodes to the identical string:
+
+     replace
+       b'caf\xe9'             -> 'caf\ufffd'     (four bytes, one bad)
+       b'caf\xef\xbf\xbd'     -> 'caf\ufffd'     identical: True
+       the second input is a real U+FFFD, which is a normal character
+     backslashreplace
+       b'caf\xe9'             -> 'caf\\xe9'      (four bytes, one bad)
+       b'caf\\xe9'            -> 'caf\\xe9'      identical: True
+       the second input is the four ASCII characters \ x e 9
+     ignore
+       b'caf\xe9'             -> 'caf'           (four bytes, one bad)
+       b'caf'                 -> 'caf'           identical: True
+       the second input is a file that simply says 'caf'
+
+   So none of the three can be undone, and none of them can even be
+   DETECTED after the fact: a U+FFFD in your database might be a byte
+   somebody lost, or it might be what the user typed. The marker is
+   not a record of damage, it is a character.
+
+6. THE ONE THAT IS REVERSIBLE
+------------------------------------------------------------------------
+     decode surrogateescape   'caf\udce9 au lait'
+     encode it back           b'caf\xe9 au lait'
+     byte-identical to input  True
+
+   That is a whole page of its own -- how it works, where it leaks,
+   and the byte it lets a JSON document write into a filename.
+
+7. HOW MUCH DID EACH ONE COST
+------------------------------------------------------------------------
+     input: b'caf\xe9 au lait, \xffour euros'  (24 bytes, two bad ones)
+
+     handler            chars  U+FFFD   reversible  can you tell?
+     ------------------------------------------------------------
+     ignore             22     0        False       no
+     replace            24     2        False       only by guessing
+     backslashreplace   30     0        False       only by guessing
+     surrogateescape    24     0        True        yes
+
+   `ignore` is the row to look at. The string got SHORTER and there
+   is nothing in it, or in any return value, that says so. That is
+   why it is the one policy this library tells you never to use: it
+   is not 'be lenient', it is 'delete evidence and report success'.
+
+8. HOW MANY U+FFFD IS ALSO A DECISION
+------------------------------------------------------------------------
+   `replace` does not write one marker per bad byte. It writes one
+   per maximal subpart -- the longest prefix that could still have
+   become a valid sequence:
+
+     bytes                    bytes in   U+FFFD out
+     b'\xe9'                  1          1
+     b'\xf0\x9f'              2          1
+     b'\xf0\x9f\x98'          3          1
+     b'\xff\xff\xff'          3          3
+     b'\xed\xa0\x80'          3          3
+
+   Two bytes of a truncated emoji are ONE marker: they are still a
+   plausible beginning. Three bytes of 0xFF are three, because none
+   of them could start anything. And the last row is the subtle one --
+   0xED IS a legal lead byte, but only in front of 0x80..0x9F, so
+   0xED 0xA0 is rejected at the SECOND byte and the maximal subpart
+   is just 0xED. That is the surrogate range being excluded, one
+   byte earlier than the arithmetic alone would suggest.
+
+9. A POLICY YOU WRITE YOURSELF
+------------------------------------------------------------------------
+   The eight names are just registered functions. A handler takes the
+   exception and returns (replacement, where to resume) -- so the
+   policy nobody ships, 'replace it AND tell me where', is four lines:
+
+     text     'caf\ufffd au lait, \ufffdour euros'
+     log      [(3, b'\xe9'), (14, b'\xff')]
+
+   Now the U+FFFD is not the only record, so section 5's ambiguity is
+   gone: the offsets and the original bytes are beside it.
+
+10. THE FIRST ARGUMENT IS A NAME, AND NAMES HAVE ALIASES
+------------------------------------------------------------------------
+   Six spellings of one codec, resolved through the registry:
+
+     latin-1      -> iso8859-1
+     latin1       -> iso8859-1
+     iso-8859-1   -> iso8859-1
+     iso8859_1    -> iso8859-1
+     L1           -> iso8859-1
+     cp819        -> iso8859-1
+
+   Note the canonical name is not any of the ones people type.
+   Whether two spellings are the same codec is a question for
+   codecs.lookup(), never for the eye.
+
+   And the pair that looks like an alias and is not:
+
+     bytes where cp1252 and latin-1 disagree:  32 of 256
+     the range:  0x80..0x9F
+     0x80 is '\u20ac' in cp1252 and '\x80' in latin-1
+
+   Those 32 are the C1 control block, which Windows reused for the
+   euro sign and the smart quotes. A file decoded with the wrong one
+   of this pair is correct for 224 bytes out of 256.
+
+11. NOT EVERY CODEC IS A TEXT CODEC
+------------------------------------------------------------------------
+   The registry also holds transforms that are bytes-to-bytes or
+   str-to-str. .encode()/.decode() refuse them, by name, with a
+   message that tells you the right door:
+
+     b'abc'.decode('base64_codec')
+       'base64_codec' is not a text encoding; use
+         codecs.decode() to handle arbitrary codecs
+     'abc'.encode('rot13')
+       'rot13' is not a text encoding; use codecs.encode() to
+         handle arbitrary codecs
+
+     codecs.encode('abc','rot13')           'nop'
+     codecs.decode(b'YWJj','base64_codec')  b'abc'
+
+12. THREE SPELLINGS, ONE OPERATION
+------------------------------------------------------------------------
+     good.decode('utf-8')               'caf\xe9'
+     str(good, 'utf-8')                 'caf\xe9'
+     codecs.decode(good, 'utf-8')       'caf\xe9'
+
+     all three equal:  True
+
+   Prefer the method. `str(b, enc)` exists for symmetry with the other
+   constructors and reads as a cast rather than as a decision; and
+   `str(b)` with NO encoding does not decode at all -- it gives you
+   the repr, "b'caf\\xc3\\xa9'", which is a bug that runs.

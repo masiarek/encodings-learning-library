@@ -7,7 +7,7 @@ Python draws the text/bytes line as a type boundary and refuses to cross it sile
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|
 | 1 | [`str` vs `bytes`](str_vs_bytes/README.md) | Which is which, and why will Python not concatenate them? | stub |
-| 2 | [Encode, decode and errors](encode_decode_and_errors/README.md) | What do the five `errors=` policies each throw away? | stub |
+| 2 | [Encode, decode and errors](encode_decode_and_errors/README.md) | What do the eight `errors=` policies each throw away, and which one can be undone? | written, 2026-09-07 |
 | 3 | [Bytes that are not text](surrogateescape/README.md) | How does `os.listdir()` hand me a filename that is not UTF-8, and hand it back unchanged? | written, 2026-09-07 |
 | 4 | [Opening a file](opening_a_file/README.md) | Why is `open(path)` a bet, and what is the portable call? | stub |
 | 5 | [Normalization](normalization/README.md) | Why can `'é' == 'é'` be `False`, and what do I run before comparing? | written, 2026-09-06 |
