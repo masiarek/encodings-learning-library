@@ -1,0 +1,51 @@
+A  U+0041
+   name        LATIN CAPITAL LETTER A
+   block       Basic Latin (ASCII), house 65
+   plane       0  (BMP)
+   utf-8       41           1 byte(s)
+   utf-16      41 00        2 byte(s)
+
+é  U+00E9
+   name        LATIN SMALL LETTER E WITH ACUTE
+   block       Latin-1 Supplement, house 105
+   plane       0  (BMP)
+   utf-8       c3 a9        2 byte(s)
+   utf-16      e9 00        2 byte(s)
+
+ż  U+017C
+   name        LATIN SMALL LETTER Z WITH DOT ABOVE
+   block       Latin Extended-A, house 124
+   plane       0  (BMP)
+   utf-8       c5 bc        2 byte(s)
+   utf-16      7c 01        2 byte(s)
+
+中  U+4E2D
+   name        CJK UNIFIED IDEOGRAPH-4E2D
+   block       CJK Unified Ideographs, house 45
+   plane       0  (BMP)
+   utf-8       e4 b8 ad     3 byte(s)
+   utf-16      2d 4e        2 byte(s)
+
+😀  U+1F600
+   name        GRINNING FACE
+   block       Emoticons, house 0
+   plane       1  (astral -- above U+FFFF)
+   utf-8       f0 9f 98 80  4 byte(s)
+   utf-16      3d d8 00 de  4 byte(s)  -- a SURROGATE PAIR, two code units
+
+Three things the addresses tell you before any arithmetic.
+
+The number IS the character's identity, and the hex is only how it is
+written down: U+0041 and 65 are the same fact. The four digits are a
+convention, not a width -- U+1F600 needs five and is not a bigger KIND
+of thing, just a house further along.
+
+The block is the useful half of the address. Latin-1 Supplement holds
+the accented letters of western Europe because it inherited a code
+page's layout; CJK Unified Ideographs is 20,000 houses on one street.
+Knowing the street tells you what a neighbour probably is.
+
+And the cost is not the same question as the address. One character is
+1 to 4 bytes in UTF-8 and 2 or 4 in UTF-16, so 'how long is this text'
+has a different answer per encoding -- and U+1F600 is the case where
+UTF-16 needs two code units, which is where surrogates come from.

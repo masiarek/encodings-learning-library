@@ -1,0 +1,26 @@
+FOUR SPELLINGS OF ONE CHARACTER
+   "\xe9"                                   -> 'é'  U+00E9   a BYTE value, extended to a code point
+   "\u00e9"                                 -> 'é'  U+00E9   a 16-bit code unit
+   "\U000000e9"                             -> 'é'  U+00E9   a full 32-bit scalar value
+   "\N{LATIN SMALL LETTER E WITH ACUTE}"    -> 'é'  U+00E9   a NAME, looked up in the table
+   all four equal? True
+
+NOW U+1F600, WHICH IS ABOVE U+FFFF
+   "\U0001F600"  -> '😀'  works: \U takes a scalar value
+   "\u1F600"      ->  NOT that character: \u reads exactly four
+                     digits, so it is U+1F60 then the digit 0 -> 'ὠ0'
+
+That four-digit limit is the whole lesson. \u is a UTF-16 CODE UNIT
+escape, and a code unit is 16 bits, so it cannot name anything above
+U+FFFF on its own. Java and JSON have only that form, which is why a
+JSON emoji is written as a SURROGATE PAIR:
+   \uD83D\uDE00   -- two escapes, one character, and neither half is a character
+
+So the escape a language gives you is a statement about what it thinks
+a character IS:
+   Rust   \u{1F600}   a scalar value, any width, braces so it can be
+   Python \U0001F600  a scalar value, fixed 8 digits -- plus \N{...},
+                      the only form that names rather than numbers
+   Java   \uD83D\uDE00  two UTF-16 code units, because that is its str
+   C      none of the above -- \x is bytes, and what those bytes MEAN
+          is the compiler's execution charset, not a string feature

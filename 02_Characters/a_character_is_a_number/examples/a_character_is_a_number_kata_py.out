@@ -1,0 +1,28 @@
+1. ord('7') - ord('0')
+   55 - 48 = 7
+   The digits are ten consecutive codes starting at 0x30, so subtracting
+   the first one turns a digit into its value. It is not a conversion
+   routine; it is a subtraction that happens to be right.
+
+2. x ^ 0x20 ON A LETTER
+   'A' 0x41 01000001  ^0x20 -> 'a'
+   'a' 0x61 01100001  ^0x20 -> 'A'
+   Upper and lower differ in exactly ONE bit, because 0x41 and 0x61 are
+   0x20 apart and the alphabet is contiguous in both runs. So case is a
+   bit flip, both directions, with one operator and no table.
+
+3. WHERE EACH ONE STOPS
+   '9'                    ord-0x30 gives 7      int() gives 7
+   full-width '７'         ord-0x30 gives 65255  int() gives 7
+   Arabic-Indic '٧'       ord-0x30 gives 1591   int() gives 7
+   Two of those three are digits by Unicode's own definition -- int()
+   accepts them and str.isdigit() is True -- and the subtraction gives a
+   number in the thousands, because they are nowhere near 0x30.
+
+   And the case trick:
+   'é' 0x00e9  ^0x20 -> 'É'   upper() -> 'É'
+   'ż' 0x017c  ^0x20 -> 'Ŝ'   upper() -> 'Ż'
+   The XOR gives a different letter, not a case change. Beyond 0x7F
+   nothing guarantees the two cases are 0x20 apart, or adjacent, or even
+   the same length -- 'sz' uppercases to two characters.
+   len('ß'.upper()) == 2

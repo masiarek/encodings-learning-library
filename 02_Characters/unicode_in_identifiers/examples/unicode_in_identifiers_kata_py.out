@@ -1,0 +1,28 @@
+source text:  \ufb01le = 2        (the name starts with the ligature fi)
+then `file` -- typed with an ordinary f and i -- reads back as 2
+and the two spellings are different STRINGS: False
+One assignment, one variable, two ways of typing its name.
+
+written  NFKC     identifier?  code points
+file     file     True         0066 0069 006C 0065
+ﬁle      file     True         FB01 006C 0065
+ﬀile     ffile    True         FB00 0069 006C 0065
+ｆile     file     True         FF46 0069 006C 0065
+𝐟ile     file     True         1D41F 0069 006C 0065
+
+   all of ['file', 'ﬁle', 'ｆile', '𝐟ile'] are the identifier 'file'
+
+Python normalizes identifiers to NFKC before binding -- PEP 3131, and it
+is not optional. So five different pieces of source text are one name,
+and nothing warns you: no error, no lint, no visible difference at the
+point of use. A diff shows two lines that look identical.
+
+Rust made the other choice. Identifiers are XID with NFC applied and
+mixed-script confusables are a WARNING, so the compiler preserves what
+you wrote and tells you when two names could be confused. Neither
+choice is wrong; they answer different questions.
+
+It is IDNA2003 against IDNA2008 one floor down -- map-and-fold so that
+two spellings cannot both exist, versus preserve-and-refuse so that
+nothing is silently changed. Domain names had this argument first, and
+had to redesign twice; here it decides what your program is written in.

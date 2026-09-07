@@ -1,0 +1,26 @@
+the two letters   'а' and 'a'
+code points       U+0430 and U+0061
+names             CYRILLIC SMALL LETTER A
+                  LATIN SMALL LETTER A
+utf-8 bytes       d0b0 and 61
+
+FIVE CHECKS
+   a == b           False
+   NFC equal        False
+   NFKC equal       False
+   casefold equal   False
+   same script      False
+
+Every one of them says False, and only the last one says it for the
+right reason. The first four are asking 'are these two spellings of one
+character?' -- and the honest answer is no, so they cannot help. These
+are two DIFFERENT characters that history drew the same way, and
+normalization exists to merge spellings, not to merge letters.
+
+What does work is a rule about the whole string:
+   'paуpal'     scripts ['CYRILLIC', 'LATIN']  MIXED -- refuse it
+   'paypal'     scripts ['LATIN']  single script
+
+That is the check: not 'is this character suspicious' but 'does this
+identifier mix scripts'. One letter is never wrong on its own -- Cyrillic
+a is the right letter in a Cyrillic word.

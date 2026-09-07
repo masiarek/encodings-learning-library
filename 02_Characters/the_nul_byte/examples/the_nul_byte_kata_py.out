@@ -1,0 +1,28 @@
+the string     'a\x00b'   len 3
+utf-8          610062   three bytes
+round trip     True   -- valid UTF-8, in and out
+
+FIVE DOORS
+   str.encode('utf-8')        accepted
+   int('1\x002')              ValueError -- refused
+   open(name)                 ValueError -- refused
+   re.compile                 accepted
+   'a\x00b'.split()           accepted
+
+The encoder does not care -- U+0000 is assigned, and its UTF-8 form is
+the single byte 00, which every validator accepts because there is
+nothing invalid about it. Python's own str carries it without comment.
+
+The refusals are all at BOUNDARIES, and every one of them is refusing on
+behalf of something else: a filename crosses into a C API where 00 ends
+the string, so Python raises rather than silently truncating -- which is
+the good behaviour and the reason you meet a ValueError instead of a
+file called 'a'.
+
+WHY IT IS ALSO THE SEPARATOR YOU CAN TRUST
+   ['one two', 'three\nfour', "five'six"]
+   joined with NUL, split back: ['one two', 'three\nfour', "five'six"]
+   Every other separator can occur inside a filename -- space, newline,
+   quote, tab. NUL cannot, because the kernel's own API cannot express
+   it. That is exactly why find -print0 and xargs -0 exist: the one byte
+   that is guaranteed absent from the data is the one safe delimiter.

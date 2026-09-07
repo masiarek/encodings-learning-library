@@ -1,0 +1,30 @@
+plain    'Attack at dawn, żółw!'
+rot13    'Nggnpx ng qnja, żółj!'
+rot13^2  'Attack at dawn, żółw!'   -- back to the start
+
+Applying it twice returns the input, because 13 + 13 = 26 and the
+alphabet is 26 long. That is not a property of encryption, it is a
+property of half. The shift is in the name, so the keyspace has one
+element and there is nothing to guess.
+
+THE LETTERS IT LEFT ALONE -- and the one it did not
+   'w' U+0077  -> 'j'   ASCII, so it rotates like any other letter
+   'ż' U+017C  unchanged -- outside a..z and A..Z
+   'ó' U+00F3  unchanged -- outside a..z and A..Z
+   'ł' U+0142  unchanged -- outside a..z and A..Z
+
+The two things that make rot13 feel elegant are facts about ASCII's
+layout, not about rotation:
+  * it is ONE SUM, because the 26 letters are contiguous. In a table
+    where they are not, the same idea needs a lookup.
+  * the byte count never moves, because every ASCII letter is one byte
+    and stays one byte.
+
+Rotate past ASCII and you lose both. Add 13 to the code point instead:
+   'ż' + 13 = 'Ɖ'   2 byte(s) -> 2
+   'ó' + 13 = 'Ā'   2 byte(s) -> 2
+   'ł' + 13 = 'ŏ'   2 byte(s) -> 2
+   Not letters, not a rotation, and nothing came back round -- because
+   there is no 26-long run to come round in.
+
+Python's own codec agrees on the ASCII part: 'Nggnpx'

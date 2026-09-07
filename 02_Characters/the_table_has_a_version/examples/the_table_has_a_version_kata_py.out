@@ -1,0 +1,36 @@
+CLAIMS THAT NEED NO VERSION
+   ud.name('A')           LATIN CAPITAL LETTER A       assigned in 1991 and never touched
+   ud.category('A')       Lu                           a letter, uppercase -- settled
+   'ß'.upper()            SS                           a case mapping fixed long ago
+   len('😀'.encode())      4                            UTF-8's rules, not the table's
+
+   Assignment is a one-way door: once a code point has a name and a
+   category, the consortium does not reassign it. So a claim about a
+   character that already existed when your Python was built is a claim
+   about Unicode, and it will read the same in five years.
+
+CLAIMS THAT DO NOT SURVIVE WITHOUT ONE
+   unicodedata.unidata_version            the whole question -- and it is a property of the LIBRARY, not the machine
+   how many code points are assigned      grows every release; ~5,000 were added in one recent year
+   ud.name(chr(0x1FA00 + n))              raises for a character not yet in YOUR table, and returns a name in a newer one
+   whether a string 'is emoji'            the emoji list is versioned separately from Unicode itself
+   str.isprintable() on a recent char     depends on a category your table may not have yet
+
+THE PART THAT SURPRISES PEOPLE
+   There is no 'the' Unicode version on a computer. Every language ships
+   its OWN copy of the table: Python's is in unicodedata, Rust's is
+   compiled into core, your database has another, and your browser a
+   fourth. They are updated on different schedules by different people,
+   so two programs on one machine can disagree about whether a character
+   exists -- and neither is out of date, exactly. They were built at
+   different times.
+
+   That is why the version belongs in the bug report next to the output,
+   and why 'it works on my machine' has one more meaning here than it
+   does anywhere else.
+
+HOW TO ASK EACH ONE, WHEN YOU NEED THE STAMP
+   python3 -c 'import unicodedata; print(unicodedata.unidata_version)'
+   rustc         -- see char::UNICODE_VERSION in core
+   psql          -- SELECT icu_unicode_version();
+   node          -- process.versions.unicode

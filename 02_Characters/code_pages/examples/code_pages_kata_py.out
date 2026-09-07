@@ -1,0 +1,31 @@
+byte 0x41
+   cp1252     U+0041   'A'
+   latin-1    U+0041   'A'
+   cp1250     U+0041   'A'
+   mac-roman  U+0041   'A'
+
+byte 0xe9
+   cp1252     U+00E9   'é'
+   latin-1    U+00E9   'é'
+   cp1250     U+00E9   'é'
+   mac-roman  U+00C8   'È'
+
+byte 0x80
+   cp1252     U+20AC   '€'
+   latin-1    U+0080   (a control, nothing drawn)
+   cp1250     U+20AC   '€'
+   mac-roman  U+00C4   'Ä'
+
+0x41 is A in all four, and in every code page there has ever been: the
+first 128 are ASCII by agreement and that is the only thing they share.
+
+0xE9 is e-acute in three of the four and a different letter in the
+fourth. That is the dangerous shape -- not a refusal, not a mess, just a
+plausible wrong letter, which is why the wrong table reads like a typo
+rather than like a bug.
+
+0x80 is the one that settles the 'is cp1252 a superset of Latin-1'
+question, and the answer is NO. In cp1252 it is the euro sign; in
+Latin-1 it is a C1 control character with nothing to draw. cp1252
+REPLACED Latin-1's top control block, so the two tables disagree about
+32 positions rather than one extending the other.

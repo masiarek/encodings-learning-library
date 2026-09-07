@@ -1,0 +1,25 @@
+the string   'a\tb\r\nc\rd\ne\x0bf'
+len          12   characters, every control included
+
+S.split('\n')       -> ['a\tb\r', 'c\rd', 'e\x0bf']
+S.splitlines()      -> ['a\tb', 'c', 'd', 'e', 'f']
+len(splitlines())   -> 5
+
+split('\n') cuts on ONE byte and gives 3 pieces. splitlines() cuts on
+36 + 1 different things -- CR, LF, CRLF as one, plus VT, FF, the
+three file separators, NEL, and Unicode's own LINE and PARAGRAPH
+SEPARATOR -- and gives more. Same string, two correct answers, and the
+difference is a parser differential inside one language.
+
+THE FOUR CONTROLS THE PAGE IS ABOUT
+   \t     U+0009  moves to the next tab stop -- a layout instruction, not spaces
+   \n     U+000A  ends a line on Unix; one byte, 0x0a
+   \r     U+000D  returns the carriage; on a terminal the NEXT text overwrites this line
+   \x00   U+0000  ends a C string -- see below
+
+AND THE NUL
+   'a\x00b'   Python len = 3
+   utf-8 bytes = 610062   -- three bytes, perfectly valid
+   C strlen would say 1. The byte is not removed and not rejected; the
+   next layer simply stops reading there, which is why text that crosses
+   into C comes back shorter with nothing raised anywhere.
