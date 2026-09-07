@@ -199,3 +199,21 @@ The second is `--committed`, which extracts `git archive HEAD` into a temporary 
 And `--staged`, which is the one to run in the *minute before* you commit. `--committed` archives HEAD, so it cannot see the index at all — it is green and says nothing about the commit you are about to make. `--staged` writes the index out with `git write-tree` (which reads the index and moves no ref, so it is safe while others are working) and gates that tree. In a checkout several sessions share, that gap is where the damage happens: `git add` on a shared file takes a colleague's in-flight lines with it, and the resulting tree can fail a gate that both your working directory and HEAD pass. Observed twice on 2026-09-07 — once against the author of the gate that caught it.
 
 `python3 tools/check_all.py --selftest` proves the runner still reports a failure, in the same spirit as `check_decomposed_literals.py --selftest`.
+
+## Before you push
+
+**`git push origin master` resolves the branch at PUSH time, not at commit time.** In a checkout several sessions commit into, that is a time-of-check/time-of-use race: a colleague committing in the window between your `git commit` and your `git push` moves the local `master` your push is about to read, so you send their commit along with yours — a commit you have not read and whose gates you have not run. `HEAD:master` has exactly the same problem, and so does a guard, because a guard checks a state the push then re-reads.
+
+Observed 2026-09-07, and the guard is the instructive part. A session committed `d511962`, guarded the push with `[ "$(git rev-parse origin/master)" = "$(git rev-parse HEAD~1)" ]` — which passed, correctly, for the commit it had just made — and then ran `git push origin HEAD:master`. Another session had committed `186de1f` onto the shared `master` eight seconds earlier. Both went. The push output read `73b3ceb..186de1f`, naming a SHA that session had never seen, and the two commits then had to be disentangled across three sessions' messages because the shipped work looked like the pusher's.
+
+**Push the literal commit you verified:**
+
+```bash
+sha=$(git rev-parse HEAD); git push origin "$sha:master"
+```
+
+That refspec names one commit rather than a branch to be re-read, so nothing made after it can ride along. Verified: pushing an *older* SHA is rejected as `non-fast-forward` rather than quietly sending whatever `master` now points at, which is the proof the refspec is not resolved a second time.
+
+**And do not use `git push -q`.** The ref-update range it suppresses — `73b3ceb..186de1f` — is the only thing that tells you a SHA you did not create just went out under your name. Read it, and if it does not start at the commit you expected, work out what you shipped before doing anything else.
+
+Afterwards, `check_all.py --committed` gates whatever actually landed rather than what you meant to send, which is the backstop for all of this.
