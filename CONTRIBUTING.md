@@ -36,7 +36,7 @@ Open with the title, then two lines that let a reader decide in five seconds whe
 
 `**Level:**` is `101` / `201` / `301` / `reference`, then `·`, then who it is for. The one-line summary states the *claim*, not the topic — "hex is bits four at a time" is a one-liner; "an introduction to hexadecimal" is a table-of-contents entry.
 
-Then, in this order: the mechanism in prose, the generated blocks per language (`## In Python`, `## In the terminal`, `## In Rust`), the bridge, `## Try it`, `## See also`.
+Then, in this order: the mechanism in prose, the generated blocks per language (`## In Python`, `## In the terminal`, `## In Rust`), the bridge, `## Try it`, `## Practice` if the page has a kata, `## See also`.
 
 Do not hard-wrap paragraphs. Write each paragraph as one long line and let the editor soft-wrap; Markdown collapses single newlines anyway.
 
@@ -159,6 +159,38 @@ format(65, '08b')   # '01000001'
 Every lesson has a section **If you are coming from Python or ABAP**. Those are the two languages this library's reader already thinks in, and a bridge to a language you already speak is the fastest teaching on the page — take the words it needs. Say what transfers *and* what the new language enforces that the old one left to habit; a bridge that hides a real difference costs more than it saves.
 
 The ABAP half is prose. CI cannot run ABAP, so every page says so in the bridge: *(Not machine-checked — CI cannot run ABAP.)* Keep ABAP claims to things you would bet on — type widths, `xstring` vs `string`, the `cl_abap_codepage` and `cl_abap_char_utilities` names — and never quote an SAP code-page number without saying it should be verified against the system.
+
+## Try it, and Practice
+
+**`## Try it` closes a lesson.** Three to five numbered prompts, each one something the reader runs against *their own* files — the CSV that came out wrong, the filename `find` cannot see, a script they already have. 68 of the library's 71 finished lesson pages end with one; the three that do not are a survey ([`worth_installing`](11_Tools/worth_installing/README.md)), a resource page ([`anki`](14_Resources/anki/README.md)), and a page that is already an exercise end to end ([`tribit`](08_Build_Your_Own/tribit/README.md)). Treat it as required unless your page is one of those shapes.
+
+**`## Practice` is optional, and it is a different thing.** It holds a **kata**: predict the answer, then run it, then check. It goes after `## Try it` and before `## See also`.
+
+The test for which section a prompt belongs in is whether **you can print the answer**:
+
+- *"Run `file` on the worst CSV you have, then `head -c 3 | xxd`"* has no answer — the answer is on the reader's disk. `## Try it`.
+- *"Write down the hex of these six writes before you run any of them"* has exactly one answer, and it is the same on every machine. `## Practice`.
+
+Both failure modes are quiet. A kata with no checkable answer is a chore the reader abandons; a *Try it* with an answer printed under it is a claim about a file nobody here has seen.
+
+**Fold the answer, and put `markdown="1"` on the tag:**
+
+```markdown
+<details markdown="1">
+<summary><strong>Answers</strong></summary>
+
+**The six writes.** `68 65 6c 6c 6f` is `hello` …
+
+</details>
+```
+
+That attribute is load-bearing and its absence is invisible from the author's chair. `md_in_html` is enabled, so **without** `markdown="1"` the body ships as literal Markdown — asterisks and backticks drawn on the published page — while GitHub renders the same block correctly either way and `mkdocs build --strict` passes, because it is not a link error. Measured 2026-09-07: the library's first kata shipped exactly like that, and the only surface showing the bug was the site. Do not reach for a `???` Material admonition instead; that one prints as literal text on GitHub, which is the mirror of the same problem.
+
+**An answer has to have been run**, like every other claim here. Where it is a program's output, prefer a generated block over typing it — an `examples/<stem>_kata_sh.sh` beside the lesson's own example, pasted in with `<!-- output: -->` — so a solution cannot rot into one that no longer prints what the page says. The sibling [Rust library ↗](https://github.com/masiarek/rust-learning-library) requires this and gates it with a `check_katas.py`; here there is **one kata, no index and no gate**, so nothing checks that a folded answer is true. Until one of those exists, the discipline is yours, and the honest move on a kata whose answer you typed is to run it once more before you commit.
+
+**A kata lives on the page for the topic it teaches**, never in a folder of its own and never with a number in its heading. Folders are permanent URLs and a sequence is the thing that gets reordered — the same reasoning as [Nav order](#nav-order) below. If this library ever collects enough of them to need a reading sequence, it goes in a `KATAS.md` table, which costs nothing to reshuffle; at one kata it would be a file with a row in it.
+
+**A stub gets neither section.** It has no example behind it, so a *Try it* would point at nothing and a folded answer would be a guess with a disclosure triangle over it.
 
 ## The cast
 
