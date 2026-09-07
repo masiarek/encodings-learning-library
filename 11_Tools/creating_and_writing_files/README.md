@@ -204,8 +204,8 @@ EOF
 
 Then the second half, which is the one that catches people. `printf 'old\n' > f; ln f g; chmod 600 f`, and now empty `f` twice — once with `: >` and once with `install -m 644 /dev/null f`, restoring the setup in between. After each, report **three** things: the size of `g`, the mode of `f`, and whether a `tail -f f` you started beforehand is still following anything. Say which of the three you could have predicted from the inode number.
 
-<details>
-<summary>Answers</summary>
+<details markdown="1">
+<summary><strong>Answers</strong></summary>
 
 **The six writes.** `68 65 6c 6c 6f` is `hello`. `echo` → `68656c6c6f0a`; `printf hello` → `68656c6c6f` with no terminator; `printf 'hello\n'` → `68656c6c6f0a`, the same file `echo` made, which is the point — `echo` is `printf` with a newline glued on and an argument parser you did not ask for. The here-string → `68656c6c6f0a`: `<<<` supplies the newline too. The unquoted heredoc expands `$USER` and the quoted one does not, so those two files differ by however long your username is, and the second one contains a literal dollar sign — `24 55 53 45 52`.
 
