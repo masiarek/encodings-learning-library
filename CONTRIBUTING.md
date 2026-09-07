@@ -228,6 +228,8 @@ sha=$(git rev-parse HEAD); git push origin "$sha:master"
 
 That refspec names one commit rather than a branch to be re-read, so nothing made after it can ride along. Verified: pushing an *older* SHA is rejected as `non-fast-forward` rather than quietly sending whatever `master` now points at, which is the proof the refspec is not resolved a second time.
 
+**Reconstructing one of these afterwards: use parentage, not the clock.** `git rev-parse <sha>^` is the only authoritative answer to which of two commits landed first — `186de1f`'s parent being `d511962` is what settled the case above. If you do reach for a timestamp, ask for the **committer** date (`%cd`): `git log --date=…` prints the **author** date (`%ad`) by default, and that is the one that moves under `--amend` and rebase. Measured here on 2026-09-07: across 60 parent/child pairs there were **zero** committer-date inversions and exactly **one** author-date inversion — a rebased commit showing `author=09:29:52` against `committer=09:31:50`. So the clocks in this repo are not scrambled by concurrency, and a reader who goes looking for that will not find it; the single thing that misleads is `%ad` after history editing.
+
 **And do not use `git push -q`.** The ref-update range it suppresses — `73b3ceb..186de1f` — is the only thing that tells you a SHA you did not create just went out under your name. Read it, and if it does not start at the commit you expected, work out what you shipped before doing anything else.
 
 Afterwards, `check_all.py --committed` gates whatever actually landed rather than what you meant to send, which is the backstop for all of this.
