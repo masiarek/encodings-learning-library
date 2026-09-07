@@ -1,0 +1,1 @@
+usage: rg --pre pre_iconv_shim_sh.sh PATTERN .

@@ -75,15 +75,37 @@ $ PATH=<only rg> rg -z --debug ... 2>&1 | grep falling
   error spawning command '"gzip" "-d" "-c" "plain.txt.gz"': No such file or directory (os error 2) (falling back to uncompressed reader)
 ```
 
-`pre.sh` is five lines, and it is the whole of `--pre`:
+`pre.sh` above is this file, and it is the whole of `--pre`:
 
-```sh title="pre.sh — the preprocessor used above"
+<!-- source:pre_iconv_shim_sh -->
+*[`pre_iconv_shim_sh.sh`](examples/pre_iconv_shim_sh.sh) in full — pasted here by `tools/run_examples.py` from the file CI runs.*
+
+```bash
 #!/bin/sh
+# A ripgrep --pre preprocessor that lifts an ENCODING ceiling rather than a
+# format one: it hands rg a UTF-8 rendering of a UTF-32LE file, which is an
+# encoding rg's own -E flag has no name for and its BOM sniffer misreads.
+#
+#     rg --pre <this file> PATTERN .
+#
+# Same contract as any other preprocessor: rg runs it once per file searched,
+# passes the filename as $1, and reads this program's stdout instead of the
+# file. Anything that is not matched by the first branch is passed through
+# untouched, so every other file searches exactly as it would have.
+#
+# Dispatching on the NAME is the cheap choice and is what this page's session
+# measured. Dispatching on content -- `case $(file -b "$1") in ...` -- is the
+# honest one, and is what you want if the names cannot be trusted.
+#
+# Run with no arguments it explains itself, which is also how CI checks that
+# the copy printed on the page is the copy in this file.
 case "$1" in
-*u32*) exec iconv -f UTF-32LE -t UTF-8 "$1" ;;
-*)     exec cat "$1" ;;
+    "")     echo "usage: rg --pre $(basename "$0") PATTERN ." ;;
+    *u32*)  exec iconv -f UTF-32LE -t UTF-8 "$1" ;;
+    *)      exec cat "$1" ;;
 esac
 ```
+<!-- /source -->
 
 That one lifts an **encoding** ceiling: `iconv` reads a UTF-32 file that `rg -E` has no name for. The other job `--pre` does is to lift a **format** ceiling, and the shape is identical — same hook, same one-argument contract, a different command in the middle:
 
