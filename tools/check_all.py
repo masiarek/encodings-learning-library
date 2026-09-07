@@ -54,6 +54,7 @@ GATES: list[tuple[str, list[str]]] = [
     # CI does `uv sync --group docs` first; `uv run --group docs` is the same
     # resolution in one step, and it is what makes this work in the temporary
     # directory --committed extracts into, where no .venv exists yet.
+    ("nav chain", ["uv", "run", "--group", "docs", "python", "tools/check_nav_chain.py"]),
     ("mkdocs --strict", ["uv", "run", "--group", "docs", "mkdocs", "build", "--strict"]),
 ]
 

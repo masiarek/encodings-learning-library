@@ -143,16 +143,18 @@ A stub must not have an `<!-- output: -->` block — there is nothing to fill it
 
 Sidebar reading order lives in `NAV_ORDER` in `mkdocs_hooks.py`, keyed by folder path. **Never set order by renaming files to `01_`, `02_`** — a filename is a permanent URL. Unlisted pages sort alphabetically at the bottom, so adding a page needs no edit there; a new chapter does.
 
+**Reading order has two renderings, and only one of them is the sidebar.** The other is the prev/next arrows at the foot of every page, and they are computed at a different time: MkDocs sets `previous_page` / `next_page` inside `get_navigation()`, which runs **before** any hook, so a hook that only sorts `nav.items` fixes the sidebar and leaves the arrows in MkDocs' default alphabetical order. That is what happened here — for 13 chapters the published `11_Tools` page offered *"awk"* as the page after it while the sidebar said *"grep"* — and nothing caught it, because each half is internally consistent and the two are only comparable side by side. `on_nav` now re-chains the arrows after sorting, and `tools/check_nav_chain.py` asserts the two agree, walking the nav itself rather than reusing the hook's helper. If you change `on_nav`, run that gate; it fails loudly when the re-chain goes missing.
+
 ## Before you commit
 
 ```bash
-python3 tools/check_all.py              # all four gates, in CI's order
+python3 tools/check_all.py              # all five gates, in CI's order
 python3 tools/check_all.py --committed  # the same, against what CI will check out
 ```
 
-That runs the four commands CI runs — `run_examples.py --check`, `check_link_style.py`, `check_decomposed_literals.py` (with its `--selftest` first), and `uv run --group docs mkdocs build --strict` — and you can still run any of them alone. `--strict` fails on a broken internal link, which is the failure most likely to reach the published site unnoticed. The examples job also runs on macOS in CI; a shell example that passes here and fails there is a BSD/GNU difference, not a flake.
+That runs the five commands CI runs — `run_examples.py --check`, `check_link_style.py`, `check_decomposed_literals.py` (with its `--selftest` first), `check_nav_chain.py`, and `uv run --group docs mkdocs build --strict` — and you can still run any of them alone. `--strict` fails on a broken internal link, which is the failure most likely to reach the published site unnoticed. The examples job also runs on macOS in CI; a shell example that passes here and fails there is a BSD/GNU difference, not a flake.
 
-**Two reasons to use the runner rather than the four commands.**
+**Two reasons to use the runner rather than the five commands.**
 
 The first is that these gates print a line per example, so the natural way to run one by hand is to pipe it — and **a pipeline's exit status is the last command's**, so `run_examples.py --check | tail -1` reports success no matter what the gate said. A red gate then scrolls past under a green-looking summary line. `set -o pipefail` fixes it — in bash and in zsh — if you remember it every time. What does **not** fix it is the idiom most people reach for next: `${PIPESTATUS[0]}` is bash's spelling, and under zsh it expands to the empty string rather than erroring, so `echo "exit=${PIPESTATUS[0]}"` prints `exit=` and reads like a stumble instead of a wrong answer (zsh's own array is lowercase and 1-indexed, `${pipestatus[1]}`). That is the same failure one level down, so prefer `set -o pipefail` or a plain redirect over any array lookup — and `check_all.py` does not pipe at all: it keeps each status and prints a failing gate's output only when there is one.
 

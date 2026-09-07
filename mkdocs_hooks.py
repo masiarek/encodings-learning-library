@@ -113,6 +113,7 @@ NAV_ORDER: dict[str, list[str]] = {
     "02_Characters": [
         "README.md",
         "a_character_is_a_number",
+        "rotation_is_not_encryption",
         "control_characters",
         "the_nul_byte",
         "code_pages",
@@ -302,7 +303,47 @@ def _visit(items: list, path: str, depth: int) -> None:
         _visit(child.children, f"{path}/{name}".lstrip("/"), depth + 1)
 
 
+def _pages_in_nav_order(items: list) -> list:
+    """Every page under `items`, depth-first, in the order the sidebar shows."""
+    out = []
+    for item in items:
+        if item.is_page:
+            out.append(item)
+        elif item.is_section:
+            out.extend(_pages_in_nav_order(item.children))
+    return out
+
+
 def on_nav(nav, config, files):
-    """Relabel numbered chapters and apply NAV_ORDER, depth-first."""
+    """Relabel numbered chapters, apply NAV_ORDER, and re-chain prev/next."""
     _visit(nav.items, "", 0)
+
+    # Sorting nav.items fixes the sidebar and nothing else. MkDocs computes
+    # every page's previous_page/next_page inside get_navigation(), which runs
+    # BEFORE this hook -- so without the re-chain below, the arrows at the foot
+    # of a lesson walk the reader alphabetically while the sidebar beside them
+    # reads in order. That was live on all 13 chapters until 2026-09-07: the
+    # published 11_Tools/index.html said rel="next" -> awk where NAV_ORDER
+    # says grep. For a library with a reading order, the arrow IS the order.
+    #
+    # This repeats mkdocs.structure.nav._add_previous_and_next_links rather
+    # than calling it, because that function is private and this is four lines;
+    # a pin bump should not be able to break the nav silently.
+    ordered = _pages_in_nav_order(nav.items)
+    # If MkDocs ever grows a nav item type the walk above does not descend
+    # into, this is where it shows -- loudly, at build time, rather than as a
+    # handful of pages quietly dropping out of the prev/next chain.
+    # Compared by source path, not by identity: MkDocs' Page defines __eq__
+    # without __hash__, so a Page cannot go in a set.
+    walked = {page.file.src_uri for page in ordered}
+    known = {page.file.src_uri for page in nav.pages}
+    assert walked == known, (
+        "_pages_in_nav_order is out of step with mkdocs.structure.nav: "
+        f"missed {sorted(known - walked)}, invented {sorted(walked - known)}"
+    )
+    for i, page in enumerate(ordered):
+        page.previous_page = ordered[i - 1] if i else None
+        page.next_page = ordered[i + 1] if i + 1 < len(ordered) else None
+    nav.pages[:] = ordered
+
     return nav
