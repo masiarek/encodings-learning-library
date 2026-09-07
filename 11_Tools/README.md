@@ -45,7 +45,7 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 
 If you came looking for *the list* — every command you are likely to run over text, and what each one quietly decided before it printed — this is it. Nothing here needs installing on macOS or Ubuntu.
 
-**A bold tool has a page in this chapter and its last column was measured.** The rest name the tool and the question worth asking, which is the honest state of the evidence rather than a verdict — the three questions at the top of this page are how you settle one for yourself in about a minute.
+**A bold tool has a page in this chapter and its last column was measured.** A link that is *not* bold means the tool has no page of its own, so it goes to wherever this library does show it — a lesson in another chapter that runs it, or the page for the tool it is a flag of. And a name with **no link at all** has no page anywhere here: its last column links the *concept* instead, and names the question worth asking rather than a verdict, which is the honest state of the evidence. `rev` and `strings` are the two exceptions, [measured below](#two-of-the-unbolded-rows-measured). The three questions at the top of this page are how you settle one for yourself in about a minute.
 
 ### Search and match
 
@@ -55,7 +55,7 @@ If you came looking for *the list* — every command you are likely to run over 
 | **[`rg`](ripgrep/README.md)** | search, recursively, fast | never asks the locale; [reads the BOM](ripgrep/README.md) and otherwise searches raw bytes. `--column` counts **bytes** and says so |
 | **[`rg -P`](pcre2/README.md)** | the other regex engine | a second Unicode implementation with its own `\p{…}` and its own [silent failure](pcre2/README.md); absent from a Mac entirely |
 | **[`find`](find/README.md)** | walk a directory | filenames are **bytes**, and `-name` is a byte comparison — even where [the filesystem disagrees](find/README.md) |
-| `look`, `fgrep` | fixed-string search | `fgrep` is `grep -F`; the locale questions are grep's, unchanged |
+| `look`, [`fgrep`](grep/README.md) | fixed-string search | `fgrep` is `grep -F`; the locale questions are grep's, unchanged. `look` adds one of its own — it binary-searches a file its man page requires to be **sorted**, and [whose order that is](../07_Real_Data/sorting_and_collation/README.md) is a locale question |
 
 ### Slice, reshape, join
 
@@ -64,10 +64,10 @@ If you came looking for *the list* — every command you are likely to run over 
 | **[`cut`](cut/README.md)** | slice columns | `-b` is honest; `-c` means characters on one platform and bytes on the other |
 | **[`sed`](sed/README.md)** | edit with patterns | a **sequence**, not a byte set — which is why it repairs what `tr` breaks |
 | **[`awk`](awk/README.md)** | fields and arithmetic | three implementations, two of them called `awk`, and they do not agree; `substr()` is `cut -c` with no `-b` to escape to |
-| `head`, `tail` | first or last part | `-n` counts **newlines** and `-c` counts **bytes**; neither decodes, so neither can fail — but `-c` will cut a character in half |
-| `paste`, `join`, `comm` | put files side by side, or match them up | delimiters and field boundaries are bytes; `join` and `comm` additionally require both inputs sorted **in the same collation** as they compare, which is a locale question |
-| `split`, `csplit` | cut a file into pieces | `split -b` is bytes and will land mid-character; `-l` is lines and will not |
-| `rev` | reverse each line | the **locale** decides whether it reverses characters or bytes — and reversing bytes takes a multi-byte character apart. Measured below |
+| [`head`](../07_Real_Data/bom_in_a_csv/README.md), [`tail`](../06_Terminal/trailing_newline/README.md) | first or last part | `-n` counts **newlines** and `-c` counts **bytes**; neither decodes, so neither can fail — but `-c` will cut a character in half |
+| `paste`, `join`, `comm` | put files side by side, or match them up | delimiters and field boundaries are bytes; [`join` and `comm`](tr_and_sort/README.md) additionally require both inputs sorted **in the same collation** as they compare, which is [a locale question](../07_Real_Data/sorting_and_collation/README.md) |
+| `split`, `csplit` | cut a file into pieces | `split -b` is bytes and will [land mid-character](../07_Real_Data/fixed_width_byte_fields/README.md); `-l` is lines and will not |
+| `rev` | reverse each line | the **locale** decides whether it reverses characters or bytes — and reversing bytes takes a multi-byte character apart. [Measured below](#two-of-the-unbolded-rows-measured) |
 | `fold`, `fmt`, `expand`, `column`, `nl`, `pr` | wrap, align, number, paginate | every one of them has a notion of *width*, and width is the [character-vs-byte question](cut/README.md) wearing a different hat. Ask before trusting a column |
 
 ### Transform
@@ -84,8 +84,8 @@ If you came looking for *the list* — every command you are likely to run over 
 | Tool | Its actual job | Its opinion about your text |
 |---|---|---|
 | **[`sort`](tr_and_sort/README.md)** | order lines | the **locale** picks the order, and byte order is not alphabetical order — [three locales, three alphabets](../07_Real_Data/sorting_and_collation/README.md) |
-| `uniq` | collapse adjacent equals | byte equality, and only *adjacent* — so it inherits whatever order `sort` chose. `-c` [pads its count to different widths per platform](../CONTRIBUTING.md) |
-| `wc` | count | `-c` bytes, `-m` characters, `-l` [newlines](../06_Terminal/trailing_newline/README.md) — three questions, three answers, and `-m` needs the locale to mean anything |
+| [`uniq`](tr_and_sort/README.md) | collapse adjacent equals | byte equality, and only *adjacent* — so it inherits whatever order `sort` chose. `-c` [pads its count to different widths per platform](../CONTRIBUTING.md) |
+| [`wc`](../06_Terminal/inspecting_a_file/README.md) | count | `-c` bytes, `-m` characters, `-l` [newlines](../06_Terminal/trailing_newline/README.md) — three questions, three answers, and `-m` needs the locale to mean anything |
 | `diff`, `cmp` | compare | `cmp` compares bytes and reports the first differing **byte**; `diff` compares lines as bytes, so two files that differ only in [normalization](../04_Python/normalization/README.md) or [line ending](../07_Real_Data/crlf_vs_lf/README.md) differ on every line |
 
 ### Look at the bytes
@@ -96,8 +96,8 @@ If you came looking for *the list* — every command you are likely to run over 
 | **[`xxd`](xxd/README.md)** | dump, and undump | honest default, and the only one of the four that goes **backwards** — `xxd -r` reads the hex column, seeks to the offsets, and [ignores the text column entirely](xxd/README.md) |
 | [`od`](../06_Terminal/inspecting_a_file/README.md) | dump, POSIX | the only one guaranteed present — and its default is octal words at octal offsets, while `-a` [invents names for bytes it cannot draw](../06_Terminal/inspecting_a_file/README.md) |
 | [`file`](../06_Terminal/file_guesses/README.md) | guess what this is | reads the first bytes and guesses; `--mime-encoding` distinguishes valid UTF-8 from not, and little else |
-| `cat -vet` | show the invisibles | ASCII-only respelling: `M-x` for a high byte, `$` for a newline, `^I` for a tab. `cat -A` [does not exist on macOS](../CONTRIBUTING.md) |
-| `strings` | pull the text out of a binary | **ASCII by default**, in runs of four or more — so a word containing an accent is split, and a short fragment is dropped entirely. Measured below |
+| [`cat -vet`](../06_Terminal/inspecting_a_file/README.md#why-plain-cat-is-not-a-way-to-look-at-a-file) | show the invisibles | ASCII-only respelling: `M-x` for a high byte, `$` for a newline, `^I` for a tab. `cat -A` [does not exist on macOS](../CONTRIBUTING.md) |
+| `strings` | pull the text out of a binary | **ASCII by default**, in runs of four or more — so a word containing an accent is split, and a short fragment is dropped entirely. [Measured below](#two-of-the-unbolded-rows-measured) |
 | [`hexyl`](worth_installing/README.md) | dump, in colour | colour by byte category, which is the one column no other dump has |
 | [`uchardet`](worth_installing/README.md) | guess the *encoding* | a real detector where `file` only tells valid-UTF-8 from not — it narrows the field, it does not settle it |
 | **[`uni`](uni/README.md)** | name the character | the character's **name**, and search *by* name — the column no dump tool has |
@@ -107,7 +107,7 @@ If you came looking for *the list* — every command you are likely to run over 
 | Tool | Its actual job | Its opinion about your text |
 |---|---|---|
 | **[`xargs`](xargs/README.md)** | turn a list into a command line | splits on spaces *and* quotes, and batches by **bytes** — so the encoding decides how many times your command runs |
-| `find -exec`, `tee` | run per file, or fork a stream | both pass bytes through untouched; `find -exec … +` is the escape from most of `xargs`'s problems |
+| [`find -exec`](find/README.md), `tee` | run per file, or fork a stream | both pass bytes through untouched; `find -exec … +` is the escape from most of [`xargs`'s problems](xargs/README.md) |
 | **[`rg --pre`, `rg -z`](decompress_then_decode/README.md)** | one stage before the decode | a container is not an encoding, and [`-z` is a list of binaries, not a capability](decompress_then_decode/README.md) |
 
 ### Two of the unbolded rows, measured

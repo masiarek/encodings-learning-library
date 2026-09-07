@@ -132,22 +132,22 @@ Every example in this library runs on tools that ship with both macOS and Ubuntu
 
 | Tool | The question it answers |
 |---|---|
-| `xxd` | what are the bytes? — and `xxd -r -p` is the only reverse gear of the three dumpers |
+| [`xxd`](11_Tools/xxd/README.md) | what are the bytes? — and `xxd -r -p` is the only reverse gear of the three dumpers |
 | `od -An -tx1` | the same, portably; `od -c` for octal escapes ([never `od -a`](06_Terminal/inspecting_a_file/README.md)) |
-| `hexdump -C` | the same again; plain `hexdump` [reorders bytes to suit your CPU](06_Terminal/inspecting_a_file/README.md) |
+| [`hexdump -C`](11_Tools/hexdump/README.md) | the same again; plain `hexdump` [reorders bytes to suit your CPU](06_Terminal/inspecting_a_file/README.md) |
 | `wc -c` / `wc -m` / `wc -l` | bytes / characters / [newline-terminated lines](06_Terminal/trailing_newline/README.md) — three different questions |
 | `file --mime-encoding` | a guess, and [an honest one](06_Terminal/file_guesses/README.md) |
-| `iconv` | re-encode, or use `-f X -t X` as a yes/no validator |
-| `cat -v` / `cat -vet` | high bits as `M-`, line ends as `$` — the fastest one-line encoding check |
+| [`iconv`](06_Terminal/iconv/README.md) | re-encode, or use `-f X -t X` as a yes/no validator |
+| [`cat -v` / `cat -vet`](06_Terminal/inspecting_a_file/README.md#why-plain-cat-is-not-a-way-to-look-at-a-file) | high bits as `M-`, line ends as `$` — the fastest one-line encoding check |
 | `strings` | the readable runs inside a binary |
-| `tr -d`, `sed`, `tail -c` | byte surgery when you know which byte |
+| [`tr -d`](11_Tools/tr_and_sort/README.md), [`sed`](11_Tools/sed/README.md), `tail -c` | byte surgery when you know which byte — and `tr` does it a byte at a time whether or not you meant to |
 | `piconv` | Perl's `iconv`, already installed, with Perl's encoding names and aliases |
-| `python3 -c 'import unicodedata; …'` | the character's **name** and properties — the column no dumper gives you |
-| `man ascii` | the table, offline, in octal, decimal and hex |
+| [`python3 -c 'import unicodedata; …'`](11_Tools/uni/README.md) | the character's **name** and properties — the column no dumper gives you |
+| [`man ascii`](13_Documentation/the_encoding_man_pages/README.md) | the table, offline, in octal, decimal and hex — `ascii(7)`, and `/usr/share/misc/ascii` is the same table as a data file you can `grep` |
 | `grep` | search — and [the locale decides what a character is](11_Tools/grep/README.md), so use `LC_ALL=C` on a file you did not write |
 | `find` | walk a directory — and [`-name` is a byte comparison](11_Tools/find/README.md), which is why `cat` can open what it cannot see |
 | `sort` / `uniq` | order and deduplicate — [byte order in `LC_ALL=C`, collation order in any other](11_Tools/tr_and_sort/README.md) |
-| `cut -b` | slice by byte; `cut -c` promises characters and delivers bytes unless the locale is a UTF-8 one |
+| [`cut -b`](11_Tools/cut/README.md) | slice by byte; `cut -c` promises characters and delivers bytes unless the locale is a UTF-8 one |
 
 **Worth installing.** Nothing in the library depends on these and CI does not have them, so no page records their output — but each one answers a question the base set answers badly or not at all.
 
