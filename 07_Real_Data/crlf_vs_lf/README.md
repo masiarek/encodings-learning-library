@@ -39,6 +39,17 @@ Worth knowing before you reach for either, because the folklore here is stale an
 
 What *is* true is the thing underneath the lore: **`\r` is not in POSIX.** A POSIX basic regular expression leaves a backslash before an ordinary character undefined, so every one of those three is extending the standard — they simply extend it the same way. That is why the warning was worth passing on for years, and why it is still the right instinct on a machine you have not measured. `tr -d '\r'` asks nothing of the regex grammar at all, which is what makes it the form to write down for somebody else.
 
+And if you reach for `sed` to fix the file **in place**, the flag that does it is the genuinely unportable part of that line — not the `\r`. The two spellings are mutually exclusive:
+
+```text title="Measured 2026-09-07 — BSD sed (Darwin 25.6), GNU sed 4.9 (ubuntu:24.04), busybox sed (alpine:3.20). Not machine-checked: an example that ran this could only pass on one platform."
+                    BSD sed        GNU sed        busybox sed
+sed -i    's/…/…/'  exit 1  ✗      exit 0  ✓      exit 0  ✓
+sed -i '' 's/…/…/'  exit 0  ✓      exit 2  ✗      exit 1  ✗
+sed -i.bak 's/…/…/' exit 0  ✓      exit 0  ✓      exit 0  ✓   (leaves f.txt.bak)
+```
+
+`-i` takes a backup suffix as an **argument** on BSD and as an optional **attached** suffix on GNU, so the bare form makes BSD swallow your script as the suffix, and the empty-argument form makes GNU read `''` as the script and your script as a filename. The only spelling that works everywhere is `-i.bak`, and it leaves a backup file behind on all three. The mercy — and on this page it is worth naming, because nothing else here does it — is that both wrong forms **exit nonzero and leave the file untouched**. This is the one failure in the whole lesson that is loud. Write the redirect form above into a script and the question does not arise.
+
 **Neither one is right for a CSV.** A quoted field may contain a real line break, and `sed`, `tr` and `awk` are all line-oriented tools that split on `0a` — so to every one of them that break is just another line ending, and both commands above will quietly rewrite a customer's note from CRLF to LF while the file goes on parsing perfectly. There is no pipeline that gets this right, because getting it right requires knowing which `0a` bytes are inside quotes. Fix the endings of a quoted CSV inside the program that parses it, never in the pipeline in front of it.
 
 ## git: the warning says the opposite of what people read into it
