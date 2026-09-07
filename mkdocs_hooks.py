@@ -93,6 +93,8 @@ NAV_ORDER: dict[str, list[str]] = {
         "GLOSSARY.md",
         "RESOURCES.md",
         "ROADMAP.md",
+        "TODO.md",
+        "TOPICS.md",
     ],
     # From one switch to one byte, then how to write a byte down, then how to
     # read a screenful of them.
