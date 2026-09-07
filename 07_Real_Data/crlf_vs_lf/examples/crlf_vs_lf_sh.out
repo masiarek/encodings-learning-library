@@ -18,7 +18,9 @@ $ xxd win.txt
   0d 0a against 0a. One extra byte per line, at the end of each line,
   and 0d is CR -- the carriage return that was a separate motion on a
   teletype. Unix kept the line feed; DOS kept both; Windows inherited
-  it and so did every protocol written in the 1980s.
+  it -- and so did the protocols drafted around it: FTP, SMTP and NNTP
+  in the 1980s, HTTP a decade later. All four still require CR LF on
+  the wire, whatever your files use.
 
 2. WHAT THE SCREEN WILL NOT SHOW YOU
 ------------------------------------------------------------------------

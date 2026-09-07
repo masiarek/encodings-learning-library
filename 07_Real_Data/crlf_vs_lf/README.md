@@ -50,6 +50,8 @@ sed -i.bak 's/…/…/' exit 0  ✓      exit 0  ✓      exit 0  ✓   (leaves 
 
 `-i` takes a backup suffix as an **argument** on BSD and as an optional **attached** suffix on GNU, so the bare form makes BSD swallow your script as the suffix, and the empty-argument form makes GNU read `''` as the script and your script as a filename. The only spelling that works everywhere is `-i.bak`, and it leaves a backup file behind on all three. The mercy — and on this page it is worth naming, because nothing else here does it — is that both wrong forms **exit nonzero and leave the file untouched**. This is the one failure in the whole lesson that is loud. Write the redirect form above into a script and the question does not arise.
 
+**And a lone CR is not a neutral leftover — readers disagree about it, silently.** The `sed` form above deliberately leaves a CR that is not at a line end, which is the right call for text somebody saved on Windows; but whatever reads the file next has to decide whether that byte ends a line, and the two languages this library uses answer differently. Python's `splitlines()` breaks on **nine** characters — LF, CRLF, CR, VT, FF, FS, NEL, LS and PS — while Rust's `str::lines()` breaks on **two**, LF and CRLF, and treats the rest as ordinary text. So a CR-only file, which is what a botched strip or a classic pre-OS X Mac produces, is *n* lines to Python and **one** line to Rust, with no error from either. Three of the seven they disagree about are not even ASCII, which is what makes this an encoding decision rather than a style one: `splitlines()` is applying Unicode's definition of a line break on your behalf where `lines()` is applying a byte one. Both readings are printed side by side, from real runs, on [the trailing newline](../../06_Terminal/trailing_newline/README.md).
+
 **Neither one is right for a CSV.** A quoted field may contain a real line break, and `sed`, `tr` and `awk` are all line-oriented tools that split on `0a` — so to every one of them that break is just another line ending, and both commands above will quietly rewrite a customer's note from CRLF to LF while the file goes on parsing perfectly. There is no pipeline that gets this right, because getting it right requires knowing which `0a` bytes are inside quotes. Fix the endings of a quoted CSV inside the program that parses it, never in the pipeline in front of it.
 
 ## git: the warning says the opposite of what people read into it
@@ -147,7 +149,9 @@ $ xxd win.txt
   0d 0a against 0a. One extra byte per line, at the end of each line,
   and 0d is CR -- the carriage return that was a separate motion on a
   teletype. Unix kept the line feed; DOS kept both; Windows inherited
-  it and so did every protocol written in the 1980s.
+  it -- and so did the protocols drafted around it: FTP, SMTP and NNTP
+  in the 1980s, HTTP a decade later. All four still require CR LF on
+  the wire, whatever your files use.
 
 2. WHAT THE SCREEN WILL NOT SHOW YOU
 ------------------------------------------------------------------------
@@ -305,9 +309,12 @@ Python translates line endings on exactly one path, which is why this bug is inv
    CRLF file, open(..., 'rb')      b'id,name,active\r\n1,Ada,Y\r\n'
 
    Nothing translated. Those are not exotic: newline='' is what the csv
-   module asks for, and bytes are what you get from a socket, a zipfile,
-   a subprocess with text=False, and a database column. The protection
-   covers one path, and the CR is waiting on all the others.
+   module asks for. And on every other path nothing is translated at
+   all: a socket, a zipfile member, an HTTP body, a subprocess with
+   text=False, a database column. Some of those hand you bytes and
+   some hand you str -- what they have in common is that none of them
+   touches a \r. The protection covers one path, and the CR is waiting
+   on all the others.
 
 3. THE FIELD THAT QUIETLY STOPS MATCHING
 ------------------------------------------------------------------------

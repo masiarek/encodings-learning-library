@@ -40,7 +40,9 @@ show "xxd win.txt"
 printf '  0d 0a against 0a. One extra byte per line, at the end of each line,\n'
 printf '  and 0d is CR -- the carriage return that was a separate motion on a\n'
 printf '  teletype. Unix kept the line feed; DOS kept both; Windows inherited\n'
-printf '  it and so did every protocol written in the 1980s.\n'
+printf '  it -- and so did the protocols drafted around it: FTP, SMTP and NNTP\n'
+printf '  in the 1980s, HTTP a decade later. All four still require CR LF on\n'
+printf '  the wire, whatever your files use.\n'
 
 say "2. WHAT THE SCREEN WILL NOT SHOW YOU"
 printf '\n$ cat win.txt          (piped through cat -vet, which draws the CR)\n'

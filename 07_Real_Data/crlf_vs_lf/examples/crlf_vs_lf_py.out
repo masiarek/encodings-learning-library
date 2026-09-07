@@ -22,9 +22,12 @@
    CRLF file, open(..., 'rb')      b'id,name,active\r\n1,Ada,Y\r\n'
 
    Nothing translated. Those are not exotic: newline='' is what the csv
-   module asks for, and bytes are what you get from a socket, a zipfile,
-   a subprocess with text=False, and a database column. The protection
-   covers one path, and the CR is waiting on all the others.
+   module asks for. And on every other path nothing is translated at
+   all: a socket, a zipfile member, an HTTP body, a subprocess with
+   text=False, a database column. Some of those hand you bytes and
+   some hand you str -- what they have in common is that none of them
+   touches a \r. The protection covers one path, and the CR is waiting
+   on all the others.
 
 3. THE FIELD THAT QUIETLY STOPS MATCHING
 ------------------------------------------------------------------------
