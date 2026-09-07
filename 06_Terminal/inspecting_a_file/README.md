@@ -84,7 +84,7 @@ That also explains the one detail in the session that looks like a typo — why 
 
 Set `LC_ALL=C` and the same command on the same file prints `c3 a9` and `e2 82 ac` as plain hex, with no `?` anywhere. Same file, same tool, same machine, different answer.
 
-So this is one of the BSD/GNU differences [this library records](../../CONTRIBUTING.md) — eleven of them at the last count — and the **first that is a difference of *content* rather than whitespace** — the `tidy` helper the other shell examples pipe `od` through cannot rescue it, because there is no layout that makes `C` and `Ã` agree. No example here records `od -a` output. Reach for `od -An -tx1`, or `xxd`, or `hexdump -C`; use `od -c` when you want octal escapes, and set `LC_ALL=C` when you do, because in a UTF-8 locale macOS `od -c` decodes multi-byte characters and prints `**` for the continuation bytes.
+So this is one of the BSD/GNU differences [this library records](../../CONTRIBUTING.md), and the **first of them that is a difference of *content* rather than whitespace** — the `tidy` helper the other shell examples pipe `od` through cannot rescue it, because there is no layout that makes `C` and `Ã` agree. No example here records `od -a` output. Reach for `od -An -tx1`, or `xxd`, or `hexdump -C`; use `od -c` when you want octal escapes, and set `LC_ALL=C` when you do, because in a UTF-8 locale macOS `od -c` decodes multi-byte characters and prints `**` for the continuation bytes.
 
 ## `iconv`: the same characters, different bytes
 
