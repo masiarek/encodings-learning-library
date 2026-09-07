@@ -1,0 +1,65 @@
+
+1. THE OUTPUT IS A String, AND NOTHING CAN MAKE IT NOT BE
+------------------------------------------------------------------------
+
+   "café" as UTF-8            63 61 66 c3 a9 -> Y2Fmw6k=
+   the same word in Latin-1   63 61 66 e9    -> Y2Fm6Q==
+   not text at all            c3 28 ff       -> wyj/
+
+   The third row is the one that matters. Those three bytes are
+   not valid UTF-8 and never will be:
+     String::from_utf8 -> Err(invalid utf-8 sequence of 1 bytes from index 0)
+     encode(..)        -> "wyj/"   an infallible fn(&[u8]) -> String
+
+   That signature IS the definition of a binary-to-text encoding.
+   Anything that can hand back a `String` for every possible byte
+   sequence, without a Result, is one; anything that can fail on
+   some inputs is a text decoder wearing the wrong name.
+
+2. THE INPUT IS &[u8], SO THERE IS NO CHARSET TO GET WRONG
+------------------------------------------------------------------------
+
+   "café".as_bytes()          63 61 66 c3 a9
+   encode(that)               Y2Fmw6k=
+   encode(Latin-1 bytes)      Y2Fm6Q==
+
+   Rust makes the missing question visible at the call site: you
+   cannot pass a `&str` to a function that wants `&[u8]` without
+   writing `.as_bytes()`, which is the moment the encoding was
+   chosen. In a language where the two are the same type, that
+   moment does not appear in the source at all.
+
+3. DECODING RETURNS Vec<u8>, BECAUSE THAT IS ALL IT KNOWS
+------------------------------------------------------------------------
+
+   Y2Fmw6k=   -> 63 61 66 c3 a9 valid UTF-8: "café"
+   Y2Fm6Q==   -> 63 61 66 e9    not UTF-8: incomplete utf-8 byte sequence from index 3
+   wyj/       -> c3 28 ff       not UTF-8: invalid utf-8 sequence of 1 bytes from index 0
+
+   Three successful decodes, and only the first is UTF-8. The
+   second is the SAME WORD in Latin-1 -- a base64 string a
+   partner could hand you as `café`, decoding to bytes that
+   are not valid text in the encoding you assumed. The third
+   was never text at all. base64 could not tell you any of
+   this, because base64 was never told; decode, then validate,
+   the same two-step that any read from a file or socket is.
+
+4. STRICT MEANS CHECKING THE BITS NOBODY CHECKS
+------------------------------------------------------------------------
+
+   QQ==     -> Ok(41)
+   QR==     -> Err(non-canonical: the 16 unused bits are not zero)
+   Qf==     -> Err(non-canonical: the 16 unused bits are not zero)
+   QQ=      -> Err(length 3 is not a positive multiple of four)
+   Q!==     -> Err('!' is not in the alphabet)
+
+   QR== and Qf== are rejected HERE and accepted almost
+   everywhere else -- Python, Go, Java and the shell tool all
+   return 0x41 for them, because the bits the padding covers are
+   read and discarded rather than checked. Sixteen spellings of
+   one byte. The check that stops it is the four lines above.
+
+   The rule that follows is short: compare decoded bytes, never
+   the encoded string. A signature, a cache key or an allow-list
+   over base64 TEXT is a comparison over a spelling, and the
+   spelling is not unique.

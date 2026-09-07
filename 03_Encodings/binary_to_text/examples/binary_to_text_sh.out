@@ -1,0 +1,63 @@
+
+1. THE ROUND TRIP
+------------------------------------------------------------------------
+
+   the text                 café
+   base64                   Y2Fmw6k=
+   base64 | --decode        café
+
+   --decode is the spelling to use. -d works on both builds too;
+   -D is macOS only and GNU rejects it outright, which is the good
+   kind of incompatibility -- the script stops instead of guessing.
+
+2. base64 IS THE HEX DUMP, RE-CUT
+------------------------------------------------------------------------
+
+   xxd -p     (4 bits/char) 636166c3a9
+   base64     (6 bits/char) Y2Fmw6k=
+   bytes in                 5
+   hex chars out            10
+   base64 chars out         8
+
+   Same five bytes, two widths. Hex spends a character on every four
+   bits and doubles the size; base64 spends one on every six and adds
+   a third. Neither has looked at a character in the text -- xxd and
+   base64 are both reading the same five bytes off the same pipe.
+
+3. ONE WORD, TWO CHARSETS, TWO BASE64 STRINGS
+------------------------------------------------------------------------
+
+   as utf-8                 Y2Fmw6k=
+   as iso-8859-1            Y2Fm6Q==
+
+   Both are valid base64 of a word spelled the same way, and nothing
+   in either string says which encoding produced the bytes. That is
+   not a flaw in base64: base64 was never told. If an interface
+   agreement says "the field is base64", it has not said enough.
+
+4. NEWLINES INSIDE THE PAYLOAD ARE FINE -- ON BOTH BUILDS
+------------------------------------------------------------------------
+
+   Y2Fm\nw6k= --decode      café
+
+   Line breaks are part of the deal: MIME wrapped base64 at 76
+   characters and every decoder skips them. What is NOT portable is
+   anything past that. A space in the middle of the payload is
+   decoded straight through by the macOS build (exit 0) and rejected
+   by GNU after partial output (exit 1); the default wrap width is
+   none on macOS and 76 on GNU; the flag that sets it is -b on macOS
+   and -w on GNU; and -i means "input file" on macOS and "ignore
+   garbage" on GNU. See the table on the page.
+
+5. DECODE, THEN VALIDATE -- TWO STEPS, NOT ONE
+------------------------------------------------------------------------
+
+   decoded bytes            636166c3a9
+   valid UTF-8?             yes (iconv exit 0)
+   and wyj/ ?               no (iconv exit 1)
+
+   base64 --decode succeeded on both. It always does: c3 28 ff is a
+   perfectly good run of bytes and base64 has no opinion about text.
+   The question "is this UTF-8?" is asked by a second tool, after,
+   and a pipeline that never asks it is a pipeline that ships
+   whatever it was handed.

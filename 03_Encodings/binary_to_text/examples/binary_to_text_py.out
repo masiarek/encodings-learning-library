@@ -1,0 +1,169 @@
+
+1. TWENTY-FOUR BITS IN, FOUR CHARACTERS OUT
+------------------------------------------------------------------------
+   the text               'café'   4 characters
+   its UTF-8 bytes        63 61 66 c3 a9   5 bytes
+
+   quantum 1: 63 61 66
+     01100011 01100001 01100110    the bytes in binary
+     011000 110110 000101 100110   the same 24 bits, re-cut into sixes
+         24     54      5     38   each six bits as a number, 0-63
+          Y      2      F      m   ALPHABET[n], then padding
+
+   quantum 2: c3 a9   (short)
+     11000011 10101001 00000000    the bytes in binary
+     110000 111010 100100 000000   the same 24 bits, re-cut into sixes
+         48     58     36      0   each six bits as a number, 0-63
+          w      6      k      =   ALPHABET[n], then padding
+
+   by hand                Y2Fmw6k=
+   base64.b64encode       Y2Fmw6k=
+   the same string?       True
+
+   Nothing above looked at a character. It looked at bits, in groups
+   of six, because 2**6 == 64 and there are more than 64 printable
+   ASCII characters to spend. That is the entire mechanism, and every
+   other scheme in the family is the same trick at a different width.
+
+2. SO BASE64 HAS NO CHARSET -- IT ENCODES BYTES
+------------------------------------------------------------------------
+   'café' as utf-8       63 61 66 c3 a9   -> Y2Fmw6k=
+   'café' as iso-8859-1  63 61 66 e9      -> Y2Fm6Q==
+
+   One word, two byte strings, two base64 strings, both perfectly
+   valid and neither carrying the faintest hint of which is which.
+   "base64 of this text" is not defined until somebody says which
+   encoding made the bytes -- the same missing statement that makes
+   percent-encoding guessable, one layer down.
+
+   And it never fails. Encode anything, including bytes that are not
+   text at all:
+     c3 28 ff         -> wyj/      (not valid UTF-8, encodes fine)
+     the same bytes .decode('utf-8') -> UnicodeDecodeError: invalid continuation byte
+
+3. PADDING IS THE LENGTH, WRITTEN DOWN
+------------------------------------------------------------------------
+   bytes in  base64 out   chars  pads   4 * ceil(n/3)
+          1  YQ==             4     2              4
+          2  YWE=             4     1              4
+          3  YWFh             4     0              4
+          4  YWFhYQ==         8     2              8
+          5  YWFhYWE=         8     1              8
+          6  YWFhYWFh         8     0              8
+          7  YWFhYWFhYQ==    12     2             12
+
+   The output length depends only on the input length, so a decoder
+   can size its buffer before reading a byte. The '=' is not a
+   separator and carries no data: it says how many of the last
+   quantum's bytes were real -- one '=' means two, two means one.
+
+   Which is why the padding is droppable when the length is known
+   another way. A JWT is three base64url fields split on '.', so the
+   lengths are already there and RFC 7515 tells you to strip it:
+     with padding         eyJhbGciOiJub25lIn0=
+     as a JWT sends it    eyJhbGciOiJub25lIn0
+   Python will not decode the stripped form -- b64decode wants a
+   multiple of four -- so putting the padding back is the first line
+   of every JWT library:
+     b64decode(stripped)          -> binascii.Error: Incorrect padding
+     s + '=' * (-len(s) % 4)      -> b'{"alg":"none"}'
+
+4. TWO SPELLINGS, ONE PAYLOAD -- AND validate=True DOES NOT CARE
+------------------------------------------------------------------------
+   One byte, 0x41, needs 8 bits. Two base64 characters carry 12.
+   The 4 bits left over are supposed to be zero, and nothing in the
+   decoder makes them be:
+
+   canonical      QQ==  -> b'A'
+   also decodes   QR==  -> b'A'
+   and so does    Qf==  -> b'A'
+   distinct spellings of that one byte:   16
+
+   validate=True sounds like the fix. It is not -- it validates the
+   ALPHABET, not the arithmetic:
+     b64decode('QR==', validate=True) -> b'A'
+     b64decode('SGVs bG8=', validate=True) -> binascii.Error: Only base64 data is allowed
+     b64decode('SGVs bG8=')                -> b'Hello'   (space skipped)
+
+   So base64 is NOT canonical: decode is many-to-one. Any check that
+   compares the TEXT -- a signature over the encoded form, a cache
+   key, a deduplication table, an allow-list -- can be defeated by
+   respelling it. Compare the bytes you decoded, never the string.
+   The only way to know a string is canonical is to re-encode what
+   you decoded and require the two to match:
+     QQ== -> decode -> encode -> QQ==   canonical: True
+     QR== -> decode -> encode -> QQ==   canonical: False
+
+5. THE LINE THE TABLES DO NOT DRAW: DOES THE BASE DIVIDE A POWER OF TWO?
+------------------------------------------------------------------------
+   Every scheme so far cut the bits into equal pieces, because 64,
+   32 and 16 are powers of two and a whole number of bits fits:
+
+   scheme     bits/char   quantum              café ->
+   Base16             4   1 byte  -> 2 chars   636166C3A9
+   Base32             5   5 bytes -> 8 chars   MNQWNQ5J
+   Base64             6   3 bytes -> 4 chars   Y2Fmw6k=
+   Ascii85         ~6.4   4 bytes -> 5 chars   @prueW;
+
+   Ascii85 is the odd one: 85 is not a power of two, but 85**5 just
+   exceeds 256**4, so it still has a fixed quantum -- four bytes in,
+   five characters out, a base-85 number per group.
+
+   Base58 and Base62 have no quantum at all. There is no group size
+   that works, so the encoder reads the WHOLE input as one enormous
+   integer and divides it down. Three consequences follow, and none
+   of them is an efficiency percentage:
+
+   base58 of café             CDK2VUL
+     (a) You cannot start until the last byte has arrived, and you
+         cannot decode the front without the back: no streaming, no
+         seeking, no fixed output length.
+     (b) The arithmetic is quadratic. Doubling the input roughly
+         quadruples the work, which is why nobody base58s a file.
+     (c) A leading zero byte is not a digit, it is nothing:
+         00 00 41   -> int 65   -> base58 '28'   (two leading zeros)
+         41         -> int 65   -> base58 '28'   (no leading zeros)
+         Base58Check patches this by hand, writing one '1' per
+         leading zero byte -- a rule bolted on outside the maths.
+
+   That is the split worth carrying: a power-of-two base is a
+   re-cutting of bits and runs in one pass; anything else is
+   arbitrary-precision division over the whole message. The two are
+   not neighbours on a scale of efficiency. They are different
+   algorithms, and the choice is made for humans -- Base58 drops
+   '0OIl' so a person can copy an address off a screen.
+
+6. WHAT IT COSTS, AND THE ORDER TO DO IT IN
+------------------------------------------------------------------------
+   the payload (a small CSV)         5075 bytes
+   base64 of it                      6768 bytes   1.33x
+
+   Four characters per three bytes is 4/3, so base64 costs 33% more
+   and always exactly that -- the '75% efficiency' in the reference
+   tables is the same number upside down (6 bits carried per 8 sent).
+   That number is arithmetic on the length, which is why it is
+   printed above and the next two are not.
+
+   Now compress as well, both ways round:
+     smaller                gzip, then base64
+     the other one is       about 5% bigger
+     both are under         40% of the raw payload
+
+   The two byte counts themselves are deliberately not recorded
+   here: they are the output of whichever zlib the machine was
+   built against, so they belong in a dated line on the page and
+   not in an answer key. The ORDER is the lesson, and it is stable.
+
+   Compress first. gzip works on the bytes; once they are base64 the
+   repeats it looks for have been smeared across a 4-character
+   period and it recovers fewer of them. The gap is not enormous
+   here, and on a payload that compresses badly it can vanish or
+   invert -- so measure yours rather than quoting the rule.
+
+   And the thing base64 does not buy, which is worth saying out
+   loud because a decade of code review says otherwise:
+     b64decode('aHVudGVyMg==') -> b'hunter2'
+   It is not encryption, it is not obfuscation, and it is not a
+   checksum. It is a public, reversible rewriting whose only job is
+   to survive a channel that will not carry arbitrary bytes.
+   crc32 of the payload, for contrast: 0x39a4b3a2 -- that one detects damage.

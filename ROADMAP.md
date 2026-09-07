@@ -32,6 +32,7 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [Encode and decode are verbs](03_Encodings/encode_and_decode_are_verbs/README.md) | written, 2026-09-05 — Python, Rust and shell |
 | [Mojibake](03_Encodings/mojibake/README.md) | written, 2026-09-05 — Python and shell; the Rust point is the previous page's |
 | [Escaping into ASCII](03_Encodings/escaping_into_ascii/README.md) | written, 2026-09-06 — all three languages; four schemes that escape four different things, and the layer a field width is measured on |
+| [Binary to text](03_Encodings/binary_to_text/README.md) | written, 2026-09-06 — all four languages; the 24-bit quantum, why base64 has no charset, sixteen spellings of one byte, and the power-of-two line the reference tables do not draw |
 | [Normalization](04_Python/normalization/README.md) | written, 2026-09-06 — Python and Rust; chapter 4's first, and the one Unicode table lookup the stability policy lets an answer key hold |
 | [04_Python](04_Python/README.md) — the other five pages | stubs (includes [A str in memory](04_Python/str_in_memory/README.md), added 2026-09-06 — PEP 393, and why one emoji can quadruple a string) |
 | [`String` is bytes that promise UTF-8](05_Rust/string_is_bytes_that_promise_utf8/README.md) | written, 2026-09-05 — Rust, Python and shell; the one figure in the repo, and `valid_up_to()` matched against Python's `UnicodeDecodeError.start` |

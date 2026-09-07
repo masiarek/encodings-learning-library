@@ -201,19 +201,16 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 
 ### 1.11 Base64 and binary-to-text — **core (small)**
 
-*Covered, partly:* [Escaping into ASCII](03_Encodings/escaping_into_ascii/README.md)
+*Covered:* [Binary to text](03_Encodings/binary_to_text/README.md) · [Escaping into ASCII](03_Encodings/escaping_into_ascii/README.md)
 
 **Imported:** Base64 · alphabet · padding · algorithm · Base64URL · MIME Base64 · Base32 · Base16 · Base85 / ASCII85 · Base58 · Base62 · data URI · RFC 4648 · padding removal
 
 **Missing — add:**
 
-- **Base64 is not encryption and not compression** — it costs 33%. Say it once, in the first line, forever.
-- **Base64 has no charset** — it encodes *bytes*. `base64(text)` is only defined once you have said which encoding the text was in. The single most common confusion in real interfaces.
-- **Non-canonical Base64** — the final quantum's unused bits can be non-zero and most decoders accept it, so **two different Base64 strings can decode to the same bytes**. A signature-verification bug generator.
-- **Z85, Base45 (EU digital covid certificates), Crockford Base32, Bech32, Base58Check, multibase** — the alphabets designed around human transcription errors.
-- **JOSE / JWT base64url without padding** — the form you will actually meet.
+- ~~**Base64 is not encryption and not compression**~~ · ~~**Base64 has no charset**~~ · ~~**Non-canonical Base64**~~ · ~~**JOSE / JWT base64url without padding**~~ · ~~**`base64 -d` tolerance differs by implementation**~~ — all written 2026-09-06 on [Binary to text](03_Encodings/binary_to_text/README.md), which also added the split the imported list did not have: **does the base divide a power of two?** Base16/32/64/Ascii85 have a fixed quantum and stream; Base58/62/36 are big-integer division over the whole message, and the reference tables sort them together on an efficiency percentage as though the difference were bandwidth.
+- **Z85, Base45 (EU digital covid certificates), Crockford Base32, Bech32, Base58Check, multibase** — the alphabets designed around human transcription errors. Bech32's checksum and Base58Check's leading-`1` rule are named on the page; the rest are not.
 - **PEM armor, BinHex, MacBinary** — the historical wrappers.
-- **`base64 -d` line-length and whitespace tolerance differs by implementation** — a portable-shell trap of the same family as the `od` split.
+- **Data URIs** — `data:image/png;base64,…`, where the charset question and the base64 question sit in one string, and the media type is the only thing that answers either.
 
 ### 1.12 Hexadecimal and numeric bases — **core**
 

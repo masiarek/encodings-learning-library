@@ -1,0 +1,37 @@
+
+1. ONE ACCUMULATOR, FOUR SHIFTS
+------------------------------------------------------------------------
+
+   the bytes      63 61 66 c3 a9   (5 bytes)
+
+   group 1: 3 bytes
+     v = 0x636166        the 24-bit accumulator
+     (v >> 18) & 63 = 24 -> Y
+     (v >> 12) & 63 = 54 -> 2
+     (v >>  6) & 63 =  5 -> F
+      v        & 63 = 38 -> m
+
+   group 2: 2 bytes
+     v = 0xc3a900        the 24-bit accumulator (zero-filled)
+     (v >> 18) & 63 = 48 -> w
+     (v >> 12) & 63 = 58 -> 6
+     (v >>  6) & 63 = 36 -> k
+      v        & 63 =  0 -> =   (dropped: '=' says so)
+
+   encoded        Y2Fmw6k=
+
+2. WHY THE SHIFTS ARE THE WHOLE STORY
+------------------------------------------------------------------------
+
+   There is no string type here, no encoding, no locale and no
+   allocation. `unsigned char` in, ASCII out, and the only
+   arithmetic is masking six bits at a time out of a number that
+   was three bytes a moment ago.
+
+   That is why base64 costs exactly 4/3: 5 bytes is 2 groups
+   of 24 bits, and each group is spent on four characters whether
+   it was full or not -- 8 characters out, 1 of them padding.
+
+   Change 6 to 5 and the alphabet to 32 characters and this is
+   Base32. Change it to 4 and 16 and it is a hex dump. The base
+   is a parameter; the loop is the encoding.
