@@ -1,0 +1,45 @@
+
+1. A UCN NAMES A CODE POINT; \x NAMES A BYTE
+------------------------------------------------------------------------
+   literal                n   bytes
+   "\u00e9"                2   c3 a9
+   "\xc3\xa9"              2   c3 a9
+   "\xe9"                  1   e9
+
+   The first two are the same two bytes and got there by different
+   routes. \u00e9 names code point U+00E9 and lets the COMPILER
+   encode it, in whatever the execution character set is -- UTF-8
+   for clang and gcc today. \xc3\xa9 names those two bytes directly.
+   \xe9 is one byte and is not the same character at all: it is what
+   Latin-1 would have used, sitting in a UTF-8 string where it is
+   not valid.
+
+2. THE ESCAPE IS WIDER THAN THE STRING IT IS IN
+------------------------------------------------------------------------
+   caf\u00e9 = 7
+
+   That is a UCN in an IDENTIFIER, declared with the escape and
+   used with it too. C translates universal character names in
+   phase 1, before tokenising, so by the time anything asks what a
+   string literal contains the escape is long gone. Python and Rust
+   both handle their escapes inside the string literal, and neither
+   lets you spell an identifier that way.
+
+3. AND C IS THE ONE THAT REFUSES TO ESCAPE ASCII
+------------------------------------------------------------------------
+   These three compile, because $ @ and ` are the named exceptions:
+   "\u0024\u0040\u0060"    3   24 40 60
+
+   This one does not compile at all:
+       const char *a = "\u0041";   /* the letter A */
+
+   C11 6.4.3 forbids a UCN below U+00A0 except those three, and
+   forbids the surrogates D800-DFFF. The reason is the phase it
+   runs in: if \u0022 became a quotation mark before tokenising,
+   an escape could close a string literal, and a comment could end
+   somewhere the reader cannot see. The rule exists so that the
+   text a compiler tokenises is the text a person read.
+
+   Which is the same worry as the invisible-character section of
+   this lesson, answered in 1999 by a standards committee, in the
+   only language here whose escape runs early enough to need it.

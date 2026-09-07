@@ -1,0 +1,110 @@
+
+1. FIVE SPELLINGS, ONE CHARACTER
+------------------------------------------------------------------------
+   "€"                   the character itself, pasted in
+   "\u20ac"              the four-digit escape
+   "\N{EURO SIGN}"       by name
+   chr(0x20AC)           from the number, at run time
+   chr(8364)             the same number in decimal
+
+   distinct strings among those five: 1
+   the one they all are: '€'  U+20AC  EURO SIGN
+
+   Five spellings, one string. Nothing survives into the running
+   program except the number -- so the choice between them is a
+   message to the next person who reads the file, not to Python.
+
+2. THE WIDTH IS PART OF THE ESCAPE
+------------------------------------------------------------------------
+   The two numeric escapes have FIXED widths. There is no closing
+   delimiter, so the width is the only thing telling the parser where
+   the escape stops.
+
+   \x2           truncated \xXX escape
+   \xe9          compiles
+   \u20a         truncated \uXXXX escape
+   \u20ac        compiles
+   \U0001F60     truncated \UXXXXXXXX escape
+   \U0001F600    compiles
+
+   Exactly 2 digits after \x, 4 after \u, 8 after \U. Rust writes the same character with braces instead of a
+   width -- and that spelling is not Python:
+
+   \u{20AC}      truncated \uXXXX escape
+
+   Every one of those failures is a SyntaxError, raised before the
+   line can run. An escape is not a function call; it is spelling,
+   and the parser is the one doing the reading.
+
+3. THE THIRD FORM TAKES A NAME, AND IT IS CHECKED TOO
+------------------------------------------------------------------------
+   "\N{EURO SIGN}"           -> '€'
+   "\N{euro sign}"           -> '€'    (names are case-insensitive)
+   "\N{NOT A REAL NAME}"     -> unknown Unicode character name
+
+   A misspelt name is a SyntaxError, so \N{...} is the one escape
+   that cannot be quietly wrong. A misspelt NUMBER is a different
+   character that compiles perfectly:
+
+      U+20AC  €  EURO SIGN
+      U+20AD  ₭  KIP SIGN
+      U+20BC  ₼  MANAT SIGN
+
+   One digit apart, and nothing in a code review would show it. That
+   is the argument for the name form wherever a reader has to check
+   the intent rather than the value.
+
+4. THE SAME ESCAPE MEANS SOMETHING ELSE IN A BYTES LITERAL
+------------------------------------------------------------------------
+   \x is the escape both kinds of literal share, and it does
+   not mean the same thing in each:
+
+   "\xe9"      'é'         1 character   -- a CODE POINT below 256
+   b"\xe9"     b'\xe9'     1 byte        -- a BYTE
+
+   And the two spellings a str has that bytes does not:
+
+   b"\u20ac"   b'\\u20ac'  6 bytes       -- not an escape at all
+   r"\u20ac"   '\\u20ac'   6 characters  -- raw: the backslash is data
+
+   A bytes literal has no \u, \U or \N, because
+   a byte is not a code point and there would be nothing for them to
+   mean. So the backslash is read as data and you get six bytes -- a
+   silent six-fold difference in length from the str you meant. Python
+   is in the middle of taking that away: compiling that literal
+   raises a warning (1 here) whose text says such sequences
+   will not work in the future. Which CATEGORY of warning depends on
+   your Python version, so this program counts them and the page
+   names one, with a date.
+
+5. PRINTING IS A CHOICE OF SPELLING TOO
+------------------------------------------------------------------------
+   str()    café € ಠ
+   repr()   'café € ಠ'
+   ascii()  'caf\xe9 \u20ac \u0ca0'
+
+   ascii() escapes everything above 127 and picks the shortest form
+   per character -- two widths in one line, \xe9 for the
+   e-acute and \u0ca0 for the Kannada letter.
+
+   repr() is the interesting one, because it escapes SOME characters
+   and not others. The rule is str.isprintable():
+
+   code point  printable   repr()        name
+   U+0041      True        'A'           LATIN CAPITAL LETTER A
+   U+20AC      True        '€'           EURO SIGN
+   U+0CA0      True        'ಠ'           KANNADA LETTER TTHA
+   U+00A0      False       '\xa0'        NO-BREAK SPACE
+   U+0009      False       '\t'          <a control: TAB has no name>
+   U+202E      False       '\u202e'      RIGHT-TO-LEFT OVERRIDE
+
+   A character that draws something is printed as itself; one that
+   draws nothing is printed as an escape. That is the rule you want
+   for a log line, an error message or a test failure, and it is why
+   repr() rather than str() is the right way to print a value you did
+   not write yourself.
+
+   Read the last row again. Printed raw, that character reorders the
+   line it lands in -- including this one. repr() will not do that to
+   you, and neither will this program: every invisible character above
+   reached the screen as an escape.

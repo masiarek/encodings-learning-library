@@ -1,0 +1,39 @@
+
+1. THE ESCAPES THAT NAME BYTES WORK EVERYWHERE
+------------------------------------------------------------------------
+   printf "\xe2\x82\xac"       e2  82  ac
+   printf "\342\202\254"       e2  82  ac
+   the character, pasted in    e2  82  ac
+
+   Three bytes, three ways of asking for them, and none of the three
+   mentions Unicode. \xHH is hex and \NNN is octal; both name a byte
+   and stop there. It is the same E2 82 AC either way because the
+   file this script is written in is UTF-8, not because printf knows
+   that U+20AC is a euro sign. It does not.
+
+2. THE ESCAPE THAT NAMES A CODE POINT IS THE ONE THAT TRAVELS BADLY
+------------------------------------------------------------------------
+   printf '\u20ac' | wc -c   ->  6
+
+   Three, if that escape had produced a euro sign. It produced 6 --
+   the six characters of the escape itself, handed back unchanged.
+   Under LC_ALL=C there is no euro sign to produce, so printf gives up
+   and prints what it was given. Which six bytes it hands back is not
+   the same on every machine, so this script counts them and the page
+   prints the measurement with a date. Three configurations, three
+   answers, is the summary.
+
+3. AND THREE TOOLS SPELL THE SAME BYTES THREE WAYS
+------------------------------------------------------------------------
+   od -An -tx1        e2  82  ac
+   xxd -p            e282ac
+   cat -v            M-bM-^BM-,
+   wc -c             3
+
+   Same three bytes, four renderings. cat -v is the odd one: M- means
+   'the high bit is set', so M-b is 0x62 with the top bit on, which is
+   0xE2 -- an ASCII spelling of a non-ASCII byte, which is why it
+   survives a pipe, an email and a bug report intact.
+
+   Every line of this section is a SPELLING of one thing. Nothing here
+   changed the file; the tools disagree about how to say it out loud.
