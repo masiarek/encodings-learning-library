@@ -11,3 +11,9 @@ __pycache__/
 
 # JetBrains IDEs (RustRover / PyCharm) — per-machine project config.
 .idea/
+
+# Anki deck scratch — verify.py writes each card's snippet out and compiles it.
+# Generated on every run, and `bin/` is a megabyte of Mach-O binaries that would
+# otherwise be copied straight into the published site.
+14_Resources/anki/snippets/
+14_Resources/anki/bin/

@@ -92,6 +92,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "11_Tools",
         "12_Adversarial",
         "13_Documentation",
+        "14_Resources",
         "RIPGREP.md",
         "CAST.md",
         "GLOSSARY.md",
@@ -231,6 +232,11 @@ NAV_ORDER: dict[str, list[str]] = {
         "the_encoding_man_pages",
         "a_page_has_a_date",
         "what_the_page_does_not_say",
+    ],
+    # Not a chapter of the course -- what you use once the reading is done.
+    "14_Resources": [
+        "README.md",
+        "anki",
     ],
     "07_Real_Data": [
         "README.md",

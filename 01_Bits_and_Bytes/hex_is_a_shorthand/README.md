@@ -383,3 +383,4 @@ Then the same two bytes in octal, and find the digit that belongs to both of the
 - [A byte is eight bits](../a_byte_is_eight_bits/README.md) — the eight switches this is a shorthand for
 - [Reading a hex dump](../reading_a_hex_dump/README.md) — where you will read these two-digit pairs sixteen at a time
 - [Why hexadecimal ↗](https://masiarek.github.io/rust-learning-library/19_Numbers/why_hexadecimal/index.html) — the Rust library's page: the same argument, with `from_str_radix` and two's-complement traps
+- [Anki: hexadecimal](../../14_Resources/anki/README.md) — this page as flashcards, every snippet compiled and run first

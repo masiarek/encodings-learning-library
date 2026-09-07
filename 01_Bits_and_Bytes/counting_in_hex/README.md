@@ -281,3 +281,4 @@ Then the same drill in the other direction: take three byte values you can see i
 - [Reading a hex dump](../reading_a_hex_dump/README.md) — where you meet these two-digit values sixteen at a time
 - [Byte order and the BOM](../../03_Encodings/byte_order_and_bom/README.md) — where "most significant byte" stops being a detail
 - [Writing a number down ↗](https://masiarek.github.io/rust-learning-library/19_Numbers/writing_a_number_down/index.html) — the Rust library on literals in all four bases, and the width written on the number
+- [Anki: hexadecimal](../../14_Resources/anki/README.md) — the sixteen symbols and the carry as flashcards, alongside the rest of the chapter's hex

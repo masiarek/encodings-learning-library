@@ -478,3 +478,4 @@ Without the machine: an interface sends you a 32-character field described as "t
 - [Validation is a boundary](../../03_Encodings/validation_is_a_boundary/README.md) — why "it parsed" is not "it is valid"
 - [`hexdump` is a format engine wearing six presets](../../11_Tools/hexdump/README.md) — the tool side of the byte reading
 - [Bytes, hex and int](../../04_Python/bytes_hex_and_int/README.md) — the four Python conversions, together
+- [Anki: hexadecimal](../../14_Resources/anki/README.md) — the two readings, the odd length and `int(s, 16)` as flashcards, every snippet compiled and run first
