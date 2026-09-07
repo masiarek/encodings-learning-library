@@ -46,7 +46,11 @@ That is worth holding against three documents.
 - **RFC 3986**, which defines a URI as a sequence of characters from a restricted ASCII set — `c3 a9` is not in it. What ripgrep emits for this filename is a valid **IRI** ([RFC 3987](https://www.rfc-editor.org/rfc/rfc3987 ↗)), which is a different specification.
 - **The [OSC 8 specification ↗](https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda)** — the one ripgrep's own manual links at the end of the `--hyperlink-format` entry — which says: *"For portability, the parameters and the URI must not contain any bytes outside of the 32–126 range. If they do, the behavior is undefined. Bytes outside of this range in the URI must be URI-encoded."*
 
-So the guarantee in the manual is not met for a non-ASCII filename, and the sequence lands in the part of the OSC 8 spec marked undefined. **In practice it usually works** — the terminals people run are UTF-8 and cope — and that is exactly what makes it worth writing down rather than shrugging at: it is an assumption about the receiving end that nothing in the protocol carries.
+So the guarantee in the manual is not met for a non-ASCII filename, and the sequence lands in the part of the OSC 8 spec marked undefined.
+
+**And it is deliberate**, which is the part worth reading before deciding it is a bug. ripgrep's `HyperlinkPath::encode` has an arm that passes every byte from `128` up through untouched, and the comment above it gives the reasoning: [RFC 8089 ↗](https://www.rfc-editor.org/rfc/rfc8089#section-4), which defines the `file:` scheme, *"does not mandate precise encoding requirements for non-ASCII characters"*, and Windows' own `UrlCreateFromPathW` does not encode them either — encoding them there would produce `file://` URLs that Windows rejects. What comes out for a UTF-8 filename is a perfectly usable IRI, and the terminals people actually run are UTF-8 and cope.
+
+That leaves the manual's wording as the thing that is simply wrong — the code comment is precise where the user-facing text is not — and one case the reasoning does not reach, which is the next section.
 
 ## The filename the URI cannot survive
 
@@ -65,7 +69,7 @@ ubuntu:24.04, overlayfs
   URI tail for the NFC   -> 63 61 66 c3 a9 2e 74 78 74
 ```
 
-Three things there. A lone **`ff`** — not valid UTF-8 in any position, and outside 32–126 — goes into the URI unescaped; `%FF` would have been both legal and lossless. The **two `café.txt` entries are two files**, spelled `65 cc 81` and `c3 a9`, so they get two different URIs while drawing identically on screen — the [normalization](../../04_Python/normalization/README.md) question arriving in a hyperlink. And on the Mac neither problem can be demonstrated, because APFS refuses the first name outright (`Errno 92`) and folds the other two together, which is the same split [the `find` page](../../11_Tools/find/README.md) measures from the other direction.
+Three things there. A lone **`ff`** — not valid UTF-8 in any position, and outside 32–126 — goes into the URI unescaped; `%FF` would have been both legal and lossless. This is the case the RFC 8089 reasoning above does not cover, because there is nothing to be lenient *about*: the byte is not part of any character, so the result is neither a URI nor an IRI, and the Windows argument cannot apply because the Windows code path already refuses a path it cannot read as UTF-8 while the Unix one takes the raw OS bytes. Reported upstream as [ripgrep#3526 ↗](https://github.com/BurntSushi/ripgrep/issues/3526). The **two `café.txt` entries are two files**, spelled `65 cc 81` and `c3 a9`, so they get two different URIs while drawing identically on screen — the [normalization](../../04_Python/normalization/README.md) question arriving in a hyperlink. And on the Mac neither problem can be demonstrated, because APFS refuses the first name outright (`Errno 92`) and folds the other two together, which is the same split [the `find` page](../../11_Tools/find/README.md) measures from the other direction.
 
 ## The column that counts bytes
 
