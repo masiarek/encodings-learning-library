@@ -23,3 +23,4 @@ Python: `.encode('utf-16-be')` for the same four characters as the UTF-8 page, a
 
 - [UTF-8 by hand](../utf8_by_hand/README.md)
 - [Byte order and the BOM](../byte_order_and_bom/README.md)
+- [Why UTF-16 stayed](../../09_History/why_utf16_stayed/README.md) — why four platforms are still built on this, dated

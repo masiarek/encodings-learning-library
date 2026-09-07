@@ -54,6 +54,7 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [07_Real_Data](07_Real_Data/README.md) — the other five pages | stubs (includes [Sorting and collation](07_Real_Data/sorting_and_collation/README.md), added 2026-09-06 — three locales, three different alphabetical orders) |
 | [From the telegraph to Unicode](09_History/from_telegraph_to_unicode/README.md) | written, 2026-09-05 |
 | [Why UTF-8 won](09_History/why_utf8_won/README.md) | written, 2026-09-05 |
+| [Why UTF-16 stayed](09_History/why_utf16_stayed/README.md) | written, 2026-09-07 |
 | [UTF-8 everywhere](10_Best_Practices/utf8_everywhere/README.md) | written, 2026-09-05 |
 | [Rust strings in practice](10_Best_Practices/rust_strings_in_practice/README.md) | written, 2026-09-05 |
 | [Python text in practice](10_Best_Practices/python_text_in_practice/README.md) | written, 2026-09-05 |

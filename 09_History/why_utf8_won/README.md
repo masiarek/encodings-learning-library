@@ -305,5 +305,6 @@ Without the machine: you are handed the bytes `C3 A9 64` and told to find the st
 - [UTF-8 by hand](../../03_Encodings/utf8_by_hand/README.md) — doing the bit-packing yourself, which is the checkpoint
 - [What to do today](../../10_Best_Practices/README.md) — the rules that follow from these properties
 - [UTF-16 and surrogates](../../03_Encodings/utf16_and_surrogates/README.md) — the encoding that lost, in detail
+- [Why UTF-16 stayed](../why_utf16_stayed/README.md) — and why the encoding that lost is still everywhere
 - [UTF-8 history, Rob Pike ↗](https://www.cl.cam.ac.uk/~mgk25/ucs/utf-8-history.txt) — the primary source, two pages long
 - [UTF-8 Everywhere ↗](https://utf8everywhere.org/) — the manifesto, aimed mostly at Windows codebases

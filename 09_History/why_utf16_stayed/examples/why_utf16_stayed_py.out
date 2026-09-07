@@ -1,0 +1,95 @@
+
+1. THE 1991 PROMISE: EVERY CHARACTER IN EXACTLY TWO BYTES
+------------------------------------------------------------------------
+   Sixteen bits hold 65,536 code points, and Unicode 1.0 needed
+   far fewer. So the encoding question had an obvious answer: one
+   character, one 16-bit unit, fixed width, forever.
+
+   char   code point   utf-16-be    units
+   A      U+0041       00 41        1
+   é      U+00E9       00 e9        1
+   ż      U+017C       01 7c        1
+   €      U+20AC       20 ac        1
+   日     U+65E5       65 e5        1
+   ಠ      U+0CA0       0c a0        1
+
+   Six characters from four scripts, one unit each. That is UCS-2 — and
+   it is what Windows NT (1993), Java and JavaScript (both designed in
+   1995) and SAP's Unicode kernel were all built on.
+
+2. WHAT FIXED WIDTH BUYS: AN OFFSET IS JUST ARITHMETIC
+------------------------------------------------------------------------
+   A fixed-width record — city in 8 characters, then a 3-character code:
+     'Kraków  PLN'   11 characters
+     utf-16-le : 22 bytes  = 2 x 11
+     utf-8     : 12 bytes  = it depends
+
+   'The code field' is characters 8..11. Under UTF-16 you reach it by
+   multiplying the offset by two, and nothing else:
+     rec[8:11]                       -> 'PLN'
+     u16[16:22].decode('utf-16-le')  -> 'PLN'
+
+   The same multiply-by-N trick in UTF-8 cuts a character in half:
+     u8[:5]  -> b'Krak\xc3'   the first 5 BYTES
+     u8[:5].decode('utf-8') raises: unexpected end of data
+     u16[:10].decode('utf-16-le') -> 'Krakó'   the first 5 CHARACTERS
+
+3. THE 1996 BREAK: THE PROMISE STOPS BEING TRUE
+------------------------------------------------------------------------
+   Unicode 2.0 (July 1996) widened the codespace to 1,114,112 code
+   points — 17 planes, not one — and invented the surrogate pair to
+   let a 16-bit encoding reach them. UCS-2 became UTF-16 that day, and
+   'fixed width' quietly became 'variable width'.
+
+     😀  U+1F600  utf-16-be d8 3d de 00  = 2 units, 4 bytes
+
+   So the identity section 2 was built on holds for some strings and not
+   others, and nothing in the type says which:
+
+     string             chars  utf-16 bytes   2 x N ?
+     'café'                 4             8   holds
+     'Kraków  PLN'         11            22   holds
+     '日本語'               3             6   holds
+     '😀'                   1             4   BREAKS
+     'a😀b'                 3             8   BREAKS
+
+   And this is the length disagreement that outlived the decision:
+     len('😀')                          = 1   Python counts code points
+     len('😀'.encode('utf-16-le')) // 2 = 2   Java, JavaScript and ABAP
+                                              count 16-bit units
+
+4. THE BILL: TWO SPELLINGS, AND A SORT THAT IS NOT CODE-POINT ORDER
+------------------------------------------------------------------------
+   A 16-bit unit is two bytes, so it has an order, so a file needs a
+   mark to say which one it used:
+     utf_16_be    00 e9
+     utf_16_le    e9 00
+     utf_16       ff fe e9 00
+   The third one is not a third encoding — it is UTF-16 with a BOM in
+   front, which is the platform's order written down.
+
+   And because lead surrogates sit at D800-DBFF, below the last ordinary
+   code points at E000-FFFF, sorting UTF-16 bytes is NOT sorting by code
+   point. The same five characters, three ways:
+     by code point        A é 日 � 😀
+     by utf-8 bytes       A é 日 � 😀
+     by utf-16-be bytes   A é 日 😀 �   <- inverted
+
+5. AND WHY NOBODY LEFT: THE OFFSETS LIVE IN THE CALLERS
+------------------------------------------------------------------------
+   The same 8-character city field, in two records that differ only in
+   their data:
+
+     record             utf-16-le        utf-8
+     'Kraków  PLN'         16..22        9..12
+     'Gdansk  PLN'         16..22        8..11
+
+   The UTF-16 offsets are the same in both because they are 2 x 8. The
+   UTF-8 offsets move, because 'ó' is two bytes and 'a' is one — so the
+   number belongs to the DATA, not to the layout.
+
+   A structure definition cannot hold a number that moves. That is the
+   whole reason a language built on fixed-length fields could adopt
+   UCS-2 as a widening of an existing rule (1 char = 1 byte became
+   1 char = 2 bytes) and could not adopt UTF-8 as anything short of
+   rewriting every offset in every program that ever touched the record.

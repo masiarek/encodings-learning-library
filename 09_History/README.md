@@ -2,12 +2,13 @@
 
 **Level:** 201 · for anyone starting from zero
 
-Nobody designed the mess. Every strange thing about text is a *fossil*: a sensible decision, made under a real constraint, that outlived the constraint. This chapter is the two pages that explain the shape of everything in chapters 1–7 — where the rules came from, and why the one that won, won.
+Nobody designed the mess. Every strange thing about text is a *fossil*: a sensible decision, made under a real constraint, that outlived the constraint. This chapter is the three pages that explain the shape of everything in chapters 1–7 — where the rules came from, why the one that won won, and why the one that lost is still in the software you use today.
 
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|
 | 1 | [From the telegraph to Unicode](from_telegraph_to_unicode/README.md) | Six eras, six constraints — and which scar each one left in code you write today | written |
 | 2 | [Why UTF-8 won](why_utf8_won/README.md) | Six properties, one bill, and why a placemat design beat two committees | written |
+| 3 | [Why UTF-16 stayed](why_utf16_stayed/README.md) | Why the encoding that lost is still inside Java, JavaScript, Windows and every SAP system | written |
 
 ## The through-line
 

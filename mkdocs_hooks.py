@@ -181,6 +181,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "README.md",
         "from_telegraph_to_unicode",
         "why_utf8_won",
+        "why_utf16_stayed",
     ],
     # The universal rules first, then the two languages, then the wire.
     "10_Best_Practices": [
