@@ -1,0 +1,45 @@
+RULE 1. THE LINK IS AN ESCAPE SEQUENCE WRAPPED AROUND THE TEXT
+   the opener, as bytes                     1b 5d 38 3b 3b
+   the terminator (ST), as bytes            1b 5c
+   whole link, bytes on the wire            42
+   what the terminal draws                  6
+   Six characters of visible text inside forty-odd bytes of sequence, and
+   ESC is a C0 control -- so every byte that makes the link clickable is
+   invisible by design. Pipe the output anywhere and the difference shows
+   up as length: `wc -c` counts the sequence, your eyes do not.
+
+RULE 2. THE SPEC SAYS 32-126. THE FILENAME DOES NOT ASK PERMISSION
+   ascii: bytes outside 32-126              none
+   ascii: urllib quote() gives              ok.txt
+   space: bytes outside 32-126              none
+   space: urllib quote() gives              with%20space.txt
+   NFC: bytes outside 32-126                [195, 169]
+   NFC: urllib quote() gives                caf%C3%A9.txt
+   The middle row is the one everyone gets right -- a space is 0x20, inside
+   the range, and still reserved, so every implementation escapes it. The
+   third row is the one to look at: 0xc3 0xa9 are outside the range, the
+   OSC 8 spec says such bytes 'must be URI-encoded' and that the behaviour
+   is undefined otherwise, and Python's quote() duly writes %C3%A9.
+   Measured on the page: rg writes the raw bytes.
+
+RULE 3. TWO SPELLINGS OF ONE NAME ARE TWO DIFFERENT URIs
+   NFC quoted                               caf%C3%A9.txt
+   NFD quoted                               cafe%CC%81.txt
+   same string?                             False
+   same after NFC normalisation?            True
+   Both draw as café.txt. On Linux they are two files and two URIs; on a
+   Mac the filesystem folds them together, so the second name cannot exist
+   beside the first. A URI is a byte sequence and has no opinion about
+   normalisation -- whatever the filesystem handed over is what gets linked.
+
+RULE 4. A COLUMN IS A NUMBER, AND THE UNIT IS NOT WRITTEN DOWN
+   the line                                 'café X here'
+   'here' at character (1-based)            8
+   'here' at byte (1-based)                 9
+   difference                               1
+   Eight and nine. rg's --column counts bytes and says so in its own docs,
+   and the vscode hyperlink alias puts that number into the URI as
+   {column}. Nothing in the URI records which unit it is, so an editor that
+   counts characters lands one position early -- once per non-ASCII
+   character to the left of the match, silently, on the line it just
+   opened for you.

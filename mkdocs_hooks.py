@@ -144,6 +144,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "iconv",
         "locale_and_lc_ctype",
         "file_guesses",
+        "terminal_hyperlinks",
     ],
     "08_Build_Your_Own": [
         "README.md",

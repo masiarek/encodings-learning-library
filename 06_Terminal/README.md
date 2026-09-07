@@ -13,3 +13,4 @@
 | 5 | [`iconv`](iconv/README.md) | How do I re-encode a file, and what does its refusal mean? | stub |
 | 6 | [Locale and `LC_CTYPE`](locale_and_lc_ctype/README.md) | What is the terminal's default encoding, and which tools change with it? | written |
 | 7 | [`file` guesses](file_guesses/README.md) | Why is `file`'s answer an inference, and when is it sure? | stub |
+| 8 | [Terminal hyperlinks, and the URI that is not one](terminal_hyperlinks/README.md) | What is in a clickable filename, and what did it do to the accent? | written |
