@@ -28,10 +28,10 @@ The same five-bit pieces, written four ways:
 
 | | the symbols, in order | value 0 is | value 26 is |
 |---|---|---|---|
-| **RFC 4648** base32 | `ABCDEFGHIJKLMNOPQRSTUVWXYZ234567` | `A` | `2` |
-| **base32hex** (RFC 4648 §7) | `0123456789ABCDEFGHIJKLMNOPQRSTUV` | `0` | `Q` |
-| **Crockford's** | `0123456789ABCDEFGHJKMNPQRSTVWXYZ` | `0` | `R` |
-| **z-base-32** | `ybndrfg8ejkmcpqxot1uwisza345h769` | `y` | `s` |
+| [**RFC 4648** base32 ↗](https://www.rfc-editor.org/rfc/rfc4648#section-6) | `ABCDEFGHIJKLMNOPQRSTUVWXYZ234567` | `A` | `2` |
+| [**base32hex** (RFC 4648 §7) ↗](https://www.rfc-editor.org/rfc/rfc4648#section-7) | `0123456789ABCDEFGHIJKLMNOPQRSTUV` | `0` | `Q` |
+| [**Crockford's** ↗](https://www.crockford.com/base32.html) | `0123456789ABCDEFGHJKMNPQRSTVWXYZ` | `0` | `R` |
+| [**z-base-32** ↗](https://philzimmermann.com/docs/human-oriented-base-32-encoding.txt) | `ybndrfg8ejkmcpqxot1uwisza345h769` | `y` | `s` |
 
 Thirty-two in, thirty-two out, one for one. So the conversion between any two of them is a **character substitution** and nothing more — a `str.translate` in Python, a single `tr` in a shell pipe — and it is exactly reversible, because no bit moved. That is the test for whether two schemes are really the same encoding: if a 32-character `tr` converts between them, they are.
 
@@ -79,8 +79,8 @@ So a three-byte value has no agreed Crockford spelling, and two libraries can bo
 
 | | drops | the stated reason |
 |---|---|---|
-| Crockford's | `I` `L` `O` `U` | `I` and `L` read as `1`, `O` as `0`; `U` "to reduce the chance of accidental obscenity" |
-| z-base-32 | `0` `l` `v` `2` | the same confusions, plus `v`/`u` and `2`/`z` |
+| [Crockford's ↗](https://www.crockford.com/base32.html) | `I` `L` `O` `U` | `I` and `L` read as `1`, `O` as `0`; `U` "to reduce the chance of accidental obscenity" |
+| [z-base-32 ↗](https://philzimmermann.com/docs/human-oriented-base-32-encoding.txt) | `0` `l` `v` `2` | the same confusions, plus `v`/`u` and `2`/`z` |
 
 z-base-32 then goes further and **permutes** what is left, so the symbols that turn up most often are the ones its author judged easiest to read, say and remember. Neither list is about bits. Both are about transcription by a human being, which is why these alphabets are the ones you find on recovery codes, licence keys and anything a support agent reads down a phone.
 
