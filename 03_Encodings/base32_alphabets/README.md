@@ -102,12 +102,12 @@ And on base32hex the repair is not weaker but **impossible**, which is the clear
 
 | tool | macOS 26 | ubuntu:24.04 |
 |---|---|---|
-| `base64` | `/usr/bin/base64` (FreeBSD) | `/usr/bin/base64` (GNU coreutils) |
-| `base32` | **absent** — no `/usr/bin/base32` | `/usr/bin/base32` (GNU coreutils) |
-| `basenc` (does base32hex) | absent | present |
+| [`base64` ↗](https://www.gnu.org/software/coreutils/manual/html_node/base64-invocation.html) | `/usr/bin/base64` (FreeBSD) | `/usr/bin/base64` (GNU coreutils) |
+| [`base32` ↗](https://www.gnu.org/software/coreutils/manual/html_node/base32-invocation.html) | **absent** — no `/usr/bin/base32` | `/usr/bin/base32` (GNU coreutils) |
+| [`basenc` ↗](https://www.gnu.org/software/coreutils/manual/html_node/basenc-invocation.html) (does base32hex) | absent | present |
 | anything for Crockford or z-base-32 | absent | absent |
 
-*Measured 2026-09-07, extending the row [Binary to text](../binary_to_text/README.md) already records for the same two tools.* The part worth adding is **why it is easy to miss**: on the Mac the name `base32` resolved perfectly well — to Homebrew's GNU coreutils 9.11, shadowing an absence. A developer with coreutils installed cannot tell by typing the command, only by asking where it came from.
+*Measured 2026-09-07, extending the row [Binary to text](../binary_to_text/README.md) already records for the same two tools.* The part worth adding is **why it is easy to miss**: on the Mac the name `base32` resolved perfectly well — to Homebrew's GNU coreutils 9.11, shadowing an absence. A developer with coreutils installed cannot tell by typing the command, only by asking where it came from. The tool names above link the [GNU coreutils manual ↗](https://www.gnu.org/software/coreutils/manual/html_node/index.html), which documents the `ubuntu:24.04` column and not the other one: macOS's `base64` is a FreeBSD program with its own man page and its own flags.
 
 The failure is at least loud (`command not found`), unlike the five ways `base64` disagrees with itself across the two builds. But it is why the shell example below converts with `tr` over constants instead of calling an encoder — and `tr` is the better demonstration anyway, since a rename is exactly what it does.
 
