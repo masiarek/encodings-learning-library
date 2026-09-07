@@ -185,6 +185,18 @@ Sidebar reading order lives in `NAV_ORDER` in `mkdocs_hooks.py`, keyed by folder
 
 The same gate checks that `NAV_ORDER` and `LABEL_OVERRIDES` **name things that exist**, because a name the hook cannot match is a silent no-op: the page drops to the alphabetical tail and nothing is printed. That fires two ways. A rename left the entry behind — update it. Or the entry is simply **ahead of its page**, which in a shared checkout is the common one: `git add mkdocs_hooks.py` takes whatever a colleague has left in the file, including a row for a folder they have not committed yet. Commit the row and its folder together. Note that `mkdocs build --strict` passes in that state — a stale nav name is not a broken link — so this gate is the only thing that catches it.
 
+## If someone else is working here too
+
+**Give each concurrent worker its own worktree.** Everything in the next two sections is a *mitigation* for sharing one; a worktree is the prevention, and it is one command:
+
+```bash
+git worktree add -b <topic> /tmp/wt-<topic> origin/master
+```
+
+A shared checkout means one working tree, one index and one `HEAD`, and its failures are quiet rather than loud. Observed here on 2026-09-07, with three workers in this repo for an afternoon: a whole lesson directory deleted from the tree with the deletion unstaged; a committed paragraph reverted inside a file that still read correctly, visible only as `0 2` in `git diff --numstat`; a push that carried another worker's commit; and a false green in a gate written that same day to catch exactly this. **None of them was caught by a gate** — each was caught by somebody re-running a claim. The gates check what the code does; nothing checks what a shared tree did to your files while you were not looking.
+
+What a worktree does *not* fix, so read the rest of this file anyway: the shared **index files** — `CONTRIBUTING.md`, `ROADMAP.md`, `mkdocs_hooks.py`, a chapter `README.md` — still collide. But from a worktree they collide as a **merge conflict git shows you**, rather than as an edit made against a stale copy that silently drops someone's committed rows. Land the work with a rebase onto `origin/master`, and remove the worktree when you are done.
+
 ## Before you commit
 
 ```bash
