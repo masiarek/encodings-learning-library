@@ -268,4 +268,6 @@ So the SHA you typed is the SHA it prints, and a mismatch needs no comparison by
 
 **And do not use `git push -q`.** The ref-update range it suppresses — `73b3ceb..186de1f` — is the only thing that tells you a SHA you did not create just went out under your name. Read it, and if it does not start at the commit you expected, work out what you shipped before doing anything else.
 
+**And `ahead 1` is not evidence that anything is unpushed.** `git status -sb` compares your branch against `refs/remotes/origin/master`, which is a *cache* updated only by `git fetch` — so in a checkout where somebody else may have pushed, "ahead" often means "you have not fetched". Ask the remote instead: `git ls-remote origin master` contacts it and caches nothing, and `git merge-base --is-ancestor <sha> $(git ls-remote origin master | cut -f1)` answers "did my commit really land". Observed 2026-09-07, as a false alarm between two sessions: one warned the other that a commit was sitting unpushed and would ride out under the next person's push, and it had been on origin for several minutes. Same shape as the rest of this section — a number that looked authoritative because the tooling handed it to you.
+
 Afterwards, `check_all.py --committed` gates whatever actually landed rather than what you meant to send, which is the backstop for all of this.
