@@ -1,0 +1,44 @@
+PART ONE — THE SIX WRITES, AS BYTES
+
+   echo hello               68656c6c6f0a
+   printf hello             68656c6c6f
+   printf 'hello\n'         68656c6c6f0a
+   cat <<< hello            68656c6c6f0a
+   << EOF   ($USER=ada)     68656c6c6f206164610a
+   << 'EOF'                 68656c6c6f2024555345520a
+
+   68 65 6c 6c 6f is hello. Rows 1, 3 and 4 are the SAME FILE: echo is
+   printf with an 0a glued on and an argument parser you did not ask
+   for, and <<< supplies the newline too. Row 2 is the only one of the
+   four that stops where you stopped typing.
+   Rows 5 and 6 differ by the length of a username, and row 6 holds a
+   literal dollar sign — 24 55 53 45 52 is $USER, five characters that
+   are in the file rather than a name that was looked up.
+
+   The reader's row 5 will not match this one, and that is the answer:
+   an unquoted delimiter makes the heredoc a double-quoted string, so
+   what lands in the file depends on who ran it.
+
+PART TWO — EMPTYING A FILE THAT SOMEBODY ELSE IS HOLDING
+
+   : > f                            g:  0 bytes   mode: 600   fd 3 reads: (nothing)
+   install -m 644 /dev/null f       g: 12 bytes   mode: 644   fd 3 reads: old content
+
+   Three questions, and the two commands disagree on all three.
+
+   ': >' TRUNCATES. There is one file, both names see it, and the
+   descriptor opened before the blanking is still on that same file —
+   which is now empty, so it reads nothing. The mode was never touched.
+
+   install REPLACES. The name f now points at a new file; g and fd 3
+   still hold the old one, twelve bytes of it, and will go on holding it
+   until the last reference goes away. -m set the mode because setting
+   the mode is what install is for. This is the shape of the classic
+   log-rotation bug: the daemon's descriptor keeps a nameless file
+   growing on a disk where nothing can be found to delete.
+
+   And the inode number predicted none of the three. Unlinking returns
+   it to the pool, so the replacement may be handed the same number
+   back — the lesson's own section 3 measures both outcomes. What
+   answers the question is something that HOLDS the file: the second
+   link, or the descriptor.
