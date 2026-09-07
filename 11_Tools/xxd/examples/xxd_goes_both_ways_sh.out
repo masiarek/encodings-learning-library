@@ -1,0 +1,128 @@
+1. THE DEFAULT VIEW, AND WHY IT LOOKS LIKE THAT
+
+$ xxd s.txt
+00000000: 6361 66c3 a93a 2031 e282 ac0a            caf..: 1....
+   Offset in hex, then the bytes in PAIRS, then the same bytes as ASCII.
+   The pairing is cosmetic — xxd is not reading two-byte numbers the way
+   a bare hexdump does; 6361 is byte 63 then byte 61, in file order. -g
+   changes the grouping and -c the line width:
+
+$ xxd -g 1 -c 8 s.txt
+00000000: 63 61 66 c3 a9 3a 20 31  caf..: 1
+00000008: e2 82 ac 0a              ....
+
+2. IT IS THE ONLY ONE HERE THAT PRINTS BITS
+
+$ xxd -b -c 4 s.txt
+00000000: 01100011 01100001 01100110 11000011  caf.
+00000004: 10101001 00111010 00100000 00110001  .: 1
+00000008: 11100010 10000010 10101100 00001010  ....
+   Eight ones and zeros per byte. od and hexdump have octal and decimal
+   views; neither has this one.
+
+3. THE ONE THAT GOES BACK
+
+$ xxd s.txt > dump.txt; xxd -r dump.txt > back.txt; cmp s.txt back.txt && echo 'identical'
+identical
+   A dump is not just a picture here: it is a representation you can put
+   back. That round trip is the reason xxd ships with vim — :%!xxd, edit,
+   :%!xxd -r, and you have edited a binary in a text editor.
+
+4. AND THE HALF IT THROWS AWAY
+   The text column is NOT the file. Overwrite it and reverse the dump:
+
+$ sed 's/caf\.\.: 1/OVERWRITTEN/' dump.txt
+00000000: 6361 66c3 a93a 2031 e282 ac0a            OVERWRITTEN....
+
+$ sed 's/caf\.\.: 1/OVERWRITTEN/' dump.txt | xxd -r
+café: 1€
+   Nothing changed. xxd -r reads the hex and ignores everything after it,
+   which is the strongest demonstration in this library that the right-hand
+   column is the tool talking, not the file. Change a byte in the HEX and
+   it lands — 63 is 'c', 43 is 'C':
+
+$ sed 's/: 6361/: 4361/' dump.txt | xxd -r
+Café: 1€
+
+5. THE OFFSET IS AN INSTRUCTION, NOT A LABEL
+   xxd -r SEEKS to the offset each line names. So deleting a line does not
+   shorten the file — it leaves a hole, and a hole is NUL bytes:
+
+$ xxd runs.bin | sed -n '1,3p'
+00000000: 4141 4141 4141 4141 4141 4141 4141 4141  AAAAAAAAAAAAAAAA
+00000010: 4141 4141 4141 4141 4141 4141 4141 4141  AAAAAAAAAAAAAAAA
+00000020: 4141 4141 4141 4141 4141 4141 4141 4141  AAAAAAAAAAAAAAAA
+
+$ xxd runs.bin | sed '2d' | xxd -r | xxd | sed -n '1,3p'
+00000000: 4141 4141 4141 4141 4141 4141 4141 4141  AAAAAAAAAAAAAAAA
+00000010: 0000 0000 0000 0000 0000 0000 0000 0000  ................
+00000020: 4141 4141 4141 4141 4141 4141 4141 4141  AAAAAAAAAAAAAAAA
+   Same length, different contents, no complaint. Line 2 came back as
+   zeros, because xxd -r never saw an instruction to write anything at
+   offset 10 and the file system gives you zeros for a gap. Editing a dump
+   by hand is safe as long as you change characters in place and never add
+   or remove a line.
+
+6. -p: THE INTERCHANGE FORM, AND ITS INVERSE
+
+$ xxd -p s.txt
+636166c3a93a2031e282ac0a
+
+$ xxd -p s.txt | xxd -r -p | cat
+café: 1€
+   No offsets, no text column, no line structure — just the bytes as hex,
+   which is the form every other tool will take from you. The reverse is
+   whitespace-tolerant, so hex you pasted out of a bug report works:
+
+$ printf '63 61 66\n65\n' | xxd -r -p
+cafe
+7. AUTOSKIP COLLAPSES NUL RUNS — AND ONLY NUL RUNS
+
+$ xxd -a zeros.bin
+00000000: 0000 0000 0000 0000 0000 0000 0000 0000  ................
+*
+00000030: 0000 0000 0000 0000 0000 0000 0000 0000  ................
+
+$ xxd -a runs.bin | sed -n '1,3p'
+00000000: 4141 4141 4141 4141 4141 4141 4141 4141  AAAAAAAAAAAAAAAA
+00000010: 4141 4141 4141 4141 4141 4141 4141 4141  AAAAAAAAAAAAAAAA
+00000020: 4141 4141 4141 4141 4141 4141 4141 4141  AAAAAAAAAAAAAAAA
+   64 zero bytes collapse to a *. Eighty identical 'A' bytes do not.
+   That is the difference from hexdump and od, whose * collapses ANY
+   repeated line: xxd's -a is documented as replacing nul-lines, and it
+   means it. It is also why -a survives a round trip — the lines it drops
+   are zeros, and the hole xxd -r leaves is filled with zeros:
+
+$ xxd -a zeros.bin | xxd -r | cmp - zeros.bin && echo 'identical'
+identical
+
+8. THE TEXT COLUMN HAS A SWITCH, AND NOTHING ELSE HERE DOES
+
+$ xxd s.txt
+00000000: 6361 66c3 a93a 2031 e282 ac0a            caf..: 1....
+
+$ xxd -E s.txt
+00000000: 6361 66c3 a93a 2031 e282 ac0a            ./.Cz...Sb..
+   The same twelve bytes, twice. The hex column is identical — it is the
+   file. The right-hand column changed completely, because -E reads the
+   bytes as EBCDIC instead of ASCII, and in EBCDIC 61 is '/', c3 is 'C'
+   and e2 is 'S'. Neither column is more true than the other. A text
+   column is an AGREEMENT being applied, and this flag is the only place
+   in any of these tools where you get to say which agreement.
+
+9. -i: THE FILE AS SOURCE CODE
+
+$ xxd -i s.txt
+unsigned char s_txt[] = {
+  0x63, 0x61, 0x66, 0xc3, 0xa9, 0x3a, 0x20, 0x31, 0xe2, 0x82, 0xac, 0x0a
+};
+unsigned int s_txt_len = 12;
+   The variable name comes from the filename. -i is how a font, an icon or
+   a test fixture gets compiled into a C program with no file to ship.
+
+10. WHAT IS NOT HERE
+   -e prints little-endian GROUPS — 63 61 66 c3 as c3666163, which is what
+   a bare hexdump does to every pair without being asked. It is not in this
+   run because the two xxd versions pad its short last group by different
+   amounts; the page shows both, dated. Reach for it when you are reading
+   32-bit values, not when you want to see the file.

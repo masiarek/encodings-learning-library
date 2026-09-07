@@ -6,7 +6,7 @@ Chapters 1 to 10 are about what text *is*. This chapter is about the programs yo
 
 That is the chapter in a sentence, and it is why these pages exist separately from [06_Terminal](../06_Terminal/README.md). Chapter 6 is the tools whose *job* is bytes — `xxd`, `od`, `iconv`, `file` — shown inside a workflow: one file, five questions, which column is the file and which is a guess. This chapter is the tools whose job is something else entirely, and which turn out to have an opinion about your text anyway.
 
-[`hexdump`](hexdump/README.md) is the one deliberate exception, and it is here rather than in chapter 6 because the question it answers is a *tool-choice* question: which of the four dump tools to type, what each one decided before it printed a line, and which of them you can paste into a bug report and expect the reader to see what you saw. That is this chapter's job. Chapter 6 still owns the workflow.
+[`hexdump`](hexdump/README.md) and [`xxd`](xxd/README.md) are the deliberate exceptions, and they are here rather than in chapter 6 because the question they answer is a *tool-choice* question: which of the four dump tools to type, what each one decided before it printed a line, which of them you can paste into a bug report and expect the reader to see what you saw, and which one will give you the file back afterwards. That is this chapter's job. Chapter 6 still owns the workflow.
 
 ## The three questions
 
@@ -34,8 +34,9 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 | 9 | [`cut` counts what it is told to count](cut/README.md) | `-b` or `-c`? And why does the same command differ per machine? | written |
 | 10 | [`tr` and `sort` work a byte at a time](tr_and_sort/README.md) | Why did deleting `é` damage a different word? | written |
 | 11 | [`hexdump` is a format engine wearing six presets](hexdump/README.md) | Why is my dump showing the bytes in the wrong order? | written |
-| 12 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
-| 13 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
+| 12 | [`xxd` is the dump you can put back](xxd/README.md) | Which column of a dump is the file, and how do I get the file back? | written |
+| 13 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
+| 14 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
 
 ## The whole toolkit, one row each
 
@@ -89,7 +90,7 @@ If you came looking for *the list* — every command you are likely to run over 
 | Tool | Its actual job | Its opinion about your text |
 |---|---|---|
 | **[`hexdump`](hexdump/README.md)** | dump | six presets on one format engine; the default reads **16-bit numbers** and swaps your pairs. `-C`'s text column is ASCII and nothing else, which is what makes it safe |
-| [`xxd`](../01_Bits_and_Bytes/reading_a_hex_dump/README.md) | dump, and undump | honest default, and the only one of the four that goes **backwards** (`xxd -r`) |
+| **[`xxd`](xxd/README.md)** | dump, and undump | honest default, and the only one of the four that goes **backwards** — `xxd -r` reads the hex column, seeks to the offsets, and [ignores the text column entirely](xxd/README.md) |
 | [`od`](../06_Terminal/inspecting_a_file/README.md) | dump, POSIX | the only one guaranteed present — and its default is octal words at octal offsets, while `-a` [invents names for bytes it cannot draw](../06_Terminal/inspecting_a_file/README.md) |
 | [`file`](../06_Terminal/file_guesses/README.md) | guess what this is | reads the first bytes and guesses; `--mime-encoding` distinguishes valid UTF-8 from not, and little else |
 | `cat -vet` | show the invisibles | ASCII-only respelling: `M-x` for a high byte, `$` for a newline, `^I` for a tab. `cat -A` [does not exist on macOS](../CONTRIBUTING.md) |

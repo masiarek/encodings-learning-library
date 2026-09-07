@@ -217,8 +217,8 @@ One file, four tools, and the questions worth asking before you type one of them
 | **Is the default view the file?** | no — bare `hexdump` swaps pairs | **yes** | no — octal 16-bit words | **yes** |
 | **Offsets** | hex | hex | **octal**, unless `-A x` | hex |
 | **Text column** | ASCII, locale-immune | ASCII, locale-immune | `-c` / `-a` only, and both drift by platform and locale | [colour by byte category](../worth_installing/README.md) |
-| **Repeats collapsed to `*`?** | yes, unless `-v` | **no**, unless `-a` | yes, unless `-v` | yes |
-| **Turn a dump back into bytes** | — | **`xxd -r`** | — | — |
+| **Repeats collapsed to `*`?** | yes, unless `-v` | **no** — and [`-a` collapses runs of NUL only](../xxd/README.md) | yes, unless `-v` | yes |
+| **Turn a dump back into bytes** | — | **[`xxd -r`](../xxd/README.md)** | — | — |
 | **Layout under your control** | **`-e`, completely** | `-c`, `-g`, `-b`, `-i`, `-e` | fixed flags only | fixed |
 | **Same output on macOS and Linux** | yes — except `-c` | yes (one source, ships with vim) | **no** | one implementation |
 
@@ -264,6 +264,7 @@ Then, on a file you actually have:
 
 - [Reading a hex dump](../../01_Bits_and_Bytes/reading_a_hex_dump/README.md) — the three columns, if this page assumed one you have not met
 - [Inspecting a file](../../06_Terminal/inspecting_a_file/README.md) — the same tools inside a workflow, and `od -a`'s invented names at length
+- [`xxd` is the dump you can put back](../xxd/README.md) — the tool with the honest default, and the only one that reverses
 - [The five worth installing](../worth_installing/README.md) — `hexyl`, measured against what you already have
 - [Byte order and the BOM](../../03_Encodings/byte_order_and_bom/README.md) — where the swapped pairs come from, in the format that has to care
 - [A character and its bytes on one line](../../06_Terminal/character_and_its_bytes/README.md) — the one-liner that turns a character into its dump
