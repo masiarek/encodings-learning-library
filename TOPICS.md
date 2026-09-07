@@ -214,13 +214,12 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 
 ### 1.12 Hexadecimal and numeric bases — **core**
 
-*Covered:* [Hex is a shorthand](01_Bits_and_Bytes/hex_is_a_shorthand/README.md) · [Reading a hex dump](01_Bits_and_Bytes/reading_a_hex_dump/README.md) · [A byte is eight bits](01_Bits_and_Bytes/a_byte_is_eight_bits/README.md)
+*Covered:* [Hex is a shorthand](01_Bits_and_Bytes/hex_is_a_shorthand/README.md) · [Reading a hex dump](01_Bits_and_Bytes/reading_a_hex_dump/README.md) · [A byte is eight bits](01_Bits_and_Bytes/a_byte_is_eight_bits/README.md) · [Why hex and not octal](01_Bits_and_Bytes/hex_is_a_shorthand/README.md#why-hex-and-not-octal)
 
 **Imported:** hexadecimal · hex digits · `0x` prefix · hex dump · hex editor · `xxd` · `od` · nibble · hex string · case convention · octal · binary · decimal · bit · byte · octet
 
 **Missing — add:**
 
-- **Why hex and not octal** — octal is three bits, which does not divide eight. Octal survives only where it predates the byte (Unix permissions, C escapes).
 - **`0b`, `0o`, `_` separators** — modern literal syntax in Python, Rust, C++14.
 - **Endianness is visible in a hex editor and nowhere else** — the bridge from §1.12 to §2.5.
 - **A "byte" was not always 8 bits** — hence "octet" in every network standard. One sentence, and it makes the RFC vocabulary make sense.
