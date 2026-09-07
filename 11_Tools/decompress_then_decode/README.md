@@ -4,7 +4,7 @@
 
 **One line:** `-z` and `--pre` add a stage *before* everything else ripgrep does — a `.gz` gets decompressed, a PDF gets converted — and then the encoding machinery runs on the result exactly as it always did, which is why a UTF-32 file is still unreadable through gzip, and why `--pre` is how you finally read it.
 
-> **Two pages, two halves.** The *how* of `--pre` — the `pdftotext` shim, `--pre-glob`, the shell wrapper, what it costs over a hundred PDFs — is [rg — the menu](../../RIPGREP.md) and [the file whose text is not there](../ripgrep/README.md#the-file-whose-text-is-not-there). This page is the other half: what these two flags do to the **encoding** stage, how each of them decides whether to run at all, and how each of them fails.
+> **Two pages, two halves.** The *how* of `--pre` — `--pre-glob`, the shell wrapper, what it costs over a hundred PDFs — is [rg — the menu](../../RIPGREP.md) and [the file whose text is not there](../ripgrep/README.md#the-file-whose-text-is-not-there). The `pdftotext` shim itself is shown [in the session below](#the-session) as well, generated from the one file all three pages share, because the contrast with this page's own preprocessor is the fastest way to see what `--pre` actually is. This page is the other half: what these two flags do to the **encoding** stage, how each of them decides whether to run at all, and how each of them fails.
 
 ## Why it is on this list at all
 
@@ -85,13 +85,42 @@ case "$1" in
 esac
 ```
 
+That one lifts an **encoding** ceiling: `iconv` reads a UTF-32 file that `rg -E` has no name for. The other job `--pre` does is to lift a **format** ceiling, and the shape is identical — same hook, same one-argument contract, a different command in the middle:
+
+<!-- source:rg_pre_shim_sh -->
+*[`rg_pre_shim_sh.sh`](../ripgrep/examples/rg_pre_shim_sh.sh) in full — pasted here by `tools/run_examples.py` from the file CI runs.*
+
+```bash
+#!/bin/sh
+# A ripgrep --pre preprocessor: make PDFs searchable by piping them through
+# pdftotext. rg runs this once per file, hands it the filename as $1, and reads
+# this program's stdout instead of the file itself. Anything that is not a PDF
+# is passed through untouched, so the search result is the same as without it.
+#
+#     rg --pre <this file> --pre-glob '*.pdf' PATTERN .
+#
+# --pre-glob is not optional in practice: without it, every file in the search
+# pays for a spawned process, not just the PDFs.
+#
+# Run with no arguments it explains itself, which is also how CI verifies that
+# the copy printed on the page is the copy in this file.
+case "$1" in
+    "")          echo "usage: rg --pre $0 --pre-glob '*.pdf' PATTERN ." ;;
+    *.pdf|*.PDF) exec pdftotext -q "$1" - ;;
+    *)           exec cat "$1" ;;
+esac
+```
+<!-- /source -->
+
+Side by side they make the point better than either does alone. `--pre` knows nothing about PDFs and nothing about UTF-32. It knows how to hand a command one filename and read its stdout; everything else is a decision you made. What to *do* with the second one — `--pre-glob`, the shell wrapper, what it costs across a folder of a hundred PDFs — is on [rg — the menu](../../RIPGREP.md#searching-pdfs).
+
 Five things in that session are worth naming.
 
 **1. The four `-z` lines are one claim: decompression happens first, and changes nothing after it.** A UTF-16 file with a BOM is still sniffed and transcoded through gzip. A Latin-1 file still needs `-E latin1` through gzip, and still gets it. And a **UTF-32 file is still broken** through gzip, in precisely the way [the ripgrep page measures it uncompressed](../ripgrep/README.md#what-rg-does-not-sniff) — `FF FE 00 00` begins with `FF FE`, so it is read as UTF-16 and every letter comes back with a NUL welded to it. Compression is not an encoding, and `-z` does not pretend otherwise; it hands the decompressed bytes to the same sniffer and steps out of the way.
 
 **2. `-z` decides from the file's NAME.** `notgz.txt` starts `1f 8b` — the gzip magic — and `file` says `application/gzip` on the very run where `rg -z` searches it as text and finds nothing. That is a design choice, not a bug: deciding by extension costs nothing, while deciding by content means opening every file in the tree before you know whether to skip it. But it means `-z` is only as good as your naming, and the failure is the quiet kind. If you have files with the right bytes and the wrong names, `--pre` with a `file`-based dispatch is the tool, and the example script in `man rg`'s own `--pre` entry is exactly that — it runs `pdftotext` on a `*.pdf` and otherwise asks `file` what it is holding.
 
-**3. `--pre` is where the encoding ceiling comes off.** `rg -E` can only name encodings ripgrep was built knowing; `--pre` can name anything with a command behind it — `iconv` for the UTF-32 file above, or an SAP export in a code page that is on nobody's list. (For the *other* thing `--pre` is for, reading formats rather than encodings, the two pages above have it.) Two rules before you reach for it: it **spawns a process per file searched**, which is what `--pre-glob` is for; and it is **not run on stdin at all**, so `cat u32.txt | rg --pre ./pre.sh …` quietly goes back to finding nothing.
+**3. `--pre` is where the encoding ceiling comes off.** `rg -E` can only name encodings ripgrep was built knowing; `--pre` can name anything with a command behind it — `iconv` for the UTF-32 file above, or an SAP export in a code page that is on nobody's list. (For the *other* thing `--pre` is for, reading formats rather than encodings, that is the PDF shim above.) Two rules before you reach for it: it **spawns a process per file searched**, which is what `--pre-glob` is for; and it is **not run on stdin at all**, so `cat u32.txt | rg --pre ./pre.sh …` quietly goes back to finding nothing.
 
 **4. `--pre` and `-z` override each other, and the last one on the command line wins.** Both man-page entries say "this overrides the other", which reads like a contradiction until you see it: `--pre … -z` decompresses, `-z … --pre` runs the preprocessor. If your preprocessor is the one that handles compression, put it last.
 
