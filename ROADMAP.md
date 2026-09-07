@@ -13,6 +13,7 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [A byte is eight bits](01_Bits_and_Bytes/a_byte_is_eight_bits/README.md) | written, 2026-09-05 |
 | [Hex is a shorthand](01_Bits_and_Bytes/hex_is_a_shorthand/README.md) | written, 2026-09-05 |
 | [Reading a hex dump](01_Bits_and_Bytes/reading_a_hex_dump/README.md) | written, 2026-09-05 |
+| [Hex: a number, or a picture of bytes](01_Bits_and_Bytes/hex_number_or_bytes/README.md) | written, 2026-09-07 — all four languages; one hex string is two objects, four parsers disagree about what a hex digit is, and `int(s, 16)` succeeding is not a validation |
 | [A character is a number](02_Characters/a_character_is_a_number/README.md) | written, 2026-09-05 |
 | [Control characters](02_Characters/control_characters/README.md) | written, 2026-09-05 — the first page with a *C view* (`examples/*.c`, compiled by the runner since the same day) |
 | [Code pages](02_Characters/code_pages/README.md) | written, 2026-09-05 — Python, Rust and shell; the agreement matrix is the original bit |
