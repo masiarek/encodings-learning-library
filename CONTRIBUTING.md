@@ -186,7 +186,16 @@ Both failure modes are quiet. A kata with no checkable answer is a chore the rea
 
 That attribute is load-bearing and its absence is invisible from the author's chair. `md_in_html` is enabled, so **without** `markdown="1"` the body ships as literal Markdown — asterisks and backticks drawn on the published page — while GitHub renders the same block correctly either way and `mkdocs build --strict` passes, because it is not a link error. Measured 2026-09-07: the library's first kata shipped exactly like that, and the only surface showing the bug was the site. Do not reach for a `???` Material admonition instead; that one prints as literal text on GitHub, which is the mirror of the same problem.
 
-**An answer has to have been run**, like every other claim here. Where it is a program's output, prefer a generated block over typing it — an `examples/<stem>_kata_sh.sh` beside the lesson's own example, pasted in with `<!-- output: -->` — so a solution cannot rot into one that no longer prints what the page says. The sibling [Rust library ↗](https://github.com/masiarek/rust-learning-library) requires this and gates it with a `check_katas.py`; here there is **one kata, no index and no gate**, so nothing checks that a folded answer is true. Until one of those exists, the discipline is yours, and the honest move on a kata whose answer you typed is to run it once more before you commit.
+**An answer has to have been run** — required, not preferred, and machine-checked. The solution goes in `examples/<stem>_kata_sh.sh` beside the lesson's own example and is pasted into the fold with `<!-- output:<stem>_kata_sh -->`, so the answer key runs in CI on both platforms with every other example and a solution cannot rot into one that no longer prints what the page says. The same rule the sibling [Rust library ↗](https://github.com/masiarek/rust-learning-library) keeps, for the same reason.
+
+Two things a kata's own example has to pin, because an answer key that is not the same twice is not an answer. **Anything the reader's machine supplies** — `$USER`, `$HOME`, a hostname, a date — must be set inside the script, and the page must say so; the first kata's fifth line expands `$USER` on purpose, so the key pins it to `ada` and says which row will not match. And **anything the two platforms spell differently**, `stat` above all: `-f` is the format string on BSD and *show the filesystem* on GNU, and both succeed, so a fallback pair is silently wrong on Linux. Run the script under Docker against `ubuntu:24.04` and `diff` it against your own run before recording the key — CI checks both, and a key that matches one of them is worse than no key.
+
+```bash
+python3 tools/check_katas.py            # six rules, all of them from this section
+python3 tools/check_katas.py --selftest  # prove the gate still bites
+```
+
+It reads prose only. Fenced blocks **and inline code spans** are stripped first, so a page may show a malformed fold as an example, or name the tag in a sentence, without failing its own gate — which is what this section does twice.
 
 **A kata lives on the page for the topic it teaches**, never in a folder of its own and never with a number in its heading. Folders are permanent URLs and a sequence is the thing that gets reordered — the same reasoning as [Nav order](#nav-order) below. If this library ever collects enough of them to need a reading sequence, it goes in a `KATAS.md` table, which costs nothing to reshuffle; at one kata it would be a file with a row in it.
 
@@ -250,9 +259,9 @@ python3 tools/check_all.py --staged     # the tree your next commit would make
 python3 tools/check_all.py --committed  # the same, against what CI will check out
 ```
 
-That runs the five commands CI runs — `run_examples.py --check`, `check_link_style.py`, `check_decomposed_literals.py` (with its `--selftest` first), `check_nav_chain.py`, and `uv run --group docs mkdocs build --strict` — and you can still run any of them alone. `--strict` fails on a broken internal link, which is the failure most likely to reach the published site unnoticed. The examples job also runs on macOS in CI; a shell example that passes here and fails there is a BSD/GNU difference, not a flake.
+That runs the six commands CI runs — `run_examples.py --check`, `check_link_style.py`, `check_decomposed_literals.py`, `check_katas.py`, `check_nav_chain.py` (the middle three with their `--selftest` first), and `uv run --group docs mkdocs build --strict` — and you can still run any of them alone. `--strict` fails on a broken internal link, which is the failure most likely to reach the published site unnoticed. The examples job also runs on macOS in CI; a shell example that passes here and fails there is a BSD/GNU difference, not a flake.
 
-**Two reasons to use the runner rather than the five commands.**
+**Two reasons to use the runner rather than the six commands.**
 
 The first is that these gates print a line per example, so the natural way to run one by hand is to pipe it — and **a pipeline's exit status is the last command's**, so `run_examples.py --check | tail -1` reports success no matter what the gate said. A red gate then scrolls past under a green-looking summary line. `set -o pipefail` fixes it — in bash and in zsh — if you remember it every time. What does **not** fix it is the idiom most people reach for next: `${PIPESTATUS[0]}` is bash's spelling, and under zsh it expands to the empty string rather than erroring, so `echo "exit=${PIPESTATUS[0]}"` prints `exit=` and reads like a stumble instead of a wrong answer (zsh's own array is lowercase and 1-indexed, `${pipestatus[1]}`). That is the same failure one level down, so prefer `set -o pipefail` or a plain redirect over any array lookup — and `check_all.py` does not pipe at all: it keeps each status and prints a failing gate's output only when there is one.
 
