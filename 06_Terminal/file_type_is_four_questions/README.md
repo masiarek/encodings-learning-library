@@ -49,6 +49,19 @@ If no handler claims the bytes, the file does not run and `execve` returns `ENOE
 
 **This question has a page of its own, and it is the one you will need in anger.** Here the shebang is one of four answerers, demonstrated on files that differ obviously. [The first two bytes](../the_first_two_bytes/README.md) stays on this question for a whole page and makes the files differ *invisibly* — three bytes of BOM in front of `#!`, or a single `0d` at the end of that line — so the same `ENOEXEC` and the same `ENOENT` arrive from a file that looks correct in every editor. Both refusals are worth meeting twice: this page produces the `ENOENT` from an interpreter that was never there, which is the mechanism stated as plainly as it can be; that page produces it from `#!/bin/sh`, an interpreter that *is* there, which is the mechanism as the bug you will actually be handed.
 
+**And here questions two and three contradict each other outright, which is the sharpest form of this page's whole argument.** Put a UTF-8 BOM in front of a perfectly good shebang and `file` still calls it a shell script — it even names the BOM — while the kernel refuses to run it, because `file` searched its database for a signature it has a rule for *anywhere* and the kernel compared offset 0 and found `ef` rather than `#`:
+
+```text title="one file, both questions — macOS file-5.41 and Ubuntu 24.04 file-5.45, 2026-09-07"
+bytes      ef bb bf 23 21 2f 62 69 6e 2f 73 68 0a      (BOM, then #!/bin/sh)
+
+file --mime-type -b  bom.sh    text/x-shellscript
+file --mime-type -b  plain.sh  text/x-shellscript      ← identical answers
+execve("bom.sh")               refused, ENOEXEC
+execve("plain.sh")             ran                     ← opposite answers
+```
+
+Note what carries it: `--mime-type` returns **the same string** for the file that runs and the file that cannot, on both builds, so this is not an artifact of the English wording that [difference 22](../../CONTRIBUTING.md) warns about — it is the two mechanisms genuinely disagreeing. Neither is wrong. They were never asked the same question. [The first two bytes](../the_first_two_bytes/README.md) measured this case and works through what it does to a script you have been handed.
+
 `binfmt_misc` is the extensible version: writing a magic string and an interpreter path into `/proc/sys/fs/binfmt_misc/register` teaches a running Linux kernel to launch a Java class, a Mono `.exe`, or an ARM binary under `qemu`. It is the only pluggable content-sniffing a kernel has, and it exists purely to answer *how do I run this*.
 
 ## Question three — what is in it?
