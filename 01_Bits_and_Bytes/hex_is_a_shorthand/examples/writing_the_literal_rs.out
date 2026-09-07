@@ -1,0 +1,21 @@
+1. THE SAME FOUR BASES, THE SAME PREFIXES
+   0b1100_0011 = 195      0o303 = 195      195 = 195      0xC3 = 195
+   Rust took Python's prefixes unchanged, so this half transfers with no edits.
+
+2. THE UNDERSCORE IS LOOSER HERE: ANYWHERE, ANY NUMBER OF TIMES
+   0xC3_A9    = 50089   grouped by byte, the reading that matters
+   0x_C3_A9_  = 50089   legal too -- leading and trailing, and Rust does not mind
+   1_000_000  = 1000000
+
+3. AND A LITERAL MAY NAME ITS OWN TYPE, WHICH PYTHON HAS NO WAY TO DO
+   0xC3u8     = 195     a u8, so the width is in the literal
+   0xC3_A9u16 = 50089   a u16, and the compiler checks it fits
+   That suffix is the whole difference in one character: in Python 195 is an
+   integer of no particular width, and in Rust you have said which byte count
+   you meant before the program runs.
+
+4. AND THE LEADING ZERO? IT IS JUST A ZERO
+   0755 = 755    decimal, not octal -- Rust has no leading-zero rule at all
+   One seven-character literal, and each language on this page gives it a
+   different reading -- each from its own program, above and below. The
+   prefix exists so that sentence can stop being true of new code.

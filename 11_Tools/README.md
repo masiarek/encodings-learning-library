@@ -6,7 +6,7 @@ Chapters 1 to 10 are about what text *is*. This chapter is about the programs yo
 
 That is the chapter in a sentence, and it is why these pages exist separately from [06_Terminal](../06_Terminal/README.md). Chapter 6 is the tools whose *job* is bytes — `xxd`, `od`, `iconv`, `file` — shown inside a workflow: one file, five questions, which column is the file and which is a guess. This chapter is the tools whose job is something else entirely, and which turn out to have an opinion about your text anyway.
 
-[`hexdump`](hexdump/README.md) and [`xxd`](xxd/README.md) are the deliberate exceptions, and they are here rather than in chapter 6 because the question they answer is a *tool-choice* question: which of the four dump tools to type, what each one decided before it printed a line, which of them you can paste into a bug report and expect the reader to see what you saw, and which one will give you the file back afterwards. That is this chapter's job. Chapter 6 still owns the workflow.
+The three dump tools — [`hexdump`](hexdump/README.md), [`xxd`](xxd/README.md) and [`od`](od/README.md) — are the deliberate exceptions, and they are here rather than in chapter 6 because the question they answer is a *tool-choice* question: which one to type, what each decided before it printed a line, which you can paste into a bug report and expect the reader to see what you saw, which will give you the file back afterwards, and which will simply be there when nothing else is. That is this chapter's job. Chapter 6 still owns the workflow.
 
 [Typing a character you cannot type](typing_a_character/README.md) is the other way round from the rest of the chapter, and belongs here for the same reason: it is a tool-choice question. The compose key, Vim's digraphs, `uni print` and a macOS keyboard layout are four tools for one job, each with its own table and its own idea of what a character is called — and the chapter's first question, *bytes or characters*, has a twin here: *whose table*.
 
@@ -38,9 +38,10 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 | 11 | [`diff` compares lines, `cmp` compares bytes](diff_and_cmp/README.md) | Why does `diff` say the line changed when both sides look identical? | written, 2026-09-07 |
 | 12 | [`hexdump` is a format engine wearing six presets](hexdump/README.md) | Why is my dump showing the bytes in the wrong order? | written |
 | 13 | [`xxd` is the dump you can put back](xxd/README.md) | Which column of a dump is the file, and how do I get the file back? | written |
-| 14 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
-| 15 | [Typing a character you cannot type](typing_a_character/README.md) | There is no `ż` on my keyboard — how do I produce one? | written, 2026-09-07 |
-| 16 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
+| 14 | [`od` reads types, not bytes](od/README.md) | Nothing else is installed. What are the two flags that make `od` honest? | written, 2026-09-07 |
+| 15 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
+| 16 | [Typing a character you cannot type](typing_a_character/README.md) | There is no `ż` on my keyboard — how do I produce one? | written, 2026-09-07 |
+| 17 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
 
 ## The whole toolkit, one row each
 
@@ -95,7 +96,7 @@ If you came looking for *the list* — every command you are likely to run over 
 |---|---|---|
 | **[`hexdump`](hexdump/README.md)** | dump | six presets on one format engine; the default reads **16-bit numbers** and swaps your pairs. `-C`'s text column is ASCII and nothing else, which is what makes it safe |
 | **[`xxd`](xxd/README.md)** | dump, and undump | honest default, and the only one of the four that goes **backwards** — `xxd -r` reads the hex column, seeks to the offsets, and [ignores the text column entirely](xxd/README.md) |
-| [`od`](../06_Terminal/inspecting_a_file/README.md) | dump, POSIX | the only one guaranteed present — and its default is octal words at octal offsets, while `-a` [invents names for bytes it cannot draw](../06_Terminal/inspecting_a_file/README.md) |
+| **[`od`](od/README.md)** | dump, POSIX | the only one guaranteed present — and its interface is a **C type**, so its default is octal words at octal offsets, `-a` [invents names for bytes it cannot draw](../06_Terminal/inspecting_a_file/README.md), and [no two machines lay its columns out alike](od/README.md) |
 | [`file`](../06_Terminal/file_guesses/README.md) | guess what this is | reads the first bytes and guesses; `--mime-encoding` distinguishes valid UTF-8 from not, and little else |
 | [`cat -vet`](../06_Terminal/inspecting_a_file/README.md#why-plain-cat-is-not-a-way-to-look-at-a-file) | show the invisibles | ASCII-only respelling: `M-x` for a high byte, `$` for a newline, `^I` for a tab. `cat -A` [does not exist on macOS](../CONTRIBUTING.md) |
 | `strings` | pull the text out of a binary | **ASCII by default**, in runs of four or more — so a word containing an accent is split, and a short fragment is dropped entirely. [Measured below](#two-of-the-unbolded-rows-measured) |

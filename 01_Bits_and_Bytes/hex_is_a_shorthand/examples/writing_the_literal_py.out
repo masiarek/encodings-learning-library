@@ -1,0 +1,28 @@
+1. FOUR BASES, ONE NUMBER, IN SOURCE
+   0b1100_0011  = 195      binary, 8 digits, one per bit
+   0o303        = 195      octal, 3 digits
+   195          = 195      decimal, the only base with no prefix
+   0xC3         = 195      hex, 2 digits -- the byte-shaped one
+   Same value four ways. The prefix is not decoration; it is the only thing
+   in the line that says which base the digits are in.
+
+2. THE UNDERSCORE IS A COMMENT YOU CAN PUT INSIDE A NUMBER
+   0b1100_0011  = 195      grouped by nibble, so you can read the two hex digits off it
+   0xC3_A9      = 50089    grouped by BYTE, which is the grouping that matters here
+   1_000_000    = 1000000  grouped by thousand, the habit you already have
+   The parser drops them, so they cost nothing and change nothing. Since 3.6.
+   int('1_000')         -> 1000    -- and int() takes them too
+   int('0b1010_1010', 0) -> 170    -- base 0 means 'read the prefix'
+
+3. A LEADING ZERO IS NOT A BASE. PYTHON 3 MADE SURE OF IT
+   Writing 0755 in source is a SyntaxError -- refused on purpose, not by accident.
+   (The message names the fix; it is not quoted here because CPython rewords it.)
+   compile('x = 0755') -> SyntaxError    confirmed on this interpreter
+
+   And the same seven characters as a STRING, which is where it still bites:
+   int('0755')          -> 755     base 10 by default; the zero is just a zero
+   int('0755', 8)       -> 493     you said the base, so the zero is padding
+   int('0755', 0)       -> ValueError   base 0 reads a prefix, and '0' is not one
+   int('0o755', 0)      -> 493     the prefix, spelled the way Python spells it
+   Three answers from one field of seven characters. If it came out of a config
+   file or a form, the base is a decision somebody has to make in the open.

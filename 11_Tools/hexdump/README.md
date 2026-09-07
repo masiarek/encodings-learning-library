@@ -265,6 +265,7 @@ Then, on a file you actually have:
 - [Reading a hex dump](../../01_Bits_and_Bytes/reading_a_hex_dump/README.md) — the three columns, if this page assumed one you have not met
 - [Inspecting a file](../../06_Terminal/inspecting_a_file/README.md) — the same tools inside a workflow, and `od -a`'s invented names at length
 - [`xxd` is the dump you can put back](../xxd/README.md) — the tool with the honest default, and the only one that reverses
+- [`od` reads types, not bytes](../od/README.md) — the one that is always installed, and what its `-t` is actually asking for
 - [The five worth installing](../worth_installing/README.md) — `hexyl`, measured against what you already have
 - [Byte order and the BOM](../../03_Encodings/byte_order_and_bom/README.md) — where the swapped pairs come from, in the format that has to care
 - [A character and its bytes on one line](../../06_Terminal/character_and_its_bytes/README.md) — the one-liner that turns a character into its dump

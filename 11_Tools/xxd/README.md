@@ -236,4 +236,5 @@ Then:
 - [Reading a hex dump](../../01_Bits_and_Bytes/reading_a_hex_dump/README.md) — the three columns, if this page assumed one you have not met
 - [Inspecting a file](../../06_Terminal/inspecting_a_file/README.md) — these tools inside a workflow, and which column is the file
 - [A character is a number](../../02_Characters/a_character_is_a_number/README.md) — the agreement `-E` swaps out
+- [`od` reads types, not bytes](../od/README.md) — the one that will be installed when `xxd` is not
 - [Code pages](../../02_Characters/code_pages/README.md) — the family EBCDIC belongs to, and why more than one of them exists

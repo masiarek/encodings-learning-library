@@ -214,15 +214,15 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 
 ### 1.12 Hexadecimal and numeric bases — **core**
 
-*Covered:* [Hex is a shorthand](01_Bits_and_Bytes/hex_is_a_shorthand/README.md) · [Hex: a number, or a picture of bytes](01_Bits_and_Bytes/hex_number_or_bytes/README.md) · [Reading a hex dump](01_Bits_and_Bytes/reading_a_hex_dump/README.md) · [A byte is eight bits](01_Bits_and_Bytes/a_byte_is_eight_bits/README.md) · [Why hex and not octal](01_Bits_and_Bytes/hex_is_a_shorthand/README.md#why-hex-and-not-octal)
+*Covered:* [Hex is a shorthand](01_Bits_and_Bytes/hex_is_a_shorthand/README.md) · [Hex: a number, or a picture of bytes](01_Bits_and_Bytes/hex_number_or_bytes/README.md) · [Reading a hex dump](01_Bits_and_Bytes/reading_a_hex_dump/README.md) · [A byte is eight bits](01_Bits_and_Bytes/a_byte_is_eight_bits/README.md) · [Why hex and not octal](01_Bits_and_Bytes/hex_is_a_shorthand/README.md#why-hex-and-not-octal) · [Writing the literal](01_Bits_and_Bytes/hex_is_a_shorthand/README.md#writing-the-literal) · [A byte was not always eight bits](01_Bits_and_Bytes/a_byte_is_eight_bits/README.md#a-byte-was-not-always-eight-bits)
 
 **Imported:** hexadecimal · hex digits · `0x` prefix · hex dump · hex editor · `xxd` · `od` · nibble · hex string · case convention · octal · binary · decimal · bit · byte · octet
 
 **Missing — add:**
 
-- **`0b`, `0o`, `_` separators** — modern literal syntax in Python, Rust, C++14. Half of this landed on [Hex: a number, or a picture of bytes](01_Bits_and_Bytes/hex_number_or_bytes/README.md) from the *parsing* side: `4_1` is 65 to Python, an error to Rust, and **4** to C's `strtol` with the rest left over. What is still missing is the *literal* side — what a compiler accepts in source.
+- ~~**`0b`, `0o`, `_` separators**~~ — both halves are written. The *parsing* side is on [Hex: a number, or a picture of bytes](01_Bits_and_Bytes/hex_number_or_bytes/README.md): `4_1` is 65 to Python, an error to Rust, and **4** to C's `strtol` with the rest left over. The *literal* side — what a compiler accepts in source — is [Writing the literal](01_Bits_and_Bytes/hex_is_a_shorthand/README.md#writing-the-literal), where the sting is the base that has no prefix: `0755` is **493 in C, 755 in Rust, and a syntax error in Python 3**.
 - ~~**Endianness is visible in a hex editor and nowhere else**~~ — half-answered on the same page: a number has no byte order and a byte string does, so the question comes into existence at the conversion. The hex-editor half still belongs to §2.5.
-- **A "byte" was not always 8 bits** — hence "octet" in every network standard. One sentence, and it makes the RFC vocabulary make sense.
+- ~~**A "byte" was not always 8 bits**~~ — written as [A byte was not always eight bits](01_Bits_and_Bytes/a_byte_is_eight_bits/README.md#a-byte-was-not-always-eight-bits), and it took more than a sentence because the question is still open in C: `CHAR_BIT` is a number the language declines to fix at 8 (POSIX does), and `sizeof(char) == 1` is true by *definition*, so `sizeof` counts chars and not octets. Which is where the RFC vocabulary comes from.
 
 ### 1.13 Registries and living standards — **core, and entirely absent from the imported list**
 

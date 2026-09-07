@@ -1,0 +1,17 @@
+1. IN C, A LEADING ZERO *IS* THE OCTAL PREFIX
+   0755 = 493    <- octal. The prefix is a single '0', and it is easy to miss.
+    755 = 755    <- decimal. One character apart, 262 apart in value.
+   0x1ED = 493   <- the same 493 in hex, where the base is spelled out loud.
+   This is the rule Python 3 removed and Rust never adopted, and it is why
+   chmod(path, 0755) is correct while chmod(path, 755) compiles and is not.
+
+2. WHICH MAKES THE ZERO THE ONLY PREFIX YOU CANNOT SEE
+   0x / 0b / 0o are two characters and one of them is a letter. C's octal
+   prefix is one character that is also a digit, in a language where a
+   zero-padded number is a completely ordinary thing to write.
+
+3. AND C11 HAS NO BINARY LITERAL AT ALL
+   0b1100_0011 is not C. Neither is the underscore.
+   C++14 added both first, and picked the APOSTROPHE as its separator --
+   0b1100'0011 -- because '_' was already taken by user-defined literals.
+   C23 then matched C++, nine years later. Same idea, a third spelling.

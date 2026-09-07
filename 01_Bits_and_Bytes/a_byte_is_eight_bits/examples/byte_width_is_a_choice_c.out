@@ -1,0 +1,18 @@
+1. C HAS A NAME FOR THE NUMBER EVERYONE THINKS IS SETTLED
+   CHAR_BIT   = 8      <limits.h> -- the bits in a char, on THIS machine
+   UCHAR_MAX  = 255    so an unsigned char holds 0..255
+   The C standard requires CHAR_BIT >= 8 and no more. POSIX requires exactly 8,
+   which is why every machine you will meet says 8 -- by a promise the operating
+   system makes, not one the language does.
+
+2. WHICH IS WHY sizeof(char) IS 1 BY DEFINITION, NOT BY MEASUREMENT
+   sizeof(char)  = 1   <- 1 always, on every machine C has ever targeted
+   sizeof(int)   = 4   <- and this one is measured, in units of char
+   On a machine with 9-bit chars, sizeof(char) would still be 1 and a char would
+   still hold 9 bits. sizeof counts CHARS, and a char is whatever this machine's
+   byte is. That is the whole reason the network standards say 'octet' instead.
+
+3. THE BITS IN AN int, WORKED OUT RATHER THAN ASSUMED
+   sizeof(int) * CHAR_BIT = 4 * 8 = 32 bits
+   That multiplication is the portable spelling. Writing 32 is a guess that has
+   been right for a long time on the machines that are left.

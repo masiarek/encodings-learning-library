@@ -1,0 +1,116 @@
+1. TWO NUMBER BASES NOBODY ASKED FOR
+
+$ od s.txt | tidy
+0000000 060543 141546 035251 030440 101342 005254
+0000014
+   Twelve bytes, and not one of them is on screen. The default type is
+   -t o2: SIX 16-bit words, printed in octal. And the offsets are octal
+   too, so the last line says 0000014 for a 12-byte file — 14 octal is 12.
+   Two number bases, neither of them stated, in the output of the only
+   dump tool a stripped-down machine is guaranteed to have.
+
+2. THE INCANTATION
+
+$ od -An -tx1 s.txt | tidy
+63 61 66 c3 a9 3a 20 31 e2 82 ac 0a
+   -A n drops the offset column, -t x1 says hexadecimal one byte at a
+   time. Those twelve numbers ARE the file. If you remember one od
+   command, remember this one.
+
+3. -A PICKS THE RADIX OF THE OFFSET COLUMN
+
+$ od -Ad -tx1 s.txt | tidy
+0000000 63 61 66 c3 a9 3a 20 31 e2 82 ac 0a
+0000012
+
+$ od -Ao -tx1 s.txt | tidy
+0000000 63 61 66 c3 a9 3a 20 31 e2 82 ac 0a
+0000014
+   d for decimal, o for octal (the default), n for none. There is an x
+   for hex too, and it is the one thing on this page that is not the same
+   width on both machines — the page has that measurement.
+
+4. -t IS A TYPE: A LETTER AND A SIZE
+   The letter is how to print it, the number is how many bytes that is.
+
+$ od -An -tx1 s.txt | tidy
+63 61 66 c3 a9 3a 20 31 e2 82 ac 0a
+
+$ od -An -tu1 s.txt | tidy
+99 97 102 195 169 58 32 49 226 130 172 10
+
+$ od -An -tx2 s.txt | tidy
+6163 c366 3aa9 3120 82e2 0aac
+
+$ od -An -tx4 s.txt | tidy
+c3666163 31203aa9 0aac82e2
+   Same twelve bytes, four readings. x1 and u1 are the same bytes in two
+   bases. x2 and x4 group them into 16- and 32-bit numbers and print each
+   number in THIS CPU's byte order, which is why 63 61 becomes 6163 and
+   63 61 66 c3 becomes c3666163. Grouping is a claim about the file.
+
+5. AND IT WILL READ YOUR TEXT AS ANYTHING YOU NAME
+
+$ od -An -td2 s.txt | tidy
+24931 -15514 15017 12576 -32030 2732
+   The same bytes as SIGNED 16-bit integers. c366 is 50022 unsigned and
+   -15514 signed, and od printed the second one because you asked for d.
+
+$ od -An -tdI s.txt | tidy
+-1016700573 824195753 179077858
+   Sizes have letters as well as numbers: C is a char, S a short, I an
+   int, L a long. -t dI is three signed ints, because twelve bytes is
+   three of them. There is -t f4 and -t f8 for floating point as well,
+   and od will happily tell you what your CSV is as a run of doubles.
+   Nothing here is a bug: od is doing exactly what a C cast does, which
+   is what the tool was built for.
+
+6. SEVERAL READINGS IN ONE PASS — THE THING ONLY od DOES
+
+$ od -An -tx1 -tc nospace.txt | cols
+  63  61  66  c3  a9  3d  31  e2  82  ac  0a
+   c   a   f 303 251   =   1 342 202 254  \n
+   Two -t flags, two rows for every line of input, each byte's hex sitting
+   directly above what it is as a character. hexdump needs three -e
+   strings to line those up and xxd cannot do it at all. Add a third -t
+   and you get a third row:
+
+$ od -An -tx1 -tu1 -tc nospace.txt | cols
+  63  61  66  c3  a9  3d  31  e2  82  ac  0a
+  99  97 102 195 169  61  49 226 130 172  10
+   c   a   f 303 251   =   1 342 202 254  \n
+   (These two use '=' where the demo file has ': ' — under -t c a space
+   byte prints as blanks, which the column helper cannot tell apart from
+   padding. That is a limit of the helper, not of od.)
+
+7. A WINDOW INTO A BIG FILE
+
+$ od -Ad -j 2 -N 4 -tx1 s.txt | tidy
+0000002 66 c3 a9 3a
+0000006
+   -j skips, -N stops. The offsets keep counting from the front of the
+   file, so what you read is the address in the file and not in the
+   window — which is what you want when you are quoting it to someone.
+
+8. THE STAR, WHICH od SHARES WITH hexdump
+
+$ od -Ad -tx1 zeros.bin | tidy
+0000000 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+*
+0000064
+   64 bytes in, one line out. A * means the line above repeats. -v turns
+   it off, and anything parsing od's output needs -v:
+
+$ od -Ad -v -tx1 zeros.bin | tidy | wc -l | tr -d ' '
+5
+   ^ five: four lines of sixteen bytes, plus the final offset line.
+
+9. WHY EVERY BLOCK ABOVE ENDS IN | tidy
+   Because the raw output cannot be recorded. BSD od indents, pads a short
+   line out to the width a full 16-byte line would take, and adds a
+   trailing blank line; GNU od does none of that, and its own indent is
+   not constant between formats either. The NUMBERS agree on both
+   machines. Nothing else does — so od output is the one thing in this
+   chapter you cannot quote without saying which machine it came from,
+   and the page shows both raw versions side by side rather than this
+   script pretending there is one answer.

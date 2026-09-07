@@ -202,6 +202,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "diff_and_cmp",
         "hexdump",
         "xxd",
+        "od",
         "uni",
         "typing_a_character",
         "worth_installing",
