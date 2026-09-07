@@ -193,6 +193,21 @@ The sharpest part of the story is here, and it is not the writing — it is that
    Every element ends in a newline except the last, so code that strips a
    fixed number of characters off the end damages exactly one row — the
    last. Use .rstrip(chr(10)), or splitlines(), and never [:-1].
+
+7. WHICH CHARACTERS splitlines() TREATS AS A LINE ENDING
+   LF    000a       splitlines() -> 2 lines
+   CRLF  000d 000a  splitlines() -> 2 lines
+   CR    000d       splitlines() -> 2 lines
+   VT    000b       splitlines() -> 2 lines
+   FF    000c       splitlines() -> 2 lines
+   FS    001c       splitlines() -> 2 lines
+   NEL   0085       splitlines() -> 2 lines
+   LS    2028       splitlines() -> 2 lines
+   PS    2029       splitlines() -> 2 lines
+   All nine. split(chr(10)) breaks on exactly one of them, and Rust's
+   lines() on one too (plus an optional CR in front). So 'the terminator
+   reading' is not one reading — Python's is the widest of the three, and
+   the three it adds beyond ASCII (NEL, LS, PS) come from Unicode itself.
 ```
 <!-- /output -->
 
@@ -225,12 +240,59 @@ The sharpest part of the story is here, and it is not the writing — it is that
 
 5. WRITING IT
    println!(..)  adds it
-   print!(..)    does not — and stdout is line-buffered when it is a
-                 terminal, so a print! with no newline may sit in the
-                 buffer looking like nothing happened until you flush.
+   print!(..)    does not — and Rust wraps stdout in a LineWriter, so
+                 the flush happens ON the newline. Text from a bare
+                 print! sits in the buffer looking like nothing ran.
+   This does NOT depend on being a terminal, which is the part worth
+   knowing: C and Python switch to block buffering when stdout is a
+   pipe, and lose a completed line if they die unflushed. Rust line-
+   buffers either way. The page has the measurement.
    this line was printed with print! and an explicit \n
+
+6. WHICH CHARACTERS END A LINE — AND WHY THIS IS NOT splitlines()
+   LF     000a      lines() -> 2 line(s)
+   CRLF   000d000a  lines() -> 2 line(s)
+   CR     000d      lines() -> 1 line(s)   (not a break)
+   VT     000b      lines() -> 1 line(s)   (not a break)
+   FF     000c      lines() -> 1 line(s)   (not a break)
+   FS     001c      lines() -> 1 line(s)   (not a break)
+   NEL    0085      lines() -> 1 line(s)   (not a break)
+   LS     2028      lines() -> 1 line(s)   (not a break)
+   PS     2029      lines() -> 1 line(s)   (not a break)
+   Only LF ends a line, with an optional CR allowed in front of it.
+   Python's splitlines() breaks on ALL NINE of these. So lines() and
+   splitlines() are not the same reading: they agree on LF and CRLF
+   and part company on the other seven: four ASCII control codes
+   (CR, VT, FF, FS) and three that are not ASCII at all (NEL, LS, PS).
 ```
 <!-- /output -->
+
+## "The terminator reading" is three different readings
+
+This page has been using *terminator* and *separator* as if each named one behaviour. The separator half is exact — `split('\n')` and Rust's `split('\n')` both break on one byte. The **terminator** half is not: the three languages disagree about which characters end a line at all, and they were measured rather than assumed.
+
+| | ends a line | agrees with |
+|---|---|---|
+| `wc -l`, `read`, the shell | `0a` only | — |
+| Rust `str::lines()` | `0a`, with an optional `0d` in front | the shell |
+| Python `str.splitlines()` | **nine** characters | neither |
+
+Python breaks on `LF`, `CRLF`, `CR`, `VT` (`000b`), `FF` (`000c`), `FS` (`001c`), `NEL` (`0085`), `LS` (`2028`) and `PS` (`2029`). Rust breaks on the first two and treats the other seven as ordinary text — both generated blocks above show their own half. So a file containing a `000c` between two records is **two lines to Python and one to Rust**, with no error either way.
+
+Three of the seven are not ASCII at all — `NEL`, `LINE SEPARATOR` and `PARAGRAPH SEPARATOR` are Unicode's own line breaks, which is why this belongs on an encodings page rather than a style guide: `splitlines()` is making a *Unicode* decision on your behalf, and `lines()` is making a byte one. Neither is wrong; they answer different questions, and only one of them changes if your data acquires a `U+2028`.
+
+## The buffer flushes on the newline — and Rust does not care if you are a terminal
+
+The Rust block above says `print!` can leave text sitting in the buffer. The part worth knowing is what that does **not** depend on:
+
+```text title="Measured 2026-09-07 — macOS 26 (rustc 1.98.0, clang, CPython 3.14) and rust:slim / ubuntu:24.04 on Linux. Each program prints one COMPLETE line and then dies without flushing (abort / _exit)."
+                stdout is a pipe        stdout is a terminal
+Rust            line survives           line survives
+C               LINE LOST               line survives
+Python          LINE LOST               line survives
+```
+
+C and Python switch to **block** buffering when stdout is not a terminal, so a finished line can be lost if the process dies unflushed — the classic "my logs stop just before the crash". Rust wraps stdout in a `LineWriter` unconditionally, so the newline flushes either way. That is the same byte doing the same job as everywhere else on this page, one layer down: **the newline is what closes the line, and here it is also what sends it.**
 
 ## Where the missing byte actually bites
 
@@ -263,6 +325,6 @@ The `$(cat f)` row is worth knowing in the other direction too, because it is th
 ## See also
 
 - [A character and its bytes on one line](../character_and_its_bytes/README.md) — the one-liner this page's section 5 explains
-- [Control characters](../../02_Characters/control_characters/README.md) — what `LF` is, and the CR that comes with it on Windows
+- [Control characters](../../02_Characters/control_characters/README.md) — what `LF` is, the CR that comes with it on Windows, and the other seven characters Python calls a line ending
 - [`printf` writes bytes](../printf_writes_bytes/README.md) — the other half of `printf` versus `echo`
 - [Inspecting a file](../inspecting_a_file/README.md) — when the screen and the file disagree, which column is the file

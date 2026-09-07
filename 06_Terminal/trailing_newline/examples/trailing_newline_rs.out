@@ -21,7 +21,27 @@
 
 5. WRITING IT
    println!(..)  adds it
-   print!(..)    does not — and stdout is line-buffered when it is a
-                 terminal, so a print! with no newline may sit in the
-                 buffer looking like nothing happened until you flush.
+   print!(..)    does not — and Rust wraps stdout in a LineWriter, so
+                 the flush happens ON the newline. Text from a bare
+                 print! sits in the buffer looking like nothing ran.
+   This does NOT depend on being a terminal, which is the part worth
+   knowing: C and Python switch to block buffering when stdout is a
+   pipe, and lose a completed line if they die unflushed. Rust line-
+   buffers either way. The page has the measurement.
    this line was printed with print! and an explicit \n
+
+6. WHICH CHARACTERS END A LINE — AND WHY THIS IS NOT splitlines()
+   LF     000a      lines() -> 2 line(s)
+   CRLF   000d000a  lines() -> 2 line(s)
+   CR     000d      lines() -> 1 line(s)   (not a break)
+   VT     000b      lines() -> 1 line(s)   (not a break)
+   FF     000c      lines() -> 1 line(s)   (not a break)
+   FS     001c      lines() -> 1 line(s)   (not a break)
+   NEL    0085      lines() -> 1 line(s)   (not a break)
+   LS     2028      lines() -> 1 line(s)   (not a break)
+   PS     2029      lines() -> 1 line(s)   (not a break)
+   Only LF ends a line, with an optional CR allowed in front of it.
+   Python's splitlines() breaks on ALL NINE of these. So lines() and
+   splitlines() are not the same reading: they agree on LF and CRLF
+   and part company on the other seven: four ASCII control codes
+   (CR, VT, FF, FS) and three that are not ASCII at all (NEL, LS, PS).

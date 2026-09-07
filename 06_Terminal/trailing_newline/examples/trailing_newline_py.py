@@ -59,3 +59,18 @@ print(f"   readlines() -> {lines}")
 print("   Every element ends in a newline except the last, so code that strips a")
 print("   fixed number of characters off the end damages exactly one row — the")
 print("   last. Use .rstrip(chr(10)), or splitlines(), and never [:-1].")
+
+print()
+print("7. WHICH CHARACTERS splitlines() TREATS AS A LINE ENDING")
+BREAKS = [
+    ("LF", "\n"), ("CRLF", "\r\n"), ("CR", "\r"), ("VT", "\x0b"), ("FF", "\x0c"),
+    ("FS", "\x1c"), ("NEL", "\x85"), ("LS", "\u2028"), ("PS", "\u2029"),
+]
+for name, ch in BREAKS:
+    codes = " ".join(f"{ord(c):04x}" for c in ch)
+    n = len(("a" + ch + "b").splitlines())
+    print(f"   {name:<5} {codes:<10} splitlines() -> {n} lines")
+print("   All nine. split(chr(10)) breaks on exactly one of them, and Rust's")
+print("   lines() on one too (plus an optional CR in front). So 'the terminator")
+print("   reading' is not one reading — Python's is the widest of the three, and")
+print("   the three it adds beyond ASCII (NEL, LS, PS) come from Unicode itself.")

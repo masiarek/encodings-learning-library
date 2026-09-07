@@ -36,3 +36,18 @@
    Every element ends in a newline except the last, so code that strips a
    fixed number of characters off the end damages exactly one row — the
    last. Use .rstrip(chr(10)), or splitlines(), and never [:-1].
+
+7. WHICH CHARACTERS splitlines() TREATS AS A LINE ENDING
+   LF    000a       splitlines() -> 2 lines
+   CRLF  000d 000a  splitlines() -> 2 lines
+   CR    000d       splitlines() -> 2 lines
+   VT    000b       splitlines() -> 2 lines
+   FF    000c       splitlines() -> 2 lines
+   FS    001c       splitlines() -> 2 lines
+   NEL   0085       splitlines() -> 2 lines
+   LS    2028       splitlines() -> 2 lines
+   PS    2029       splitlines() -> 2 lines
+   All nine. split(chr(10)) breaks on exactly one of them, and Rust's
+   lines() on one too (plus an optional CR in front). So 'the terminator
+   reading' is not one reading — Python's is the widest of the three, and
+   the three it adds beyond ASCII (NEL, LS, PS) come from Unicode itself.
