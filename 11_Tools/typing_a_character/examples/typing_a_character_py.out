@@ -1,0 +1,120 @@
+
+1. FOUR SYSTEMS NAME A CHARACTER, AND THEY ARE NOT ONE TABLE
+------------------------------------------------------------------------
+   code point  Unicode Name                         keysym         digraph  HTML
+   U+0041      LATIN CAPITAL LETTER A               A              -        &#x41;
+   U+00E9      LATIN SMALL LETTER E WITH ACUTE      eacute         e'       &eacute;
+   U+00A0      NO-BREAK SPACE                       nobreakspace   NS       &nbsp;
+   U+0142      LATIN SMALL LETTER L WITH STROKE     -              l/       &lstrok;
+   U+017C      LATIN SMALL LETTER Z WITH DOT ABOVE  -              z.       &zdot;
+   U+20AC      EURO SIGN                            EuroSign       =e       &euro;
+   U+0CA0      KANNADA LETTER TTHA                  -              -        &#xca0;
+
+   Read down the two middle columns. The Polish letters have a Vim
+   digraph and no keysym of their own; the Kannada letter has neither,
+   which is what 'a script nobody here has a keyboard for' means in
+   practice. Only the Name column is filled all the way down, and only
+   the Name column is a standard rather than one project's table.
+
+2. A COMPOSE SEQUENCE IS A PATH, NOT A NAME
+------------------------------------------------------------------------
+   30 sequences, verbatim from the en_US.UTF-8 Compose file:
+
+   keys                                      gives     keysym
+   dead_acute e                              U+00E9    eacute
+   Multi_key acute e                         U+00E9    eacute
+   Multi_key e acute                         U+00E9    eacute
+   Multi_key apostrophe e                    U+00E9    eacute
+   Multi_key e apostrophe                    U+00E9    eacute
+   Multi_key C equal                         U+20AC    EuroSign
+   Multi_key equal C                         U+20AC    EuroSign
+   Multi_key c equal                         U+20AC    EuroSign
+   Multi_key equal c                         U+20AC    EuroSign
+   Multi_key E equal                         U+20AC    EuroSign
+   Multi_key equal E                         U+20AC    EuroSign
+   Multi_key e equal                         U+20AC    EuroSign
+   Multi_key equal e                         U+20AC    EuroSign
+   Multi_key Cyrillic_ES equal               U+20AC    EuroSign
+   Multi_key equal Cyrillic_ES               U+20AC    EuroSign
+   Multi_key Cyrillic_IE equal               U+20AC    EuroSign
+   Multi_key equal Cyrillic_IE               U+20AC    EuroSign
+   dead_currency e                           U+20AC    EuroSign
+   dead_stroke l                             U+0142    U0142
+   Multi_key slash l                         U+0142    U0142
+   Multi_key l slash                         U+0142    U0142
+   Multi_key KP_Divide l                     U+0142    U0142
+   dead_abovedot z                           U+017C    U017C
+   Multi_key period z                        U+017C    U017C
+   Multi_key z period                        U+017C    U017C
+   Multi_key space space                     U+00A0    nobreakspace
+   Multi_key o c                             U+00A9    copyright
+   Multi_key O C                             U+00A9    copyright
+   Multi_key C O                             U+00A9    copyright
+   Multi_key minus minus minus               U+2014    U2014
+
+   The euro alone has 13 of them in that file, and the reason is
+   that a compose sequence is not a name being looked up -- it is a PATH
+   through a tree, so the file can afford to list every path a person
+   might try. C= and =C and c= and =c and E= and e=, plus the Cyrillic
+   letters that look like C and E. Vim's table has exactly one: =e.
+
+   Two rows are worth stopping on. <Multi_key> <space> <space> produces
+   U+00A0, so the most troublesome invisible character in this library
+   is two keystrokes that look exactly like typing a space twice. And
+   the em dash takes three keys after Multi_key, not two -- the length
+   is not fixed, which is what section 3 is about.
+
+3. WHY IT NEEDS NO TERMINATOR
+------------------------------------------------------------------------
+   sequence lengths in this sample: [2, 3, 4]
+   sequences that EXTEND another complete sequence: 0
+
+   That zero is the whole design. No complete sequence is a prefix of
+   another, so the moment the keys you have typed match a sequence, the
+   input method can commit -- there is no longer path it might still be
+   on, and you never press Enter to say you are done. It holds over the
+   whole file too, not just this sample; the page has the number.
+
+   It is the same property that makes UTF-8 self-synchronising, one
+   layer up: a code that can be read left to right with no lookahead.
+
+4. THE ONE YOUR PROGRAM CAN ACTUALLY USE
+------------------------------------------------------------------------
+   Compose needs X11. Digraphs need Vim. The Unicode Name needs
+   nothing at all, because it is in the standard library:
+
+   lookup('EURO SIGN')
+      -> U+20AC   '€'
+   lookup('LATIN SMALL LETTER Z WITH DOT ABOVE')
+      -> U+017C   'ż'
+   lookup('NO-BREAK SPACE')
+      -> U+00A0   '\xa0'
+   lookup('KANNADA LETTER TTHA')
+      -> U+0CA0   'ಠ'
+
+   And it round-trips: unicodedata.name(unicodedata.lookup(n)) == n for
+   every name above -> True
+
+   That round trip is a promise, not an observation: a character's Name
+   is frozen when the character is assigned and can never be changed,
+   typos included. Neither the keysym table nor the digraph table
+   promises anything of the sort. Vim has added digraphs over the
+   years, and uni's copy of that table is already behind Vim's own.
+
+5. WHATEVER YOU TYPED, THE BYTES ARE THE ANSWER
+------------------------------------------------------------------------
+   two ways to end up with the same picture:
+      one code point   1  U+00E9        2 bytes
+      two code points  2  U+0065 U+0301  3 bytes
+      equal?           False
+
+   A dead key, a compose sequence, a digraph and a paste from a web
+   page can each hand you either one, and they are the same picture at
+   every size. So the last step of typing a character you could not
+   type is checking what you actually got: `uni identify` prints one
+   row or two, and unicodedata.normalize settles it in a program.
+
+   The Compose file can even produce the bare mark on its own --
+   <dead_acute> <nobreakspace> is U+0301 with nothing under it -- which
+   is the one route by which a hand-typed decomposed string is possible
+   rather than merely claimed.

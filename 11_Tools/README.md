@@ -8,6 +8,8 @@ That is the chapter in a sentence, and it is why these pages exist separately fr
 
 [`hexdump`](hexdump/README.md) and [`xxd`](xxd/README.md) are the deliberate exceptions, and they are here rather than in chapter 6 because the question they answer is a *tool-choice* question: which of the four dump tools to type, what each one decided before it printed a line, which of them you can paste into a bug report and expect the reader to see what you saw, and which one will give you the file back afterwards. That is this chapter's job. Chapter 6 still owns the workflow.
 
+[Typing a character you cannot type](typing_a_character/README.md) is the other way round from the rest of the chapter, and belongs here for the same reason: it is a tool-choice question. The compose key, Vim's digraphs, `uni print` and a macOS keyboard layout are four tools for one job, each with its own table and its own idea of what a character is called — and the chapter's first question, *bytes or characters*, has a twin here: *whose table*.
+
 ## The three questions
 
 Ask these of any tool before you trust its answer about non-ASCII text. Each page here answers all three for one tool.
@@ -36,7 +38,8 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 | 11 | [`hexdump` is a format engine wearing six presets](hexdump/README.md) | Why is my dump showing the bytes in the wrong order? | written |
 | 12 | [`xxd` is the dump you can put back](xxd/README.md) | Which column of a dump is the file, and how do I get the file back? | written |
 | 13 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
-| 14 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
+| 14 | [Typing a character you cannot type](typing_a_character/README.md) | There is no `ż` on my keyboard — how do I produce one? | written, 2026-09-07 |
+| 15 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
 
 ## The whole toolkit, one row each
 
