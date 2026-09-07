@@ -26,6 +26,7 @@ them did.
     python3 tools/check_all.py              # the working tree
     python3 tools/check_all.py --staged     # the tree your next commit makes
     python3 tools/check_all.py --committed  # what CI will actually see
+    python3 tools/check_all.py --mine A B   # HEAD, plus only the paths you name
     python3 tools/check_all.py --selftest   # prove a failure is still reported
 
 --committed is the one worth knowing about. CI checks out the commit, not your
@@ -40,6 +41,20 @@ green and says nothing about the commit you are about to make. --staged writes
 the index out with `git write-tree` and gates that. In a checkout several
 sessions share, that gap is where the damage happens -- `git add` on a shared
 file takes a colleague's in-flight lines with it.
+
+--mine is the one for UNCOMMITTED work while somebody else is mid-edit, and it
+is the only mode that isolates you. The bare working-tree run reads their
+unstaged edits; --staged writes out the shared INDEX, so their `git add` enters
+your verdict; --committed cannot see uncommitted work at all. Each is green or
+red for reasons that are not yours. --mine extracts HEAD and copies in only the
+paths you name, so what it gates is HEAD plus your work and nothing else.
+
+You must name the paths. Inferring them from `git status` reproduces the bug:
+on 2026-09-07 a half-applied rename left one session's tree showing six
+deletions and an addition belonging to ANOTHER session, and anything that
+overlaid everything dirty would have gated a colleague's in-flight work as
+yours and called it green. Being made to say what you are claiming is half the
+value of the mode.
 """
 
 from __future__ import annotations
@@ -135,6 +150,102 @@ def staged_tree() -> int:
         return run_gates(pathlib.Path(tmp), f"the staged tree ({tree[:7]})")
 
 
+def assemble_mine(repo: pathlib.Path, paths: list[str], dest: pathlib.Path) -> list[str]:
+    """Extract HEAD into `dest`, then overlay only `paths` from the working tree.
+
+    Returns what it did, one line per path, so the run says out loud whose work
+    is being gated. A named path that is gone from the working tree is a
+    DELETION and is removed from the tree -- deleting a file is work too, and a
+    mode that silently kept it would pass a commit that CI then fails on.
+    """
+    archive = subprocess.run(
+        ["git", "archive", "HEAD"], cwd=repo, capture_output=True, check=True
+    )
+    subprocess.run(["tar", "-x", "-C", str(dest)], input=archive.stdout, check=True)
+
+    notes: list[str] = []
+    for rel in paths:
+        src, dst = repo / rel, dest / rel
+        if src.is_dir():
+            shutil.copytree(src, dst, dirs_exist_ok=True)
+            notes.append(f"overlaid dir   {rel}")
+        elif src.is_file():
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+            notes.append(f"overlaid file  {rel}")
+        elif dst.is_dir():
+            shutil.rmtree(dst)
+            notes.append(f"removed dir    {rel}  (deleted in your tree)")
+        elif dst.is_file():
+            dst.unlink()
+            notes.append(f"removed file   {rel}  (deleted in your tree)")
+        else:
+            notes.append(f"SKIPPED        {rel}  (not in your tree and not in HEAD)")
+    return notes
+
+
+def mine_tree(paths: list[str]) -> int:
+    """Gate HEAD plus only the paths you name -- the honest check for uncommitted work."""
+    with tempfile.TemporaryDirectory() as tmp:
+        dest = pathlib.Path(tmp)
+        for note in assemble_mine(REPO, paths, dest):
+            print(f"  {note}")
+        print()
+        head = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=REPO, capture_output=True, text=True
+        ).stdout.strip()
+        return run_gates(dest, f"HEAD ({head}) plus {len(paths)} path(s) of yours")
+
+
+def selftest_mine() -> int:
+    """Prove --mine excludes a colleague's dirty file, which is what the others cannot do.
+
+    The assertion is about the TREE it assembles, not about running the five
+    real gates: those need uv, mkdocs and this repo's own content, so a
+    three-way fixture that ran them would be testing the gates rather than the
+    mode. What can be wrong here is which bytes end up in the tree, so that is
+    what is checked -- in a scratch repo, touching nothing shared.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        repo, dest = pathlib.Path(tmp) / "repo", pathlib.Path(tmp) / "out"
+        repo.mkdir(); dest.mkdir()
+        q = dict(cwd=repo, capture_output=True, check=True)
+        subprocess.run(["git", "init", "-q", "-b", "main"], **q)
+        subprocess.run(["git", "config", "user.email", "t@t"], **q)
+        subprocess.run(["git", "config", "user.name", "t"], **q)
+        (repo / "mine.txt").write_text("committed\n")
+        (repo / "theirs.txt").write_text("committed\n")
+        (repo / "doomed.txt").write_text("committed\n")
+        subprocess.run(["git", "add", "-A"], **q)
+        subprocess.run(["git", "commit", "-qm", "base"], **q)
+
+        # Now: my edit, a colleague's edit, my deletion, and my untracked folder.
+        (repo / "mine.txt").write_text("MY EDIT\n")
+        (repo / "theirs.txt").write_text("THEIR EDIT\n")
+        (repo / "doomed.txt").unlink()
+        (repo / "newdir").mkdir(); (repo / "newdir" / "n.txt").write_text("MY NEW FILE\n")
+        subprocess.run(["git", "add", "theirs.txt"], **q)   # their `git add`, which --staged would swallow
+
+        assemble_mine(repo, ["mine.txt", "doomed.txt", "newdir"], dest)
+
+        checks = [
+            ("my edit is present", (dest / "mine.txt").read_text() == "MY EDIT\n"),
+            ("their edit is NOT", (dest / "theirs.txt").read_text() == "committed\n"),
+            ("my deletion applied", not (dest / "doomed.txt").exists()),
+            ("my untracked file is present", (dest / "newdir" / "n.txt").exists()),
+        ]
+    print("selftest --mine: assembling HEAD + named paths in a scratch repo\n")
+    bad = [n for n, ok in checks if not ok]
+    for name, ok in checks:
+        print(f"  {'ok  ' if ok else 'FAIL'}  {name}")
+    print()
+    if bad:
+        print(f"SELFTEST FAILED: {', '.join(bad)}")
+        return 1
+    print("selftest passed: --mine gates your work and not a colleague's.")
+    return 0
+
+
 def selftest() -> int:
     """A failing gate must be reported as failing. Proves this script still bites."""
     global GATES
@@ -143,8 +254,8 @@ def selftest() -> int:
     if run_gates(REPO, "the working tree") == 0:
         print("SELFTEST FAILED: a failing gate was reported as passing.")
         return 1
-    print("selftest passed: the failure was reported.")
-    return 0
+    print("selftest passed: the failure was reported.\n")
+    return selftest_mine()
 
 
 def main() -> int:
@@ -152,10 +263,14 @@ def main() -> int:
     parser.add_argument("--committed", action="store_true", help="run against git archive HEAD")
     parser.add_argument("--staged", action="store_true",
                         help="run against the tree your next commit would produce")
+    parser.add_argument("--mine", nargs="+", metavar="PATH",
+                        help="gate HEAD plus ONLY these paths of yours (uncommitted work)")
     parser.add_argument("--selftest", action="store_true", help="prove a failure is reported")
     args = parser.parse_args()
     if args.selftest:
         return selftest()
+    if args.mine:
+        return mine_tree(args.mine)
     if args.committed:
         return committed_tree()
     if args.staged:
