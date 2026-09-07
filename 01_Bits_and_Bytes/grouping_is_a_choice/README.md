@@ -329,7 +329,7 @@ a9
 ```
 <!-- /output -->
 
-`xxd -g` is the group width in bytes and `-c` is the line width — two knobs that are easy to confuse because both change where the spaces are. `-g0` asks for no grouping at all. `hexdump -e '4/1 "%02x" " "'` is the general form: *four iterations of one byte*, written out, which is what every other tool's grouping flag is a preset for. Every command on this page is byte-identical on macOS and `ubuntu:24.04`, which is not true of much else in `hexdump` — see [the six presets](../../11_Tools/hexdump/README.md) for the ones that differ.
+`xxd -g` is the group width in bytes and `-c` is the line width — two knobs that are easy to confuse because both change where the spaces are. `-g0` asks for no grouping at all. `hexdump -e '4/1 "%02x" " "'` is the general form: *four iterations of one byte*, written out, which is what every other tool's grouping flag is a preset for. Every command on this page is byte-identical on macOS and `ubuntu:24.04`, which is not true of much else in `hexdump` — see [the six presets](../../11_Tools/hexdump/README.md) for the ones that differ, and [`xxd` is the dump you can put back](../../11_Tools/xxd/README.md) for what else that tool does with the columns once you stop trusting them.
 
 ## If you are coming from Python or ABAP
 
@@ -354,5 +354,6 @@ Then take a file of your own and dump it at three widths: `xxd -g1 f | head`, `x
 - [Hex is a shorthand](../hex_is_a_shorthand/README.md) — why four bits is one digit, which is why 5 and 6 have nowhere to go
 - [Binary to text](../../03_Encodings/binary_to_text/README.md) — the same re-cutting, done for real, where the padding has to be declared
 - [`hexdump` is a format engine wearing six presets](../../11_Tools/hexdump/README.md) — grouping as a format string, and the presets that hide it
+- [`xxd` is the dump you can put back](../../11_Tools/xxd/README.md) — the tool this page leans on, and the only dump that reverses
 - [Inspecting a file](../../06_Terminal/inspecting_a_file/README.md) — the other tools that answer a neighbouring question in silence
 - [Bytes, hex and int](../../04_Python/bytes_hex_and_int/README.md) — the rest of Python's byte-reading toolkit

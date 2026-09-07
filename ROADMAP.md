@@ -13,6 +13,7 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [A byte is eight bits](01_Bits_and_Bytes/a_byte_is_eight_bits/README.md) | written, 2026-09-05 |
 | [Hex is a shorthand](01_Bits_and_Bytes/hex_is_a_shorthand/README.md) | written, 2026-09-05 |
 | [Reading a hex dump](01_Bits_and_Bytes/reading_a_hex_dump/README.md) | written, 2026-09-05 |
+| [Grouping is a choice](01_Bits_and_Bytes/grouping_is_a_choice/README.md) | written, 2026-09-07 — Python, Rust and shell; the width you group by is a claim about the unit, cryptii silently switches hex to binary at 5 and 6 bits and never switches back, and a 4-byte grouping "understands" an emoji exactly when its offset divides by four |
 | [Hex: a number, or a picture of bytes](01_Bits_and_Bytes/hex_number_or_bytes/README.md) | written, 2026-09-07 — all four languages; one hex string is two objects, four parsers disagree about what a hex digit is, and `int(s, 16)` succeeding is not a validation |
 | [A character is a number](02_Characters/a_character_is_a_number/README.md) | written, 2026-09-05 |
 | [Rotation is not encryption](02_Characters/rotation_is_not_encryption/README.md) | written, 2026-09-07 — Python, Rust and shell; ROT13 as arithmetic on the ASCII layout, the keyspace printed in a column, `encodings/rot_13.py` that `str.encode` still refuses, and the two things that break when the rotation leaves ASCII |
