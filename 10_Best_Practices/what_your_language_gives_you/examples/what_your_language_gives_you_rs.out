@@ -1,0 +1,63 @@
+
+1. QUESTION ONE: WHAT ENCODINGS DOES `std` KNOW?
+------------------------------------------------------------------------
+   the encodings `std` can decode, in full:
+       UTF-8    str::from_utf8 / _mut, String::from_utf8, _lossy
+       UTF-16   String::from_utf16, _lossy, and since rustc 1.98
+                the explicit-endian from_utf16le / from_utf16be
+
+   Two encodings, and both of them are Unicode. There is no third,
+   and no registry to ask for one: no `from_latin1`, no lookup by
+   name, no `windows-1250` anywhere in the standard library. Where
+   Python answered question one with thirty-odd tables in both
+   directions, Rust answers it with none, and points at a crate.
+
+2. LATIN-1 LOOKS LIKE AN EXCEPTION, AND IS ARITHMETIC
+------------------------------------------------------------------------
+   `b as char` is the only integer-to-char cast Rust permits,
+   and for all 256 byte values it agrees with Latin-1: true
+       0x41 -> 'A'      0xE9 -> 'é'
+
+   That one-liner is a complete, correct Latin-1 decoder, and it is
+   not a feature anybody implemented. Latin-1's 256 characters ARE
+   code points 0 to 255, by construction, so the decode is the
+   identity function and a cast is enough.
+
+3. windows-1250 IS NOT ARITHMETIC, AND THAT IS THE GENERAL CASE
+------------------------------------------------------------------------
+   of the 256 byte values, how many `b as char` gets right
+   for windows-1250:                     177
+   bytes the table maps somewhere else:  74
+   bytes the table leaves undefined:     5
+
+       byte 0xBF   `as char` says '¿'   U+00BF
+       byte 0xBF   the table says 'ż'   U+017C
+
+   The lower half is ASCII and free. The upper half is a decision
+   somebody wrote down decades ago, and there is nothing in it to
+   compute -- which is what a legacy encoding mostly IS.
+
+   Latin-1 is not the easy case in a family of easy cases. It is the
+   only case. Of the twenty-eight single-byte tables in the browser
+   standard, NONE is the identity map, and Latin-1 itself is not
+   among them -- the standard gives its name to windows-1252 instead.
+   The closest is ISO-8859-15, which agrees on 120 of the 128 high
+   bytes and puts a euro sign in one of the other eight. Shipping
+   these is shipping data, which is why they live in a crate.
+
+4. QUESTION FOUR: CAN THE TYPE SYSTEM STOP YOU?
+------------------------------------------------------------------------
+   str::from_utf8 on the same caf-0xE9-.txt bytes: Err, valid up to byte 3
+   String::from_utf8_lossy:                        "caf�.txt"
+   the 0xE9 is gone, replaced:                     true
+   the only signal that anything changed:          Cow::Owned
+
+   Rust's answer here is different in kind, and it is a refusal: in
+   safe Rust there is no way to put those bytes in a `String` at all.
+   Python's `str` will hold them under `surrogateescape`, which is a
+   different and equally deliberate answer -- one language made the
+   invalid state unrepresentable, the other made it representable on
+   purpose so that a filename survives.
+
+   Both are right. They are answers to different questions, which is
+   the whole point of asking four.

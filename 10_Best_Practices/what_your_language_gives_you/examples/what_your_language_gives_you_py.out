@@ -1,0 +1,88 @@
+
+1. QUESTION ONE: CAN IT CONVERT? AND CAN IT CONVERT BOTH WAYS?
+------------------------------------------------------------------------
+   encodings the standard names                     40
+   of the ones this registry resolves, how many it
+       will only READ, never write                  0
+       will only WRITE, never read                  0
+
+   Zero and zero, and that is the answer to question one. Python's
+   codecs come in pairs; there is no table it will take in and not
+   give back. A standard library that reads a table it cannot write
+   is a real design and not an oversight -- see the page.
+
+   How many of the forty it resolves at all is a different question,
+   and not one an answer key may hold: it is a property of the alias
+   table, which has a version. Spot checks, on names that resolve
+   the same way on CPython 3.11 through 3.14:
+       UTF-8          -> Python calls it utf-8        both ways: True
+       windows-1250   -> Python calls it cp1250       both ways: True
+       ISO-8859-2     -> Python calls it iso8859-2    both ways: True
+       KOI8-R         -> Python calls it koi8-r       both ways: True
+       Shift_JIS      -> Python calls it shift_jis    both ways: True
+       Big5           -> Python calls it big5         both ways: True
+       EUC-KR         -> Python calls it euc_kr       both ways: True
+
+2. THE STAKE, IN ONE CHARACTER
+------------------------------------------------------------------------
+   ż  U+017C  LATIN SMALL LETTER Z WITH DOT ABOVE
+
+   encode to utf-8        c5 bc     and back: 'ż'
+   encode to cp1250       bf        and back: 'ż'
+   encode to iso8859-2    bf        and back: 'ż'
+   encode to latin-1      UnicodeEncodeError  -- no byte here means it
+
+   One byte in windows-1250, one in ISO-8859-2, two in UTF-8, and no
+   byte at all in Latin-1. A language that can only WRITE UTF-8 can
+   still read all four -- and cannot send a file to a system that
+   expects the first.
+
+3. QUESTION TWO: WHAT HAPPENS AT A BYTE IT CANNOT EXPLAIN?
+------------------------------------------------------------------------
+   the bytes 63 61 66 e9 2e 74 78 74, decoded as UTF-8 under each policy:
+
+   replace            'caf�.txt'             round-trips: False
+   ignore             'caf.txt'              round-trips: False
+   backslashreplace   'caf\\xe9.txt'         round-trips: False
+   surrogateescape    'caf\udce9.txt'        round-trips: True
+   strict             UnicodeDecodeError     round-trips: n/a
+
+   registered under these names:
+      strict              replace             ignore
+      backslashreplace    xmlcharrefreplace   namereplace
+      surrogateescape     surrogatepass
+
+   Only `surrogateescape` gives the byte back, and it is worth seeing
+   how: 0xE9 becomes U+DCE9, a lone surrogate -- a code point that can
+   never occur in real text, holding a byte until something encodes it
+   again. PEP 383 is the reason a filename that is not valid UTF-8 can
+   still be opened.
+
+4. THE SAME TRICK, TWICE, INVENTED SEPARATELY
+------------------------------------------------------------------------
+   a byte that is not valid UTF-8   0xE9
+
+   Python, surrogateescape    0xDC00 + byte          U+DCE9  lone surrogate
+   the web, x-user-defined    0xF780 + byte - 0x80   U+F7E9  private use
+
+   Two standards, no shared authors, one idea: to carry a byte you
+   cannot interpret through a string type, map it into a range of
+   code points that means nothing else, and map it back on the way
+   out. Python reserved lone surrogates for it; the browsers reserved
+   a slice of the private use area. So `x-user-defined` is not really
+   a character table at all: it is this escape hatch, wearing an
+   encoding's name so that it can be asked for like one.
+
+5. QUESTION THREE: WHAT DOES IT CALL ONE CHARACTER?
+------------------------------------------------------------------------
+   the string renders as café, and is U+0063 U+0061 U+0066 U+0065 U+0301
+
+   UTF-8 bytes                              6
+   len(), which counts code points          5
+   what a reader counts                     4
+
+   Python answers one of those three, and it is not the one a person
+   means. Nothing in the standard library returns the third; neither
+   does Rust's. Swift's `count` does, because Swift chose a different
+   default unit -- which is the whole of question three, and the page
+   has the table.

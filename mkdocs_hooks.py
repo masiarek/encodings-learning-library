@@ -190,6 +190,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "utf8_everywhere",
         "rust_strings_in_practice",
         "python_text_in_practice",
+        "what_your_language_gives_you",
         "interfaces_and_storage",
     ],
     # The tools you already run over text every day, then the ones worth

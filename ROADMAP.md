@@ -59,6 +59,7 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [UTF-8 everywhere](10_Best_Practices/utf8_everywhere/README.md) | written, 2026-09-05 |
 | [Rust strings in practice](10_Best_Practices/rust_strings_in_practice/README.md) | written, 2026-09-05 |
 | [Python text in practice](10_Best_Practices/python_text_in_practice/README.md) | written, 2026-09-05 |
+| ["Handles Unicode" is four questions](10_Best_Practices/what_your_language_gives_you/README.md) | written, 2026-09-07 |
 | [Interfaces and storage](10_Best_Practices/interfaces_and_storage/README.md) | stub |
 | [`grep` on text that is not ASCII](11_Tools/grep/README.md) | written, 2026-09-06 — shell and Python; the silent skip, measured, and the binary notice's two streams |
 | [`ripgrep` — the Rust grep](11_Tools/ripgrep/README.md) | written, 2026-09-06 — no rg on either runner, so the session is dated and a Python example checks the rules |
