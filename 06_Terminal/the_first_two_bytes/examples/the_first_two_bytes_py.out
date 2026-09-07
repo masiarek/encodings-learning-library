@@ -1,0 +1,44 @@
+1. THE FIRST FOUR BYTES OF EACH FILE
+   plain.sh  23 21 2f 62  a script — read the rest of the line as an interpreter
+   bom.sh    ef bb bf 23  no signature — ENOEXEC, the kernel will not run this
+   crlf.sh   23 21 2f 62  a script — read the rest of the line as an interpreter
+   none.sh   65 63 68 6f  no signature — ENOEXEC, the kernel will not run this
+   All four are executable, all four end in .sh, and file(1) calls three
+   of them shell scripts. None of that reaches the kernel.
+
+2. THE #! IS TWO ASCII BYTES, AND ITS OFFSET IS THE WHOLE RULE
+   ord('#') = 35 = 0x23     ord('!') = 33 = 0x21
+   plain.sh  finds #! at offset 0
+   bom.sh    finds #! at offset 3
+   Offset 3 is not offset 0. The kernel does not search; it compares.
+
+3. execve(), WITH NO SHELL TO CATCH THE REFUSAL
+   plain.sh  ran      rc=0  stdout='I ran'
+   bom.sh    refused  OSError  errno 8 (ENOEXEC)
+   crlf.sh   refused  FileNotFoundError  errno 2 (ENOENT)
+   none.sh   refused  OSError  errno 8 (ENOEXEC)
+   Three different outcomes for four files that look identical on screen.
+
+4. WHY THE TWO REFUSALS ARE NOT THE SAME REFUSAL
+   bom.sh    kernel sees ef bb, not 23 21 — no interpreter is read
+   crlf.sh   kernel sees #!, interpreter = '/bin/sh\r'
+   bom.sh   ENOEXEC: 'this is not a program'. The #! was never found.
+   crlf.sh  ENOENT:  'that interpreter does not exist'. The #! WAS found,
+            and the path read out of it has a 13 on the end.
+   The second is the one that reads as a lie: the file it names is there.
+
+5. WHY strip() DOES NOT SAVE bom.sh
+   raw first bytes        ef bb bf 23 21
+   .strip() changes it?   False
+   chr(0xFEFF).isspace()  False
+   U+FEFF is named ZERO WIDTH NO-BREAK SPACE and is not in Unicode's
+   White_Space property, so no strip anywhere will remove it. It is
+   content, and at offset 0 of an executable it is fatal content.
+
+6. THE CHECK WORTH PUTTING IN CI
+   plain.sh  first line is a usable shebang: True
+   bom.sh    first line is a usable shebang: False
+   crlf.sh   first line is a usable shebang: False
+   none.sh   first line is a usable shebang: False
+   Two questions, both about bytes: does it START with 23 21, and is the
+   first line free of 0d. Neither is answerable from the rendered text.

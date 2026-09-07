@@ -54,6 +54,7 @@ FIXUPS = {
 # longer exists is a silent no-op.
 LABEL_OVERRIDES: dict[str, str] = {
     "utf8_by_hand": "UTF-8 by hand",
+    "look_paste_tee_split": "look, paste, tee and split",
     "utf16_and_surrogates": "UTF-16 and surrogates",
     "byte_order_and_bom": "Byte order and the BOM",
     "bom_in_a_csv": "A BOM in a CSV",
@@ -166,6 +167,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "locale_and_lc_ctype",
         "file_guesses",
         "file_type_is_four_questions",
+        "the_first_two_bytes",
         "terminal_hyperlinks",
     ],
     "08_Build_Your_Own": [
@@ -201,6 +203,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "cut",
         "tr_and_sort",
         "diff_and_cmp",
+        "look_paste_tee_split",
         "hexdump",
         "xxd",
         "od",

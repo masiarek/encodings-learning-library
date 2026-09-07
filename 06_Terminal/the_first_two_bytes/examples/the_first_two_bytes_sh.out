@@ -1,0 +1,59 @@
+1. FOUR FILES, AND THE BYTES AT OFFSET 0
+   plain.sh  23212f62696e2f73
+   bom.sh    efbbbf23212f6269
+   crlf.sh   23212f62696e2f73
+   none.sh   6563686f20222020
+   The kernel reads THIS, and only this. Not the name, not the extension,
+   not what file(1) guesses. 23 21 is the ASCII for #!
+
+2. WHERE THE #! ACTUALLY IS
+
+$ head -c 2 plain.sh | xxd -p
+2321
+
+$ head -c 5 bom.sh | xxd -p
+efbbbf2321
+   In bom.sh the #! is still there — at offset 3. The kernel does not go
+   looking for it, so three bytes of byte-order mark are three bytes too many.
+
+3. RUNNING THEM
+   ./plain.sh  exit=0       stdout=  I ran
+   ./bom.sh    exit=0       stdout=  I ran
+   ./crlf.sh   exit=nonzero stdout=(nothing)
+   ./none.sh   exit=0       stdout=  I ran
+   Three of the four printed something. Only ONE of those three is a
+   script the kernel agreed to run: for bom.sh and none.sh the kernel
+   refused, and the SHELL caught the refusal and ran the file itself.
+   That rescue is why a broken file passes a test that checks exit status.
+   (bom.sh and none.sh exit 0 on every shell and both platforms. crlf.sh's
+   nonzero value is 126 on Apple's bash and 127 nearly everywhere else, so
+   it is a fact about your shell, not about the file, and is not printed.)
+
+4. THE BYTE THAT KILLED crlf.sh
+
+$ cat -vet crlf.sh
+#!/bin/sh^M$
+echo "  I ran"^M$
+   ^M is the CR. The kernel found the #!, then read to the LF — so the
+   interpreter it went looking for is /bin/sh followed by a CR, which is
+   a filename nothing on the system has. Hence an error about a missing
+   file, for a file that is right there.
+
+5. THE INTERPRETER PATH, AS THE KERNEL BUILDS IT
+
+$ sed -n '1s/^#!//p' plain.sh | cat -vet
+/bin/sh$
+
+$ sed -n '1s/^#!//p' crlf.sh  | cat -vet
+/bin/sh^M$
+   Same nine characters on screen. One of them is ten bytes.
+
+6. THE FIX, AND HOW TO CHECK IT AFTERWARDS
+
+$ tr -d '\015' < crlf.sh > fixed.sh && chmod +x fixed.sh && ./fixed.sh
+  I ran
+
+$ head -c 12 fixed.sh | xxd -p
+23212f62696e2f73680a6563
+   Nothing on screen changed when it was broken and nothing changed when
+   it was fixed. The dump is the only view that ever showed the defect.

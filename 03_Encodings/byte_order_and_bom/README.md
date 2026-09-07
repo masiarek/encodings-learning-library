@@ -53,10 +53,12 @@ To a reader expecting a signature, the mark is invisible. To every other reader 
 | a `^`-anchored match, `grep '^id'` | quietly matches nothing; the line starts with `EF`, not `i` |
 | an exact key or header comparison | `'﻿id' == 'id'` is simply `False` |
 | `.strip()` / `.trim()` | does nothing: `U+FEFF` is named ZERO WIDTH NO-BREAK SPACE but is **not** in Unicode's `White_Space` property |
-| a shebang, `#!/usr/bin/env python3` | the kernel reads offset 0, does not find `#!`, and will not run the script |
+| a shebang, `#!/usr/bin/env python3` | the kernel reads offset 0, does not find `#!`, and refuses the file — and then the shell [runs it anyway, with the wrong interpreter, and exits `0`](../../06_Terminal/the_first_two_bytes/README.md) |
 | concatenation — `cat`, a log shipper, a multipart upload | the second file's signature lands in the *middle*, where it is not a signature at all |
 
 Only the first of those complains. The rest return `None`, or `False`, or a count of zero, and the header that looks identical on screen goes on not matching.
+
+The shebang row looks like a second exception and is not one. The kernel really does refuse the file — but a POSIX shell treats that refusal as *"you meant a shell script and forgot to say so"* and runs the file itself, so an error goes to stderr, the script runs to completion, and it **exits `0`**. Anything judging it by exit status passes it, and the interpreter that ran it is not the one the file asked for. [The first two bytes](../../06_Terminal/the_first_two_bytes/README.md) takes that apart, beside the CR that breaks the same line one byte further along.
 
 ## The decision, in one question
 
@@ -453,6 +455,7 @@ Without the machine: a colleague reports that a shell script you wrote "does not
 ## See also
 
 - [UTF-16 and surrogates](../utf16_and_surrogates/README.md) — the encoding this mark was actually invented for
+- [The first two bytes](../../06_Terminal/the_first_two_bytes/README.md) — offset 0 of an executable, where the mark is fatal and the failure still exits `0`
 - [A BOM in a CSV](../../07_Real_Data/bom_in_a_csv/README.md) — the same three bytes, met by everybody, in the place they do the most damage
 - [Encode and decode are verbs](../encode_and_decode_are_verbs/README.md) — the two operations a signature is trying to disambiguate
 - [Mojibake](../mojibake/README.md) — what happens when there is no signature and the guess is wrong
