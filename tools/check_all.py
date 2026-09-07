@@ -167,8 +167,18 @@ def assemble_mine(repo: pathlib.Path, paths: list[str], dest: pathlib.Path) -> l
     for rel in paths:
         src, dst = repo / rel, dest / rel
         if src.is_dir():
-            shutil.copytree(src, dst, dirs_exist_ok=True)
-            notes.append(f"overlaid dir   {rel}")
+            # REPLACE, do not merge. copytree(dirs_exist_ok=True) unions your
+            # tree onto HEAD, so a file deleted *inside* a named directory
+            # survives from HEAD and the gate passes a tree that cannot exist
+            # -- a false green, in the dangerous direction. Retiring an example
+            # is the live case: drop foo_py.py and foo_py.out, miss the page's
+            # `<!-- output:foo_py -->`, and the real committed tree fails
+            # run_examples while a merged tree still has the file sitting there.
+            # dst may be absent when the directory is new in your tree.
+            if dst.exists():
+                shutil.rmtree(dst)
+            shutil.copytree(src, dst)
+            notes.append(f"overlaid dir   {rel}  (mirrored, deletions included)")
         elif src.is_file():
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dst)
@@ -216,6 +226,9 @@ def selftest_mine() -> int:
         (repo / "mine.txt").write_text("committed\n")
         (repo / "theirs.txt").write_text("committed\n")
         (repo / "doomed.txt").write_text("committed\n")
+        (repo / "lesson").mkdir()
+        (repo / "lesson" / "keep.txt").write_text("committed\n")
+        (repo / "lesson" / "retired.txt").write_text("committed\n")
         subprocess.run(["git", "add", "-A"], **q)
         subprocess.run(["git", "commit", "-qm", "base"], **q)
 
@@ -224,15 +237,22 @@ def selftest_mine() -> int:
         (repo / "theirs.txt").write_text("THEIR EDIT\n")
         (repo / "doomed.txt").unlink()
         (repo / "newdir").mkdir(); (repo / "newdir" / "n.txt").write_text("MY NEW FILE\n")
+        (repo / "lesson" / "retired.txt").unlink()            # an example retired
+        (repo / "lesson" / "keep.txt").write_text("MY EDIT\n")
         subprocess.run(["git", "add", "theirs.txt"], **q)   # their `git add`, which --staged would swallow
 
-        assemble_mine(repo, ["mine.txt", "doomed.txt", "newdir"], dest)
+        assemble_mine(repo, ["mine.txt", "doomed.txt", "newdir", "lesson"], dest)
 
         checks = [
             ("my edit is present", (dest / "mine.txt").read_text() == "MY EDIT\n"),
             ("their edit is NOT", (dest / "theirs.txt").read_text() == "committed\n"),
             ("my deletion applied", not (dest / "doomed.txt").exists()),
             ("my untracked file is present", (dest / "newdir" / "n.txt").exists()),
+            # One level in: the case a MERGING copytree gets wrong, silently.
+            ("deletion INSIDE a named dir applied",
+             not (dest / "lesson" / "retired.txt").exists()),
+            ("my edit inside that dir survived",
+             (dest / "lesson" / "keep.txt").read_text() == "MY EDIT\n"),
         ]
     print("selftest --mine: assembling HEAD + named paths in a scratch repo\n")
     bad = [n for n, ok in checks if not ok]
