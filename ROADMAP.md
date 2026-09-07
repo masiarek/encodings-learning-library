@@ -61,6 +61,7 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [`awk` is three programs](11_Tools/awk/README.md) | written, 2026-09-06 — shell, verified identical under BWK awk, mawk *and* gawk; BWK awk disagrees with itself |
 | [`cut` counts what it is told to count](11_Tools/cut/README.md) | written, 2026-09-06 — shell; `-c` returns four bytes on Ubuntu and five on a Mac |
 | [`tr` and `sort` work a byte at a time](11_Tools/tr_and_sort/README.md) | written, 2026-09-06 — shell; deleting `é` damages the word next door |
+| [`diff` compares lines, `cmp` compares bytes](11_Tools/diff_and_cmp/README.md) | written, 2026-09-07 — shell and Python; two spellings of `café` that diff prints identically, and three BSD/GNU splits, one of them a binary heuristic that reads the whole file on a Mac and the first 8 KB on Linux |
 | [`hexdump` is a format engine wearing six presets](11_Tools/hexdump/README.md) | written, 2026-09-06 — shell, byte-identical on both platforms; the six presets typed out as `-e` strings, and the `*` that turns 128 characters of hex into 4 |
 | [`xxd` is the dump you can put back](11_Tools/xxd/README.md) | written, 2026-09-07 — shell; the round trip, the text column it throws away, the offsets it seeks to, and `-E` reading the same bytes as EBCDIC |
 | [Typing a character you cannot type](11_Tools/typing_a_character/README.md) | written, 2026-09-07 — Python; the Compose file and Vim's digraph table parsed rather than described, and they overlap on 611 of the 2,580 characters they can type between them |

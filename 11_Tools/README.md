@@ -35,11 +35,12 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 | 8 | [`awk` is three programs](awk/README.md) | Whose `awk` is this, and why does it disagree with itself? | written |
 | 9 | [`cut` counts what it is told to count](cut/README.md) | `-b` or `-c`? And why does the same command differ per machine? | written |
 | 10 | [`tr` and `sort` work a byte at a time](tr_and_sort/README.md) | Why did deleting `é` damage a different word? | written |
-| 11 | [`hexdump` is a format engine wearing six presets](hexdump/README.md) | Why is my dump showing the bytes in the wrong order? | written |
-| 12 | [`xxd` is the dump you can put back](xxd/README.md) | Which column of a dump is the file, and how do I get the file back? | written |
-| 13 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
-| 14 | [Typing a character you cannot type](typing_a_character/README.md) | There is no `ż` on my keyboard — how do I produce one? | written, 2026-09-07 |
-| 15 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
+| 11 | [`diff` compares lines, `cmp` compares bytes](diff_and_cmp/README.md) | Why does `diff` say the line changed when both sides look identical? | written, 2026-09-07 |
+| 12 | [`hexdump` is a format engine wearing six presets](hexdump/README.md) | Why is my dump showing the bytes in the wrong order? | written |
+| 13 | [`xxd` is the dump you can put back](xxd/README.md) | Which column of a dump is the file, and how do I get the file back? | written |
+| 14 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
+| 15 | [Typing a character you cannot type](typing_a_character/README.md) | There is no `ż` on my keyboard — how do I produce one? | written, 2026-09-07 |
+| 16 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
 
 ## The whole toolkit, one row each
 
@@ -86,7 +87,7 @@ If you came looking for *the list* — every command you are likely to run over 
 | **[`sort`](tr_and_sort/README.md)** | order lines | the **locale** picks the order, and byte order is not alphabetical order — [three locales, three alphabets](../07_Real_Data/sorting_and_collation/README.md) |
 | [`uniq`](tr_and_sort/README.md) | collapse adjacent equals | byte equality, and only *adjacent* — so it inherits whatever order `sort` chose. `-c` [pads its count to different widths per platform](../CONTRIBUTING.md) |
 | [`wc`](../06_Terminal/inspecting_a_file/README.md) | count | `-c` bytes, `-m` characters, `-l` [newlines](../06_Terminal/trailing_newline/README.md) — three questions, three answers, and `-m` needs the locale to mean anything |
-| `diff`, `cmp` | compare | `cmp` compares bytes and reports the first differing **byte**; `diff` compares lines as bytes, so two files that differ only in [normalization](../04_Python/normalization/README.md) or [line ending](../07_Real_Data/crlf_vs_lf/README.md) differ on every line |
+| **[`diff`, `cmp`](diff_and_cmp/README.md)** | compare | `cmp` compares bytes and reports the first differing byte — in a message that calls it a `char`; `diff` compares lines as bytes, so two files that differ only in [normalization](../04_Python/normalization/README.md) or [line ending](../07_Real_Data/crlf_vs_lf/README.md) differ on **every line** |
 
 ### Look at the bytes
 

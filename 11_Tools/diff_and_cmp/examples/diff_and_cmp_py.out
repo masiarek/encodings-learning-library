@@ -1,0 +1,52 @@
+1. ONE WORD, TWO SPELLINGS, AND len() CAN SEE IT
+   NFC on screen                            café
+   NFD on screen                            café
+   len(NFC), len(NFD)                       (4, 5)
+   NFC.encode('utf-8').hex()                636166c3a9
+   NFD.encode('utf-8').hex()                63616665cc81
+   NFC == NFD                               False
+   after NFC normalization                  True
+   Four characters against five, printed identically. == on str is not a
+   byte comparison — it compares code points — and it still says False,
+   because these are genuinely different code points. Only naming a
+   normal form makes the question answerable, and NFC is a CHOICE: it
+   says composed spellings win. diff has no way to express that choice.
+
+2. filecmp IS cmp, difflib IS diff
+   filecmp.cmp(shallow=False)               False
+   That is cmp -s: byte for byte, no decode, one boolean. shallow=True
+   is the default and compares os.stat() — size and mtime — which is a
+   different question wearing the same name.
+   --- nfc.txt
+   +++ nfd.txt
+   @@ -1 +1 @@
+   -café
+   +café
+   difflib prints the same unreadable change diff prints, for the same
+   reason: it was handed two sequences and asked which differ. It
+   compares characters rather than bytes, and on this pair that does
+   not help — a decode is not a normalization.
+
+3. THE ONE ANSWER THE SHELL TOOLS CANNOT GIVE: UNIVERSAL NEWLINES
+   open(dos).read() == open(unix).read()    True
+   ...with newline='' (no translation)      False
+   ...as bytes                              False
+   True, False, False — one pair of files, three answers, and the
+   difference is which door you opened them through. Python's default
+   text mode translates CRLF to \n on the way in, so the difference
+   diff reports on every line of these two files is gone before your
+   code sees it. That is a convenience with a cost: a program that
+   reads text this way cannot tell you the file was ever a DOS file.
+
+4. WRITE THE POLICY DOWN, THEN COMPARE
+   same_text(nfc, nfd)                      True
+   same_text(dos, unix)                     True
+   filecmp.cmp(dos, unix, shallow=False)    False
+   'CAFÉ'.casefold() == 'café'.casefold()   True
+   Four lines that a shell one-liner cannot say. The last one is worth
+   holding against diff -i, which folds ASCII case and leaves É alone:
+   casefold() is Unicode's own case mapping, so it folds É to é — and
+   ß to ss, which is why it is casefold() and not lower().
+   Nothing here is more CORRECT than cmp. It is more SPECIFIC: the
+   policy is four keyword arguments in one function instead of a
+   default nobody chose.

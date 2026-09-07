@@ -199,6 +199,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "awk",
         "cut",
         "tr_and_sort",
+        "diff_and_cmp",
         "hexdump",
         "xxd",
         "uni",
