@@ -174,6 +174,7 @@ A stub must not have an `<!-- output: -->` block — there is nothing to fill it
 - Link a folder by naming its `README.md` — `[label](some_folder/README.md)`, never `[label](some_folder/)`.
 - A repo path in backticks should be a link, not bare code text: backticks in the label, a real relative path in the href.
 - **A link that leaves the library ends its label with ` ↗`**; an internal link never does. `python3 tools/check_link_style.py --fix` adds and removes them; CI runs it without `--fix`.
+- **A passing `link style` does not mean your links resolve.** `check_link_style.py` checks the ` ↗` convention and the shapes above; it is `mkdocs --strict` that fails on a link whose *target does not exist*. Measured 2026-09-07: a `[label](./this_file_does_not_exist.md)` planted in a page passes `link style` and fails `mkdocs --strict` with *"the target … is not found among documentation files"*. Two different checks over the same syntax, and the one that answers "is this link real" is the slow one at the end — so a green `link style` on its own is not a reason to skip the full run.
 - Where the sibling Rust library already teaches something — `u8`, hexadecimal, `char`, the anatomy of a `String` — link to it and do not repeat it. Its pages publish at `https://masiarek.github.io/rust-learning-library/<folder>/index.html`; a folder README is `index.html`, never `README.html`.
 
 ## Nav order
