@@ -223,7 +223,15 @@ python3 tools/check_all.py --mine 06_Terminal/my_lesson CONTRIBUTING.md
 
 It extracts HEAD and copies in only the paths you name, so what it gates is HEAD plus your work and nothing else. Each of the other three is green or red for reasons that need not be yours: the bare working-tree run reads colleagues' unstaged edits, `--staged` writes out the **shared index** so their `git add` enters your verdict, and `--committed` cannot see uncommitted work at all. **You must name the paths**, and that is deliberate — inferring them from `git status` reproduces the very bug the mode exists to dodge, since on 2026-09-07 a half-applied rename left one session's tree showing six deletions and an addition that belonged to *another* session. A named path that is gone from your tree is treated as a deletion and removed, because deleting a file is work too.
 
-The division of labour between the four: `--mine` before you commit while the tree is dirty, `--staged` in the minute before you commit when it is not, `--committed` after you commit, and the bare run when you are the only session working.
+The division of labour between the four: **`--mine` before you commit**, **`--committed` after you commit**, the bare run when you are the only session working — and `--staged` only in the narrow case below.
+
+**`--staged`'s condition is not about your working tree, and an earlier version of this paragraph got that wrong.** The hazard is a *colleague's* `git add`, so your own tree's cleanliness is beside the point. Measured in a scratch repo: with a peer's `peer.txt` staged and my `mine.txt` dirty but unstaged, `git write-tree` produced a tree containing **their** staged content and **not** my dirty file. The testable condition is therefore one command about the index, not a feeling about your directory:
+
+```bash
+git diff --cached --name-only     # must list only your own paths
+```
+
+And even then it describes a commit you are probably not making. **`git commit -- <paths>` builds a *temporary* index**, so a pathspec commit — the house habit here, precisely because the checkout is shared — ignores whatever else is staged. Same scratch repo: the pathspec commit contained my file and left the peer's staged work uncommitted, while `--staged` had just gated a tree containing it. So `--staged` answers exactly one question, and it is narrower than "it sees the index": *you are about to run a bare `git commit` or `git commit -a`, and this is what that will contain.* Any other time, `--mine`.
 
 `python3 tools/check_all.py --selftest` proves the runner still reports a failure, in the same spirit as `check_decomposed_literals.py --selftest` — and then proves `--mine` assembles the right tree, by building a scratch repo in which a colleague has edited *and staged* a file you did not name, and asserting that their bytes do not reach the gated tree. That second half is the one that distinguishes `--mine` from the modes that already existed, so it is the one that had to be tested.
 
