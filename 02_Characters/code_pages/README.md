@@ -14,13 +14,15 @@ That shared bottom half is the whole reason these files were interchangeable at 
 
 | Table | Also called | Its second half is for | Where you meet it |
 |---|---|---|---|
-| **Latin-1** | ISO-8859-1 | Western Europe: `é ü ñ å ø` | HTTP's old default; the identity table (below) |
-| **Windows-1252** | CP1252, "ANSI" | Latin-1, with 32 slots reassigned to `€` and smart quotes | Almost every "almost right" file from a Windows desktop |
-| **Latin-2** | ISO-8859-2 | Central Europe: `ą ę ł ś ż č ř` | Polish, Czech, Hungarian files, mostly pre-2005 |
-| **Windows-1250** | CP1250 | Central Europe again — *differently* | Windows in the same countries, incompatibly |
-| **CP437** | "OEM", the DOS table | Box-drawing characters, Greek letters, maths | DOS, BIOS screens, old `.txt` art |
-| **CP850** | DOS Latin-1 | CP437 with more accented letters, fewer boxes | DOS in Western Europe |
-| **KOI8-R** | — | Russian Cyrillic, ordered so that stripping the top bit leaves readable Latin | Russian email and Usenet, and still some Linux boxes |
+| [**Latin-1** ↗](https://www.unicode.org/Public/MAPPINGS/ISO8859/8859-1.TXT) | ISO-8859-1 | Western Europe: `é ü ñ å ø` | HTTP's old default; the identity table (below) |
+| [**Windows-1252** ↗](https://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1252.TXT) | CP1252, "ANSI" | Latin-1, with 32 slots reassigned to `€` and smart quotes | Almost every "almost right" file from a Windows desktop |
+| [**Latin-2** ↗](https://www.unicode.org/Public/MAPPINGS/ISO8859/8859-2.TXT) | ISO-8859-2 | Central Europe: `ą ę ł ś ż č ř` | Polish, Czech, Hungarian files, mostly pre-2005 |
+| [**Windows-1250** ↗](https://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP1250.TXT) | CP1250 | Central Europe again — *differently* | Windows in the same countries, incompatibly |
+| [**CP437** ↗](https://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP437.TXT) | "OEM", the DOS table | Box-drawing characters, Greek letters, maths | DOS, BIOS screens, old `.txt` art |
+| [**CP850** ↗](https://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/CP850.TXT) | DOS Latin-1 | CP437 with more accented letters, fewer boxes | DOS in Western Europe |
+| [**KOI8-R** ↗](https://www.unicode.org/Public/MAPPINGS/VENDORS/MISC/KOI8-R.TXT) | — | Russian Cyrillic, ordered so that stripping the top bit leaves readable Latin | Russian email and Usenet, and still some Linux boxes |
+
+*Each name links its own table in [Unicode's MAPPINGS archive ↗](https://www.unicode.org/Public/MAPPINGS/) — not a description of the code page but the 256 lines themselves, one byte to one code point, which is the form worth reading in a library about bytes.*
 
 Two things are deliberately not on this page. **EBCDIC** does not belong in the list at all — it disagrees with ASCII about the *bottom* half too, so it is not a code page in this sense; its story is in [From the telegraph to Unicode](../../09_History/from_telegraph_to_unicode/README.md). And the exact 32-byte difference between Windows-1252 and Latin-1 — the one that produces most real-world damage — has [its own page](../../07_Real_Data/windows_1252_vs_latin1/README.md) in the real-data chapter.
 

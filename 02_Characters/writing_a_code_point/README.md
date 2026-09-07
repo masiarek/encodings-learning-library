@@ -27,13 +27,13 @@ Every language on this list can write `😀` as an escape. Look at what each one
 
 | language | `€` (U+20AC) | `😀` (U+1F600) | what goes in the escape |
 |---|---|---|---|
-| **Rust** | `"\u{20AC}"` | `"\u{1F600}"` | a **scalar value**, 1–6 hex digits, braces instead of a width |
-| **Python** | `"\u20ac"` | `"\U0001F600"` | a code point, in **fixed** widths — 4 or 8 — plus `"\N{GRINNING FACE}"` by **name** |
+| **Rust** | `"\u{20AC}"` | `"\u{1F600}"` | a **scalar value**, 1–6 hex digits, braces instead of a width ([the Reference ↗](https://doc.rust-lang.org/reference/tokens.html#unicode-escapes)) |
+| **Python** | `"\u20ac"` | `"\U0001F600"` | a code point, in **fixed** widths — 4 or 8 — plus `"\N{GRINNING FACE}"` by **name** ([lexical analysis ↗](https://docs.python.org/3/reference/lexical_analysis.html#escape-sequences)) |
 | **C** | `"\u20ac"` | `"\U0001F600"` | a **source-character-set** member, translated before tokenising ([C11 6.4.3 ↗](https://port70.net/~nsz/c/c11/n1570.html#6.4.3)) |
 | **Java** | `"\u20AC"` | `"\uD83D\uDE00"` | a **UTF-16 code unit**, 4 hex digits, processed by the lexer ([JLS §3.3 ↗](https://docs.oracle.com/javase/specs/jls/se21/html/jls-3.html#jls-3.3)) |
-| **JavaScript** | `"\u20AC"` | `"\u{1F600}"` or `"\uD83D\uDE00"` | a code unit, or since ES6 a code point in braces |
+| **JavaScript** | `"\u20AC"` | `"\u{1F600}"` or `"\uD83D\uDE00"` | a code unit, or since ES6 a code point in braces ([ECMA-262 §12.9.4 ↗](https://tc39.es/ecma262/multipage/ecmascript-language-lexical-grammar.html#sec-literals-string-literals)) |
 | **JSON** | `"\u20AC"` | `"\uD83D\uDE00"` | a **UTF-16 code unit** and nothing else ([RFC 8259 §7 ↗](https://www.rfc-editor.org/rfc/rfc8259#section-7)) |
-| **shell** | `printf '\xe2\x82\xac'` | `printf '\xf0\x9f\x98\x80'` | **bytes**. `printf` has no idea what a code point is |
+| **shell** | `printf '\xe2\x82\xac'` | `printf '\xf0\x9f\x98\x80'` | **bytes**. `printf` has no idea what a code point is ([POSIX `printf` ↗](https://pubs.opengroup.org/onlinepubs/9799919799/utilities/printf.html)) |
 
 Three families, and the differences are load-bearing rather than cosmetic:
 

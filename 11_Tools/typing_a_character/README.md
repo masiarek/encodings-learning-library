@@ -16,10 +16,10 @@ Four systems answer that, and the useful thing to know before choosing one is th
 
 | system | names `ż` as | where the table lives | is it a standard? |
 |---|---|---|---|
-| **Unicode Name** | `LATIN SMALL LETTER Z WITH DOT ABOVE` | the Unicode Character Database | **yes**, and frozen forever |
+| **Unicode Name** | `LATIN SMALL LETTER Z WITH DOT ABOVE` | [the Unicode Character Database ↗](https://www.unicode.org/ucd/) | **yes**, and frozen forever |
 | **X11 keysym** | *(no keysym of its own — `U017C`)* | `keysymdef.h`, and a [Compose file ↗](https://www.x.org/releases/current/doc/man/man5/Compose.5.xhtml) | a convention, per implementation |
 | **Vim digraph** | `z.` → `Ctrl-K z .` | [Vim's own table ↗](https://vimhelp.org/digraph.txt.html) | one editor's table |
-| **HTML entity** | `&zdot;` | the HTML5 spec | yes, but for documents, not keyboards |
+| **HTML entity** | `&zdot;` | [the HTML5 spec ↗](https://html.spec.whatwg.org/multipage/named-characters.html) | yes, but for documents, not keyboards |
 
 Only the first is filled in for every character, and only the first carries a promise. That is the argument the whole page comes down to, and section 4 of the program is where it is demonstrated rather than asserted.
 

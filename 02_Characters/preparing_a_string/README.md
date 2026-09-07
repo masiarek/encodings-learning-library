@@ -337,7 +337,7 @@ Preparation and encoding get lumped together as "the Unicode part", and their hi
 | RFC | | Status today |
 |---|---|---|
 | [3454 ↗](https://datatracker.ietf.org/doc/html/rfc3454) stringprep | the framework | obsolete → 7564, itself obsolete → [8264 ↗](https://datatracker.ietf.org/doc/html/rfc8264) |
-| [3491 ↗](https://datatracker.ietf.org/doc/html/rfc3491) Nameprep | the profile for domains | obsolete → 5891 |
+| [3491 ↗](https://datatracker.ietf.org/doc/html/rfc3491) Nameprep | the profile for domains | obsolete → [5891 ↗](https://datatracker.ietf.org/doc/html/rfc5891) |
 | [3490 ↗](https://datatracker.ietf.org/doc/html/rfc3490) IDNA2003 | the protocol | obsolete → [5890 ↗](https://datatracker.ietf.org/doc/html/rfc5890) / 5891 |
 | [4013 ↗](https://datatracker.ietf.org/doc/html/rfc4013) SASLprep | the profile for logins | obsolete → 7613 → [8265 ↗](https://datatracker.ietf.org/doc/html/rfc8265) |
 | **[3492 ↗](https://datatracker.ietf.org/doc/html/rfc3492) Punycode** | **the encoding** | **updated by 5891 — never obsoleted** |
