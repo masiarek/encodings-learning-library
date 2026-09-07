@@ -58,6 +58,18 @@ crlf.sh    POSIX shell script text executable, ASCII         POSIX shell script,
 none.sh    ASCII text                                        ASCII text
 ```
 
+That prose is the vivid version, and it is also the half that drifts — the wording move above is visible on this very example. The **recordable** form is stronger anyway, because it removes the wording from the argument entirely:
+
+```text title="Measured 2026-09-07 — byte-identical on macOS 26 (file-5.41) and ubuntu:24.04 (file-5.45), both columns, all four files."
+           --mime-type            --mime-encoding      does it run?
+plain.sh   text/x-shellscript     us-ascii             yes
+bom.sh     text/x-shellscript     utf-8                no  — ENOEXEC
+crlf.sh    text/x-shellscript     us-ascii             no  — ENOENT
+none.sh    text/plain             us-ascii             no  — ENOEXEC (the shell rescues it)
+```
+
+**Three files carry one identical MIME type and produce three different answers from the kernel.** That is the sentence that survives every future release of `file`, because `--mime-type` is stable where the English is not. Note the `--mime-encoding` column too: on `bom.sh` `file` has *detected the mark* — `utf-8` where its neighbours are `us-ascii` — and still calls the file a shell script, because the question it was asked was never "will this run".
+
 So on `bom.sh` the two answers are flatly opposed: `file` says *POSIX shell script*, and even tells you there is a BOM; the kernel says *this is not a program*. Neither is wrong, because they were asked different questions — `file` reads a magic database looking for a signature **anywhere it has a rule for**, and the kernel compares **offset 0**. That is the whole subject of [File type is four questions](../file_type_is_four_questions/README.md), and `bom.sh` is the cleanest example of the disagreement this library has.
 
 **The BOM lands in front of the `#!`.** A [byte-order mark](../../03_Encodings/byte_order_and_bom/README.md) is `ef bb bf` in UTF-8, and an editor set to "UTF-8 with BOM" writes it at offset 0 of every file it saves. The `#!` is still in the file — it is at offset 3 — but the kernel does not go looking for it. It compares offset 0, finds `ef`, and concludes the file is not a program. The `#!` might as well not be there.
