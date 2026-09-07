@@ -1,0 +1,82 @@
+1. paste -d TAKES A LIST OF BYTES, NOT A DELIMITER
+$ paste -d 'X' c1 c2 c3
+a1Xb1Xc1
+a2Xb2Xc2
+   Three columns, one delimiter, nothing surprising.
+$ paste -d 'é' c1 c2 c3 | cat -v
+a1M-Cb1M-)c1
+a2M-Cb2M-)c2
+   One character in, two delimiters out. -d takes a LIST — paste -d ',;'
+   is a documented feature, alternating between them — and that list is
+   read a BYTE at a time, so é became the list {c3, a9}: M-C after the
+   first column, M-) after the second. Nothing warned, and both fields
+   are now separated by half a character. In a UTF-8 locale the two
+   pastes disagree about this; the fence on the page has that.
+
+2. split -b CUTS WHEREVER THE COUNT LANDS
+$ xxd -p text.txt
+636166c3a9206e61c3af76650a
+$ split -b 4 text.txt piece_
+$ for f in piece_*; do printf "%s: " "$f"; xxd -p "$f"; done
+piece_aa: 636166c3
+piece_ab: a9206e61
+piece_ac: c3af7665
+piece_ad: 0a
+   Four bytes per piece, so the two bytes of é are now in different
+   FILES: c3 ends the first piece and a9 begins the second. Same for the
+   ï two pieces later.
+$ for f in piece_*; do printf "%s is valid UTF-8? " "$f"; if iconv -f UTF-8 -t UTF-8 < "$f" >/dev/null 2>&1; then echo yes; else echo NO; fi; done
+piece_aa is valid UTF-8? NO
+piece_ab is valid UTF-8? NO
+piece_ac is valid UTF-8? yes
+piece_ad is valid UTF-8? yes
+   Two of the four pieces are not text at all. That is not a bug in
+   split: it was asked for four bytes and it gave four bytes.
+$ cat piece_* | cmp - text.txt
+   exit=0
+   And the concatenation is the original, byte for byte. That is the
+   contract worth remembering: the PIECES are not text, the JOIN is. Any
+   program that reads one piece on its own — a decoder, a grep, an
+   uploader that validates — is looking at a broken file.
+
+3. THE FLAG THAT DOES NOT CUT A CHARACTER IS -l, AND IT COUNTS LINES
+$ split -l 1 lines.txt line_
+$ for f in line_*; do printf "%s: " "$f"; xxd -p "$f"; done
+line_aa: 636166c3a90a
+line_ab: 6e61c3af76650a
+line_ac: 7a7a7a0a
+$ for f in line_*; do printf "%s is valid UTF-8? " "$f"; if iconv -f UTF-8 -t UTF-8 < "$f" >/dev/null 2>&1; then echo yes; else echo NO; fi; done
+line_aa is valid UTF-8? yes
+line_ab is valid UTF-8? yes
+line_ac is valid UTF-8? yes
+   One line per file, and a line ends at an 0a, which can never be part
+   of a multi-byte UTF-8 character — every continuation byte has its top
+   bit set. So -l is safe by construction, and -b never is. The flag that
+   wants both (a byte budget, cut at line boundaries) is GNU-only; see
+   the fence.
+
+4. csplit CUTS ON A PATTERN, WHICH IS sed's WORLD
+$ cat doc.txt
+café
+---
+naïve
+$ csplit -s -f cs_ doc.txt "/---/"
+$ for f in cs_*; do printf "%s: " "$f"; xxd -p "$f"; done
+cs_00: 636166c3a90a
+cs_01: 2d2d2d0a6e61c3af76650a
+   The pattern matches a LINE, so the cut is at a line boundary and the
+   characters survive — and the matching line starts the SECOND piece,
+   which is the part people get wrong. The pattern itself is a regex over
+   bytes here, with the same reach and the same limits sed has.
+
+5. tee IS THE CONTROL: IT CHANGES NOTHING, AND THAT IS THE POINT
+$ printf 'caf\303\251\000\377\n' | tee copy.bin | xxd -p
+636166c3a900ff0a
+$ xxd -p copy.bin
+636166c3a900ff0a
+   A NUL and an ff — one byte no text tool likes and one that cannot
+   appear in UTF-8 at all — and both came through in both directions
+   untouched. tee has no text model to get wrong, which is exactly why it
+   is the tool to put in the middle of a pipeline you do not trust:
+   … | tee /tmp/raw | rest-of-pipeline, then xxd /tmp/raw to see what the
+   rest of the pipeline was actually handed.

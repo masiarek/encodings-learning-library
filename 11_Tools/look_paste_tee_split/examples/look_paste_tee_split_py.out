@@ -1,0 +1,54 @@
+1. A CHUNK BOUNDARY IS A BYTE OFFSET, AND CHARACTERS DO NOT CARE
+   the bytes                                    636166c3a9206e61c3af7665
+   four-byte chunks                             ['636166c3', 'a9206e61', 'c3af7665']
+   chunks that will not decode alone            [1, 2]
+   That is `split -b 4` with a different spelling, and the same result:
+   the pieces are not text, only their concatenation is.
+
+2. THE FIX HAS A NAME: AN INCREMENTAL DECODER
+   what each chunk yielded                      ['caf', 'é na', 'ïve']
+   joined                                       café naïve
+   ...equals the original                       True
+   dec.decode(b'', final=True) at the end       ''
+   Chunk 1 handed back three characters and kept a dangling c3; chunk 2
+   completed it and returned the é first. The decoder is holding the
+   partial character between calls — that is the state a stream decoder
+   has and a file-splitter does not, which is the whole difference.
+   Call it with final=True at the end: a leftover half-character there
+   is a truncated file, and only that call will tell you.
+
+3. A DELIMITER IS A STRING, NOT A LIST OF BYTES
+   'é'.join(row)                                ['a1éb1éc1', 'a2éb2éc2']
+   the bytes of row 1                           6131c3a96231c3a96331
+   One é between each pair, c3 a9 both times. The shell's paste -d takes
+   a LIST of delimiters and reads it a byte at a time, so the same
+   request there puts c3 after the first column and a9 after the second.
+   Python cannot make that mistake: you named a string, not a set.
+   zip_longest, fillvalue=''                    ['a1\tb1', 'a2\t']
+   And that is paste's other rule — a short column becomes empty fields,
+   not a short row — written down where you can see it.
+
+4. bisect IS look, AND IT FAILS THE SAME WAY
+   the list                                     ['Ada', 'bob', 'Cara', 'dan']
+   'Cara' in words                              True
+   bisect_left(words, 'Cara')                   1
+   ...the element actually there                bob
+   found by binary search?                      False
+   The word is in the list and the binary search cannot find it, because
+   the list is ordered case-insensitively and the comparison is by code
+   point, where every capital sorts before every lowercase letter. Two
+   orders, one search, no error. `look` on a file sorted by anything but
+   the order it compares with is this bug with a file behind it — and a
+   locale is the commonest way to end up with two orders.
+
+5. THE tee GUARANTEE IS SPELLED 'b'
+   the bytes on disk                            636166c3a90d0a7365636f6e640d0a
+   read_bytes() gives them back                 True
+   read_text() gives back                       'café\nsecond\n'
+   ...same bytes?                               False
+   Two doors onto one file, and only one of them is tee. The text door
+   decoded and then translated the line endings, so what your code got
+   is not what the file holds — and it will not tell you, because for
+   almost every program that translation is the helpful thing to do.
+   When the question is what a pipeline did to the bytes, ask in binary:
+   that is the mode with no text model, which is what tee is.

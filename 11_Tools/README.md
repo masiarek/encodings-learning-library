@@ -36,12 +36,13 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 | 9 | [`cut` counts what it is told to count](cut/README.md) | `-b` or `-c`? And why does the same command differ per machine? | written |
 | 10 | [`tr` and `sort` work a byte at a time](tr_and_sort/README.md) | Why did deleting `é` damage a different word? | written |
 | 11 | [`diff` compares lines, `cmp` compares bytes](diff_and_cmp/README.md) | Why does `diff` say the line changed when both sides look identical? | written, 2026-09-07 |
-| 12 | [`hexdump` is a format engine wearing six presets](hexdump/README.md) | Why is my dump showing the bytes in the wrong order? | written |
-| 13 | [`xxd` is the dump you can put back](xxd/README.md) | Which column of a dump is the file, and how do I get the file back? | written |
-| 14 | [`od` reads types, not bytes](od/README.md) | Nothing else is installed. What are the two flags that make `od` honest? | written, 2026-09-07 |
-| 15 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
-| 16 | [Typing a character you cannot type](typing_a_character/README.md) | There is no `ż` on my keyboard — how do I produce one? | written, 2026-09-07 |
-| 17 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
+| 12 | [`split`, `paste`, `look` and `tee`](look_paste_tee_split/README.md) | Why is the piece my splitter wrote not valid UTF-8 any more? | written, 2026-09-07 |
+| 13 | [`hexdump` is a format engine wearing six presets](hexdump/README.md) | Why is my dump showing the bytes in the wrong order? | written |
+| 14 | [`xxd` is the dump you can put back](xxd/README.md) | Which column of a dump is the file, and how do I get the file back? | written |
+| 15 | [`od` reads types, not bytes](od/README.md) | Nothing else is installed. What are the two flags that make `od` honest? | written, 2026-09-07 |
+| 16 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
+| 17 | [Typing a character you cannot type](typing_a_character/README.md) | There is no `ż` on my keyboard — how do I produce one? | written, 2026-09-07 |
+| 18 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
 
 ## The whole toolkit, one row each
 
@@ -57,7 +58,7 @@ If you came looking for *the list* — every command you are likely to run over 
 | **[`rg`](ripgrep/README.md)** | search, recursively, fast | never asks the locale; [reads the BOM](ripgrep/README.md) and otherwise searches raw bytes. `--column` counts **bytes** and says so |
 | **[`rg -P`](pcre2/README.md)** | the other regex engine | a second Unicode implementation with its own `\p{…}` and its own [silent failure](pcre2/README.md); absent from a Mac entirely |
 | **[`find`](find/README.md)** | walk a directory | filenames are **bytes**, and `-name` is a byte comparison — even where [the filesystem disagrees](find/README.md) |
-| `look`, [`fgrep`](grep/README.md) | fixed-string search | `fgrep` is `grep -F`; the locale questions are grep's, unchanged. `look` adds one of its own — it binary-searches a file its man page requires to be **sorted**, and [whose order that is](../07_Real_Data/sorting_and_collation/README.md) is a locale question |
+| **[`look`](look_paste_tee_split/README.md)**, [`fgrep`](grep/README.md) | fixed-string search | `fgrep` is `grep -F`; the locale questions are grep's, unchanged. `look` adds one of its own — it binary-searches a file it requires to be **sorted**, misses silently when it is not, and [whose order that is](../07_Real_Data/sorting_and_collation/README.md) is a locale question |
 
 ### Slice, reshape, join
 
@@ -67,8 +68,8 @@ If you came looking for *the list* — every command you are likely to run over 
 | **[`sed`](sed/README.md)** | edit with patterns | a **sequence**, not a byte set — which is why it repairs what `tr` breaks |
 | **[`awk`](awk/README.md)** | fields and arithmetic | three implementations, two of them called `awk`, and they do not agree; `substr()` is `cut -c` with no `-b` to escape to |
 | [`head`](../07_Real_Data/bom_in_a_csv/README.md), [`tail`](../06_Terminal/trailing_newline/README.md) | first or last part | `-n` counts **newlines** and `-c` counts **bytes**; neither decodes, so neither can fail — but `-c` will cut a character in half |
-| `paste`, `join`, `comm` | put files side by side, or match them up | delimiters and field boundaries are bytes; [`join` and `comm`](tr_and_sort/README.md) additionally require both inputs sorted **in the same collation** as they compare, which is [a locale question](../07_Real_Data/sorting_and_collation/README.md) |
-| `split`, `csplit` | cut a file into pieces | `split -b` is bytes and will [land mid-character](../07_Real_Data/fixed_width_byte_fields/README.md); `-l` is lines and will not |
+| **[`paste`](look_paste_tee_split/README.md)**, `join`, `comm` | put files side by side, or match them up | delimiters and field boundaries are bytes — `-d` takes a **list** of them and reads it a byte at a time, so one multi-byte delimiter becomes two; [`join` and `comm`](tr_and_sort/README.md) additionally require both inputs sorted **in the same collation** as they compare, which is [a locale question](../07_Real_Data/sorting_and_collation/README.md) |
+| **[`split`, `csplit`](look_paste_tee_split/README.md)** | cut a file into pieces | `split -b` is bytes and will [land mid-character](../07_Real_Data/fixed_width_byte_fields/README.md), so a piece on its own is not text; `-l` is lines and will not |
 | `rev` | reverse each line | the **locale** decides whether it reverses characters or bytes — and reversing bytes takes a multi-byte character apart. [Measured below](#two-of-the-unbolded-rows-measured) |
 | `fold`, `fmt`, `expand`, `column`, `nl`, `pr` | wrap, align, number, paginate | every one of them has a notion of *width*, and width is the [character-vs-byte question](cut/README.md) wearing a different hat. Ask before trusting a column |
 
@@ -109,7 +110,7 @@ If you came looking for *the list* — every command you are likely to run over 
 | Tool | Its actual job | Its opinion about your text |
 |---|---|---|
 | **[`xargs`](xargs/README.md)** | turn a list into a command line | splits on spaces *and* quotes, and batches by **bytes** — so the encoding decides how many times your command runs |
-| [`find -exec`](find/README.md), `tee` | run per file, or fork a stream | both pass bytes through untouched; `find -exec … +` is the escape from most of [`xargs`'s problems](xargs/README.md) |
+| [`find -exec`](find/README.md), **[`tee`](look_paste_tee_split/README.md)** | run per file, or fork a stream | both pass bytes through untouched — `tee` is this chapter's **control**, the one tool with no opinion at all; `find -exec … +` is the escape from most of [`xargs`'s problems](xargs/README.md) |
 | **[`rg --pre`, `rg -z`](decompress_then_decode/README.md)** | one stage before the decode | a container is not an encoding, and [`-z` is a list of binaries, not a capability](decompress_then_decode/README.md) |
 
 ### Two of the unbolded rows, measured

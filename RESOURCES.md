@@ -149,6 +149,7 @@ Every example in this library runs on tools that ship with both macOS and Ubuntu
 | `sort` / `uniq` | order and deduplicate — [byte order in `LC_ALL=C`, collation order in any other](11_Tools/tr_and_sort/README.md) |
 | [`cut -b`](11_Tools/cut/README.md) | slice by byte; `cut -c` promises characters and delivers bytes unless the locale is a UTF-8 one |
 | [`diff` / `cmp`](11_Tools/diff_and_cmp/README.md) | are these the same file? — `diff` compares lines as bytes and `cmp` compares bytes, so neither of them answers *the same text* |
+| [`split` / `paste` / `tee`](11_Tools/look_paste_tee_split/README.md) | move text without reading it — and only `tee` is guaranteed to hand the next stage exactly what it was given |
 
 **Worth installing.** Nothing in the library depends on these and CI does not have them, so no page records their output — but each one answers a question the base set answers badly or not at all.
 
