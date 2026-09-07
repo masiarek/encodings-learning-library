@@ -17,7 +17,7 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 | | The question | Why it bites |
 |---|---|---|
 | 1 | Does it work in **bytes** or in **characters**? | `.` means one byte to `grep` in the C locale and one character to `grep` in a UTF-8 locale — [same file, two counts](grep/README.md) |
-| 2 | **Who decided** — the locale, a flag, or the tool itself? | `grep` asks the locale; [`rg` asks the first bytes of the file](ripgrep/README.md) and never the locale; `find` asks nobody and compares bytes |
+| 2 | **Who decided** — the locale, a flag, or the tool itself? | `grep` asks the locale; [`rg` asks the first bytes of the file](ripgrep/README.md) and never the locale; [`find` asks nobody and compares bytes](find/README.md) |
 | 3 | What does it do when the text is **not valid**? | The three answers are refuse, guess, and *silently skip* — and [the third one has no exit code](grep/README.md) |
 | 3b | …and when the **pattern** is not valid? | `rg` names the flag that would help; [`rg -P` matches nothing and says nothing](pcre2/README.md) |
 
