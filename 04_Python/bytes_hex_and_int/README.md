@@ -13,6 +13,7 @@
 - `struct.pack('<I', n)` / `unpack`: the template letters, and why `<` and `>` are the first thing to read in any format spec
 - Base64: a *text* encoding of bytes, not a character encoding — six bits per character, and why a 3-byte group becomes 4
 - A worked example: the first 16 bytes of a PNG file, decoded field by field
+- `bytes.hex(sep, bytes_per_sep)`: the **sign** is the direction — already covered in [Grouping is a choice](../../01_Bits_and_Bytes/grouping_is_a_choice/README.md), so link it rather than rebuilding it
 
 ## The example it will run
 

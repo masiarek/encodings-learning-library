@@ -1,0 +1,50 @@
+1. THE SPACES ARE NOT IN THE FILE
+   b'caf\xc3\xa9' is 5 bytes = 40 bits, and that never changes.
+   ungrouped   0110001101100001011001101100001110101001
+   as hex      63 61 66 c3 a9
+   Same file. The separators below are all this program's opinion.
+
+2. THE WIDTH YOU PICK IS A CLAIM ABOUT THE UNIT
+    4 bits = a hex digit (a nibble)            6 3 6 1 6 6 c 3 a 9
+    5 bits = a Base32 character                01100 01101 10000 10110 01101 10000 11101 01001
+    6 bits = a Base64 character                011000 110110 000101 100110 110000 111010 1001
+    8 bits = a byte                            63 61 66 c3 a9
+   16 bits = a UTF-16 code unit                6361 66c3 a9
+   24 bits = Base64's quantum, or an RGB pixel 636166 c3a9
+   32 bits = a UTF-32 code unit                636166c3 a9
+   A width that is not a multiple of 4 has no whole number of hex digits,
+   so those two rows had to be shown in binary. That is not a preference.
+
+3. THE GROUPS ARE CUT FROM BITS, NOT FROM BYTES
+   bytes    01100011 01100001 01100110 11000011 10101001
+   5 bits   01100 01101 10000 10110 01101 10000 11101 01001
+   The second 5-bit group is 01101: the last 3 bits of 0x63 (011)
+   followed by the first 2 bits of 0x61 (01).
+   It belongs to two bytes and to no character at all.
+
+4. NOTHING IS PADDED: A SHORT LAST GROUP IS JUST SHORT
+   16 bits: 3 groups, sizes [16, 16, 8] -> last one holds 8 bits
+   24 bits: 2 groups, sizes [24, 16] -> last one holds 16 bits
+   32 bits: 2 groups, sizes [32, 8] -> last one holds 8 bits
+   Base64 does the opposite: it pads the last quantum to 24 bits and writes
+   '=' to say how much it added, because there the groups are the encoding.
+   Here they are only the view, so the tail is left ragged.
+
+5. ALIGNMENT IS NOT UNDERSTANDING
+   Grouping by 4 bytes will sometimes put a 4-byte character in one group.
+   That is arithmetic about its offset, not knowledge of UTF-8.
+   offset 0 (0 % 4 = 0): f09f9880                     the whole character in one group
+   offset 1 (1 % 4 = 1): 7ef09f98 80                  split across two groups
+   offset 2 (2 % 4 = 2): 7e7ef09f 9880                split across two groups
+   offset 3 (3 % 4 = 3): 7e7e7ef0 9f9880              split across two groups
+   offset 4 (4 % 4 = 0): 7e7e7e7e f09f9880            the whole character in one group
+   offset 5 (5 % 4 = 1): 7e7e7e7e 7ef09f98 80         split across two groups
+   offset 6 (6 % 4 = 2): 7e7e7e7e 7e7ef09f 9880       split across two groups
+   offset 7 (7 % 4 = 3): 7e7e7e7e 7e7e7ef0 9f9880     split across two groups
+   One character earlier in the file and the picture changes. The tool never knew.
+
+6. IN PYTHON THE SIGN IS THE DIRECTION
+   word.hex(' ', -2)  6361 66c3 a9         pairs from the LEFT, short group last
+   word.hex(' ',  2)  63 6166 c3a9         pairs from the RIGHT, short group first
+   Positive counts back from the end, which is right for a number and wrong
+   for a stream. A hex dump reads left to right, so it wants the negative.

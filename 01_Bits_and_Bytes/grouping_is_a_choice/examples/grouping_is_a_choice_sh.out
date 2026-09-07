@@ -1,0 +1,42 @@
+1. THE DEFAULT IS TWO BYTES PER GROUP, AND IT IS A DEFAULT, NOT THE FILE
+
+$ printf "caf\\xc3\\xa9" | xxd
+00000000: 6361 66c3 a9                             caf..
+
+2. -g SETS THE GROUP WIDTH IN BYTES. Same five bytes every time.
+
+$ printf "caf\\xc3\\xa9" | xxd -g1
+00000000: 63 61 66 c3 a9                                   caf..
+
+$ printf "caf\\xc3\\xa9" | xxd -g4
+00000000: 636166c3 a9                          caf..
+
+$ printf "caf\\xc3\\xa9" | xxd -g8
+00000000: 636166c3a9                         caf..
+
+3. -g0 ASKS FOR NO GROUPING AT ALL
+
+$ printf "caf\\xc3\\xa9" | xxd -g0
+00000000: 636166c3a9                        caf..
+
+4. -c IS A DIFFERENT KNOB: bytes per LINE, not per group
+
+$ printf "caf\\xc3\\xa9" | xxd -g1 -c 3
+00000000: 63 61 66  caf
+00000003: c3 a9     ..
+   Two lines now, and the offset column counts in bytes as always.
+
+5. THE LAST GROUP IS SHORT. Nothing is padded and nothing says so.
+
+$ printf "caf\\xc3\\xa9" | xxd -g4
+00000000: 636166c3 a9                          caf..
+   Groups of four over five bytes: 636166c3 then a9 alone. The a9 is not a
+   short group of its own kind -- it is the tail, and only counting tells you.
+
+6. hexdump -e IS THE GENERAL FORM: you write the grouping out
+
+$ printf "caf\\xc3\\xa9" | hexdump -e '4/1 "%02x" " "' -e '"\n"'
+636166c3 
+a9       
+   4/1 means four iterations of one byte. Change the 4 and you have changed
+   the claim about what this file is made of.

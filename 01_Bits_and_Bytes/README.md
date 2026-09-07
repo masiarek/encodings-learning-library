@@ -2,13 +2,14 @@
 
 **Level:** 101 · for anyone starting from zero
 
-Three lessons, and after them a hex dump is readable. Each answers a question the one before it raises.
+Four lessons, and after them a hex dump is readable — and you know which parts of it are the file and which are the tool. Each answers a question the one before it raises.
 
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|
 | 1 | [A byte is eight bits](a_byte_is_eight_bits/README.md) | What is the thing a file is made of, and why does it hold 0..255 and nothing else? | written |
 | 2 | [Hex is a shorthand](hex_is_a_shorthand/README.md) | Why does every tool show a byte as two characters from `0`–`F`, and why is `41` on screen not `'41'` in the file? | written |
 | 3 | [Reading a hex dump](reading_a_hex_dump/README.md) | What are the three columns of `xxd`, and how do I check a claim about text against the bytes? | written |
+| 4 | [Grouping is a choice](grouping_is_a_choice/README.md) | The dump put spaces every two bytes — who decided that, and what does a different width claim about the file? | written |
 
 ## The through-line
 

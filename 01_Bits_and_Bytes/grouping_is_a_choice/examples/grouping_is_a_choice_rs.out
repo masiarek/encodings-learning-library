@@ -1,0 +1,27 @@
+input: "café", 5 bytes
+
+1. chunks(4) HANDS YOU A SHORT ONE AND SAYS NOTHING
+   chunk 0: 636166c3 4 bytes
+   chunk 1: a9       1 bytes
+   Every chunk has type &[u8]. The last one is a different size and the
+   type cannot say so, which is exactly how a tail gets processed twice
+   or read past the end.
+
+2. chunks_exact(4) REFUSES TO GIVE YOU A SHORT ONE
+   chunk 0: 636166c3 4 bytes
+   remainder: a9       1 bytes
+   The leftover did not vanish; it moved to a method you have to call.
+   Forgetting it is now visible in the code rather than in the output.
+
+3. THE FORGETTING, SIDE BY SIDE
+   bytes seen via chunks(4)        5  (all of them)
+   bytes seen via chunks_exact(4)  4  (one short of the file)
+   Same loop, same width, one byte of café silently missing.
+
+4. THERE IS NO BIT-LEVEL CHUNKER, AND THAT IS HONEST
+   std groups &[u8]: the smallest thing it can hand you is one byte.
+   A 5-bit group (Base32) or a 6-bit group (Base64) is not a subslice of
+   anything, so you shift it out yourself:
+   six-bit groups: [24, 54, 5, 38, 48, 58, 36]
+   Note the last one had to be filled out to six bits to exist at all.
+   That fill is what Base64's '=' is there to declare.
