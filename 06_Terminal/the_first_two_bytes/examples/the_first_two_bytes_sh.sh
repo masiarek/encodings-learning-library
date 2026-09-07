@@ -76,8 +76,11 @@ echo "   Same nine characters on screen. One of them is ten bytes."
 
 echo
 echo "6. THE FIX, AND HOW TO CHECK IT AFTERWARDS"
-# tr names the byte in octal and is identical on both platforms. sed's \r is
-# not: it is a GNU extension, and sed -i takes an argument on BSD and not on GNU.
+# tr names the byte in octal and asks nothing of a regex grammar. s/\r$// would
+# also work -- BSD, GNU and busybox sed all three strip it -- but \r is not in
+# POSIX, which leaves a backslash before an ordinary character undefined in a
+# BRE, so all three are extending the standard and merely agreeing. sed -i is
+# the real portability trap: it takes a backup suffix on BSD and not on GNU.
 show "tr -d '\\015' < crlf.sh > fixed.sh && chmod +x fixed.sh && ./fixed.sh"
 show "head -c 12 fixed.sh | xxd -p"
 echo "   Nothing on screen changed when it was broken and nothing changed when"
