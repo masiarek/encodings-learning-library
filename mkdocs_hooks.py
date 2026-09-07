@@ -105,6 +105,7 @@ NAV_ORDER: dict[str, list[str]] = {
     "01_Bits_and_Bytes": [
         "README.md",
         "a_byte_is_eight_bits",
+        "counting_in_hex",
         "hex_is_a_shorthand",
         "reading_a_hex_dump",
         "grouping_is_a_choice",

@@ -1,0 +1,68 @@
+1. SIXTEEN DIGITS. SIX OF THEM ARE DRAWN AS LETTERS
+   value   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+   digit   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+   A is not a letter here. It is the digit worth ten, the way 9 is the digit worth nine.
+   Decimal ran out of symbols at 9 and had to start carrying. Hex has six more to spend first.
+
+2. COUNTING. THE ONLY NEW RULE IS WHERE THE WHEEL ROLLS OVER
+      D + 1 = E      ( 13 + 1 = 14 )
+      E + 1 = F      ( 14 + 1 = 15 )
+      F + 1 = 10     ( 15 + 1 = 16 )   <- 1 wheel rolled over
+     10 + 1 = 11     ( 16 + 1 = 17 )
+     11 + 1 = 12     ( 17 + 1 = 18 )
+   ...
+     18 + 1 = 19     ( 24 + 1 = 25 )
+     19 + 1 = 1A     ( 25 + 1 = 26 )
+     1A + 1 = 1B     ( 26 + 1 = 27 )
+     1B + 1 = 1C     ( 27 + 1 = 28 )
+   ...
+     1E + 1 = 1F     ( 30 + 1 = 31 )
+     1F + 1 = 20     ( 31 + 1 = 32 )   <- 1 wheel rolled over
+     20 + 1 = 21     ( 32 + 1 = 33 )
+   19 + 1 is 1A, not 20: that column still has six symbols left in it.
+
+3. THE SAME ODOMETER. THE ONLY DIFFERENCE IS WHICH SYMBOL IS LAST
+   decimal, last symbol 9        hex, last symbol F
+        9 + 1 = 10                   F + 1 = 10       1 wheel reset
+       99 + 1 = 100                 FF + 1 = 100      2 wheels reset
+      999 + 1 = 1000               FFF + 1 = 1000     3 wheels reset
+   Both right-hand answers are written '100'. One of them is 100 and the other is 256.
+   A carry stops at the first digit that is not the last symbol:
+   0x9F   + 1 = 0xA0     (1 trailing F reset, then the digit to their left went up by one)
+   0x1F   + 1 = 0x20     (1 trailing F reset, then the digit to their left went up by one)
+   0xAFF  + 1 = 0xB00    (2 trailing Fs reset, then the digit to their left went up by one)
+
+4. WHY THE WHEEL ROLLS AT F: EACH COLUMN IS WORTH SIXTEEN OF THE ONE ON ITS RIGHT
+   column        ...   16^2 = 256   16^1 = 16   16^0 = 1
+   0x21   = 2x16 + 1x1               = 32 + 1              = 33
+   0xFF   = 15x16 + 15x1             = 240 + 15            = 255
+   0x100  = 1x256 + 0x16 + 0x1       = 256 + 0 + 0         = 256
+   0x2A5  = 2x256 + 10x16 + 5x1      = 512 + 160 + 5       = 677
+   Nothing there is special to hex. Swap the 16 for a 10 and it is the arithmetic you already do,
+   which is the whole claim of this page: you are not learning to count, only where the wheel rolls.
+
+5. 'MOST SIGNIFICANT' MEANS 'THE COLUMN WORTH THE MOST'. NOTHING ELSE
+   33 = 0x21 = 0b00100001
+                               symbol   its column is worth   it contributes
+   most significant digit        2                       16               32
+   least significant digit       1                        1                1
+   most significant bit          0                      128                0
+   least significant bit         1                        1                1
+   The most significant bit of 33 is 0, and it is still the most significant bit: significance is
+   what the column is worth, not what happens to be sitting in it.
+
+6. AND IT IS PLACE VALUE, NOT SCREEN POSITION
+   0x2A5 as a 2-byte number, written the two ways a file may store it:
+   big-endian     02 a5   most significant byte first  -- reads like the number
+   little-endian  a5 02   least significant byte first -- and 'a5' is the LEAST significant half
+   Same number, same significance, opposite order on screen. In a hex dump the leftmost byte
+   is not automatically the most significant one; that is a fact about the file, not about hex.
+
+7. SO SAY IT OUT LOUD CAREFULLY
+   base 2   0b100001   thirty-three
+   base 8   0o41       thirty-three
+   base 10  33         thirty-three
+   base 16  0x21       thirty-three
+   0x21 is 'two-one', or 'hex twenty-one'. Bare 'twenty-one' is a different number, and mis-saying it
+   is how a conversion goes wrong out loud before it goes wrong on paper. The two characters '10'
+   are 2 in base 2, 8 in base 8, 10 in base 10 and 16 in base 16 -- four numbers, one spelling.

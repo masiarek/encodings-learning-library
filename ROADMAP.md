@@ -11,6 +11,7 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | Page | Status |
 |---|---|
 | [A byte is eight bits](01_Bits_and_Bytes/a_byte_is_eight_bits/README.md) | written, 2026-09-05 |
+| [Counting in hexadecimal](01_Bits_and_Bytes/counting_in_hex/README.md) | written, 2026-09-07 — Python, Rust and shell; the odometer with sixteen symbols per wheel, why `99 + 1` and `FF + 1` are the same event, and the three things MSB can mean |
 | [Hex is a shorthand](01_Bits_and_Bytes/hex_is_a_shorthand/README.md) | written, 2026-09-05 |
 | [Reading a hex dump](01_Bits_and_Bytes/reading_a_hex_dump/README.md) | written, 2026-09-05 |
 | [Grouping is a choice](01_Bits_and_Bytes/grouping_is_a_choice/README.md) | written, 2026-09-07 — Python, Rust and shell; the width you group by is a claim about the unit, cryptii silently switches hex to binary at 5 and 6 bits and never switches back, and a 4-byte grouping "understands" an emoji exactly when its offset divides by four |

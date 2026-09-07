@@ -1,0 +1,36 @@
+1. THE TWO HALVES OF A BYTE ARE A SHIFT AND A MASK
+   n = 33 = 0x21 = 0b00100001
+   high nibble   n >> 4     = 2   the 16s digit
+   low nibble    n & 0x0F   = 1   the 1s digit
+   and back      (hi << 4) | lo = 33
+   Those two digits are what a hex dump prints. Nothing is computed to get them;
+   the byte was already two hex digits, and the shift only picks which one you want.
+
+2. std WILL NAME THE SIGNIFICANT BIT, BECAUSE IT IS A POSITION AND NOT A VALUE
+   0x01 = 0b00000001   leading_zeros 7   highest set bit is bit 0 (worth 1)   ones 1   trailing_zeros 0
+   0x21 = 0b00100001   leading_zeros 2   highest set bit is bit 5 (worth 32)   ones 2   trailing_zeros 0
+   0x80 = 0b10000000   leading_zeros 0   highest set bit is bit 7 (worth 128)   ones 1   trailing_zeros 7
+   0xFF = 0b11111111   leading_zeros 0   highest set bit is bit 7 (worth 128)   ones 8   trailing_zeros 0
+   Bit 7 is the most significant bit of a u8 whatever is in it -- 33 has a 0 there and
+   it is still the most significant bit. `leading_zeros` reports the highest bit that is SET,
+   which is a different question and the one you usually want.
+
+3. FF + 1 IN A BYTE: FOUR ANSWERS, AND THE TYPE MAKES YOU PICK ONE
+   u8::MAX                     = 255 = 0xFF
+   max.checked_add(1)          = None       there is no answer, and the type says so
+   max.wrapping_add(1)         = 0          the carry is discarded: the odometer rolls to 00
+   max.overflowing_add(1)      = (0, true)  the answer, and the fact that it overflowed
+   max.saturating_add(1)       = 255        stop at the top rather than roll round to it
+   Plain `max + 1` is a fifth: it panics in a debug build and wraps in a release one, so it
+   is the only one of the five whose meaning depends on how the program was compiled.
+   Written as a literal it does not even compile -- `arithmetic_overflow` is deny-by-default.
+
+4. AND 'MSB' MEANS TWO DIFFERENT THINGS, ONE BIT APART FROM ONE BYTE
+   w = 0x02A5 = 677
+   most significant BIT   w >> 15        = 0          one bit, the 32768s column
+   most significant BYTE  (w >> 8) as u8 = 0x02       one byte, the 256s column
+   w.to_be_bytes()  = [02, A5]   big-endian:    most significant byte written first
+   w.to_le_bytes()  = [A5, 02]   little-endian: least significant byte written first
+   Same number, same significance, two orders on disk. Which is why 'the MSB' is only ever
+   clear from context: in a bit-twiddling sentence it is one bit, in a byte-order sentence
+   it is one byte, and the abbreviation is identical for both.
