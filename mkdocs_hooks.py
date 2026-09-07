@@ -107,6 +107,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "README.md",
         "a_character_is_a_number",
         "control_characters",
+        "the_nul_byte",
         "code_pages",
         "unicode_code_points",
         "the_table_has_a_version",

@@ -1,0 +1,47 @@
+1. A NUL TRAVELS THROUGH A FILE AND A PIPE JUST FINE
+
+$ printf 'a\0b' | xxd
+00000000: 6100 62                                  a.b
+
+$ printf 'a\0b' | wc -c | tr -d ' '
+3
+
+2. BUT IT CANNOT SURVIVE A SHELL VARIABLE
+
+$ v=$(printf 'a\0b'); printf %s "$v" | xxd
+00000000: 6162                                     ab
+   Two bytes, not three. The NUL did not survive the assignment, and neither
+   would it survive being passed to a command: argv is NUL-terminated strings
+   all the way down to execve(2), so no program can ever receive one.
+
+3. WHICH IS EXACTLY WHY THE -0 AND -z FLAGS EXIST
+   Two files. One of them has a newline in its name, which is legal.
+
+$ printf 'holiday\nphotos.txt\nnotes.txt\n' | xargs -n1 echo ' item:'
+ item: holiday
+ item: photos.txt
+ item: notes.txt
+   Three items, two files. Now the same two names, NUL-separated:
+
+$ printf 'holiday\nphotos.txt\0notes.txt\0' | xargs -0 -n1 echo ' item:'
+ item: holiday
+photos.txt
+ item: notes.txt
+
+4. THE FAMILY OF FLAGS THAT MEANS 'NUL-SEPARATED'
+
+$ printf 'pear\0apple\0' | sort -z | xxd
+00000000: 6170 706c 6500 7065 6172 00              apple.pear.
+   find -print0    xargs -0        sort -z         grep -z
+   tar --null -T -                 rg --null-data  read -d ''
+   All one idea: use the byte the data cannot hold.
+
+5. ON REAL FILES, WITH A REAL find
+
+$ find . -type f | wc -l | tr -d ' '
+3
+   Two files, and 'how many lines' answered three.
+
+$ find . -type f -print0 | tr -dc '\0' | wc -c | tr -d ' '
+2
+   Counting NULs instead of lines answers two, which is the number of files.

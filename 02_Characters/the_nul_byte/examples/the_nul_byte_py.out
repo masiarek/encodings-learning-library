@@ -1,0 +1,49 @@
+1. U+0000 IS AN ORDINARY CHARACTER, AND ORDINARY UTF-8
+   ord(nul)                        = 0
+   category is 'Cc' (a control)    = True
+   nul.encode('utf-8')             = b'\x00'   one byte, no escape hatch needed
+   b'\x00'.decode('utf-8')         = '\x00'   every validator accepts it
+   nul.encode('utf-16-le')         = b'\x00\x00'
+   unicodedata.name(nul)            -> ValueError: no such name
+   unicodedata.lookup('NULL')      = '\x00'   it has no Name, but it has an alias
+
+2. PYTHON HOLDS IT WITHOUT COMPLAINT
+   s = 'ab\x00cd'
+   len(s)                          = 5   five characters; NUL is the third
+   s.encode().decode() == s        = True
+   s.split(chr(0))                 = ['ab', 'cd']
+   sorted(['b', nul, 'a'])         = ['\x00', 'a', 'b']   it sorts before everything
+   Nothing above is special-cased. To Python it is a character like any other.
+
+3. FOUR PLACES PYTHON STOPS YOU, AND ALL FOR THE SAME REASON
+   open('a\x00b')                   -> ValueError: embedded null byte
+   os.stat('a\x00b')                -> ValueError: stat: embedded null character in path
+   subprocess.run(['echo', s])      -> ValueError: embedded null byte
+   os.environ['A\x00B'] = 'x'       -> ValueError: embedded null byte
+   Each of those hands the string to the operating system, whose interface is
+   NUL-terminated C strings. Python refuses rather than let the value be cut.
+
+4. THE CONTAINERS: WHO WILL CARRY A NUL?
+   json.dumps(s)                   = "ab\u0000cd"   escaped, and legal JSON
+   json.loads(that) == s           = True
+   json.loads('"a\x00b"')           -> JSONDecodeError: Invalid control character at: line 1 column 3 (char 2)
+   (a RAW control character inside a JSON string is invalid; the escape is not)
+   csv round-trip                  = True   csv carries it and says nothing
+   ET.tostring(...)                = b'<a>ab\x00cd</a>'
+   ET.fromstring(that)              -> ParseError: not well-formed (invalid token): line 1, column 5
+   ET.fromstring('<a>&#0;</a>')     -> ParseError: reference to invalid character number: line 1, column 3
+   XML 1.0 has no way to spell U+0000 at all -- not as a raw byte and not as a
+   character reference -- so Python's writer produced a document that Python's
+   own parser refuses. Written, and unreadable.
+   sqlite: value comes back whole   = True
+   sqlite: length(s) says           = 2   ...for a five-character string
+   sqlite: hex(s) says              = 6162006364   all five bytes are stored
+   The row is intact; SQL's own string function stopped at the NUL. That is
+   sizeof against strlen again, one layer up, inside a database.
+
+5. WHY IT IS THE ONE SAFE SEPARATOR
+   two filenames, one with a newline in it: ['holiday\nphotos.txt', 'notes.txt']
+   split on '\n'  -> ['holiday', 'photos.txt', 'notes.txt']   three names, and only two files
+   split on '\0'  -> ['holiday\nphotos.txt', 'notes.txt']   right, because a name cannot hold a NUL
+   A separator has to be a byte the data cannot contain. A Unix filename may
+   hold any byte but two -- '/' and NUL -- and '/' is busy separating directories.
