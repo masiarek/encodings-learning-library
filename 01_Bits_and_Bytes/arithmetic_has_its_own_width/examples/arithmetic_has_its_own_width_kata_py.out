@@ -1,0 +1,22 @@
+expression   arithmetic  stored in a byte   fits?
+200 + 100           300                44   NO -- lost 256
+255 << 2           1020               252   NO -- lost 768
+1 << 9              512                 0   NO -- lost 512
+60 + 5               65                65   yes
+
+Only 60 + 5 comes back. The other three are not wrong arithmetic: 300,
+1020 and 512 are the right answers, and Python, the shell's $(( )) and
+C's int all produce them. What differs is the BOX you put the answer in.
+
+The masking is what a fixed-width type does for you, and where it
+happens is the whole lesson:
+  * Python  -- never. int grows; you only lose bits if you write & 0xFF.
+  * Rust    -- at the operator. 255u8 << 2 is 252 in release and a panic
+               in debug, because the type is eight bits all the way
+               through. There is no wide intermediate to look at.
+  * C       -- at the STORE. The operands are promoted to int, so the
+               expression really is 1020, and the truncation happens
+               silently when it lands back in a uint8_t.
+
+That is why the same source line gives three answers, and why 'it
+overflowed' is not a useful sentence until you say where.

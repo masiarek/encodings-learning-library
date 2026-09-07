@@ -1,0 +1,31 @@
+$ xxd f
+   00000000: 4869 0974 6865 7265 0ac3 a907 6f6b 0a    Hi.there....ok.
+
+1. WHERE ARE THE NEWLINES?
+   Offsets 09 and 0f, both 0a. The right-hand column draws each as a dot,
+   which is the column telling you it has nothing to draw rather than the
+   file containing a dot.
+
+2. THE FIRST BYTE SHOWN AS A DOT
+   0x09 -- at offset 02, the tab.
+   It is a real byte, 09, and it is the reason the words on that line are
+   spaced the way they are. The dot is the dump's placeholder for every
+   byte outside 20..7e, so a dot never means 'a dot'.
+
+3. HOW MANY BYTES DOES THE LETTER MAKE?
+   Two: c3 a9 at offsets 0a and 0b, one letter e-acute. The text column
+   draws two dots for them, side by side, because it decodes nothing --
+   it tests each byte against ASCII on its own. A dump cannot show you a
+   character; it can only show you the bytes one is spelled with.
+
+4. THE BYTE THAT IS NOT A LETTER AND NOT A NEWLINE
+   07 at offset 0c, BEL. Printed to a terminal it would make a sound and
+   move the cursor nowhere -- which is exactly why cat is not a way to
+   look at a file and xxd is.
+
+THE THREE COLUMNS, RESTATED
+   left       the offset, in hex, of the first byte on the line
+   middle     the bytes, and this is the file
+   right      a guess: ASCII where it can, a dot where it cannot
+   Only the middle column is the file. The left one is counting and the
+   right one is a courtesy that has already thrown information away.

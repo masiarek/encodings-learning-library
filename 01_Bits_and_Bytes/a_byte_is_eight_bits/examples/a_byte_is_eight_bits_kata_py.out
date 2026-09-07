@@ -1,0 +1,17 @@
+the byte              10101100
+unsigned              172
+hex                   0xac   (1010 1100 -- one digit per nibble)
+signed (two's compl.) -84   (top bit set, so 172 - 256)
+as Latin-1 text       '¬'
+
+Three of those four are the same fact written four ways: 172 and 0xac
+and 1010 1100 are one number in three notations, and nothing had to be
+decided to get from any of them to any other.
+
+The fourth one is a DECISION. -84 is not hiding inside the switches; it
+is what you get if somebody agreed in advance that the top bit means a
+sign. Ask C: `char` is signed on most machines and unsigned on some, and
+the same byte then holds 172 or -84 with no cast anywhere in sight.
+
+So the answer to 'which of the four does the byte decide?' is NONE of
+them. It holds eight switches. Everything else is a reader's agreement.

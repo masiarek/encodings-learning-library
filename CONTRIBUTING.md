@@ -197,7 +197,9 @@ python3 tools/check_katas.py --selftest  # prove the gate still bites
 
 It reads prose only. Fenced blocks **and inline code spans** are stripped first, so a page may show a malformed fold as an example, or name the tag in a sentence, without failing its own gate — which is what this section does twice.
 
-**A kata lives on the page for the topic it teaches**, never in a folder of its own and never with a number in its heading. Folders are permanent URLs and a sequence is the thing that gets reordered — the same reasoning as [Nav order](#nav-order) below. If this library ever collects enough of them to need a reading sequence, it goes in a `KATAS.md` table, which costs nothing to reshuffle; at one kata it would be a file with a row in it.
+**A kata lives on the page for the topic it teaches**, never in a folder of its own and never with a number in its heading. Folders are permanent URLs and a sequence is the thing that gets reordered — the same reasoning as [Nav order](#nav-order) below. The sequence lives in [KATAS.md](KATAS.md), a table that costs nothing to reshuffle, and **a new kata needs a row there**: the index is the one file no lesson owns, so nothing about your page can reveal that its row is missing. `check_katas.py` fails a `## Practice` with no row, a row pointing at a page with no kata, a row whose links do not resolve, and numbering that has stopped reading K1, K2, K3 in table order.
+
+**Do not print the kata's number on its own page.** Open with a short bold title instead. The number lives in that one table, which is what makes reordering free; a `K7` in a page's prose is a second place to update and the reason a stale one goes unnoticed.
 
 **A stub gets neither section.** It has no example behind it, so a *Try it* would point at nothing and a folded answer would be a guess with a disclosure triangle over it.
 

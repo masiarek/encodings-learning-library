@@ -95,6 +95,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "13_Documentation",
         "14_Resources",
         "RIPGREP.md",
+        "KATAS.md",
         "CAST.md",
         "GLOSSARY.md",
         "RESOURCES.md",

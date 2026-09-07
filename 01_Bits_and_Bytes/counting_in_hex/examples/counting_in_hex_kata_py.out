@@ -1,0 +1,31 @@
+1. COUNT FROM 3E TO 45
+   3E 3F 40 41 42 43 44 45
+   Eight values, and exactly ONE carry: 3F -> 40.
+   The low wheel rolled past F to 0 and the high wheel stepped 3 to 4.
+   Every other step in that run leaves the high digit alone -- which is
+   the thing worth feeling, because it is the same odometer you already
+   turn in decimal and the only new rule is where F sits.
+
+2. WHAT COMES NEXT
+   4F -> 50
+   FF -> 100
+   1FF -> 200
+   FF -> 100 is the same carry twice in one step, which is why a byte
+   that holds FF and is incremented lands on 00 and takes the 1 with it
+   into a place a byte does not have.
+
+3. WHICH IS BIGGER, 0x20 OR 29?
+   0x20 is 32. 29 has two answers: 29 if it is decimal, 41 if it is hex.
+   So 0x20 < 29 as decimal, and 0x20 < 0x29 as hex -- the comparison
+   goes the same way by luck, not by argument. Only one of the two
+   spellings says what base it is in, and that is the whole trap.
+
+4. 0xB IN DECIMAL, AND 12 IN HEX
+   0xB = 11
+   12  = C   (decimal twelve, so the digit after B)
+
+5. A BYTE HOLDING 0x7F IS INCREMENTED
+   7F -> 80      binary 01111111 -> 10000000
+   Every bit changed. Seven ones fell to zero and the eighth rose --
+   one step on the odometer, and the byte's top bit is now set, which is
+   the bit that decides whether a signed reading calls this 128 or -128.

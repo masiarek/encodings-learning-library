@@ -1,0 +1,30 @@
+the field   'd131dd02c5e6eec4693d9a0698aff95'   (31 characters, described as '32 hex')
+
+1. AS A NUMBER -- int(s, 16)
+   accepted, value 0xd131dd02c5e6eec4693d9a0698aff95
+   A number has no width, so 31 digits is not short, it is just smaller.
+   Nothing is missing from a number's point of view. Notice what the
+   round trip does: it comes back with a LEADING ZERO restored in a
+   place the sender never had one -- 0d131dd02c5e6eec4693d9a0698aff95
+   That is the corruption, and it looks like a repair.
+
+2. AS BYTES -- bytes.fromhex(s)
+   ValueError: fromhex() arg must contain an even number of hexadecimal digits
+   The width IS the data here, and 31 does not divide by 2, so Python
+   refuses. This is the reading you want: it is the only one of the
+   three that knows a hash is 16 bytes rather than a large integer.
+
+3. AS BYTES, THE SHELL'S WAY -- xxd -r -p
+   Silently drops the last nibble and exits 0. The page's own one-liner
+   shows it: printf '123' | xxd -r -p | xxd -p prints 12.
+   Fifteen and a half bytes are not representable, so it writes fifteen
+   and says nothing. A pipeline reading its status sees success.
+
+WHERE THE CHECK GOES
+   At the boundary, before the value becomes an object -- the same place
+   every decode belongs. Two lines, and they are not the same check:
+       if len(field) != 32: reject      # the width, which is the contract
+       raw = bytes.fromhex(field)       # the alphabet, which is the parser's
+   The second one alone would pass a 30-character field. The first alone
+   would pass 32 characters of Arabic-Indic digits, which int() accepts
+   and which are not hex at all: int('\u0664\u0661', 16) == 65.

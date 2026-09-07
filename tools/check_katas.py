@@ -20,7 +20,7 @@ fold. That is what makes the answer key run in CI on both platforms alongside
 every other example: a solution cannot rot into one that no longer prints what
 the page says it prints.
 
-Six checks, each one a rule from CONTRIBUTING's "Try it, and Practice":
+Nine checks, each one a rule from CONTRIBUTING's "Try it, and Practice":
 
 1. Every `<details>` carries `markdown="1"`.
 2. A `## Practice` section folds its answer in a `<details>`.
@@ -29,6 +29,11 @@ Six checks, each one a rule from CONTRIBUTING's "Try it, and Practice":
 5. A stub has no `## Practice` -- there is no example behind it to answer with.
 6. No `???` fold. It is Material-only and prints as literal text on GitHub,
    which is the mirror of defect 1.
+7. Every `## Practice` has a row in KATAS.md. The index is the one file no
+   lesson owns, so nothing about your page reveals that its row is missing.
+8. Every row's two links resolve, and the kata link ends in `#practice`.
+9. The IDs read K1, K2, K3... in table order, so the number is a label the
+   table can renumber and never an address anyone saved.
 
     python3 tools/check_katas.py
     python3 tools/check_katas.py --selftest   # mutate each rule in turn
@@ -52,6 +57,8 @@ CODE_SPAN = re.compile(r"`+[^`\n]*`+")
 DETAILS = re.compile(r"<details\b[^>]*>", re.I)
 GENERATED = re.compile(r"<!--\s*(output|source):")
 STUB = re.compile(r"^> \*\*Stub", re.M)
+KATAS = REPO / "KATAS.md"
+ROW = re.compile(r"^\|\s*K(\d+)\s*\|\s*\[[^\]]*\]\(([^)]+)\)\s*\|\s*\[[^\]]*\]\(([^)]+)\)\s*\|", re.M)
 ADMONITION_FOLD = re.compile(r"^\?\?\?", re.M)
 
 
@@ -153,11 +160,61 @@ def check_text(rel: str, raw: str) -> list[str]:
     return bad
 
 
+def index_rows() -> list[tuple[int, str, str]]:
+    """(number, kata href, lesson href) for every row of the KATAS.md table."""
+    if not KATAS.exists():
+        return []
+    return [(int(n), k, l) for n, k, l in ROW.findall(KATAS.read_text(encoding="utf-8"))]
+
+
+def check_index(practice_pages: set[str]) -> list[str]:
+    """The index and the pages must agree, and the numbering must be a sequence."""
+    bad: list[str] = []
+    if not KATAS.exists():
+        return [f"KATAS.md is missing, and {len(practice_pages)} page(s) have a kata."]
+
+    rows = index_rows()
+    numbers = [n for n, _, _ in rows]
+    if numbers != list(range(1, len(numbers) + 1)):
+        bad.append(
+            f"KATAS.md numbers its rows {numbers} -- they must read K1, K2, K3... "
+            "in table order. The number is a label the table renumbers freely; "
+            "that only works while it matches the position."
+        )
+
+    indexed: set[str] = set()
+    for n, kata_href, lesson_href in rows:
+        if not kata_href.endswith("#practice"):
+            bad.append(f"KATAS.md K{n}: the kata link is {kata_href!r}, which does "
+                       "not end in #practice, so it lands on the page rather than "
+                       "on the exercise.")
+        for href in (kata_href, lesson_href):
+            target = REPO / href.split("#", 1)[0]
+            if not target.exists():
+                bad.append(f"KATAS.md K{n}: {href!r} names no such file.")
+        indexed.add(kata_href.split("#", 1)[0])
+
+    for rel in sorted(practice_pages - indexed):
+        bad.append(
+            f"{rel}: has a `## Practice` section and no row in KATAS.md. Nothing "
+            "on the page can reveal that -- add the row where the kata should be "
+            "attempted, and renumber."
+        )
+    for rel in sorted(indexed - practice_pages):
+        bad.append(f"KATAS.md points at {rel}, which has no `## Practice` section.")
+    return bad
+
+
 def scan() -> list[str]:
     bad: list[str] = []
+    practice: set[str] = set()
     for p in pages():
-        bad += check_text(str(p.relative_to(REPO)), p.read_text(encoding="utf-8"))
-    return bad
+        rel = str(p.relative_to(REPO))
+        raw = p.read_text(encoding="utf-8")
+        bad += check_text(rel, raw)
+        if rel != "KATAS.md" and section(strip_code(raw), "Practice") is not None:
+            practice.add(rel)
+    return bad + check_index(practice)
 
 
 GOOD = """# A page
@@ -227,12 +284,48 @@ def selftest() -> int:
         if not caught:
             print("          expected a complaint, GOT NONE")
 
+    # The index rules read KATAS.md, so they are exercised against a temporary
+    # one -- same trick as check_nav_chain's selftest, which swaps NAV_ORDER out
+    # rather than editing the repo to prove a gate bites.
+    global KATAS
+    saved = KATAS
+    import tempfile
+    good_row = ("| # | Kata | Lesson | Level |\n|---|---|---|---|\n"
+                "| K1 | [k](CONTRIBUTING.md#practice) | [l](CONTRIBUTING.md) | 101 |\n")
+    index_cases = [
+        ("a kata with no row in the index", good_row, {"CONTRIBUTING.md", "orphan.md"}),
+        ("a row pointing at a page with no kata", good_row, set()),
+        ("numbering that skips",
+         good_row.replace("| K1 |", "| K2 |"), {"CONTRIBUTING.md"}),
+        ("a kata link that does not reach #practice",
+         good_row.replace("#practice", ""), {"CONTRIBUTING.md"}),
+        ("a row naming a file that does not exist",
+         good_row.replace("CONTRIBUTING.md#practice", "NOPE.md#practice"), {"CONTRIBUTING.md"}),
+    ]
+    with tempfile.TemporaryDirectory() as tmp:
+        for name, body, practice in index_cases:
+            KATAS = pathlib.Path(tmp) / "KATAS.md"
+            KATAS.write_text(body, encoding="utf-8")
+            caught = bool(check_index(practice))
+            failures += 0 if caught else 1
+            print(f"  {'ok  ' if caught else 'FAIL'}  {name}")
+            if not caught:
+                print("          expected a complaint, GOT NONE")
+        # and the good one must stay quiet
+        KATAS = pathlib.Path(tmp) / "KATAS.md"
+        KATAS.write_text(good_row, encoding="utf-8")
+        quiet = not check_index({"CONTRIBUTING.md"})
+        failures += 0 if quiet else 1
+        print(f"  {'ok  ' if quiet else 'FAIL'}  a correct index says nothing")
+    KATAS = saved
+
     print()
     if failures:
         print(f"selftest FAILED: {failures} case(s) wrong. A check that survives "
               "its own mutation is not guarding anything.")
         return 1
-    print(f"selftest ok: {len(MUTATIONS)} mutations, each one reported.")
+    print(f"selftest ok: {len(MUTATIONS)} page mutations and {len(index_cases)} "
+          "index mutations, each one reported.")
     return 0
 
 
@@ -241,8 +334,9 @@ def main(argv: list[str]) -> int:
         return selftest()
     bad = scan()
     if not bad:
-        n = sum(1 for p in pages() if section(strip_code(p.read_text(encoding="utf-8")), "Practice"))
-        print(f"katas: {n} Practice section(s), each folded correctly and answered by a program.")
+        n = len(index_rows())
+        print(f"katas: K1-K{n}, each folded correctly, answered by a program, "
+              "and indexed.")
         return 0
     print("katas: folded answers that will not render, or were not run.\n")
     for line in bad:

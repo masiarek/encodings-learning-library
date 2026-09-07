@@ -1,0 +1,35 @@
+THE FILE: 13 bytes, and 13 is prime to 2 and 4
+$ wc -c < f
+   13
+
+$ xxd -g1 f
+   00000000: 74 68 69 72 74 65 65 6e 20 62 79 74 65           thirteen byte
+   -> 13 group(s) on the line, of 1 byte(s) each
+
+$ xxd -g2 f
+   00000000: 7468 6972 7465 656e 2062 7974 65         thirteen byte
+   -> 7 group(s) on the line, of 2 byte(s) each
+
+$ xxd -g4 f
+   00000000: 74686972 7465656e 20627974 65        thirteen byte
+   -> 4 group(s) on the line, of 4 byte(s) each
+
+WHAT CHANGED IN THE FILE: nothing. Thirteen bytes, three renderings.
+
+WHERE THE TAIL FALLS. 13 = 16-3, so the line is short whatever the width,
+and the last group is the one that cannot be full:
+  -g1  the tail is 13 whole groups; a group is a byte, so nothing is ragged.
+  -g2  six pairs and then a single byte. 13 is odd, so the last group is
+       half a group, and xxd prints it as one byte rather than padding it.
+  -g4  three quads and then ONE byte -- 12 + 1. The ragged piece is three
+       bytes short of the width you asked for.
+
+Nothing is padded, and that is the honest choice: a 00 added to square the
+line would be a byte the file does not contain, printed in the column
+whose whole job is to say what the file contains.
+
+And the width is a CLAIM. -g2 says 'read this as 16-bit units'; -g4 says
+32-bit. For a text file all three claims are wrong and it does not matter,
+because the bytes are drawn in file order either way. It starts mattering
+the moment a tool reorders within a group to keep the claim true -- which
+is what hexdump's -x does and xxd never does.

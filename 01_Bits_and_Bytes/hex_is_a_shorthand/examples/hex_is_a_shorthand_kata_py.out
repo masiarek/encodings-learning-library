@@ -1,0 +1,20 @@
+HEX TO BITS -- split the byte, convert each half
+   0xc3 -> C and 3 -> 1100 and 0011 -> 11000011
+   0xa9 -> A and 9 -> 1010 and 1001 -> 10101001
+
+BITS TO HEX -- same move, the other way
+   1110 1001 -> E and 9 -> 0xe9
+
+THE TWO BYTES TOGETHER
+   C3 A9 -> 1100 0011 1010 1001
+   Sixteen switches, four hex digits, and no arithmetic anywhere: each
+   digit is a picture of exactly four bits and never borrows from its
+   neighbour. That is the whole reason hex won.
+
+NOW THE SAME BYTES IN OCTAL, WHICH DOES BORROW
+   0xC3A9 = 0o141651
+   Three bits per digit against sixteen bits, so the digits do not line
+   up with the bytes: the boundary between C3 and A9 falls INSIDE an
+   octal digit. Read the two bytes separately and you get
+   0o303 and 0o251, whose digits are nowhere in 0o141651 except by accident.
+   Sixteen is a power of two that divides eight. Eight is not.
