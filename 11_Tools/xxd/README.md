@@ -234,6 +234,7 @@ Then:
 
 - [`hexdump` is a format engine wearing six presets](../hexdump/README.md) — the four-tool comparison table, and the tool with the opposite default
 - [Reading a hex dump](../../01_Bits_and_Bytes/reading_a_hex_dump/README.md) — the three columns, if this page assumed one you have not met
+- [Grouping is a choice](../../01_Bits_and_Bytes/grouping_is_a_choice/README.md) — what `-g` is claiming about the file, and why 5 and 6 are widths no hex dump can show
 - [Inspecting a file](../../06_Terminal/inspecting_a_file/README.md) — these tools inside a workflow, and which column is the file
 - [A character is a number](../../02_Characters/a_character_is_a_number/README.md) — the agreement `-E` swaps out
 - [`od` reads types, not bytes](../od/README.md) — the one that will be installed when `xxd` is not
