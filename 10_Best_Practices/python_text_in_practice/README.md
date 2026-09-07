@@ -174,5 +174,6 @@ Without the machine: a script writes a CSV that opens correctly in Excel on your
 - [UTF-8 everywhere](../utf8_everywhere/README.md) — the language-independent rules these implement
 - [04_Python](../../04_Python/README.md) — the mechanics: `str` vs `bytes`, `errors=`, normalization
 - [Rust strings in practice](../rust_strings_in_practice/README.md) — the same checklist with a compiler
+- [Is it a letter? ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/is_it_a_letter/index.html) — the twelve `str` predicates against the eight on `bytes`, and why the four missing ones are exactly the four that need the Unicode table
 - [PEP 686 ↗](https://peps.python.org/pep-0686/) — UTF-8 mode becomes the default in 3.15
 - [PEP 597 ↗](https://peps.python.org/pep-0597/) — `EncodingWarning`, the audit switch

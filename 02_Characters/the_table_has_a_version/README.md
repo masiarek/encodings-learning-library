@@ -277,5 +277,6 @@ The one measured survivor is worth knowing: [Unicode code points](../unicode_cod
 - [Byte order and the BOM](../../03_Encodings/byte_order_and_bom/README.md) — where `U+FFFE`'s permanent-noncharacter status does the same job as proof
 - [Inspecting a file](../../06_Terminal/inspecting_a_file/README.md) — the same discipline, arrived at from `od -a`
 - [Conventions](../../CONTRIBUTING.md) — what may and may not go into a recorded key
+- [Is it a letter? ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/is_it_a_letter/index.html) — the `is_alphabetic` / `isalpha` split this page uses as its control case, worked through in full: Rust reads the Alphabetic *property* and Python the `L*` *categories*, so they also disagree on definitional grounds and not only on the table edition
 - [Unicode Character Encoding Stability Policies ↗](https://www.unicode.org/policies/stability_policy.html)
 - [`uni` ↗](https://github.com/arp242/uni) — a CLI that ships its own UCD, so it can tell you which one
