@@ -1,0 +1,81 @@
+1. A SUBSTITUTION CIPHER IS A LOOKUP TABLE. ROTATION IS ONE FORMULA FOR IT.
+   plaintext alphabet   abcdefghijklmnopqrstuvwxyz
+   ciphertext alphabet  nopqrstuvwxyzabcdefghijklm   <- ROT13, built by (x + 13) % 26
+   ciphertext alphabet  defghijklmnopqrstuvwxyzabc   <- shift 3, the Caesar of the books
+   The table IS the key. Rotation just means you can write the table as one sum.
+
+2. ROT13 IS ITS OWN INVERSE, BECAUSE 13 + 13 = 26
+   'Hello, World!' -> 'Uryyb, Jbeyq!' -> 'Hello, World!'
+   One function both ways. Nothing in the program knows which direction it is going.
+
+3. THE ROTATION IS ARITHMETIC ON THE ASCII LAYOUT, SO THE LAYOUT PICKS THE NUMBER
+   A..Z        is 26 contiguous code points, half of it is 13   -> ROT13
+   0..9        is 10 contiguous code points, half of it is  5   -> ROT5
+   0x21..0x7E  is 94 contiguous code points, half of it is 47   -> ROT47
+   ROT5  on '2026-09-07'    -> 7571-54-52
+   ROT47 on 'Hello, World!' -> w6==@[ (@C=5P
+   ROT47 twice              -> Hello, World!
+   ROT18 is just ROT13 for the letters and ROT5 for the digits, done at once.
+   Each of those numbers is half the size of a RANGE IN THE TABLE. Nothing else.
+
+4. THERE IS NO KEY. THE WHOLE KEYSPACE OF A ROTATION FITS ON THIS SCREEN.
+   ciphertext: 'nggnpx ng qnja'
+   shift  0: nggnpx ng qnja
+   shift  1: ohhoqy oh rokb
+   shift  2: piiprz pi splc
+   shift  3: qjjqsa qj tqmd
+   shift  4: rkkrtb rk urne
+   shift  5: sllsuc sl vsof
+   shift  6: tmmtvd tm wtpg
+   shift  7: unnuwe un xuqh
+   shift  8: voovxf vo yvri
+   shift  9: wppwyg wp zwsj
+   shift 10: xqqxzh xq axtk
+   shift 11: yrryai yr byul
+   shift 12: zsszbj zs czvm
+   shift 13: attack at dawn  <- the plaintext, and you found it by reading
+   shift 14: buubdl bu ebxo
+   shift 15: cvvcem cv fcyp
+   shift 16: dwwdfn dw gdzq
+   shift 17: exxego ex hear
+   shift 18: fyyfhp fy ifbs
+   shift 19: gzzgiq gz jgct
+   shift 20: haahjr ha khdu
+   shift 21: ibbiks ib liev
+   shift 22: jccjlt jc mjfw
+   shift 23: kddkmu kd nkgx
+   shift 24: leelnv le olhy
+   shift 25: mffmow mf pmiz
+   25 wrong lines and one right one, and no computer was needed to pick it.
+   For ROT13 it is worse than that: the shift is published, so the keyspace is 1.
+
+5. PYTHON FILES ROT13 UNDER encodings/ -- AND encode() STILL REFUSES IT
+   the module is  encodings.rot_13   (package: encodings)
+   the registry knows it as  'rot-13'
+   'abc'.encode('rot13')  raises  LookupError
+   codecs.encode('abc', 'rot13')  ->  'nop'
+   Both facts are right. It lives with the encodings because it is a rewriting
+   with a published rule; encode() rejects it because encode() means str -> bytes,
+   and this is str -> str. A cipher that fits in the encodings package is not
+   protecting anything.
+
+6. INSIDE ASCII THE BYTE COUNT CANNOT MOVE. OUTSIDE IT, IT DOES.
+   plain       5 characters    5 UTF-8 bytes
+   ROT13       5 characters    5 UTF-8 bytes
+   ROT47       5 characters    5 UTF-8 bytes
+   +0x2000     5 characters   15 UTF-8 bytes
+   Rotating inside a 7-bit range is free: every result is still one byte.
+   Rotate the code point instead and the same five characters cost fifteen bytes.
+
+7. AND ROTATING THE CODE POINT LANDS WHEREVER THE ARITHMETIC SAYS
+   'h' is U+0068.  U+0068 + 0x2000 = U+2068
+   U+2068 is FIRST STRONG ISOLATE
+   That is not a letter. It is an invisible bidirectional formatting character,
+   and it changes how everything after it is DISPLAYED.
+
+   Worse, some destinations are not characters at all:
+   chr(0xD800) is a str of length 1 ...
+   ... and encoding it raises UnicodeEncodeError: U+D800 is a surrogate,
+   permanently reserved, and no UTF-8 file may contain one.
+   So a rotation over the whole table cannot be a sum. It needs a list of which
+   code points it is allowed to produce -- which is the opposite of a one-line rule.

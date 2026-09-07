@@ -1,0 +1,41 @@
+1. ROT13 IS ONE tr. THE 'KEY' IS THE SECOND ARGUMENT, AND IT IS ON THE SCREEN.
+
+$ echo 'Hello, World!' | tr 'A-Za-z' 'N-ZA-Mn-za-m'
+Uryyb, Jbeyq!
+
+2. THE SAME COMMAND UNDOES IT -- 13 + 13 = 26
+
+$ echo 'Hello, World!' | tr 'A-Za-z' 'N-ZA-Mn-za-m' | tr 'A-Za-z' 'N-ZA-Mn-za-m'
+Hello, World!
+
+3. ROT47 IS ALSO ONE tr, OVER THE 94 PRINTABLE ASCII CHARACTERS
+
+$ echo 'Hello, World!' | tr '!-~' 'P-~!-O'
+w6==@[ (@C=5P
+
+$ echo 'Hello, World!' | tr '!-~' 'P-~!-O' | tr '!-~' 'P-~!-O'
+Hello, World!
+
+4. NOTHING MOVED. SAME BYTE COUNT, SAME RANGE, ONE BYTE PER CHARACTER.
+
+$ printf 'Hello' | wc -c | tr -d ' '
+5
+
+$ printf 'Hello' | tr 'A-Za-z' 'N-ZA-Mn-za-m' | wc -c | tr -d ' '
+5
+
+$ printf 'Hello' | xxd
+00000000: 4865 6c6c 6f                             Hello
+
+$ printf 'Hello' | tr 'A-Za-z' 'N-ZA-Mn-za-m' | xxd
+00000000: 5572 7979 62                             Uryyb
+   Every byte is still 0x21..0x7E. That is what makes it survive a mail gateway,
+   and it is the same property that makes it useless as protection.
+
+5. THE ROTATION CANNOT LEAVE THE RANGE IT WAS GIVEN
+
+$ printf 'caf\xc3\xa9\n' | tr 'A-Za-z' 'N-ZA-Mn-za-m' | xxd
+00000000: 706e 73c3 a90a                           pns...
+   The two bytes c3 a9 are outside A-Za-z, so tr passes them through untouched.
+   In UTF-8 that is one character, e-acute -- and no shell rotation will ever touch it.
+   To rotate THAT you need code points, not bytes. See the Python and Rust examples.

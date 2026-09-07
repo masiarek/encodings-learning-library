@@ -47,7 +47,7 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 
 ### 1.1 ASCII — **core**
 
-*Covered:* [A character is a number](02_Characters/a_character_is_a_number/README.md) · [Control characters](02_Characters/control_characters/README.md) · [The NUL byte](02_Characters/the_nul_byte/README.md) · [Hex is a shorthand](01_Bits_and_Bytes/hex_is_a_shorthand/README.md)
+*Covered:* [A character is a number](02_Characters/a_character_is_a_number/README.md) · [Control characters](02_Characters/control_characters/README.md) · [The NUL byte](02_Characters/the_nul_byte/README.md) · [Hex is a shorthand](01_Bits_and_Bytes/hex_is_a_shorthand/README.md) · [Rotation is not encryption](02_Characters/rotation_is_not_encryption/README.md)
 
 **Imported:** ASCII · 7-bit ASCII · ASCII table · printable characters (32–126) · non-printable characters · control range 0–31 · digits 48–57 · uppercase 65–90 · lowercase 97–122 · punctuation · SPACE (32) · extended ASCII · code page · high ASCII · ISO 646 · 7-bit clean · ASCII-compatible encoding · ASCII art · ASCII folding · ROT13 · `atoi` / `atof` · `isascii()` · `isprint()`
 
@@ -233,6 +233,20 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 - **`encoding_rs` / `chardetng`** — Firefox's Rust implementations, and the practical answer for Rust to "decode this legacy file".
 - **ICU** — the elephant. Collation, break iteration, normalization, transliteration, formatting, and 30 MB of data. The list mentions ICU six times without ever saying what it *is* or that most languages' text handling is ICU wearing a hat.
 - **CLDR vs the UCD** — character data versus locale data, and the fact that sort order, plural rules and date formats come from CLDR, not Unicode proper. Already the missing half of [`tr` and `sort`](11_Tools/tr_and_sort/README.md).
+
+### 1.14 Ciphers over an alphabet — **adjacent, with one core page**
+
+*Covered:* [Rotation is not encryption](02_Characters/rotation_is_not_encryption/README.md)
+
+**Imported:** ROT13 (the list files it under §1.1, which is the right place for it)
+
+**The boundary, decided 2026-09-07.** A substitution table whose rule is *published* is a re-labelling of a character set — this library's subject, and the reason ROT13 has a page: its shift is half the size of a contiguous ASCII range, and nothing about it survives a move to EBCDIC. A table whose rule is a *secret* is cryptography, and the questions become keyspace, attack model and frequency analysis, none of which is answered by knowing anything about ASCII.
+
+- **In scope, and written:** ROT13 · ROT5 / ROT18 / ROT47 · the Caesar, Atbash and affine alphabets shown once as the same shape · why every ROT number is half of a range in the table · ROT8000 as the case where a rotation stops being a sum, because the code space has holes in it.
+- **Out of scope, deliberately:** frequency analysis · index of coincidence · Vigenère and the polyalphabetic family · Playfair · one-time pads · Enigma · everything modern. There is no encryption library in this set; if one is ever written, this section is where it starts.
+- **Worth writing down anyway, because it belongs to §13:** *encoding for secrecy* is the same mistake in every decade. Base64 (§1.11), ROT13, hex and URL-escaping all get reached for when somebody wants a value to be unreadable, and every one of them is reversible by anybody who recognises it. The rule is not "which one is stronger" — none of them is on that scale at all.
+
+---
 
 ---
 

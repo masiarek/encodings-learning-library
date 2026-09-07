@@ -15,6 +15,7 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [Reading a hex dump](01_Bits_and_Bytes/reading_a_hex_dump/README.md) | written, 2026-09-05 |
 | [Hex: a number, or a picture of bytes](01_Bits_and_Bytes/hex_number_or_bytes/README.md) | written, 2026-09-07 — all four languages; one hex string is two objects, four parsers disagree about what a hex digit is, and `int(s, 16)` succeeding is not a validation |
 | [A character is a number](02_Characters/a_character_is_a_number/README.md) | written, 2026-09-05 |
+| [Rotation is not encryption](02_Characters/rotation_is_not_encryption/README.md) | written, 2026-09-07 — Python, Rust and shell; ROT13 as arithmetic on the ASCII layout, the keyspace printed in a column, `encodings/rot_13.py` that `str.encode` still refuses, and the two things that break when the rotation leaves ASCII |
 | [Control characters](02_Characters/control_characters/README.md) | written, 2026-09-05 — the first page with a *C view* (`examples/*.c`, compiled by the runner since the same day) |
 | [Code pages](02_Characters/code_pages/README.md) | written, 2026-09-05 — Python, Rust and shell; the agreement matrix is the original bit |
 | [Unicode code points](02_Characters/unicode_code_points/README.md) | written, 2026-09-05 — the neighbourhood map: read `U+XXXX` as a block plus a house number, and measure the whitespace runs instead of memorising them |

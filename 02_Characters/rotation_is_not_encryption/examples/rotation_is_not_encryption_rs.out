@@ -1,0 +1,37 @@
+1. WHILE THE TEXT IS ASCII, THE ROTATION IS ARITHMETIC ON u8
+   b'h' = 104   b'h' + 13 = 117   as char = 'u'
+   rot_ascii("Hello, World!", 13) = "Uryyb, Jbeyq!"
+   Every byte stays inside 0x00..=0x7F, so the String is still valid UTF-8
+   for free -- no check needed, because ASCII is a subset of UTF-8.
+
+2. AND IT IS ITS OWN INVERSE
+   "Uryyb, Jbeyq!" -> "Hello, World!"
+
+3. WHAT A ROTATION COSTS IS A METHOD ON THE TYPE: char::len_utf8()
+   U+0068  len_utf8 = 1  bytes = [68]
+   U+0075  len_utf8 = 1  bytes = [75]
+   U+2068  len_utf8 = 3  bytes = [e2, 81, a8]
+   U+00E9  len_utf8 = 2  bytes = [c3, a9]
+   U+1F600  len_utf8 = 4  bytes = [f0, 9f, 98, 80]
+   'h' rotated by 13 is still one byte. 'h' rotated by 0x2000 is three.
+   A ciphertext that is three times the size of the plaintext is not a
+   rotation of the alphabet any more -- it is a re-encoding.
+
+4. char::from_u32 RETURNS Option, SO THE TYPE REFUSES THE HOLES
+   from_u32(0x0068) = Some(U+0068)  len_utf8 1
+   from_u32(0x2068) = Some(U+2068)  len_utf8 3
+   from_u32(0xD800) = None
+   from_u32(0xDFFF) = None
+   from_u32(0x10FFFF) = Some(U+10FFFF)  len_utf8 4
+   from_u32(0x110000) = None
+   Python's chr() hands back a lone surrogate and fails later, at encode time.
+   Rust cannot build the value at all: there is no char for those numbers.
+
+5. SO 'ROTATE THE WHOLE TABLE' CANNOT BE ONE SUM
+   numbers in the code point range 0..0x110000 : 1114112
+   of those, numbers that are a char           : 1112064
+   numbers that are NOT                        : 2048
+   The gap is U+D800..=U+DFFF, the surrogates, permanently reserved.
+   Any rotation over Unicode has to carry a list of the code points it may
+   produce and step over that hole -- and once you are carrying a table,
+   the 'it is just a sum' selling point of ROT13 is gone.
