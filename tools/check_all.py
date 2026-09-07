@@ -11,8 +11,13 @@ by hand hides exactly that:
 A pipeline's exit status is the LAST command's, so `tail` reports success no
 matter what the gate said. The pipe is there for a good reason — these gates
 print a line per example and you want the summary — and the cost is that a red
-gate scrolls past under a green-looking last line. `set -o pipefail` fixes it in
-bash; remembering to type it every time does not.
+gate scrolls past under a green-looking last line. `set -o pipefail` fixes it;
+remembering to type it every time does not. And the array lookup people reach
+for instead is shell-specific: `${PIPESTATUS[0]}` is bash's spelling, and under
+zsh -- which is what runs here -- it quietly expands to the empty string rather
+than erroring, so it prints `exit=` and reads like a stumble instead of a wrong
+answer. (zsh's own array is lowercase and 1-indexed: `${pipestatus[1]}`.) That
+is the same failure one level down, which is the argument for not piping at all.
 
 So: no pipes here. Each gate runs through subprocess, its status is kept, its
 output is shown only when it fails, and this script exits non-zero if any of
