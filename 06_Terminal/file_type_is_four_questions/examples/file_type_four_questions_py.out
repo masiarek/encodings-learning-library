@@ -1,0 +1,45 @@
+1. THE INODE KNOWS SEVEN THINGS, AND CONTENT IS NOT ONE OF THEM
+   os.lstat() reads the directory entry. It never opens the file, so
+   it cannot be lied to by the bytes and cannot see them either.
+   liar.txt   type bits = 0o100000  ->  regular file
+   adir       type bits = 0o40000   ->  directory
+   alink      type bits = 0o120000  ->  symlink
+   The whole type lives in S_IFMT. Everything else in st_mode is
+   permissions - so with the permissions pinned to 0o644:
+     st_mode   0o100644
+     S_IFMT    0o100000  the type: regular file
+     & 0o7777  0o644     the permissions
+   Four bits carry the type. That is the entire vocabulary the
+   filesystem layer has for the question, and 'PNG' is not in it.
+   (The permission bits are left out of the rows above on purpose:
+   a symlink is 0o120755 on macOS and 0o120777 on Linux, so printing
+   them would make this page's answer key depend on the machine.)
+
+2. os.stat FOLLOWS A SYMLINK; os.lstat DOES NOT
+   alink -> liar.txt.  A symlink is the one type you can only see by
+   asking not to follow it:
+   os.lstat('alink') -> symlink
+   os.stat('alink')  -> regular file
+   pathlib.Path.is_file() follows too, so it answers True for a
+   symlink and tells you nothing about which of the two you have.
+
+3. mimetypes ASKS THE FILENAME AND NOTHING ELSE
+   It is a lookup table over the extension. It never opens the file,
+   so it is wrong exactly when the name is:
+   liar.txt   mimetypes.guess_type -> text/plain
+   real.png   mimetypes.guess_type -> image/png
+   empty.png  mimetypes.guess_type -> image/png
+   cafe.dat   mimetypes.guess_type -> None
+   Two of those four are wrong, and one is None because .dat is not in
+   the table. None means 'no opinion', never 'not a known type'.
+
+4. ONLY READING THE BYTES ANSWERS THE QUESTION ASKED
+   file       inode          by name          by bytes
+   liar.txt   regular file   text/plain       image/png
+   real.png   regular file   image/png        text/plain
+   empty.png  regular file   image/png        inode/x-empty
+   cafe.dat   regular file   -                text/plain
+   adir       directory      -                -
+   Three columns, three different questions, and on liar.txt three
+   different answers - none of which is wrong. They were asked
+   'how is it stored', 'what is it called' and 'what is in it'.

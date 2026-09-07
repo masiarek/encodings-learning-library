@@ -1,0 +1,48 @@
+1. STAGE ONE - THE FILESYSTEM TESTS
+   Before file(1) reads a single byte it calls stat(). If the answer is
+   'this is not a regular file', or 'this is a regular file of length
+   zero', that IS the answer and no other test runs.
+   adir       inode/directory
+   apipe      inode/fifo
+   empty.png  inode/x-empty
+   Note empty.png. It is named .png, and a magic test would have to read
+   bytes to disagree - but there are no bytes, and stage one already
+   answered. inode/x-empty is a claim about the INODE, not the content.
+
+2. STAGE TWO - THE MAGIC TESTS
+   Only now does file(1) open the file and compare bytes against its
+   compiled database. The filename is not an input to this stage.
+   liar.txt   image/png
+   noext      image/png
+   Same 33 bytes, two names, one answer. And the reverse case:
+   real.png   text/plain
+   real.png is named .png and file(1) does not care, because no rule in
+   the database matches the bytes 'p l a i n'.
+
+3. STAGE THREE - THE LANGUAGE AND ENCODING TESTS
+   Nothing matched. The last question is 'could this be text?', which is
+   answered by validating byte sequences, not by looking anything up.
+   utf8.dat   type=text/plain encoding=utf-8
+   real.png   type=text/plain encoding=us-ascii
+   'café' has no signature. UTF-8 has no signature. utf-8 here is an
+   INFERENCE - those six bytes are a valid UTF-8 sequence, so file(1)
+   says so. Stage three is the only stage that guesses.
+
+4. THE STAGES ARE ORDERED, AND THE FIRST HIT WINS
+   Give the PNG bytes a length of zero and watch stage one take the
+   answer away from stage two:
+   33 bytes of PNG        image/png
+   same name, 0 bytes     inode/x-empty
+   Same path, same name, same database. The only thing that changed is
+   which stage got to answer first.
+
+5. THE SHELL NEVER ASKS ANY OF THIS
+   [ -f ] and friends are stat() and nothing else. They read no bytes,
+   so they cannot be fooled by content and cannot see it either.
+   liar.txt   -f -s
+   adir       -d -s
+   apipe      -p
+   empty.png  -f
+   liar.txt is -f and -s: a regular file, non-empty. That is the whole
+   of what the shell knows, and it is true of a PNG, a novel and a core
+   dump alike.

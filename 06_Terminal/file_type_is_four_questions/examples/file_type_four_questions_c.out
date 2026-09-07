@@ -1,0 +1,31 @@
+1. THE KERNEL READS THE FIRST BYTES, AND ONLY THE FIRST BYTES
+   Four files, all with the executable bit set, all non-empty.
+   The only thing that differs is what is at offset zero.
+
+   #!/bin/sh              ran
+   no shebang             refused: ENOEXEC (exec format error)
+   #!/nonexistent/interp  refused: ENOENT (no such file or directory)
+   01 02 03 04 ...        refused: ENOEXEC (exec format error)
+
+2. READING THE TWO REFUSALS
+   no_shebang is a perfectly good shell script and the kernel has
+   no idea. It is not ELF, it does not start with #!, so no handler
+   claims it: ENOEXEC. When you run the same file from a shell it
+   works - because the SHELL catches ENOEXEC and runs the file
+   itself. That fallback is POSIX shell behaviour, not the kernel.
+
+   shebang_ghost is the confusing one. ENOENT means 'no such file'
+   and the file you named plainly exists - the missing one is the
+   INTERPRETER inside it, which the kernel read out of the first
+   line and failed to open. This is the whole story behind the
+   'bad interpreter: No such file or directory' that a shell shows
+   for a script whose shebang has a stray carriage return in it.
+
+3. WHAT THIS COSTS TO EXTEND
+   ELF and #! are compiled in. Every other format a Linux kernel
+   can launch directly - a Java class, a Mono .exe, an ARM binary
+   under qemu - is registered at run time through binfmt_misc, by
+   writing a magic string and an interpreter path into
+   /proc/sys/fs/binfmt_misc/register. That file is the only
+   extensible content-sniffing the kernel has, and it exists to
+   answer 'how do I run this', never 'what is this'.

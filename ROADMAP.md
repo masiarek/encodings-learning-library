@@ -45,6 +45,7 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [The trailing newline](06_Terminal/trailing_newline/README.md) | written, 2026-09-06 — shell, Python and Rust; why a two-byte file reports zero lines, and the marker your shell draws that is not in the file |
 | [A character and its bytes on one line](06_Terminal/character_and_its_bytes/README.md) | written, 2026-09-06 — shell and Python; the one-liner, and the three separate newline decisions that let it fit on one row |
 | [Locale and `LC_CTYPE`](06_Terminal/locale_and_lc_ctype/README.md) | written, 2026-09-06 — the locale is six independent variables; `wc -c` and `wc -m` collapse to one answer under `C`, `LC_CTYPE` does not touch sort order, and Python has declined to obey any of it since 3.7 |
+| [File type is four questions](06_Terminal/file_type_is_four_questions/README.md) | written, 2026-09-07 — shell, Python and C; the four mechanisms that answer "what type is this", the anatomy of a magic rule, and `xdg-mime` against `file` on one unchanged file |
 | [06_Terminal](06_Terminal/README.md) — the other three pages | stubs |
 | [A BOM in a CSV](07_Real_Data/bom_in_a_csv/README.md) | written, 2026-09-05 — Python and shell; the decision procedure, and the two platform fingerprints |
 | [07_Real_Data](07_Real_Data/README.md) — the other six pages | stubs (includes [Sorting and collation](07_Real_Data/sorting_and_collation/README.md), added 2026-09-06 — three locales, three different alphabetical orders) |

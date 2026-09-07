@@ -18,6 +18,8 @@
 
 Shell: four small files made with `printf`, `file --mime-encoding` on each.
 
+**Half of this outline has since been written next door.** [File type is four questions](../file_type_is_four_questions/README.md) covers the mechanism this page's last bullet asks for — the magic database and what a rule looks like inside, the three test classes and their fixed order, and where a signature `file` *knows* ends and the heuristic it is *running* begins. What is left here is the part that is specific to **encoding** rather than type: why a pure-ASCII file is every encoding at once, the four answers `--mime-encoding` actually returns, and how `file` decides between UTF-8 and Latin-1 once stage three is the only stage left.
+
 Already demonstrated elsewhere, so this page should link rather than repeat it: the three shapes `file`'s answer takes — evidence from a BOM, inference from valid UTF-8, proof of a negative, and the flat `data` it returns for BOM-less UTF-16 — are a table in [Inspecting a file](../inspecting_a_file/README.md), along with `--mime-encoding` as the portable spelling. What is left for this page is *how* it decides: the magic-number database, where that database ends, and the difference between a signature it knows and a heuristic it is running.
 
 ## See also
