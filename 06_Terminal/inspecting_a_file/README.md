@@ -114,13 +114,13 @@ One practical note on reaching for them, measured on a bare `ubuntu:24.04` conta
 
 | Reach for | When | Watch out for |
 |---|---|---|
-| `xxd -g1` | reading, and any time you want to edit bytes and put them back | the default pairs bytes; `-r` needs `-p` if the hex has no offsets |
-| `hexdump -C` | reading, or `-e` when you want a specific layout | **plain `hexdump` swaps every pair** |
-| `od -An -tx1` | a machine with nothing else installed | `-a` invents names; `-c` needs `LC_ALL=C` |
-| `cat -v` | a whole file at reading speed, without your terminal obeying it | `M-x` means the high bit is set; GNU's `-A` is rejected on macOS, so `-vet` |
-| `file` | asking what a file probably is, in one word | it is a *guess*: `data` for BOM-less UTF-16, `ISO-8859 text` for any 8-bit table |
+| [`xxd -g1`](#the-other-two-tools-and-the-fiction-in-the-other-default) | reading, and any time you want to edit bytes and put them back | the default pairs bytes; `-r` needs `-p` if the hex has no offsets |
+| [`hexdump -C`](../../11_Tools/hexdump/README.md) | reading, or `-e` when you want a specific layout | **plain `hexdump` swaps every pair** |
+| [`od -An -tx1`](#the-row-that-makes-things-up) | a machine with nothing else installed | `-a` invents names; `-c` needs `LC_ALL=C` |
+| [`cat -v`](#why-plain-cat-is-not-a-way-to-look-at-a-file) | a whole file at reading speed, without your terminal obeying it | `M-x` means the high bit is set; GNU's `-A` is rejected on macOS, so `-vet` |
+| [`file`](../file_guesses/README.md) | asking what a file probably is, in one word | it is a *guess*: `data` for BOM-less UTF-16, `ISO-8859 text` for any 8-bit table |
 
-## `cat -v`, and why plain `cat` is not a way to look at a file
+## Why plain `cat` is not a way to look at a file
 
 `cat` does not show you a file. It hands the file to your terminal, and the terminal *obeys* what it finds: an escape sequence sets a colour or moves the cursor, `07` rings the bell, and a stray sequence in binary data can leave the terminal in a state that needs `reset`. That is not a hypothetical — it is the usual way people discover that `cat` on a `.o` file was a bad idea.
 
