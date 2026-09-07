@@ -72,7 +72,20 @@ Note what carries it: `--mime-type` returns **the same string** for the file tha
 2. **magic tests** — compare bytes against the compiled database.
 3. **language and encoding tests** — could this be text, and in what encoding?
 
-The ordering is not a detail; it is most of the behaviour. An empty file named `empty.png` is reported `inode/x-empty`, because stage one answered before stage two could open anything — the [shell example](#in-the-terminal) truncates a PNG to zero bytes and watches the answer change with nothing else about the file changing.
+The ordering is not a detail; it is most of the behaviour. An empty file named `empty.png` is reported `inode/x-empty`, because stage one answered before stage two could open anything — and that is visible at the syscall level rather than only inferable from the answer:
+
+```text title="strace of file(1), Debian bookworm / file-5.45, 2026-09-07 — every syscall naming each file"
+$ strace -e trace=openat,newfstatat file empty.png
+newfstatat(AT_FDCWD, "empty.png", {st_mode=S_IFREG|0644, st_size=0, ...}) = 0
+                                                     -> inode/x-empty
+
+$ strace -e trace=openat,newfstatat file real.png
+newfstatat(AT_FDCWD, "real.png",  {st_mode=S_IFREG|0644, st_size=16, ...}) = 0
+openat(AT_FDCWD, "real.png", O_RDONLY|O_NONBLOCK|O_CLOEXEC) = 3
+                                                     -> image/png
+```
+
+The empty file is **never opened**. Stage one answered from the stat alone, and stage two — the stage that would have had to read bytes to disagree — never ran. The non-empty file shows the same stat first, *then* the open — the [shell example](#in-the-terminal) truncates a PNG to zero bytes and watches the answer change with nothing else about the file changing.
 
 ### What is actually inside the magic database
 
