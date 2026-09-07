@@ -1,0 +1,28 @@
+1. THE PAYLOAD IS ORDINARY ASCII
+   $ printf %s '+ADw-script+AD4-' | xxd -p
+     2b4144772d7363726970742b4144342d
+   16 bytes, every one of them below 0x80.
+
+2. EVERY BYTE FILTER LETS IT THROUGH
+   grep -c '<script>'     0
+   grep -c '<'            0
+   grep -c '>'            0
+   grep -c 'javascript'   0
+   grep -c 'script'       1   <- the only thing a filter can see
+   No angle bracket exists in the file. There is nothing to escape,
+   nothing to strip, and nothing for a rule to match on.
+
+3. AND IT IS VALID UTF-8, SO VALIDATION SAYS YES TOO
+   iconv -f UTF-8 -t UTF-8   exit 0   (0 = well-formed)
+   iconv -f ASCII -t UTF-8   exit 0   (0 = well-formed)
+   Both say yes, and both are right. Well-formedness is a question about
+   ONE table. It cannot tell you that the same bytes spell something else
+   in a second table -- here UTF-7, where +ADw- is '<' and +AD4- is '>'.
+
+4. SO THE DEFENCE IS NOT A FILTER, IT IS A DECLARATION
+   wrong:  serve the bytes and let the reader work out the encoding
+   right:  Content-Type: text/html; charset=utf-8
+
+   A filter guards a spelling. Naming the table removes the second
+   spelling entirely, which is the only move that scales: there is
+   always another table, and you cannot enumerate them.

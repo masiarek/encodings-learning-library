@@ -1,0 +1,33 @@
+1. String EQUALITY IS BYTE EQUALITY, ALWAYS
+   composed    "café"  5 bytes  U+0063 U+0061 U+0066 U+00E9
+   decomposed  "cafe\u{301}"  6 bytes  U+0063 U+0061 U+0066 U+0065 U+0301
+   ==          false
+   Same word on screen, different bytes, and Rust says no. There is
+   no locale, no collation and no hidden normalisation anywhere in
+   std -- which means Rust will never merge two users for you, and
+   never split two rows a database has already merged.
+
+2. SO THE FOLD IS A DECISION, AND THERE IS MORE THAN ONE
+   registry keyed by to_lowercase  2 record(s): ["ss", "ß"]
+   registry keyed by to_uppercase  1 record(s): ["SS"]
+   The three names are "ss", "\u{df}" and "SS". Lowercasing keeps the
+   sharp s apart from the double s; uppercasing folds all three into
+   one. Both registries are case-insensitive. They disagree about how
+   many people signed up.
+
+3. AND THE ONE THAT LOSES A USER SAYS NOTHING
+   "ss" was replaced by "ß" under key "SS"
+   "ß" was replaced by "SS" under key "SS"
+   HashMap::insert returns the value it displaced. That Option is the
+   only notice you will ever get, and `map.insert(k, v);` -- with the
+   semicolon and no binding -- throws it away without a warning.
+   #[must_use] is not on it, because overwriting is usually the point.
+
+4. WHAT TO DO INSTEAD
+   let key = fold(input);                       // one fold, chosen once
+   match registry.entry(key) {                   // ask before writing
+       Occupied(_) => return Err(NameTaken),
+       Vacant(slot) => slot.insert(record),
+   }
+   `entry` is the difference between 'this name is taken' and
+   'this name is now yours', and it is the same one line of code.

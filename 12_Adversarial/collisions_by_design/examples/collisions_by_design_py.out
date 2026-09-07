@@ -1,0 +1,62 @@
+1. TWO ADDRESSES, ONE UPPERCASE
+   victim     'mike@example.org'
+              U+006D U+0069 U+006B U+0065 ...
+   attacker   'mıke@example.org'
+              U+006D U+0131 U+006B U+0065 ...
+   equal?     False
+   uppercased 'MIKE@EXAMPLE.ORG'
+              'MIKE@EXAMPLE.ORG'
+   equal now? True
+   Register the second address; ask for a password reset; the lookup is
+   case-insensitive, so it finds the first account -- and the mail goes
+   to whichever address the code decided to send to. If that is the one
+   that was submitted rather than the one that was stored, the token
+   leaves the building. That is CVE-2019-19844, in four lines.
+
+2. THE FOLD IS NOT A ROUND TRIP
+   char     upper    lower(upper)   back to start?
+   ß        SS       ss             False
+   ı        I        i              False
+   İ        İ        i̇             False
+   ﬁ        FI       fi             False
+   ẞ        ẞ        ß              False
+   Not one of them survives the journey. Case mapping is not a bijection
+   -- it merges characters on the way up and cannot un-merge them coming
+   back -- so it cannot be an identity function. It can only be a way of
+   choosing which distinct strings you are willing to call the same.
+
+3. 'CASE-INSENSITIVE' IS NOT ONE RELATION
+   pair                        lower      upper   casefold  NFKC+fold
+   ß  vs  ss                       -       SAME       SAME       SAME
+   ı  vs  i                        -       SAME          -          -
+   İ  vs  i                        -          -          -          -
+   ﬁ  vs  fi                       -       SAME       SAME       SAME
+   K  vs  k                     SAME          -       SAME       SAME
+   Read the rows, not the columns. Every row is one pair of strings, and
+   four systems that all describe themselves as case-insensitive give
+   four different answers about whether it is one user or two.
+   The dotless i is the sharpest: only the uppercase fold merges it,
+   which is why the bug in section 1 needed a system that uppercases.
+
+4. A STRONGER FOLD MAKES BIGGER CLASSES
+   registered   'ᴮᶦᵍᴮᶦʳᵈ'
+                U+1D2E U+1DA6 U+1D4D U+1D2E U+1DA6 U+02B3 U+1D48
+   NFKC         'BɪgBɪrd'
+   NFKC+fold    'bɪgbɪrd'
+   Modifier letters are compatibility-equivalent to the letters they are
+   shrunken copies of, so a fold that includes NFKC pulls them back into
+   the alphabet. Spotify hit this in 2013 with a canonicaliser stronger
+   than NFKC -- strong enough to reach plain 'bigbird' -- and the
+   canonicalisation was the DEFENCE against impersonation. It worked; it
+   just also merged an account nobody meant to merge.
+
+5. SO THE FIX IS NOT A BETTER FOLD
+   There is no injective fold. Every one of them defines equivalence
+   classes, and the only question is which classes you want.
+   What actually works is to treat the class as the thing being
+   registered:
+     canonical = fold(input)          # one fold, named, everywhere
+     if taken(canonical): reject      # the CLASS is unique, not the string
+     store(canonical, display=input)  # keep the original only to show
+     mail_to(stored_address)          # never to the address just typed
+   The last line is the one that turns a collision into a takeover.

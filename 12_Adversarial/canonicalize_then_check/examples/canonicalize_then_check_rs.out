@@ -1,0 +1,46 @@
+1. THE GATE IS CORRECT, AND ASCII-NARROW
+   reserved name      "kelvin"
+   candidate          "Kelvin"   (6 chars, 8 bytes)
+   ...which is         U+212A U+0065 U+006C U+0076 U+0069 U+006E
+   ...written as       "\u{212A}elvin"
+   Printed, it is indistinguishable from the ASCII word. That is
+   not a limitation of this program; it is the entire technique.
+   to_ascii_lowercase "Kelvin"
+   equal to reserved? false
+   eq_ignore_ascii_case? false
+   So the registration is allowed, and every line above is right:
+   U+212A is not an ASCII letter and an ASCII fold must not touch it.
+
+2. THE STAGE AFTER IT IS NOT NARROW
+   to_lowercase       "kelvin"
+   equal to reserved? true
+   Full Unicode lowercasing maps U+212A KELVIN SIGN to ASCII 'k'.
+   Two accounts now canonicalise to one name. Which of them the
+   next lookup returns is a question about a hash table, not policy.
+
+3. AND CASE MAPPING CHANGES LENGTH
+   "ß"  1 chars  2 bytes  ->  upper "SS" 2 chars   lower "ß" 1 chars
+   "ﬁ"  1 chars  3 bytes  ->  upper "FI" 2 chars   lower "ﬁ" 1 chars
+   "İ"  1 chars  2 bytes  ->  upper "İ" 1 chars   lower "i\u{307}" 2 chars
+   A length limit checked BEFORE a case fold does not hold after it.
+   Both directions exist: 'fi' as one ligature grows, and a string
+   trimmed to fit can be cut through the middle of a character.
+
+4. WHAT std GIVES YOU, AND WHAT IT DOES NOT
+   to_lowercase / to_uppercase   full Unicode, in std
+   to_ascii_lowercase            ASCII only, and the name says so
+   eq_ignore_ascii_case          ASCII only, and the name says so
+   NFC / NFD / NFKC / NFKD       not in std at all -- a crate
+   Rust names its narrow operations honestly, which is a real
+   advantage: you cannot reach for an ASCII fold by accident.
+   But the wide one is a dependency, so the compiler has no opinion
+   about WHERE it runs -- and where it runs is the whole question.
+
+5. THE ORDER THAT WORKS
+   let canonical = input.to_lowercase();      // canonicalise
+   if canonical == reserved { reject() }       // then check
+   store(&canonical);                         // then store THAT
+   canonical = "kelvin" (U+006B U+0065 U+006C U+0076 U+0069 U+006E)  -> rejected: true
+   The third line is the one people leave out. Checking the
+   canonical form and storing the original puts the two spellings
+   back in the database, and the next lookup gets to choose.

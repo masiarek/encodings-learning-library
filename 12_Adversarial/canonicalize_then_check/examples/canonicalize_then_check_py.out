@@ -1,0 +1,54 @@
+1. THE GATE SAYS YES
+   a tag                        gate(...) = True
+   a path                       gate(...) = True
+   one character, three after   gate(...) = True
+   blocked substrings: '<' '>' '/' '\\' '..'
+   None of these strings contains any of them. The gate is not broken,
+   not bypassed, and not misconfigured. It is answering correctly.
+
+2. AND THEN SOMETHING NORMALISES
+   a tag                        ＜script＞
+                                  -> NFKC -> '<script>'
+                                  gate would now say: False
+   a path                       ．．／．．／etc／passwd
+                                  -> NFKC -> '../../etc/passwd'
+                                  gate would now say: False
+   one character, three after   ℀
+                                  -> NFKC -> 'a/c'
+                                  gate would now say: False
+   Nobody attacked the gate. A later stage -- a database column with a
+   normalising collation, a JSON library, a filename lookup, a template
+   engine -- did the one thing everybody agrees is correct hygiene, and
+   manufactured the exact characters the gate exists to reject.
+
+   The third one is worth staring at. It is a SINGLE code point:
+     ℀  U+2100  ACCOUNT OF
+   NFKC expands it to three characters, one of which is a path separator.
+   No filter that scans for '/' can see a slash that does not exist yet.
+
+3. THE SAME TWO STEPS, SWAPPED
+   def safe(s): return gate(unicodedata.normalize('NFKC', s))
+   a tag                        safe(...) = False
+   a path                       safe(...) = False
+   one character, three after   safe(...) = False
+   Same gate, same strings, same normalisation. Only the order changed.
+   Canonicalise, then check, then STORE THE CANONICAL FORM -- so nothing
+   downstream is ever handed the spelling you did not check.
+
+4. TWO THAT NFKC DOES NOT TOUCH
+   U+2215  ∕  DIVISION SLASH
+           NFKC -> '∕'   (unchanged)
+   U+2044  ⁄  FRACTION SLASH
+           NFKC -> '⁄'   (unchanged)
+   They look like a slash and Unicode says they are not one, so
+   normalising is not a defence against them either. What turns THESE
+   into '/' is a different kind of table: a 'best fit' mapping, which
+   substitutes a similar-looking character when a target encoding has
+   no exact match. That conversion happens below the application, and
+   the page has the story.
+
+5. THE RULE, IN ONE LINE
+   Any transformation that runs AFTER your check is part of your
+   attack surface, and normalisation is a transformation.
+   Decode once, canonicalise once, check the canonical form, and pass
+   the canonical form on. Three verbs, one order, no second spelling.

@@ -1,0 +1,53 @@
+1. TWO FUNCTIONS, ONE APPEARANCE
+   defined: 'is_admin'
+            U+0069 U+0073 U+005F U+0061 U+0064 U+006D U+0069 U+006E
+   defined: 'is_аdmin'
+            U+0069 U+0073 U+005F U+0430 U+0064 U+006D U+0069 U+006E
+   same name?   False
+   is_admin('nobody')  -> False
+   is_аdmin('nobody')  -> True
+   One of those is a backdoor. Both lines above are eight characters
+   long and, in every font, identical. A reviewer has nothing to see.
+   Note the code points: only ONE character differs, at position four.
+
+2. AND PYTHON SAYS NOTHING
+   source contains U+202E?  True
+   compile() raised?        no
+   result                   2
+   No error, no warning, not even under -W error. CPython's tokenizer
+   has no opinion about text direction, because text direction is not
+   a property of the program -- only of the screen the program is
+   being read on. That gap is the whole of Trojan Source.
+
+3. WHAT THIS PROGRAM REFUSES TO PRINT
+   U+202A  LRE  LEFT-TO-RIGHT EMBEDDING
+   U+202B  RLE  RIGHT-TO-LEFT EMBEDDING
+   U+202C  PDF  POP DIRECTIONAL FORMATTING
+   U+202D  LRO  LEFT-TO-RIGHT OVERRIDE
+   U+202E  RLO  RIGHT-TO-LEFT OVERRIDE
+   U+2066  LRI  LEFT-TO-RIGHT ISOLATE
+   U+2067  RLI  RIGHT-TO-LEFT ISOLATE
+   U+2068  FSI  FIRST STRONG ISOLATE
+   U+2069  PDI  POP DIRECTIONAL ISOLATE
+   Nine characters, none of them printed above as itself -- because an
+   answer key holding a raw override would reorder the page that shows
+   it, and this library's answer keys are read by people. Escapes only.
+
+4. THE DETECTOR IS TEN LINES
+   the two definitions:
+     line 3 col 8: non-ASCII letter CYRILLIC SMALL LETTER A
+   the comment:
+     line 1 col 10: RIGHT-TO-LEFT OVERRIDE
+   That is the whole defence, and it belongs in CI rather than in a
+   reviewer's eyes: a rule a person cannot apply is not a control.
+
+5. THE RULE
+   Two readers, again -- but this time one of them is a human being.
+     the compiler reads code points, in order, and has no screen
+     the reviewer reads a rendering, which reorders and which draws
+       two different code points with the same picture
+   So: forbid the nine controls outright in source, require identifiers
+   to be ASCII (or a single script), and render anything from outside
+   with escapes rather than glyphs. Rust does the first by default and
+   warns on the second; Python does neither, and both are lint rules
+   somebody has to switch on.

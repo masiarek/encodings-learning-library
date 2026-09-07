@@ -60,6 +60,14 @@ LABEL_OVERRIDES: dict[str, str] = {
     "crlf_vs_lf": "CRLF vs LF",
     "sap_code_pages": "SAP code pages",
     "pcre2": "PCRE2",
+    # 12_Adversarial: the folder names say what the page is ABOUT (and are
+    # permanent URLs); the H1s say what it CLAIMS, which is what belongs in a
+    # table of contents.
+    "parser_differentials": "Two readers, one byte string",
+    "canonicalize_then_check": "The check that ran too early",
+    "collisions_by_design": "Two people, one account",
+    "in_band_signals": "The byte that means something to somebody else",
+    "trojan_source": "What you see is not what runs",
 }
 
 # Reading order per folder path. Children named by on-disk name; anything not
@@ -79,6 +87,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "09_History",
         "10_Best_Practices",
         "11_Tools",
+        "12_Adversarial",
         "RIPGREP.md",
         "CAST.md",
         "GLOSSARY.md",
@@ -180,6 +189,17 @@ NAV_ORDER: dict[str, list[str]] = {
         "tr_and_sort",
         "uni",
         "worth_installing",
+    ],
+    # The five moves, ordered by where they sit in a pipeline: the decode, then
+    # the check, then the identity it establishes, then what the value is
+    # embedded in -- and last the reader who is a person.
+    "12_Adversarial": [
+        "README.md",
+        "parser_differentials",
+        "canonicalize_then_check",
+        "collisions_by_design",
+        "in_band_signals",
+        "trojan_source",
     ],
     "07_Real_Data": [
         "README.md",

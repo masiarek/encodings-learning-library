@@ -45,6 +45,7 @@ That is the plan of the library. Chapter 1 is the bytes, chapter 2 is the charac
 | [09_History](09_History/README.md) | Where all of this came from — six eras, six constraints, and why the one that won, won |
 | [10_Best_Practices](10_Best_Practices/README.md) | What to actually do on Monday, in nine lines and three pages |
 | [11_Tools](11_Tools/README.md) | `grep`, `sed`, `awk`, `cut`, `find`, `xargs`, `rg`, `tr`, `sort`, `uni` — the tools you already run over text, and the encoding decision each one makes for you |
+| [12_Adversarial](12_Adversarial/README.md) | What happens when somebody chooses the bytes on purpose — five failure shapes, each with a program and a one-line rule |
 
 Chapters 1, 9, 10 and 11 are written, along with the first pages of chapter 2, half of chapter 3, and the chapter 8 project; the rest are **stubs** — each page's questions written down, with a notice, and no example behind it yet. [ROADMAP.md](ROADMAP.md) says what is next.
 

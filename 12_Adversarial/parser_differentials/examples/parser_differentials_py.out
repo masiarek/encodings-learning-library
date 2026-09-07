@@ -1,0 +1,50 @@
+1. ONE BYTE STRING, THREE TABLES, THREE READINGS
+   the bytes            BF 5C 27
+   read as utf-8        invalid -- invalid start byte
+   read as latin-1      3 characters:  ¿ \ '
+   read as gbk          2 characters:  縗 '
+   Latin-1 reads three characters and one of them is a backslash.
+   GBK reads two, and the backslash is the SECOND HALF of the first one.
+   Nothing is corrupt. The bytes simply do not say how they should be cut.
+
+2. THE ESCAPER THAT HANDS OVER THE QUOTE
+   attacker sends       BF 27        2 bytes
+   the escaper sees     a quote (27) at offset 1, and puts 5C in front of it
+   the database gets    BF 5C 27     3 bytes
+   read as latin-1      3 characters:  ¿ \ '
+   read as gbk          2 characters:  縗 '
+   Under Latin-1 the quote is escaped, exactly as intended.
+   Under GBK the backslash was eaten as half of a character and the
+   quote came out live. The escaper never wrote a bug; it was reading
+   a different alphabet from the one the database was reading.
+
+   the statement, as GBK characters:
+     SELECT * FROM users WHERE name = '縗'' AND admin = 0
+   The closing quote is now early, and everything after it is code.
+
+3. THE PAGE THAT WAS NEVER LABELLED
+   payload bytes        2B 41 44 77 2D 73 63 72 69 70 74 2B 41 44 34 2D
+   as ASCII             '+ADw-script+AD4-'
+   contains b'<script>' ? False
+   contains b'<' ?        False
+   decoded as utf-7     '<script>'
+   A filter looking for the eight bytes of '<script>' finds nothing --
+   nor does one looking for a bare '<', which is what most filters check,
+   because in UTF-7 those two characters are spelled +ADw- and +AD4-.
+   The tag does not exist until somebody decides the page is UTF-7 --
+   which a browser used to be willing to work out from the bytes alone.
+
+   note: encoding is not forced to use the escape --
+   '<script>'.encode('utf-7') = b'<script>'
+   so the two spellings are not symmetric: an encoder picks one, and a
+   decoder must accept both. Every 'many spellings' bug lives in that gap.
+
+4. THE SHAPE, WITHOUT THE STORY
+   Both cases are the same three lines:
+     stage A reads the bytes with table X  and says: nothing here
+     stage B reads the bytes with table Y  and acts on what it finds
+     the attacker chose the bytes so that X and Y disagree
+   So the question to ask of a pipeline is never 'is this input safe'.
+   It is: WHO DECODES, WITH WHICH TABLE, AND IN WHAT ORDER --
+   and the fix is to make the answer the same at every stage, once,
+   at the top, instead of letting each stage work it out for itself.

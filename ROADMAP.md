@@ -56,6 +56,11 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [`tr` and `sort` work a byte at a time](11_Tools/tr_and_sort/README.md) | written, 2026-09-06 — shell; deleting `é` damages the word next door |
 | [`uni` — the character's name](11_Tools/uni/README.md) | written, 2026-09-06 — dated sessions plus a `unicodedata` example printing the same columns |
 | [The five worth installing](11_Tools/worth_installing/README.md) | written, 2026-09-06 — each optional tool measured against a machine-checked baseline |
+| [Two readers, one byte string](12_Adversarial/parser_differentials/README.md) | written, 2026-09-06 — Python and shell; the GBK trail byte that eats a backslash, and a UTF-7 payload that is valid UTF-8, valid ASCII and a script tag |
+| [The check that ran too early](12_Adversarial/canonicalize_then_check/README.md) | written, 2026-09-06 — Python and Rust; `℀` is one code point that NFKC turns into a path separator, and std has no normalisation at all |
+| [Two people, one account](12_Adversarial/collisions_by_design/README.md) | written, 2026-09-06 — Python and Rust; four folds, five pairs, and the row where only the uppercase fold merges them |
+| [The byte that means something to somebody else](12_Adversarial/in_band_signals/README.md) | written, 2026-09-06 — C, Python and shell; 32 bytes stored and 14 bytes long, and a log line that erases itself |
+| [What you see is not what runs](12_Adversarial/trojan_source/README.md) | written, 2026-09-06 — Python and Rust; rustc denies two of the five lints by default and replaces the override with U+FFFD in its own error |
 | [Tribit — the specification](08_Build_Your_Own/tribit/README.md) | written, 2026-09-05 — the Rust implementation is Adam's project |
 | [RESOURCES.md](RESOURCES.md) | written, 2026-09-05 — re-check the links when a page graduates and cites one |
 

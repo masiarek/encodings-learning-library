@@ -1,0 +1,36 @@
+1. ONE FIELD, TWO LENGTHS
+   bytes stored   32   (the length the format carries)
+   strlen(name)   14   (the length C computes by searching)
+   first 20      77 77 77 2E 70 61 79 70 61 6C 2E 63 6F 6D 00 2E 74 68 6F 75 
+   The 0x00 at offset 14 is a byte like any other to whoever counted
+   to 32. To strlen it is the end of the world.
+
+2. WHAT EACH PARTY CHECKS, AND BOTH ARE RIGHT
+   the issuer walks all 32 bytes and asks: does this end in
+   ".thoughtcrime.org", a domain the requester controls?
+     answer: yes -- issue it
+   the client reads the same field with str* and asks: is this
+   "www.paypal.com"?
+     answer: yes -- trust it
+   Neither party has a bug. They are reading two different strings
+   out of one buffer, because they disagree about where it ends.
+
+3. THE SAME SHAPE, WITHOUT CERTIFICATES
+   the field      "/etc/passwd\0.jpg"   (16 bytes)
+   the CHECK is length-prefixed: does it end in ".jpg"?  yes -- allowed
+   the OPEN is NUL-terminated:   what file is that?      "/etc/passwd"
+   That is the PHP null-byte bug, and note which way round it is:
+   the strict reader is the one that gets FOOLED, because it reads
+   past the end of the name the weak reader will actually use.
+   PHP stopped accepting a NUL in a path argument in 5.3.4.
+   Anywhere a length-prefixed world meets a NUL-terminated one --
+   a database column, a protocol field, a filename from a zip, an
+   environment variable, a Java String handed to a C library --
+   the same two readings are available and somebody picks each.
+
+4. WHAT ACTUALLY FIXES IT
+   not: search harder for the NUL
+   but: REJECT the field. A NUL inside a domain name, a filename or
+        a header is not data that needs handling -- it is a claim
+        that two readings exist, and the only safe answer is no.
+   memchr(name, 0, stored) != NULL  ->  contains an embedded NUL: refuse

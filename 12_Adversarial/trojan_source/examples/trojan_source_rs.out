@@ -1,0 +1,37 @@
+1. WHAT AN ESCAPE HOLDS
+   let s = "admin\u{202E} user";
+   chars 11   bytes 13
+   code points  U+0061 U+0064 U+006D U+0069 U+006E U+202E U+0020 U+0075 U+0073 U+0065 U+0072
+   The override is the sixth character and it draws nothing at all.
+   Written as an escape it is six visible ASCII characters in the
+   source, greppable and diffable. Written as itself it is nothing,
+   and it reorders the line it sits in.
+
+2. WHY THIS FILE COULD NOT HOLD THE RAW ONE
+   rustc denies text-direction-codepoint-in-literal and
+   text-direction-codepoint-in-comment BY DEFAULT -- not warn, deny.
+   So a Trojan Source commit does not compile here, and the error
+   offers the escape above as the fix. The page quotes both.
+   Three more lints (confusable-idents, mixed-script-confusables,
+   uncommon-codepoints) cover the homoglyph half, and those only
+   WARN -- so the confusable identifier still builds.
+
+3. THE SCANNER YOU STILL NEED
+   a clean line:
+     clean
+   a filename from a zip:
+     line 1 col 10: RLO  RIGHT-TO-LEFT OVERRIDE
+   a display name:
+     line 1 col 1: LRI  LEFT-TO-RIGHT ISOLATE
+     line 1 col 7: PDI  POP DIRECTIONAL ISOLATE
+   The second one renders as "photo_annexe.png" in a file manager
+   and is an executable. rustc protected your SOURCE; it has no
+   opinion about a string your program reads at run time, and that
+   is where these characters actually arrive.
+
+4. THE RULE
+   Source: let the compiler deny them, and keep the deny on.
+   Data:   scan on the way in, and render on the way out with
+           escapes rather than glyphs -- a name, a filename or a
+           commit message from outside is not source code, and it
+           is not protected by anything that checks source code.

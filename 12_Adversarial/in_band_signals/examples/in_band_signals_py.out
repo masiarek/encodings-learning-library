@@ -1,0 +1,49 @@
+1. MARKERS: A CHARACTER THAT MEANS SOMETHING TO SOMEBODY ELSE
+   bytes    char   read by whom, as what
+   00       NUL    C: the string stops here
+   27       '      SQL: the literal stops here
+   2F       /      a path: the segment stops here
+   0D 0A    CR LF  HTTP and log files: the line stops here
+   24 7B    ${     a logger or template: what follows is an expression
+   1B       ESC    a terminal: what follows is a command
+   25       %      printf: what follows names an argument
+   None of these is dangerous. Each is dangerous in exactly one place:
+   inside a field that somebody downstream parses instead of storing.
+
+2. A LOGGER THAT INTERPOLATES WHAT IT LOGS
+   log('user=' + 'alice')
+     -> user=alice
+   log('user=' + '${env:AWS_SECRET}')
+     -> user=sk-live-0000-1111
+   The logger was asked to record a username. It read the username as a
+   program, because the two live in the same string and nothing marks
+   which part came from outside. That is Log4Shell's shape -- with a
+   lookup that fetched a remote class instead of an environment variable.
+
+3. AND A FILTER ON THE MARKER LOSES
+   input          ${env:AWS_SECRET}
+     filter sees 'env:'?  True
+     result        sk-live-0000-1111
+   input          ${${lower:E}nv:AWS_SECRET}
+     filter sees 'env:'?  False
+     result        sk-live-0000-1111
+   input          ${${lower:E}${lower:N}${lower:V}:AWS_SECRET}
+     filter sees 'env:'?  False
+     result        sk-live-0000-1111
+   The second and third never contain the blocked string. They contain
+   instructions for BUILDING it, and the builder is the interpolator
+   itself -- so the marker exists only after the filter has finished.
+   You cannot block a substring that your own code is going to assemble.
+   Log4j also matched lookup names case-insensitively, so ${jNdI:...} got
+   through a rule for 'jndi' with no nesting at all. Two independent ways
+   past the same filter, which is what a filter on a keyword is worth.
+
+4. THE RULE
+   The bug is not the payload and not the missing filter. It is that a
+   value from outside was placed where a parser was going to look.
+     wrong:  log('user=' + name)          format string built from data
+     right:  log('user={}', name)         data passed beside the format
+   Same for SQL (parameters, not concatenation), for shells (argv, not a
+   command line), for HTML (a text node, not markup) and for printf
+   (a literal format, never a variable). One rule, five syntaxes:
+   KEEP THE DATA OUT OF THE SENTENCE.

@@ -1,0 +1,35 @@
+1. ONE LOG CALL, TWO LOG LINES
+   log calls made      2
+   lines in the file   3
+   grep -c 'login ok'  1   <- a line no log statement produced
+   The second username contained a newline. The log format's only
+   structure IS the newline, so the field became a record.
+
+2. WHAT IS ACTUALLY IN THE FILE
+     login failed user=alice$
+     login failed user=bob$
+     login ok user=root$
+   cat -vet marks the ends of lines with $ and shows control bytes as ^X.
+   The forged record is a real line by every measure a reader has.
+
+3. THE PART YOU CANNOT SEE AT ALL
+   the file, as bytes:
+     00000000: 6c6f 6769 6e20 6661 696c 6564 2075 7365  login failed use
+     00000010: 723d 6d61 6c6c 6f72 791b 5b32 4b0d 6c6f  r=mallory.[2K.lo
+     00000020: 6769 6e20 6f6b 2075 7365 723d 726f 6f74  gin ok user=root
+     00000030: 0a                                       .
+   the file, with control bytes shown:
+     login failed user=mallory^[[2K^Mlogin ok user=root$
+   ^[ is ESC. On a terminal, ESC [ 2K erases the line and CR returns to
+   its start, so anyone who runs 'cat' or 'tail -f' on this file is shown
+   'login ok user=root' and never sees the word mallory at all.
+   The bytes are in the file. The screen is a renderer, and it was
+   following instructions the file gave it.
+
+4. HOW TO READ SOMETHING YOU DID NOT WRITE
+   cat -vet file      control bytes as ^X, line ends as $
+   xxd file           no interpretation at all
+   less -R OFF        (plain 'less' already escapes control bytes)
+   and on the writing side: escape or reject CR, LF and ESC in any field
+   that goes into a line-delimited format. A log line is a record, and a
+   record separator inside a value is the same bug as a quote inside SQL.
