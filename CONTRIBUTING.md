@@ -156,7 +156,7 @@ The same gate checks that `NAV_ORDER` and `LABEL_OVERRIDES` **name things that e
 ## Before you commit
 
 ```bash
-python3 tools/check_all.py              # all five gates, in CI's order
+python3 tools/check_all.py              # every gate, in CI's order
 python3 tools/check_all.py --staged     # the tree your next commit would make
 python3 tools/check_all.py --committed  # the same, against what CI will check out
 ```
