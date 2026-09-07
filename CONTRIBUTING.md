@@ -228,6 +228,19 @@ sha=$(git rev-parse HEAD); git push origin "$sha:master"
 
 That refspec names one commit rather than a branch to be re-read, so nothing made after it can ride along. Verified: pushing an *older* SHA is rejected as `non-fast-forward` rather than quietly sending whatever `master` now points at, which is the proof the refspec is not resolved a second time.
 
+**And it is self-verifying, which is the other half of the `-q` rule.** The literal form echoes your own SHA back on the left of the arrow, where the branch form can only ever say `master`:
+
+```text
+git push origin "$sha:master"   b3bf422..a7a9ab3  a7a9ab39e589355f85ee2d07a68af3d0c1e0a036 -> master
+git push origin master          b3bf422..a7a9ab3  master -> master
+```
+
+So the SHA you typed is the SHA it prints, and a mismatch needs no comparison by hand. `master -> master` cannot tell you what it sent under any circumstances, which is why `-q` costs more with the branch form than with the refspec.
+
+**Getting it wrong fails safe.** "Push a specific SHA" sounds like the dangerous option and is the opposite: if a colleague landed first, the literal push is **rejected** as `non-fast-forward` rather than rewinding their work. The failure mode is a refusal, not a loss.
+
+**What a refspec cannot do is separate an ANCESTOR**, and the line above is deliberately narrow — *nothing made after it* can ride along, not *nothing at all*. If a colleague committed **before** you and you committed on top, their commit is in your history by definition and no refspec on earth excludes it. That case is not hypothetical and not rare: it happened while this very paragraph was being written, when `a7a9ab3` was sitting committed-but-unpushed on the shared `master` and the only way to ship anything was to ship it too. So the closing line below is not a backstop for this section, it is the **only** check that covers the ancestor case at all — read what you are about to carry, and gate what actually landed.
+
 **Reconstructing one of these afterwards: use parentage, not the clock.** `git rev-parse <sha>^` is the only authoritative answer to which of two commits landed first — `186de1f`'s parent being `d511962` is what settled the case above. If you do reach for a timestamp, ask for the **committer** date (`%cd`): `git log --date=…` prints the **author** date (`%ad`) by default, and that is the one that moves under `--amend` and rebase. Measured here on 2026-09-07: across 60 parent/child pairs there were **zero** committer-date inversions and exactly **one** author-date inversion — a rebased commit showing `author=09:29:52` against `committer=09:31:50`. So the clocks in this repo are not scrambled by concurrency, and a reader who goes looking for that will not find it; the single thing that misleads is `%ad` after history editing.
 
 **And do not use `git push -q`.** The ref-update range it suppresses — `73b3ceb..186de1f` — is the only thing that tells you a SHA you did not create just went out under your name. Read it, and if it does not start at the commit you expected, work out what you shipped before doing anything else.
