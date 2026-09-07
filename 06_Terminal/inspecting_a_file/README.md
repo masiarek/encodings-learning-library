@@ -104,7 +104,7 @@ One last look at the UTF-16 dump, because it is the sharpest thing in the sessio
 | `hexdump -C` | `63 61 66 c3 a9 3a 20 31` | the file |
 | `hexdump` | `6163 c366 3aa9 3120` | pairs swapped, because your CPU is little-endian |
 
-It is the same confusion UTF-16 has — *which end of a two-byte number comes first* — turning up in a tool that was only asked to show bytes. Use `-C`. And when you want the layout under your own control, `hexdump -e '16/1 "%02x " "\n"'` takes a format string and, unlike `od`'s columns, prints identically on macOS and Linux.
+It is the same confusion UTF-16 has — *which end of a two-byte number comes first* — turning up in a tool that was only asked to show bytes. Use `-C`. And when you want the layout under your own control, `hexdump -e '16/1 "%02x " "\n"'` takes a format string and, unlike `od`'s columns, prints identically on macOS and Linux. Why that is — the six letter flags are canned format strings, and you can type them out — is [`hexdump` is a format engine wearing six presets](../../11_Tools/hexdump/README.md), which also has the one trap `-e` brings with it: the repeated-line squeeze applies to your format too, and turns 128 characters of hex into 4.
 
 `xxd` earns its place by being **the only one of the three that goes back**. `xxd -r` turns a dump into bytes, so the workflow is dump → edit → undump, which is how you make a file with exactly the bytes a bug needs. `xxd -p` gives plain hex with no columns (the form to paste into a bug report), `-r -p` reads it back, `-g1` stops the default pairing that draws 16-bit groups UTF-8 does not have, `-b` shows the bits (in the example below, both bytes of `é` visibly start with a `1` — that is UTF-8 marking them as a multi-byte character), and `-s`/`-l` open a window into a large file instead of dumping all of it.
 
@@ -496,3 +496,4 @@ The first two print different rows for identical bytes. The third shows you what
 - [Control characters](../../02_Characters/control_characters/README.md) — what U+0082 is, and why nothing can draw it
 - [Byte order and the BOM](../../03_Encodings/byte_order_and_bom/README.md) — the `fe ff` that `iconv` chose for you
 - [`file` guesses](../file_guesses/README.md) — the tool that answers the fourth question, and how sure it is
+- [`hexdump` is a format engine wearing six presets](../../11_Tools/hexdump/README.md) — the tool on its own, and which of the four dumps to paste into a bug report

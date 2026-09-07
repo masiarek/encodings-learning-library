@@ -1,0 +1,135 @@
+1. THE DEFAULT IS THE ONE THAT LIES
+
+$ hexdump s.txt
+0000000 6163 c366 3aa9 3120 82e2 0aac          
+000000c
+
+$ hexdump -C s.txt
+00000000  63 61 66 c3 a9 3a 20 31  e2 82 ac 0a              |caf..: 1....|
+0000000c
+   The same twelve bytes, twice. The file starts 63 61; the first line
+   says 6163. Every pair is swapped — and it is not a bug, it is the
+   default format doing exactly what it says.
+
+2. WHY: THE DEFAULT READS TWO BYTES AT A TIME, AS A NUMBER
+   The preset behind a bare hexdump is 8 units of 2 bytes: 8/2 "%04x ".
+   Two bytes read as one 16-bit integer, printed in THIS CPU's byte order,
+   which on anything you are likely to own is little-endian: low byte
+   first. So 63 61 becomes the number 0x6163. -x is the same preset with
+   wider columns:
+
+$ hexdump -x s.txt
+0000000    6163    c366    3aa9    3120    82e2    0aac                
+000000c
+   It is the UTF-16 question — which end of a two-byte number comes first —
+   turning up in a tool that was only asked to show bytes.
+
+3. THE PRESETS ARE FORMAT STRINGS, AND YOU CAN WRITE THEM OUT
+   -C is not built in as a view. It is three -e strings, and typing them
+   by hand reproduces it exactly:
+
+$ hexdump -e '"%08.8_Ax\n"' -e '"%08.8_ax  " 8/1 "%02x " "  " 8/1 "%02x "' -e '"  |" 16/1 "%_p" "|\n"' s.txt
+00000000  63 61 66 c3 a9 3a 20 31  e2 82 ac 0a              |caf..: 1....|
+0000000c
+   diff against hexdump -C: identical, byte for byte.
+
+4. WHY -C NEEDS THREE -e STRINGS AND NOT ONE
+   Within one format string the conversions run in sequence and each one
+   CONSUMES the bytes it printed. Ask one string for 16 hex bytes and then
+   16 characters and it wants 32 bytes — so the text column reads past the
+   end and prints nothing:
+
+$ hexdump -e '"%08.8_ax  " 8/1 "%02x " "  " 8/1 "%02x " "  |" 16/1 "%_p" "|\n"' s.txt
+00000000  63 61 66 c3 a9 3a 20 31  e2 82 ac 0a              ||
+   The |...| came out empty. Separate -e strings are each applied to the
+   SAME block of bytes, from the start — which is how one pass prints the
+   same sixteen bytes as hex and again as text.
+
+5. THE LAYOUT YOU ACTUALLY WANT, IN ONE STRING
+   count/size "printf format" is the whole language: how many units, how
+   many bytes each, how to print one.
+
+$ hexdump -e '16/1 "%02x " "\n"' s.txt
+63 61 66 c3 a9 3a 20 31 e2 82 ac 0a            
+
+$ hexdump -e '8/1 "%02x " "  " 8/1 "%03u " "\n"' s.txt
+63 61 66 c3 a9 3a 20 31  226 130 172 010                
+   Two columns of the same eight bytes, hex then decimal, in a layout
+   nothing else offers: od's shape is whatever its flags decided, and
+   xxd's is whatever -c and -g allow. One warning about %u — write it,
+   not %d. A one-byte unit under %d is SIGNED, so c3 prints as -61.
+
+6. THE STAR: REPEATED LINES ARE HIDDEN BY DEFAULT
+
+$ hexdump -C zeros.bin
+00000000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+00000040
+   64 bytes went in and one line came out. The * means 'and more of the
+   same'. -v prints every line:
+
+$ hexdump -C -v zeros.bin
+00000000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+00000010  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+00000020  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+00000030  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+00000040
+   Four lines of sixteen, which is the 64 bytes. Without -v the output is
+   three lines — first, star, final offset — whatever the file's size, so
+   the length of a dump tells you nothing about the length of the file.
+
+   AND THE SQUEEZE APPLIES TO -e TOO, WHICH IS HOW IT DESTROYS DATA.
+   hexdump -e '1/1 "%.2x"' is the usual stand-in for xxd -p on a machine
+   with no xxd. On this 64-byte file, characters of hex printed:
+     hexdump -e  (no -v) : 4
+     hexdump -ve         : 128
+     xxd -p              : 128
+   The first one printed 00 and a star. A unit here is one byte, so any
+   byte that repeats the one before it is squeezed away, and the output is
+   not hex any more — it is hex with a * in it. Always write -v when the
+   output is going to be parsed rather than read.
+
+7. THE TEXT COLUMN IS ASCII, AND ONLY ASCII
+
+$ hexdump -C s.txt
+00000000  63 61 66 c3 a9 3a 20 31  e2 82 ac 0a              |caf..: 1....|
+0000000c
+
+$ hexdump -C latin1.txt
+00000000  63 61 66 e9 0a                                    |caf..|
+00000005
+   Two files, two encodings, and the same answer: a dot for every byte
+   above 7f. %_p asks 'is this byte a printable ASCII character' and
+   nothing else — no locale, no encoding, no guess. That is a limit and
+   a virtue: the column cannot mislead you about which encoding this is,
+   because it never had an opinion. Read the hex.
+
+8. -c IS THE ONE VIEW THAT DOES HAVE AN OPINION
+
+$ hexdump -c s.txt
+0000000   c   a   f 303 251   :       1 342 202 254  \n                
+000000c
+   Octal escapes for the bytes it cannot draw: 303 251 is the é. This runs
+   under LC_ALL=C, where that is all it can do. In a UTF-8 locale BSD
+   hexdump prints M-C M-) here and Ubuntu's still prints 303 251 — the
+   page has the measurement. Same command, two machines, two answers.
+
+9. WHAT IT CANNOT DO: COME BACK
+
+$ xxd -p s.txt
+636166c3a93a2031e282ac0a
+
+$ xxd -p s.txt | xxd -r -p | cat
+café: 1€
+   xxd -r reads a dump and writes the bytes. hexdump has no -r and od has
+   no -r; to reverse a hexdump you write the loop yourself. That single
+   missing flag is the reason to install xxd on a machine that lacks it.
+
+10. SKIP AND LENGTH, WHEN THE INTERESTING BYTES ARE NOT AT THE FRONT
+
+$ hexdump -C -s 2 -n 4 s.txt
+00000002  66 c3 a9 3a                                       |f..:|
+00000006
+   -s skips, -n stops after that many bytes, and the offset column keeps
+   counting from the front of the file — so what it prints is the address
+   in the file, not in the window. xxd spells the same two -s and -l.

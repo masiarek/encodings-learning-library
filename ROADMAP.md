@@ -56,6 +56,7 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [`awk` is three programs](11_Tools/awk/README.md) | written, 2026-09-06 — shell, verified identical under BWK awk, mawk *and* gawk; BWK awk disagrees with itself |
 | [`cut` counts what it is told to count](11_Tools/cut/README.md) | written, 2026-09-06 — shell; `-c` returns four bytes on Ubuntu and five on a Mac |
 | [`tr` and `sort` work a byte at a time](11_Tools/tr_and_sort/README.md) | written, 2026-09-06 — shell; deleting `é` damages the word next door |
+| [`hexdump` is a format engine wearing six presets](11_Tools/hexdump/README.md) | written, 2026-09-06 — shell, byte-identical on both platforms; the six presets typed out as `-e` strings, and the `*` that turns 128 characters of hex into 4 |
 | [`uni` — the character's name](11_Tools/uni/README.md) | written, 2026-09-06 — dated sessions plus a `unicodedata` example printing the same columns |
 | [The five worth installing](11_Tools/worth_installing/README.md) | written, 2026-09-06 — each optional tool measured against a machine-checked baseline |
 | [Two readers, one byte string](12_Adversarial/parser_differentials/README.md) | written, 2026-09-06 — Python and shell; the GBK trail byte that eats a backslash, and a UTF-7 payload that is valid UTF-8, valid ASCII and a script tag |

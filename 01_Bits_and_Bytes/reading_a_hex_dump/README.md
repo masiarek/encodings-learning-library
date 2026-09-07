@@ -165,7 +165,7 @@ The `dump` function is `xxd` with the pairing removed: slice the bytes sixteen a
 |---|---|---|
 | [`xxd`](../../06_Terminal/inspecting_a_file/README.md#the-other-two-tools-and-the-fiction-in-the-other-default) | you want the default view, or to go back (`xxd -r`) | ships with vim; `-b` for binary, `-g1` to unpair |
 | [`od -An -tx1 -c`](../../06_Terminal/inspecting_a_file/README.md#the-row-that-makes-things-up) | you are on a machine with nothing else | POSIX, always present; `-c` shows octal for high bytes (set `LC_ALL=C`), and skip `-a` — it makes names up |
-| [`hexdump -C`](../../06_Terminal/inspecting_a_file/README.md#the-other-two-tools-and-the-fiction-in-the-other-default) | you want the text column framed in bars | macOS always, Linux only with `bsdextrautils`; and plain `hexdump` swaps every pair |
+| [`hexdump -C`](../../11_Tools/hexdump/README.md) | you want the text column framed in bars, or somebody else has to read the dump | macOS always, Linux only with `bsdextrautils`; plain `hexdump` swaps every pair, and `-C` is the one view that is identical on both platforms |
 | [`bytes.hex(' ')` ↗](https://docs.python.org/3/library/stdtypes.html#bytes.hex) | you are already in Python | just the middle column, one line |
 
 ## If you are coming from Python or ABAP
@@ -189,3 +189,4 @@ Then dump something real: `xxd ~/.zshrc | head`, or any file on your disk. Find 
 - [Hex is a shorthand](../hex_is_a_shorthand/README.md) — why each byte is two digits, and why `41` on screen is not `'41'` in the file
 - [A character is a number](../../02_Characters/a_character_is_a_number/README.md) — the agreement the right-hand column is applying
 - [Inspecting a file](../../06_Terminal/inspecting_a_file/README.md) — which of these columns is the file, and which is the tool guessing
+- [`hexdump` is a format engine wearing six presets](../../11_Tools/hexdump/README.md) — how these columns are actually produced, and how to ask for your own

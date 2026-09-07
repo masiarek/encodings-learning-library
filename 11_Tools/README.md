@@ -4,7 +4,9 @@
 
 Chapters 1 to 10 are about what text *is*. This chapter is about the programs you already run over it every day — `grep`, `find`, `sort`, `tr` — plus the handful worth installing. None of them is *about* encodings. Every one of them has already made an encoding decision on your behalf before it printed its first line, and not one of them tells you which.
 
-That is the chapter in a sentence, and it is why these pages exist separately from [06_Terminal](../06_Terminal/README.md). Chapter 6 is the tools whose *job* is bytes — `xxd`, `od`, `iconv`, `file`. This chapter is the tools whose job is something else entirely, and which turn out to have an opinion about your text anyway.
+That is the chapter in a sentence, and it is why these pages exist separately from [06_Terminal](../06_Terminal/README.md). Chapter 6 is the tools whose *job* is bytes — `xxd`, `od`, `iconv`, `file` — shown inside a workflow: one file, five questions, which column is the file and which is a guess. This chapter is the tools whose job is something else entirely, and which turn out to have an opinion about your text anyway.
+
+[`hexdump`](hexdump/README.md) is the one deliberate exception, and it is here rather than in chapter 6 because the question it answers is a *tool-choice* question: which of the four dump tools to type, what each one decided before it printed a line, and which of them you can paste into a bug report and expect the reader to see what you saw. That is this chapter's job. Chapter 6 still owns the workflow.
 
 ## The three questions
 
@@ -31,24 +33,98 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 | 8 | [`awk` is three programs](awk/README.md) | Whose `awk` is this, and why does it disagree with itself? | written |
 | 9 | [`cut` counts what it is told to count](cut/README.md) | `-b` or `-c`? And why does the same command differ per machine? | written |
 | 10 | [`tr` and `sort` work a byte at a time](tr_and_sort/README.md) | Why did deleting `é` damage a different word? | written |
-| 11 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
-| 12 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
+| 11 | [`hexdump` is a format engine wearing six presets](hexdump/README.md) | Why is my dump showing the bytes in the wrong order? | written |
+| 12 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
+| 13 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
 
-## What you already have
+## The whole toolkit, one row each
 
-Nothing on this list needs installing on either macOS or Ubuntu, and the pages above are about the second column, not the first.
+If you came looking for *the list* — every command you are likely to run over text, and what each one quietly decided before it printed — this is it. Nothing here needs installing on macOS or Ubuntu.
+
+**A bold tool has a page in this chapter and its last column was measured.** The rest name the tool and the question worth asking, which is the honest state of the evidence rather than a verdict — the three questions at the top of this page are how you settle one for yourself in about a minute.
+
+### Search and match
 
 | Tool | Its actual job | Its opinion about your text |
 |---|---|---|
-| `grep` | search | a character is whatever the **locale** says; invalid bytes are handled [two different ways by the two greps](grep/README.md); `-P` is GNU-only and [absent from a Mac entirely](pcre2/README.md) |
-| `find` | walk a directory | filenames are **bytes**, and `-name` is a byte comparison — even where [the filesystem disagrees](find/README.md) |
-| `sort` | order lines | the **locale** picks the order, and byte order is not alphabetical order |
-| `tr` | substitute or delete | **bytes only**, always — which is why [it damages the word next door](tr_and_sort/README.md) |
-| [`xargs`](xargs/README.md) | turn a list into a command line | splits on spaces *and* quotes, and batches by **bytes** — so the encoding decides how many times your command runs |
-| [`sed`](sed/README.md) | edit with patterns | a **sequence**, not a byte set — which is why it repairs what `tr` breaks |
-| [`awk`](awk/README.md) | fields and arithmetic | three implementations, two of them called `awk`, and they do not agree |
-| [`cut`](cut/README.md) | slice columns | `-b` is honest; `-c` means characters on one platform and bytes on the other |
-| `wc` | count | `-c` bytes, `-m` characters, `-l` [newlines](../06_Terminal/trailing_newline/README.md) — three questions, three answers |
+| **[`grep`](grep/README.md)** | search | a character is whatever the **locale** says; invalid bytes are handled two different ways by the two greps, and one of them [drops the line and exits 0](grep/README.md) |
+| **[`rg`](ripgrep/README.md)** | search, recursively, fast | never asks the locale; [reads the BOM](ripgrep/README.md) and otherwise searches raw bytes. `--column` counts **bytes** and says so |
+| **[`rg -P`](pcre2/README.md)** | the other regex engine | a second Unicode implementation with its own `\p{…}` and its own [silent failure](pcre2/README.md); absent from a Mac entirely |
+| **[`find`](find/README.md)** | walk a directory | filenames are **bytes**, and `-name` is a byte comparison — even where [the filesystem disagrees](find/README.md) |
+| `look`, `fgrep` | fixed-string search | `fgrep` is `grep -F`; the locale questions are grep's, unchanged |
+
+### Slice, reshape, join
+
+| Tool | Its actual job | Its opinion about your text |
+|---|---|---|
+| **[`cut`](cut/README.md)** | slice columns | `-b` is honest; `-c` means characters on one platform and bytes on the other |
+| **[`sed`](sed/README.md)** | edit with patterns | a **sequence**, not a byte set — which is why it repairs what `tr` breaks |
+| **[`awk`](awk/README.md)** | fields and arithmetic | three implementations, two of them called `awk`, and they do not agree; `substr()` is `cut -c` with no `-b` to escape to |
+| `head`, `tail` | first or last part | `-n` counts **newlines** and `-c` counts **bytes**; neither decodes, so neither can fail — but `-c` will cut a character in half |
+| `paste`, `join`, `comm` | put files side by side, or match them up | delimiters and field boundaries are bytes; `join` and `comm` additionally require both inputs sorted **in the same collation** as they compare, which is a locale question |
+| `split`, `csplit` | cut a file into pieces | `split -b` is bytes and will land mid-character; `-l` is lines and will not |
+| `rev` | reverse each line | the **locale** decides whether it reverses characters or bytes — and reversing bytes takes a multi-byte character apart. Measured below |
+| `fold`, `fmt`, `expand`, `column`, `nl`, `pr` | wrap, align, number, paginate | every one of them has a notion of *width*, and width is the [character-vs-byte question](cut/README.md) wearing a different hat. Ask before trusting a column |
+
+### Transform
+
+| Tool | Its actual job | Its opinion about your text |
+|---|---|---|
+| **[`tr`](tr_and_sort/README.md)** | substitute or delete | **bytes only**, always — which is why [it damages the word next door](tr_and_sort/README.md) |
+| [`iconv`](../06_Terminal/iconv/README.md) | change encoding | the only tool here whose *whole job* is the encoding — so it is the one you have to tell, and `-c` [repairs differently on the two platforms](../CONTRIBUTING.md) |
+| [`dos2unix`](worth_installing/README.md) | line endings | [CRLF](../07_Real_Data/crlf_vs_lf/README.md) only; it has a report mode that changes nothing, which is the one to run first |
+| [`recode`](worth_installing/README.md) | change encoding, bigger table set | **refuses** an untranslatable character and leaves the file intact; `-f` converts and silently deletes it |
+
+### Order, count, compare
+
+| Tool | Its actual job | Its opinion about your text |
+|---|---|---|
+| **[`sort`](tr_and_sort/README.md)** | order lines | the **locale** picks the order, and byte order is not alphabetical order — [three locales, three alphabets](../07_Real_Data/sorting_and_collation/README.md) |
+| `uniq` | collapse adjacent equals | byte equality, and only *adjacent* — so it inherits whatever order `sort` chose. `-c` [pads its count to different widths per platform](../CONTRIBUTING.md) |
+| `wc` | count | `-c` bytes, `-m` characters, `-l` [newlines](../06_Terminal/trailing_newline/README.md) — three questions, three answers, and `-m` needs the locale to mean anything |
+| `diff`, `cmp` | compare | `cmp` compares bytes and reports the first differing **byte**; `diff` compares lines as bytes, so two files that differ only in [normalization](../04_Python/normalization/README.md) or [line ending](../07_Real_Data/crlf_vs_lf/README.md) differ on every line |
+
+### Look at the bytes
+
+| Tool | Its actual job | Its opinion about your text |
+|---|---|---|
+| **[`hexdump`](hexdump/README.md)** | dump | six presets on one format engine; the default reads **16-bit numbers** and swaps your pairs. `-C`'s text column is ASCII and nothing else, which is what makes it safe |
+| [`xxd`](../01_Bits_and_Bytes/reading_a_hex_dump/README.md) | dump, and undump | honest default, and the only one of the four that goes **backwards** (`xxd -r`) |
+| [`od`](../06_Terminal/inspecting_a_file/README.md) | dump, POSIX | the only one guaranteed present — and its default is octal words at octal offsets, while `-a` [invents names for bytes it cannot draw](../06_Terminal/inspecting_a_file/README.md) |
+| [`file`](../06_Terminal/file_guesses/README.md) | guess what this is | reads the first bytes and guesses; `--mime-encoding` distinguishes valid UTF-8 from not, and little else |
+| `cat -vet` | show the invisibles | ASCII-only respelling: `M-x` for a high byte, `$` for a newline, `^I` for a tab. `cat -A` [does not exist on macOS](../CONTRIBUTING.md) |
+| `strings` | pull the text out of a binary | **ASCII by default**, in runs of four or more — so a word containing an accent is split, and a short fragment is dropped entirely. Measured below |
+| [`hexyl`](worth_installing/README.md) | dump, in colour | colour by byte category, which is the one column no other dump has |
+| [`uchardet`](worth_installing/README.md) | guess the *encoding* | a real detector where `file` only tells valid-UTF-8 from not — it narrows the field, it does not settle it |
+| **[`uni`](uni/README.md)** | name the character | the character's **name**, and search *by* name — the column no dump tool has |
+
+### Feed other commands
+
+| Tool | Its actual job | Its opinion about your text |
+|---|---|---|
+| **[`xargs`](xargs/README.md)** | turn a list into a command line | splits on spaces *and* quotes, and batches by **bytes** — so the encoding decides how many times your command runs |
+| `find -exec`, `tee` | run per file, or fork a stream | both pass bytes through untouched; `find -exec … +` is the escape from most of `xargs`'s problems |
+| **[`rg --pre`, `rg -z`](decompress_then_decode/README.md)** | one stage before the decode | a container is not an encoding, and [`-z` is a list of binaries, not a capability](decompress_then_decode/README.md) |
+
+### Two of the unbolded rows, measured
+
+The two above that would otherwise be pure assertion, since both surprised the author:
+
+```text title="Measured 2026-09-06 — macOS 26.6, cafe.txt = 'café bar' in UTF-8, 10 bytes. Verbatim; not machine-checked, because no answer key can match both platforms."
+$ LC_ALL=C rev cafe.txt | hexdump -C
+00000000  72 61 62 20 a9 c3 66 61  63 0a                    |rab ..fac.|
+0000000a
+$ LC_ALL=en_US.UTF-8 rev cafe.txt | hexdump -C
+00000000  72 61 62 20 c3 a9 66 61  63 0a                    |rab ..fac.|
+0000000a
+$ strings cafe.txt | hexdump -C
+00000000  20 62 61 72 0a                                    | bar.|
+00000005
+```
+
+The first two runs differ in one byte pair: `a9 c3` against `c3 a9`. The C-locale line is no longer UTF-8 at all — the `é` was taken apart and put back the wrong way round — while the text column of both dumps says `rab ..fac.`, which is [exactly the column that cannot tell you](hexdump/README.md). `rev` is the counter-example to this chapter's own advice. Everywhere else, `LC_ALL=C` is the escape hatch — it turns a decoding tool into a byte tool and stops it failing on input it cannot read. For `rev` it is the *cause*: in the C locale there are no characters to reverse, only bytes, and a two-byte `é` comes back as two bytes in the wrong order. `LC_ALL=C` is right for **searching and matching**, where you want no interpretation. It is wrong for anything that **rearranges** what it read.
+
+`strings` is the other shape of the same problem: it is not wrong about the encoding, it never had one. Its default is runs of four or more printable ASCII bytes, so `café` becomes `caf` (three — dropped) plus a byte it will not print. `strings -e S` takes single-byte 8-bit encodings and `-e l` little-endian 16-bit, which is how you get the text out of a UTF-16 file it otherwise reports as empty.
 
 ## What each of them does with a byte that is not text
 
