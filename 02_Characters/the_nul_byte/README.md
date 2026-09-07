@@ -57,11 +57,15 @@ On a Unix system a pathname component may hold any byte at all except two: `/`, 
 
 3. FOUR PLACES PYTHON STOPS YOU, AND ALL FOR THE SAME REASON
    open('a\x00b')                   -> ValueError: embedded null byte
-   os.stat('a\x00b')                -> ValueError: stat: embedded null character in path
+   os.stat('a\x00b')                -> ValueError
    subprocess.run(['echo', s])      -> ValueError: embedded null byte
    os.environ['A\x00B'] = 'x'       -> ValueError: embedded null byte
    Each of those hands the string to the operating system, whose interface is
    NUL-terminated C strings. Python refuses rather than let the value be cut.
+   os.stat is the one printed without its message, because CPython words
+   it differently per platform: macOS says 'stat: embedded null character
+   in path', Linux says 'embedded null byte'. Same refusal, same class,
+   two sentences -- so the class is the part that may go in a key.
 
 4. THE CONTAINERS: WHO WILL CARRY A NUL?
    json.dumps(s)                   = "ab\u0000cd"   escaped, and legal JSON

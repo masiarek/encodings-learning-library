@@ -13,13 +13,18 @@ import unicodedata
 import xml.etree.ElementTree as ET
 
 
-def attempt(label, fn):
-    """Call fn and print either what it returned or how it refused."""
+def attempt(label, fn, message=True):
+    """Call fn and print either what it returned or how it refused.
+
+    `message=False` prints the exception CLASS only, for the one call whose
+    wording CPython varies by platform -- see the note under section 3.
+    """
     try:
         fn()
         print(f"   {label:<32} -> no error")
     except Exception as exc:
-        print(f"   {label:<32} -> {type(exc).__name__}: {exc}")
+        detail = f": {exc}" if message else ""
+        print(f"   {label:<32} -> {type(exc).__name__}{detail}")
 
 
 print("1. U+0000 IS AN ORDINARY CHARACTER, AND ORDINARY UTF-8")
@@ -45,11 +50,15 @@ print()
 
 print("3. FOUR PLACES PYTHON STOPS YOU, AND ALL FOR THE SAME REASON")
 attempt("open('a\\x00b')", lambda: open("a\x00b"))
-attempt("os.stat('a\\x00b')", lambda: os.stat("a\x00b"))
+attempt("os.stat('a\\x00b')", lambda: os.stat("a\x00b"), message=False)
 attempt("subprocess.run(['echo', s])", lambda: subprocess.run(["echo", s]))
 attempt("os.environ['A\\x00B'] = 'x'", lambda: os.environ.__setitem__("A\x00B", "x"))
 print("   Each of those hands the string to the operating system, whose interface is")
 print("   NUL-terminated C strings. Python refuses rather than let the value be cut.")
+print("   os.stat is the one printed without its message, because CPython words")
+print("   it differently per platform: macOS says 'stat: embedded null character")
+print("   in path', Linux says 'embedded null byte'. Same refusal, same class,")
+print("   two sentences -- so the class is the part that may go in a key.")
 print()
 
 print("4. THE CONTAINERS: WHO WILL CARRY A NUL?")
