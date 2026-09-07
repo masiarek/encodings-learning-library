@@ -45,7 +45,7 @@ Before Unicode, one character was one byte, so "eight characters in" and "eight 
 
 Look at what each candidate does to it:
 
-- **UTF-16 keeps the arithmetic and changes the constant.** One character becomes two bytes, uniformly, so `record+8(3)` is still bytes 16 to 21 and a structure's offsets are still constants. `cl_abap_char_utilities=>charsize` returns `2` on a Unicode system where it returned `1` before — a single number, in one place, and the layout rules survive intact.
+- **UTF-16 keeps the arithmetic and changes the constant.** One character becomes two bytes, uniformly, so `record+8(3)` is still bytes 16 to 21 and a structure's offsets are still constants. `cl_abap_char_utilities=>charsize` returns `2` on a Unicode system where it returned `1` before — a single number, in one place, and the layout rules survive intact. SAP's own wording is worth the precision here: the *system code page* of a Unicode system is UTF-16, but [the ABAP language supports the subset **UCS-2** ↗](https://help.sap.com/doc/abapdocu_752_index_htm/7.52/en-US/abenunicode_char_represent_glosry.htm) — the surrogate area excluded — so a character does not merely usually occupy two bytes, it always does. That is the fixed-width guarantee the offsets rest on, kept deliberately after 1996 made it optional.
 - **UTF-8 makes the offset a function of the data.** In `'Kraków  PLN'` the code field starts at byte 9; in `'Gdansk  PLN'` it starts at byte 8. Same layout, same field, different number — because `ó` is two bytes and `a` is one. A structure definition cannot hold a number that moves, and no compiler can find the callers that assumed otherwise.
 
 Section 5 of the Python program below runs exactly that comparison. **This is why the migration was possible at all**: UCS-2 was a *widening* of a rule ABAP already had, and UTF-8 would have been a rewrite of every offset in every program that ever touched a record.
@@ -61,6 +61,18 @@ Three bills, and the third is the one that still surprises people.
 3. **A sort that is not code-point order.** Lead surrogates live at `D800`, *below* the ordinary code points at `E000`–`FFFF`, so sorting UTF-16 bytes puts every astral character in the wrong place. Section 4 below prints the inversion. It stays invisible while the kernel does your sorting and appears the moment you hash, sign, or byte-compare something you converted yourself.
 
 There is a fourth, smaller one that shows how far the decision travels: `json.dumps("😀")` produces `"\ud83d\ude00"` — a UTF-16 surrogate pair, written into a format that is UTF-8 by specification. JSON's escape syntax was designed in JavaScript, so a 1995 storage decision is now visible in a wire format that has no UTF-16 anywhere in it.
+
+## The decision reaches the database
+
+The natural assumption about a modern SAP stack is that the 1991 choice stops at the application server — the ABAP runtime holds UCS-2, the database underneath is a normal Unicode store, and somewhere between them a conversion happens. That is not what SAP HANA does.
+
+**HANA stores CESU-8**, not UTF-8. Every character in the BMP is encoded exactly as UTF-8 would encode it; every character above `U+FFFF` is first split into a UTF-16 *surrogate pair*, and then each half is UTF-8-encoded on its own. The result takes six bytes where real UTF-8 takes four, and it is not valid UTF-8 — a strict decoder rejects it. Section 6 of the Python program below builds the bytes both ways and shows the rejection.
+
+SAP documents this in the definition of `LENGTH`, which is the tell: a supplementary character occupies six bytes in CESU-8 and is "counted as two characters" — the same sentence in the [on-prem SQL Reference Guide ↗](https://help.sap.com/doc/9b40bf74f8644b898fb07dabdd2a36ad/2.0.07/en-US/SAP_HANA_SQL_Reference_Guide_en.pdf) (SAP HANA Platform 2.0 SPS 07, document version 1.0, 2023-06-30, under `LENGTH`) and the current [HANA Cloud guide ↗](https://help.sap.com/docs/hana-cloud-database/sap-hana-cloud-sap-hana-database-sql-reference-guide/length-function-string) (QRC 2/2026). It surfaces elsewhere too: `BINTOSTR` is defined as converting to a CESU-8 string, and the error catalogue has an `ERR_API_INVALID_CESU8_STRING`.
+
+**So the length answer is the same the whole way down.** ABAP's `strlen( )` says 2 for an emoji, Java's `.length()` says 2, and HANA's `LENGTH()` says 2 — not by coincidence, but because CESU-8 exists precisely to carry UTF-16's code-unit semantics inside something UTF-8-shaped. Unicode's own report on it, [UTR #26 ↗](https://www.unicode.org/reports/tr26/), calls the scheme obsolete and says plainly that it is not intended or recommended for open information exchange; it is an *internal* encoding, and a database is exactly the kind of internal place it was meant for.
+
+The practical consequence is the one worth carrying: a byte count taken inside HANA and a byte count taken by anything outside it will disagree on any text above `U+FFFF`, and the disagreement is silent, because both are "UTF-8" by name. This is the same boundary rule as everywhere else on this page — convert explicitly, and do it where you can see it.
 
 ## In Python
 
@@ -162,6 +174,26 @@ There is a fourth, smaller one that shows how far the decision travels: `json.du
    UCS-2 as a widening of an existing rule (1 char = 1 byte became
    1 char = 2 bytes) and could not adopt UTF-8 as anything short of
    rewriting every offset in every program that ever touched the record.
+
+6. AND IT REACHES THE DATABASE: CESU-8
+------------------------------------------------------------------------
+   SAP HANA does not store UTF-8. It stores CESU-8: every BMP character
+   exactly as UTF-8 would, and every character above U+FFFF as a surrogate
+   PAIR with each half then encoded separately.
+
+     string     utf-8                      cesu-8
+     'café'     63 61 66 c3 a9             63 61 66 c3 a9
+     '😀'       f0 9f 98 80                ed a0 bd ed b8 80
+
+   Identical for 'café'. For 😀 it is 4 bytes against 6 —
+   and the six are not valid UTF-8 at all:
+     cesu8('😀').decode('utf-8') raises: invalid continuation byte
+
+   So the length answer travels the whole stack unchanged. HANA's LENGTH()
+   counts that one character as 2, exactly as ABAP's strlen( ) and Java's
+   .length() do — because CESU-8 exists to keep UTF-16's unit semantics
+   inside something UTF-8-shaped. A 1991 decision, still being honoured by
+   an in-memory column store designed twenty years later.
 ```
 <!-- /output -->
 
@@ -227,7 +259,7 @@ Rust is the control group. It was designed long after 1996 with the whole mess v
 
 **Python.** You are on the other side of this history, and `len()` is the proof: it counts code points, so `len('😀')` is `1` where Java, JavaScript and ABAP all say `2`. That was not always true — narrow builds gave you `2` as well — and the escape cost the flexible representation described in [`str` in memory](../../04_Python/str_in_memory/README.md). The place the old world still reaches you is at interfaces: `json.dumps` emits surrogate pairs by default (`ensure_ascii=False` stops it), `'utf-16'` with no suffix writes a BOM where `'utf-16-le'` does not, and a lone surrogate from a UTF-16 source will encode to UTF-8 only under `errors='surrogatepass'`. Everything that hurts here arrives from a system that made the 1991 choice.
 
-**ABAP.** This page is largely about your runtime, so the practical version is short. `strlen( )` counts 16-bit units, so an emoji is `2` and a Polish letter is `1`; `xstrlen( )` on the converted `xstring` is the byte count, and those are the two different questions [`unicode_code_points`](../../02_Characters/unicode_code_points/README.md) is about. `cl_abap_char_utilities=>charsize` is the constant the whole layout argument above rests on. The rule that follows is the one in [Interfaces and storage](../../10_Best_Practices/interfaces_and_storage/README.md): let the internal representation stay the kernel's business, and convert to UTF-8 at every boundary — anything hashed, signed, or byte-compared with an outside system — because the byte order and the sort order in bills 2 and 3 above are exactly what a foreign system will disagree with you about. Two things to check against your own system rather than against this page: the SAP code-page numbers for UTF-16BE, UTF-16LE and UTF-8 are three different numbers and none of them should be quoted from memory (the table is in [SAP code pages](../../07_Real_Data/sap_code_pages/README.md)), and on a HANA-based system the database's own character storage is not necessarily the runtime's, so a conversion at the database interface is worth confirming for your release rather than assuming in either direction. *(Not machine-checked — CI cannot run ABAP.)*
+**ABAP.** This page is largely about your runtime, so the practical version is short. `strlen( )` counts 16-bit units, so an emoji is `2` and a Polish letter is `1`; `xstrlen( )` on the converted `xstring` is the byte count, and those are the two different questions [`unicode_code_points`](../../02_Characters/unicode_code_points/README.md) is about. `cl_abap_char_utilities=>charsize` is the constant the whole layout argument above rests on. The rule that follows is the one in [Interfaces and storage](../../10_Best_Practices/interfaces_and_storage/README.md): let the internal representation stay the kernel's business, and convert to UTF-8 at every boundary — anything hashed, signed, or byte-compared with an outside system — because the byte order and the sort order in bills 2 and 3 above are exactly what a foreign system will disagree with you about. Two things to check against your own system rather than against this page: the SAP code-page numbers for UTF-16BE, UTF-16LE and UTF-8 are three different numbers and none of them should be quoted from memory (the table is in [SAP code pages](../../07_Real_Data/sap_code_pages/README.md)), and the HANA storage question, which the section above now answers from SAP's own reference guide — it is CESU-8, not UTF-8, and the six-byte supplementary character is documented under `LENGTH` in both the on-prem and Cloud editions. *(Not machine-checked — CI cannot run ABAP.)*
 
 ## Try it
 
@@ -249,3 +281,6 @@ Without the machine: a record layout says the city field is characters 0–7 and
 - [Interfaces and storage](../../10_Best_Practices/interfaces_and_storage/README.md) — the rule that follows from all of it
 - [Unicode publication dates ↗](https://www.unicode.org/history/publicationdates.html) — the primary source for every date here
 - [UTF-8, UTF-16, UTF-32 & BOM FAQ ↗](https://www.unicode.org/faq/utf_bom.html) — the Consortium's own answers, including why the surrogate blocks are where they are
+- [UTR #26: CESU-8 ↗](https://www.unicode.org/reports/tr26/) — the scheme HANA stores, declared obsolete and internal-use-only by the Consortium
+- [SAP HANA SQL Reference Guide, `LENGTH` ↗](https://help.sap.com/docs/hana-cloud-database/sap-hana-cloud-sap-hana-database-sql-reference-guide/length-function-string) — where SAP states the six-byte supplementary character
+- [ABAP: Unicode character representation ↗](https://help.sap.com/doc/abapdocu_752_index_htm/7.52/en-US/abenunicode_char_represent_glosry.htm) — SAP's own "the ABAP language supports the subset UCS-2"

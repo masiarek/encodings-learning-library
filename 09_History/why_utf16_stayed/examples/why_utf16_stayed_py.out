@@ -93,3 +93,23 @@
    UCS-2 as a widening of an existing rule (1 char = 1 byte became
    1 char = 2 bytes) and could not adopt UTF-8 as anything short of
    rewriting every offset in every program that ever touched the record.
+
+6. AND IT REACHES THE DATABASE: CESU-8
+------------------------------------------------------------------------
+   SAP HANA does not store UTF-8. It stores CESU-8: every BMP character
+   exactly as UTF-8 would, and every character above U+FFFF as a surrogate
+   PAIR with each half then encoded separately.
+
+     string     utf-8                      cesu-8
+     'café'     63 61 66 c3 a9             63 61 66 c3 a9
+     '😀'       f0 9f 98 80                ed a0 bd ed b8 80
+
+   Identical for 'café'. For 😀 it is 4 bytes against 6 —
+   and the six are not valid UTF-8 at all:
+     cesu8('😀').decode('utf-8') raises: invalid continuation byte
+
+   So the length answer travels the whole stack unchanged. HANA's LENGTH()
+   counts that one character as 2, exactly as ABAP's strlen( ) and Java's
+   .length() do — because CESU-8 exists to keep UTF-16's unit semantics
+   inside something UTF-8-shaped. A 1991 decision, still being honoured by
+   an in-memory column store designed twenty years later.

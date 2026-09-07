@@ -140,3 +140,41 @@ print("   whole reason a language built on fixed-length fields could adopt")
 print("   UCS-2 as a widening of an existing rule (1 char = 1 byte became")
 print("   1 char = 2 bytes) and could not adopt UTF-8 as anything short of")
 print("   rewriting every offset in every program that ever touched the record.")
+
+# ------------------------------------------------------------------ 6
+head(6, "AND IT REACHES THE DATABASE: CESU-8")
+
+
+def cesu8(s):
+    """UTF-8 applied to UTF-16's surrogate pairs, which is not the same thing."""
+    out = bytearray()
+    for ch in s:
+        if ord(ch) > 0xFFFF:
+            u16 = ch.encode("utf_16_be")
+            for half in (u16[:2], u16[2:]):
+                out += chr(int.from_bytes(half, "big")).encode("utf_8", "surrogatepass")
+        else:
+            out += ch.encode("utf_8")
+    return bytes(out)
+
+
+print("   SAP HANA does not store UTF-8. It stores CESU-8: every BMP character")
+print("   exactly as UTF-8 would, and every character above U+FFFF as a surrogate")
+print("   PAIR with each half then encoded separately.")
+print()
+print(f"     {'string':<10} {'utf-8':<26} cesu-8")
+for s in ["café", emoji]:
+    print(f"     {pad(repr(s), 10)} {s.encode('utf_8').hex(' '):<26} {cesu8(s).hex(' ')}")
+print()
+print(f"   Identical for 'café'. For {emoji} it is {len(emoji.encode('utf_8'))} bytes against {len(cesu8(emoji))} —")
+print("   and the six are not valid UTF-8 at all:")
+try:
+    cesu8(emoji).decode("utf_8")
+except UnicodeDecodeError as e:
+    print(f"     cesu8('{emoji}').decode('utf-8') raises: {e.reason}")
+print()
+print("   So the length answer travels the whole stack unchanged. HANA's LENGTH()")
+print("   counts that one character as 2, exactly as ABAP's strlen( ) and Java's")
+print("   .length() do — because CESU-8 exists to keep UTF-16's unit semantics")
+print("   inside something UTF-8-shaped. A 1991 decision, still being honoured by")
+print("   an in-memory column store designed twenty years later.")
