@@ -9,7 +9,7 @@ the field   'd131dd02c5e6eec4693d9a0698aff95'   (31 characters, described as '32
    That is the corruption, and it looks like a repair.
 
 2. AS BYTES -- bytes.fromhex(s)
-   ValueError: fromhex() arg must contain an even number of hexadecimal digits
+   ValueError -- refused, before a single byte is built
    The width IS the data here, and 31 does not divide by 2, so Python
    refuses. This is the reading you want: it is the only one of the
    three that knows a hash is 16 bytes rather than a large integer.

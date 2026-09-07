@@ -21,8 +21,13 @@ print()
 print("2. AS BYTES -- bytes.fromhex(s)")
 try:
     bytes.fromhex(FIELD)
-except ValueError as e:
-    print(f"   ValueError: {e}")
+    print("   accepted -- which would be news")
+except ValueError:
+    # The TYPE, never the message. CPython has reworded this one between
+    # releases, so quoting it would make the answer key a claim about which
+    # Python ran it -- the same reason the diff/cmp page keeps cmp's stderr out
+    # of its key and in a dated fence.
+    print("   ValueError -- refused, before a single byte is built")
 print("   The width IS the data here, and 31 does not divide by 2, so Python")
 print("   refuses. This is the reading you want: it is the only one of the")
 print("   three that knows a hash is 16 bytes rather than a large integer.")
