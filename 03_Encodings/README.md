@@ -15,6 +15,7 @@ A code point is a number, and a file is bytes. An **encoding** is the rule for w
 | 7 | [Mojibake](mojibake/README.md) | Why `Ã©`, and how do I name the culprit from the garbage alone? | written, 2026-09-05 |
 | 8 | [Escaping into ASCII](escaping_into_ascii/README.md) | Why is one emoji `\ud83d\ude00` in JSON, `%F0%9F%98%80` in a URL, and neither in an email header? | written, 2026-09-06 |
 | 9 | [Binary to text](binary_to_text/README.md) | How does a PNG get through a channel that carries only ASCII, and why is `base64` of a word not one answer? | written, 2026-09-06 |
+| 10 | [The alphabet is not the encoding](base32_alphabets/README.md) | A menu offers four kinds of Base32 and prints four different strings — are those four encodings, or one? | written, 2026-09-07 |
 
 ## The through-line
 

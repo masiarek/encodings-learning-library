@@ -201,14 +201,14 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 
 ### 1.11 Base64 and binary-to-text — **core (small)**
 
-*Covered:* [Binary to text](03_Encodings/binary_to_text/README.md) · [Escaping into ASCII](03_Encodings/escaping_into_ascii/README.md)
+*Covered:* [Binary to text](03_Encodings/binary_to_text/README.md) · [Escaping into ASCII](03_Encodings/escaping_into_ascii/README.md) · [The alphabet is not the encoding](03_Encodings/base32_alphabets/README.md)
 
 **Imported:** Base64 · alphabet · padding · algorithm · Base64URL · MIME Base64 · Base32 · Base16 · Base85 / ASCII85 · Base58 · Base62 · data URI · RFC 4648 · padding removal
 
 **Missing — add:**
 
 - ~~**Base64 is not encryption and not compression**~~ · ~~**Base64 has no charset**~~ · ~~**Non-canonical Base64**~~ · ~~**JOSE / JWT base64url without padding**~~ · ~~**`base64 -d` tolerance differs by implementation**~~ — all written 2026-09-06 on [Binary to text](03_Encodings/binary_to_text/README.md), which also added the split the imported list did not have: **does the base divide a power of two?** Base16/32/64/Ascii85 have a fixed quantum and stream; Base58/62/36 are big-integer division over the whole message, and the reference tables sort them together on an efficiency percentage as though the difference were bandwidth.
-- **Z85, Base45 (EU digital covid certificates), Crockford Base32, Bech32, Base58Check, multibase** — the alphabets designed around human transcription errors. Bech32's checksum and Base58Check's leading-`1` rule are named on the page; the rest are not.
+- ~~**Crockford Base32**~~, and with it base32hex and z-base-32 — written 2026-09-07 on [The alphabet is not the encoding](03_Encodings/base32_alphabets/README.md), which found the thing the imported list implies is not true: these are *not* all one encoding with four alphabets. Three are (a 32-character `tr` converts between them), but Crockford's specification is a notation for **numbers**, so it zero-extends the high end where RFC 4648 pads the low end, and the two readings of the same bytes disagree at every length not divisible by five. **Z85, Base45 (EU digital covid certificates), Bech32, Base58Check, multibase** are still open — Bech32's checksum and Base58Check's leading-`1` rule are named on the binary-to-text page; the rest are not, and Crockford's own **check symbol** (modulo 37, five extra symbols) is named but not implemented anywhere here.
 - **PEM armor, BinHex, MacBinary** — the historical wrappers.
 - **Data URIs** — `data:image/png;base64,…`, where the charset question and the base64 question sit in one string, and the media type is the only thing that answers either.
 

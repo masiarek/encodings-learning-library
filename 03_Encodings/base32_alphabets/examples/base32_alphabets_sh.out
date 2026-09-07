@@ -1,0 +1,70 @@
+
+1. THE COMMAND YOU CANNOT ASSUME IS THERE
+------------------------------------------------------------------------
+
+   macOS 26 ships /usr/bin/base64 -- the FreeBSD one -- and there is
+   no /usr/bin/base32 beside it. On the machine this was measured the
+   name `base32` resolved to Homebrew's GNU coreutils 9.11 instead.
+   ubuntu:24.04 has both, out of the one coreutils package.
+
+   So a pipeline that reaches for base32 runs on a developer's Mac and
+   on CI and fails on a colleague's -- with `command not found`, which
+   at least stops rather than guessing. base32hex, Crockford and
+   z-base-32 have no command on either platform: GNU's `basenc` covers
+   base32hex, and nothing at all covers the other two.
+
+   That is why the rest of this script is tr.
+
+2. A RENAME IS ONE tr
+------------------------------------------------------------------------
+
+   RFC 4648     KRUGKIDROVUWG2ZAMJZG653OEBTG66BANJ2W24DTEBXXMZLSEB2GQZJANRQXU6JAMRXWOLQ
+   base32hex    AHK6A83HELKM6QP0C9P6UTRE41J6UU10D9QMQS3J41NNCPBI41Q6GP90DHGNKU90CHNMEBG
+   Crockford    AHM6A83HENMP6TS0C9S6YXVE41K6YY10D9TPTW3K41QQCSBJ41T6GS90DHGQMY90CHQPEBG
+   z-base-32    ktwgkedtqiwsg43ycj3g675qrbug66bypj4s4hdurbzzc3m1rb4go3jyptozw6jyctzsqmo
+
+   and back     KRUGKIDROVUWG2ZAMJZG653OEBTG66BANJ2W24DTEBXXMZLSEB2GQZJANRQXU6JAMRXWOLQ
+
+   Four names for one encoding. Each tr is 32 characters in and 32
+   out, one for one, so no bit has moved and the round trip is exact.
+   Compare that with converting base32 to base64, which cannot be a
+   tr at all: those two cut the bits into different-sized pieces, so
+   the only way across is to decode to bytes and encode again.
+
+3. THE SAME FOUR VALUES, SORTED TWICE
+------------------------------------------------------------------------
+
+   bytes      base32       base32hex
+   0011       AAIQ====     008G====
+   0033       AAZQ====     00PG====
+   0034       AA2A====     00Q0====
+   00ff       AD7Q====     03VG====
+
+   sorted as base32 text:     AA2A==== AAIQ==== AAZQ==== AD7Q====
+   sorted as base32hex text:  008G==== 00PG==== 00Q0==== 03VG====
+
+   Read the first list against the table: sorting the base32 text
+   puts 0034 first and 0011 second, scrambling four values that were
+   already in order. The base32hex list is still in byte order, and
+   RFC 4648 section 7 says that is the whole reason base32hex exists.
+
+   The '=' padding sorts too, which is a second reason a base32 string
+   makes a poor sort key: it is shorter than the alphabet question and
+   just as easy to miss.
+
+4. WHAT tr CANNOT DO
+------------------------------------------------------------------------
+
+   a Crockford typo             AHM6A83HENMP6TS0
+   the same, misread by eye     AHM6A83HENMP6TSO
+
+   The last character is the letter O where the data had the digit 0.
+   Crockford's alphabet has no O, so a decoder is entitled to repair
+   it -- and tr can do exactly that, one substitution:
+
+   tr 'IiLlOo' '111100'         AHM6A83HENMP6TS0
+
+   That repair is only available because the alphabet left those
+   letters out. Run the same tr over an RFC 4648 string and it
+   destroys it: I, L and O are all live symbols there, standing for
+   8, 11 and 14, and nothing in the string says which was meant.

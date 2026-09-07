@@ -134,6 +134,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "mojibake",
         "escaping_into_ascii",
         "binary_to_text",
+        "base32_alphabets",
     ],
     "04_Python": [
         "README.md",

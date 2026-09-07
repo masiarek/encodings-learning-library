@@ -1,0 +1,157 @@
+
+1. THE SAME FORTY-FOUR BYTES, FOUR TIMES
+------------------------------------------------------------------------
+   the text           'The quick brown fox jumps over the lazy dog.'
+   its bytes          44 = 352 bits, which is 70.4 five-bit pieces
+
+   RFC 4648           KRUGKIDROVUWG2ZAMJZG653OEBTG66BANJ2W24DTEBXXMZLSEB2GQZJANRQXU6JAMRXWOLQ
+   base32hex          AHK6A83HELKM6QP0C9P6UTRE41J6UU10D9QMQS3J41NNCPBI41Q6GP90DHGNKU90CHNMEBG
+   Crockford          AHM6A83HENMP6TS0C9S6YXVE41K6YY10D9TPTW3K41QQCSBJ41T6GS90DHGQMY90CHQPEBG
+   z-base-32          ktwgkedtqiwsg43ycj3g675qrbug66bypj4s4hdurbzzc3m1rb4go3jyptozw6jyctzsqmo
+
+   Four strings of 71 characters, no two alike, one input. A dropdown
+   that offers all four calls them all Base32, and a reader is left to
+   assume they are four encodings. They are one encoding written in
+   four alphabets, and the four differ in nothing else -- with one
+   caveat and one outright exception, in sections 6 and 4.
+
+   The caveat is z-base-32. Its specification is written over BITS,
+   not bytes: an encoder that knows the exact bit length may stop
+   short. The line above is its octet-mode reading, which is the one
+   a tool handed a byte string can give -- and in octet mode it is
+   exactly the rename it looks like.
+
+   padded             KRUGKIDROVUWG2ZAMJZG653OEBTG66BANJ2W24DTEBXXMZLSEB2GQZJANRQXU6JAMRXWOLQ=   72 characters
+   unpadded           KRUGKIDROVUWG2ZAMJZG653OEBTG66BANJ2W24DTEBXXMZLSEB2GQZJANRQXU6JAMRXWOLQ   71 characters
+
+   RFC 4648 pads to a multiple of 8 characters; Crockford and z-base-32
+   define no padding at all. So the '=' is a fifth difference, and the
+   character count alone -- 71, not 72 -- tells you the padding is off.
+
+2. THREE OF THE FOUR ARE ONE str.translate AWAY
+------------------------------------------------------------------------
+   RFC 4648 of b'cat'                 MNQXI
+   .translate(RFC -> base32hex)       CDGN8
+   .translate(RFC -> Crockford)       CDGQ8
+   .translate(RFC -> z-base-32)       cpoze
+
+   and straight back again            MNQXI   recovered: True
+
+   A rename is invertible and loses nothing, because no bit moved. The
+   bytes were cut into five-bit pieces once; each scheme then writes
+   the SAME pieces with a different set of thirty-two symbols. That is
+   why one `tr` in a shell pipe converts between them -- see the
+   terminal section on the page.
+
+3. THE ORDER OF THE THIRTY-TWO SYMBOLS IS A FEATURE, NOT A STYLE
+------------------------------------------------------------------------
+   RFC 4648 gives a reason for base32hex, and it is a property of the
+   ordering alone: 'encoded data maintains its sort order when the
+   encoded data is compared bit-wise' (section 7).
+
+   Tested over every two-byte string -- all 65,536 of them:
+
+   sorting the base32 text == sorting the bytes     False
+   sorting the base32hex text == sorting the bytes  True
+
+   the first place standard base32 gets it wrong:
+     0033     -> AAZQ====
+     0034     -> AA2A====      but 0033 < 0034
+
+   The cause is ASCII, not base32. Standard base32 spells value 0 as
+   'A' and value 26 as '2', and '2' sorts BEFORE 'A', so the text order
+   and the byte order disagree the moment a value crosses 26.
+   base32hex spells 0..31 as 0-9 then A-V, which is already ascending
+   in ASCII, so the two orders can never disagree.
+
+   That is worth a database index, and it is invisible on any table
+   that lists these schemes by bits-per-character.
+
+4. CROCKFORD'S BASE32 IS A NOTATION FOR NUMBERS
+------------------------------------------------------------------------
+   Its specification opens: 'Base 32 is a textual 32-symbol notation
+   for expressing NUMBERS' -- not byte strings. And on a short value it
+   says: 'zero-extend the number to make its bit-length a multiple of
+   5'. A number is zero-extended at the HIGH end. RFC 4648 pads the
+   LOW end of the last group. Same bits, opposite ends.
+
+   the bytes                b'Hi'  =  4869  =  0100100001101001
+   RFC 4648: pad the right  01001 00001 10100 10000   -> 91MG
+   Crockford: extend left   00000 10010 00011 01001    -> 0J39
+
+   Two strings. Both are 'Crockford's Base32 of these two bytes'. A
+   converter that shows you an alphabet dropdown gives you the first;
+   ULID, which specifies Crockford's Base32 for a 128-bit number,
+   is built on the second.
+
+   The two readings agree exactly when there is nothing to extend --
+   when the bit count is already a multiple of 5, i.e. when the byte
+   count is a multiple of 5. Checked, by length:
+
+    bytes  % 5   tested   agreed   verdict
+        1    1      256        1   only the all-zero string
+        2    2    65536        1   only the all-zero string
+        3    3      125        1   only the all-zero string
+        4    4      625        1   only the all-zero string
+        5    0     3125     3125   all of them
+        6    1     5209        1   only the all-zero string
+        7    2     4112        1   only the all-zero string
+        8    3     4112        1   only the all-zero string
+        9    4     4104        1   only the all-zero string
+       10    0     4097     4097   all of them
+       11    1     4097        1   only the all-zero string
+       12    2     4097        1   only the all-zero string
+       13    3     4097        1   only the all-zero string
+       14    4     4097        1   only the all-zero string
+       15    0     4097     4097   all of them
+
+   Lengths 1 and 2 are exhaustive -- every one of the 256 and the
+   65,536; the rest sweep a fixed five-byte symbol set. The pattern is
+   not a sample artefact, it is the arithmetic above: a value that is
+   not a whole number of five-bit pieces has no agreed spelling, and
+   the one string that survives every length is the one made of
+   zeros, where it makes no difference which end you extend.
+
+5. AND A NUMBER HAS NO LEADING ZEROS
+------------------------------------------------------------------------
+   000041     chunks 00042    as a number 21
+   0041       chunks 010G     as a number 21
+   41         chunks 84       as a number 21
+
+   Three different byte strings; one number, 65. The chunked reading
+   keeps the length because it is encoding BYTES; the number reading
+   cannot, because 065 and 65 are the same number. Any format that
+   uses the number reading has to declare a width, and ULID does:
+
+   ULID                   128 bits, canonically 26 characters
+   26 x 5                 130 bits -- 2 more than the value has
+   its two fields         48-bit time in 10 chars (50 bits), 80-bit random in 16 (80 bits)
+
+   80 is a multiple of 5 and 48 is not, which is why only the
+   timestamp half needs the zero-extension at all.
+
+6. WHICH LETTERS ARE MISSING, AND WHAT A DECODER DOES ABOUT IT
+------------------------------------------------------------------------
+   Crockford    drops I L O U
+   z-base-32    drops 0 2 l v
+
+   Crockford's reasons are I and L looking like 1, O looking like 0,
+   and U 'to reduce the chance of accidental obscenity'. z-base-32
+   drops a different four (0, l, v, 2) and then PERMUTES the rest, so
+   that the symbols a person meets most often are the ones easiest to
+   read and say. Neither list is about bits. Both are about a human
+   reading a code off a screen and typing it somewhere else.
+
+   The standard alphabet made no such allowance, so its decoders have
+   to. Python's has carried the repair since the module was written:
+
+   b32encode(b'cat')                            MNQXI===
+   lower case, casefold=True                    b'cat'
+   someone typed 1 for I and 0 for O            MNQX1===
+   b32decode(..., casefold=True, map01=b'I')    b'cat'
+
+   map01 has to be told which letter the digit 1 meant, because in the
+   standard alphabet both I and L are live symbols with different
+   values -- the ambiguity Crockford's alphabet removes by not having
+   them. A repair at the decoder is a strictly weaker fix than an
+   alphabet that cannot be mistyped.
