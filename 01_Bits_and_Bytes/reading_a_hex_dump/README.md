@@ -163,7 +163,7 @@ The `dump` function is `xxd` with the pairing removed: slice the bytes sixteen a
 
 | Tool | Reach for it when | Note |
 |---|---|---|
-| [`xxd`](../../11_Tools/xxd/README.md) | you want the default view, or to go back (`xxd -r`) | ships with vim; `-b` for binary, `-g1` to unpair, and `-r` [ignores the text column](../../11_Tools/xxd/README.md) on the way back |
+| [`xxd`](../../11_Tools/xxd/README.md) | you want the default view, or to go back (`xxd -r`) | ships with vim; `-b` for binary, `-g1` to unpair, and `-r` ignores the text column on the way back |
 | [`od -An -tx1 -c`](../../06_Terminal/inspecting_a_file/README.md#the-row-that-makes-things-up) | you are on a machine with nothing else | POSIX, always present; `-c` shows octal for high bytes (set `LC_ALL=C`), and skip `-a` — it makes names up |
 | [`hexdump -C`](../../11_Tools/hexdump/README.md) | you want the text column framed in bars, or somebody else has to read the dump | macOS always, Linux only with `bsdextrautils`; plain `hexdump` swaps every pair, and `-C` is the one view that is identical on both platforms |
 | [`bytes.hex(' ')` ↗](https://docs.python.org/3/library/stdtypes.html#bytes.hex) | you are already in Python | just the middle column, one line |
