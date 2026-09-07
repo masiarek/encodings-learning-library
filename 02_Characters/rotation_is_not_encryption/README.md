@@ -53,7 +53,7 @@ The paragraph above the code fence at the top of this page — the Caesar, Atbas
 
 The line is not *how complicated the table is*; it is **whether there is a secret**. As long as the rule is published, a substitution table is a re-labelling of a character set, which is this library's subject and is why ROT13 lives here. The moment the shift is something you are trying not to reveal, the questions change to *how large is the keyspace*, *what does an attacker see*, and *how long does it take* — and none of those are answered by knowing anything about ASCII.
 
-Section 4 of the Python example shows the shallow end of it: 26 shifts, printed in a column, and you read the plaintext off the screen. That is a ciphertext-only attack, and it is a *reading* exercise. A general substitution alphabet has 26! ≈ 4.03 × 10²⁶ possible tables, far too many to print, and it still falls in an afternoon — because letters are not equally common in English, so counting them recovers the table. **[Frequency analysis ↗](https://en.wikipedia.org/wiki/Frequency_analysis) is the real subject there, and it is a fact about language, not about encodings.** A page that explained it would be a cryptography page in an encodings library, so it is not here.
+Section 4 of the Python example shows the shallow end of it: 26 shifts, printed in a column, and you read the plaintext off the screen. That is a ciphertext-only attack, and it is a *reading* exercise. A general substitution alphabet has 26! ≈ 4.03 × 10²⁶ possible tables, far too many to print, and it still falls in an afternoon — because letters are not equally common in English, so counting them recovers the table. **[Frequency analysis ↗](https://en.wikipedia.org/wiki/Frequency_analysis) is the real subject there, and it is a fact about language, not about encodings.** A page that explained it would be a cryptography page in an encodings library, so it is not here — it is [next door ↗](https://masiarek.github.io/cryptography-learning-library/02_Classical_Ciphers/frequency_analysis/index.html), in the sibling library this page's scope note started (2026-09-07), where a program does the whole break and never looks at the key.
 
 ## In Python
 
@@ -271,4 +271,5 @@ Without the machine: ROT13 applied twice returns the input — for which other s
 - [Encode and decode are verbs](../../03_Encodings/encode_and_decode_are_verbs/README.md) — why `str.encode` refuses a `str` → `str` transform
 - [Logical and visual order](../logical_and_visual_order/README.md) — what `U+2068` actually does
 - [What you see is not what runs](../../12_Adversarial/trojan_source/README.md) — the same characters, chosen on purpose
-- [Frequency analysis ↗](https://en.wikipedia.org/wiki/Frequency_analysis) — where the cryptography starts, and where this library stops
+- [Breaking a cipher by counting ↗](https://masiarek.github.io/cryptography-learning-library/02_Classical_Ciphers/frequency_analysis/index.html) — where the cryptography starts, in the sibling library that begins where this page stops
+- [Frequency analysis ↗](https://en.wikipedia.org/wiki/Frequency_analysis) — the technique's own history
