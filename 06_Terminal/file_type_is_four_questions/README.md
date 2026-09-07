@@ -47,6 +47,8 @@ This is the only place the *kernel* looks at content, and it is not answering "w
 
 If no handler claims the bytes, the file does not run and `execve` returns `ENOEXEC`. The [C example](#in-c) calls `execve` directly on four files that differ only at offset zero, and shows the two refusals — including the one that reports `ENOENT` for a file that plainly exists, because the thing that was missing is the *interpreter named inside it*.
 
+**This question has a page of its own, and it is the one you will need in anger.** Here the shebang is one of four answerers, demonstrated on files that differ obviously. [The first two bytes](../the_first_two_bytes/README.md) stays on this question for a whole page and makes the files differ *invisibly* — three bytes of BOM in front of `#!`, or a single `0d` at the end of that line — so the same `ENOEXEC` and the same `ENOENT` arrive from a file that looks correct in every editor. Both refusals are worth meeting twice: this page produces the `ENOENT` from an interpreter that was never there, which is the mechanism stated as plainly as it can be; that page produces it from `#!/bin/sh`, an interpreter that *is* there, which is the mechanism as the bug you will actually be handed.
+
 `binfmt_misc` is the extensible version: writing a magic string and an interpreter path into `/proc/sys/fs/binfmt_misc/register` teaches a running Linux kernel to launch a Java class, a Mono `.exe`, or an ARM binary under `qemu`. It is the only pluggable content-sniffing a kernel has, and it exists purely to answer *how do I run this*.
 
 ## Question three — what is in it?
@@ -291,6 +293,7 @@ magic.from_file(p)           # question three — python-magic, a real libmagic 
 
 ## See also
 
+- [The first two bytes](../the_first_two_bytes/README.md) — question two on its own, at the level of detail a broken shebang actually demands: the invisible bytes, the shell that runs the file anyway, and the exit status it hands you
 - [`file` guesses](../file_guesses/README.md) — where this page stops: once stage three is running, *which encoding* is a guess, and a pure-ASCII file is every encoding at once
 - [Inspecting a file](../inspecting_a_file/README.md) — the same tool inside a workflow: which column of a dump is the file and which is the tool guessing
 - [Locale and `LC_CTYPE`](../locale_and_lc_ctype/README.md) — the other invisible input to what a tool decides about your bytes
