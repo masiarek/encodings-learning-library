@@ -46,6 +46,20 @@ Take one working script and make two copies, each damaged in a way nothing on a 
 | `bom.sh` | `ef bb bf 23` | no signature | `ENOEXEC` |
 | `crlf.sh` | `23 21 2f 62` | `#!`, then the path `/bin/sh\r` | `ENOENT` |
 
+`file(1)` is not fooled by any of this, which is the point. It calls three of the four shell scripts, and it even names the mark:
+
+```text title="Measured 2026-09-07 — macOS 26 (file-5.41) and ubuntu:24.04 (file-5.45). Not machine-checked: file's English wording is version-dependent (the word `executable` moved between 5.41 and 5.44), so only the MIME forms are safe to record."
+                 macOS, file-5.41                                  Ubuntu, file-5.45
+plain.sh   POSIX shell script text executable, ASCII text    POSIX shell script, ASCII text executable
+bom.sh     POSIX shell script text executable,               POSIX shell script, Unicode text,
+             Unicode text, UTF-8 (with BOM) text               UTF-8 (with BOM) text executable
+crlf.sh    POSIX shell script text executable, ASCII         POSIX shell script, ASCII text executable,
+             text, with CRLF line terminators                  with CRLF line terminators
+none.sh    ASCII text                                        ASCII text
+```
+
+So on `bom.sh` the two answers are flatly opposed: `file` says *POSIX shell script*, and even tells you there is a BOM; the kernel says *this is not a program*. Neither is wrong, because they were asked different questions — `file` reads a magic database looking for a signature **anywhere it has a rule for**, and the kernel compares **offset 0**. That is the whole subject of [File type is four questions](../file_type_is_four_questions/README.md), and `bom.sh` is the cleanest example of the disagreement this library has.
+
 **The BOM lands in front of the `#!`.** A [byte-order mark](../../03_Encodings/byte_order_and_bom/README.md) is `ef bb bf` in UTF-8, and an editor set to "UTF-8 with BOM" writes it at offset 0 of every file it saves. The `#!` is still in the file — it is at offset 3 — but the kernel does not go looking for it. It compares offset 0, finds `ef`, and concludes the file is not a program. The `#!` might as well not be there.
 
 **The CR lands after it.** A file saved with Windows line endings ends each line `0d 0a`. The kernel finds `#!` exactly where it expects, then reads forward to the `0a` and takes everything between as the interpreter's path — which is now `/bin/sh` followed by a carriage return. That is a perfectly legal filename, and nothing on the system has it. So you get an error saying the file does not exist, about a file that plainly does, and it names `/bin/sh` — which also plainly exists. The path in the message and the path the kernel looked for differ by one byte that the message has no way to draw.
