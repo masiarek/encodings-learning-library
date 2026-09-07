@@ -436,7 +436,7 @@ The imported list's largest section, and the one furthest from this library's su
 
 ### 4.1 Line endings — **core**
 
-*Covered:* stub: [CRLF vs LF](07_Real_Data/crlf_vs_lf/README.md) · [The trailing newline](06_Terminal/trailing_newline/README.md)
+*Covered:* [CRLF vs LF](07_Real_Data/crlf_vs_lf/README.md) — written 2026-09-07, and it takes `dos2unix` / `tr` / `sed`, `core.autocrlf`, `.gitattributes`, universal newlines, newline translation and the mandatory-CRLF protocols with it · [The trailing newline](06_Terminal/trailing_newline/README.md)
 
 **Imported:** line terminator · CR · LF · CRLF · NEL · LS `U+2028` · PS `U+2029` · `dos2unix` / `unix2dos` · `core.autocrlf` · `core.eol` · `.gitattributes` · universal newlines · newline translation · SMTP CRLF
 
@@ -446,8 +446,8 @@ The imported list's largest section, and the one furthest from this library's su
 - **`U+2028` in a JavaScript string literal was a syntax error until ES2019** — the JSON-is-not-a-JS-subset bug.
 - **A file with no trailing newline is not a text file by POSIX** — `wc -l` says 0 for a two-byte file. Already measured on [The trailing newline](06_Terminal/trailing_newline/README.md).
 - **`git diff`'s "\ No newline at end of file"** — the one place the rule becomes visible to everyone.
-- **CRLF in HTTP, SMTP, FTP and NNTP is mandatory** — and CRLF injection into a header is [response splitting](12_Adversarial/in_band_signals/README.md).
-- **Mixed line endings in one file** — what every editor does silently and no tool agrees about.
+- ~~**CRLF in HTTP, SMTP, FTP and NNTP is mandatory**~~ — written 2026-09-07 on [CRLF vs LF](07_Real_Data/crlf_vs_lf/README.md), which puts it where it explains something: those protocols were drafted while DOS was current, which is why the ending nobody on a Unix machine wants is the one the wire requires. The injection half — CRLF inside a header field is [response splitting](12_Adversarial/in_band_signals/README.md) — was already there.
+- ~~**Mixed line endings in one file**~~ — what every editor does silently, measured 2026-09-07 on [CRLF vs LF](07_Real_Data/crlf_vs_lf/README.md). "No tool agrees" turned out to be one tool short of true: `file` says `with CRLF, LF line terminators` on both platforms and is the only one that mentions the disagreement at all — `grep`, `cut` and `wc` each answer for their own line and never say the file is inconsistent.
 
 ### 4.2 Tokenizing, lexing and parsing — **adjacent**
 

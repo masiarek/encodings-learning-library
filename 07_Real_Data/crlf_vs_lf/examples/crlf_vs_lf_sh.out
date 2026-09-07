@@ -1,0 +1,144 @@
+
+1. FOUR FILES, AND THE ONE COMMAND THAT NAMES THEM
+------------------------------------------------------------------------
+  unix.txt   ASCII text
+  win.txt    ASCII text, with CRLF line terminators
+  mac.txt    ASCII text, with CR line terminators
+  mixed.txt  ASCII text, with CRLF, LF line terminators
+
+  file(1) reads the ending straight out of the bytes and says so in
+  words. It is the fastest question to ask about a file somebody sent
+  you, and the last line shows it will tell you when a file has BOTH.
+
+$ xxd unix.txt
+00000000: 6f6e 650a 7477 6f0a                      one.two.
+
+$ xxd win.txt
+00000000: 6f6e 650d 0a74 776f 0d0a                 one..two..
+  0d 0a against 0a. One extra byte per line, at the end of each line,
+  and 0d is CR -- the carriage return that was a separate motion on a
+  teletype. Unix kept the line feed; DOS kept both; Windows inherited
+  it and so did every protocol written in the 1980s.
+
+2. WHAT THE SCREEN WILL NOT SHOW YOU
+------------------------------------------------------------------------
+
+$ cat win.txt          (piped through cat -vet, which draws the CR)
+  one^M$
+  two^M$
+
+  Without -vet, cat prints "one" and "two" and you would swear the file
+  was fine. ^M is the CR, $ is the LF, and the pair at the end of every
+  line is the signature of a Windows file. That ^M is what vim shows
+  you, for the same reason -- it is caret notation, not a warning.
+
+$ wc -l < win.txt | tr -d ' '
+2
+
+$ wc -l < mac.txt | tr -d ' '
+0
+  Two lines, and zero. wc -l counts 0a bytes and the classic-Mac file
+  has none at all, so a perfectly readable two-line file reports no
+  lines -- the same arithmetic as a missing trailing newline, one byte
+  along.
+
+3. THREE PIPELINES THAT QUIETLY GIVE THE WRONG ANSWER
+------------------------------------------------------------------------
+  grep -c "^two$"     unix 1      win 0
+  a CSV field, cut    unix 59     win 590d
+  [ "$v" = "Y" ]      NO MATCH
+
+  The anchored grep finds nothing, because $ anchors after the CR, not
+  before it. cut hands back 59 0d where you expected 59. And the shell
+  compares two strings that print identically and are not equal. Every
+  one of those exits 0. Nothing is reported; a report just comes out
+  empty, or a lookup silently matches nothing.
+
+4. STRIPPING IT: TWO COMMANDS THAT ARE NOT THE SAME
+------------------------------------------------------------------------
+
+$ tr -d '\r' < win.txt | xxd
+00000000: 6f6e 650a 7477 6f0a                      one.two.
+
+$ sed 's/\r$//' win.txt | xxd
+00000000: 6f6e 650a 7477 6f0a                      one.two.
+  Same answer here, and they are not the same command. tr deletes
+  EVERY 0d in the file, wherever it sits. sed deletes one only where a
+  line ends. On a file whose CRs are all line endings that is the same
+  file; on one with a CR in the middle of a line it is not:
+
+$ printf 'a\rb\r\n' | tr -d '\r' | xxd
+  00000000: 6162 0a                                  ab.
+
+$ printf 'a\rb\r\n' | sed 's/\r$//' | xxd
+  00000000: 610d 620a                                a.b.
+
+  tr produced "ab" and sed produced "a", CR, "b". Which one you want
+  depends on whether a CR that is not a line ending is damage or data,
+  and only you know that. Reach for sed when the file is text somebody
+  saved on Windows, and for tr when you want every CR gone.
+
+  Now the case where NEITHER is right. A CSV may hold a real line break
+  inside a quoted field, and both of these are line-oriented tools that
+  split on 0a -- so to both of them that break is just another line
+  ending:
+
+$ printf '1,"a\r\nb"\r\n' | tr -d '\r' | xxd
+  00000000: 312c 2261 0a62 220a                      1,"a.b".
+
+$ printf '1,"a\r\nb"\r\n' | sed 's/\r$//' | xxd
+  00000000: 312c 2261 0a62 220a                      1,"a.b".
+
+  The same wrong answer twice: a customer note that said CRLF now says
+  LF, and the file still parses, so nothing will ever report it. There
+  is no sed or tr or awk that gets this right, because getting it right
+  needs a parser that knows which 0a bytes are inside quotes. Fix the
+  endings of a quoted CSV in the program that reads it -- section 4 of
+  the Python run -- and not in the pipeline in front of it.
+
+  dos2unix does the sed job with a safety net (it refuses a binary file
+  and keeps the mode bits) and is the right answer at a keyboard -- but
+  it ships with neither macOS nor a stock Ubuntu, so it is not used
+  here and should not go in a script you expect to run anywhere.
+
+5. AND BACK THE OTHER WAY
+------------------------------------------------------------------------
+
+$ sed 's/$/\r/' unix.txt | xxd
+00000000: 6f6e 650d 0a74 776f 0d0a                 one..two..
+  tr cannot do this direction at all -- tr substitutes and deletes, it
+  never inserts. This is the sed to reach for when a Windows consumer
+  insists, and it is what unix2dos does.
+
+6. A SCRIPT SAVED WITH CRLF
+------------------------------------------------------------------------
+  the script:  #!/bin/bash^M$ echo hello^M$
+  bash greet.sh prints:  68656c6c6f0d0a
+
+  68 65 6c 6c 6f is "hello", and then 0d 0a. The CR was never a line
+  ending to bash -- it was the last character of the ARGUMENT to echo,
+  so the script now prints an invisible carriage return into whatever
+  reads it. It ran. It even looks right on screen.
+
+  Give it a block and it stops running at all:
+  bash block.sh   exit=2   (a syntax error, on a script with no
+                            syntax error in it -- "fi" followed by a
+                            CR is not the word fi)
+
+  And when the kernel runs it directly, the CR joins the interpreter
+  path: the shebang asks for "/bin/bash", CR, which does not exist. Both
+  the message and the exit status for THAT differ by platform, so
+  neither can be recorded here -- "The first two bytes" compares three
+  shells side by side and is where that half of the story lives.
+
+7. THE FILE THAT IS BOTH
+------------------------------------------------------------------------
+  mixed.txt  ASCII text, with CRLF, LF line terminators
+
+$ cat -vet mixed.txt
+one^M$
+two$
+  One CRLF line and one LF line, which is what every editor produces
+  the moment two people with different settings touch one file. file(1)
+  names both. Nothing else here will: grep, cut and wc each answer for
+  their own line and never mention that the file disagrees with itself.

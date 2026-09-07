@@ -11,7 +11,7 @@ Everything before this chapter is mechanism. This chapter is the seven shapes th
 | 3 | [A BOM in a CSV](bom_in_a_csv/README.md) | Why is my first column named `﻿ID`? | written, 2026-09-05 |
 | 4 | [Fixed-width byte fields](fixed_width_byte_fields/README.md) | Why does a 10-byte field hold five Polish letters, and how do I truncate without cutting one in half? | stub |
 | 5 | [Windows-1252 vs Latin-1](windows_1252_vs_latin1/README.md) | Why is the text almost right except for `€` and the quotes? | stub |
-| 6 | [CRLF vs LF](crlf_vs_lf/README.md) | Where do the `^M`s come from? | stub |
+| 6 | [CRLF vs LF](crlf_vs_lf/README.md) | Where do the `^M`s come from? | written, 2026-09-07 |
 | 7 | [Sorting and collation](sorting_and_collation/README.md) | Why does `sorted()` put `Łódź` after `Zebra`, and which locale is right? | stub |
 
 *(ABAP claims on these pages are prose — CI cannot run ABAP — and the Python reproduction beside each one is the checked half.)*

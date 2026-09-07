@@ -1,0 +1,104 @@
+
+1. THREE FILES, ONE TABLE
+------------------------------------------------------------------------
+   Unix         LF   23 bytes   0a 31 2c 41 64 61 2c 59 ...
+   Windows      CRLF 25 bytes   0d 0a 31 2c 41 64 61 2c ...
+   classic Mac  CR   23 bytes   0d 31 2c 41 64 61 2c 59 ...
+
+   Same two lines of text. The middle file is one byte per line longer,
+   and that byte -- 0d, carriage return -- is the entire subject.
+
+2. READING: PYTHON TRANSLATES, AND ONLY ON THIS ONE PATH
+------------------------------------------------------------------------
+   CRLF file, open(...) default   'id,name,active\n1,Ada,Y\n'
+   CR   file, open(...) default   'id,name,active\n1,Ada,Y\n'
+                                   ^ both arrive as \n. That is
+   'universal newlines': a text-mode read turns \r\n, \r and \n into \n
+   before your code sees anything. It is why a Windows CSV usually just
+   works, and why the day it does not comes as a surprise.
+
+   Now the same file down the other two paths:
+   CRLF file, newline=''           'id,name,active\r\n1,Ada,Y\r\n'
+   CRLF file, open(..., 'rb')      b'id,name,active\r\n1,Ada,Y\r\n'
+
+   Nothing translated. Those are not exotic: newline='' is what the csv
+   module asks for, and bytes are what you get from a socket, a zipfile,
+   a subprocess with text=False, and a database column. The protection
+   covers one path, and the CR is waiting on all the others.
+
+3. THE FIELD THAT QUIETLY STOPS MATCHING
+------------------------------------------------------------------------
+   text.split(chr(10))[1]     '1,Ada,Y\r'
+   .split(',')                ['1', 'Ada', 'Y\r']
+   fields[-1] == 'Y'          False   <- the CR is inside the last field
+   len(fields[-1])            2   <- two characters, and it prints as one
+
+   And here is why the interface half-works rather than failing:
+   int('42\r')                42      numbers survive -- int() strips whitespace
+   float('3.5\r')             3.5     so does float()
+   '42\r' == '42'             False   strings do not
+
+   Quantities reconcile. Keys, codes, flags and dates-as-text do not.
+   A report that adds up correctly and matches nothing is this bug.
+
+   Stripping it, and the near-miss:
+   'Y\r'.rstrip()             'Y'    removes any trailing whitespace
+   'Y\r'.rstrip(chr(10))      'Y\r'  <- asked for \n, left the \r
+   The second is the line people write when they think 'strip the
+   newline'. It is exactly correct and it removes the wrong byte.
+
+4. WRITING: newline= IS A SECOND, SEPARATE DECISION
+------------------------------------------------------------------------
+   csv.writer always emits \r\n of its own. What open() then does to it:
+
+   newline=''        69 64 2c 6e 61 6d 65 0d 0a 31 2c 41 64 61 0d 0a
+   newline='\r\n'    69 64 2c 6e 61 6d 65 0d 0d 0a 31 2c 41 64 61 0d 0d 0a
+
+   Look at the second one: 0d 0d 0a. TWO carriage returns. On write, a
+   newline= of \r\n means 'translate every \n I write into \r\n' -- and
+   the \n the csv module wrote already had a \r in front of it.
+
+   That second line IS Windows' default. newline=None on Windows
+   translates to os.linesep, which is \r\n, so the famous blank row
+   between every record of an Excel-bound CSV is 0d 0d 0a, and this is
+   it reproduced on a Unix machine by naming the ending by hand.
+   as text:            'id,name\r\r\n1,Ada\r\r\n'
+
+   newline='' does not mean 'no newlines'. It means 'translate nothing
+   in either direction' -- and that is why it is the right argument for
+   a csv file on every platform, reading and writing.
+
+5. AND WHY csv ASKS FOR IT: A NEWLINE INSIDE A FIELD
+------------------------------------------------------------------------
+   the file            b'id,note\r\n1,"first\r\nsecond"\r\n'
+   One record. Its second field is a quoted string containing a real
+   line break -- legal CSV, and common in any free-text column.
+
+   newline=''    -> [['id', 'note'], ['1', 'first\r\nsecond']]
+   newline=None  -> [['id', 'note'], ['1', 'first\nsecond']]
+
+   Both parse into one record, so nothing errors and nothing looks
+   wrong. But the field's CONTENT is different: the default read
+   rewrote the bytes INSIDE the value before csv ever saw them. Read a
+   file that way and write it back and you have edited somebody's data
+   without touching it. That is the whole reason the csv docs ask for
+   newline='': line splitting is the parser's job, not open()'s.
+
+6. THE RULE
+------------------------------------------------------------------------
+   reading text you will parse yourself   the default is right: it
+                                          normalises everything to \n
+
+   reading or writing csv                 newline='' -- always, both
+                                          directions, every platform
+
+   comparing, hashing, or byte-counting   open in 'rb'. Text mode has
+                                          already changed the bytes.
+
+   text that did NOT come from open()     assume it has CRs. Sockets,
+                                          zips, HTTP, subprocesses and
+                                          database columns translate
+                                          nothing at all.
+
+   And when you strip: .rstrip() with no argument, or splitlines(),
+   or .rstrip('\r\n'). Never .rstrip('\n') and never [:-1].

@@ -49,7 +49,8 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [The first two bytes](06_Terminal/the_first_two_bytes/README.md) | written, 2026-09-07 — shell and Python; the kernel compares offset 0 and decodes nothing, a BOM and a CR break a shebang two different ways, and the shell's rescue runs the broken file and exits `0` |
 | [06_Terminal](06_Terminal/README.md) — the other three pages | stubs |
 | [A BOM in a CSV](07_Real_Data/bom_in_a_csv/README.md) | written, 2026-09-05 — Python and shell; the decision procedure, and the two platform fingerprints |
-| [07_Real_Data](07_Real_Data/README.md) — the other six pages | stubs (includes [Sorting and collation](07_Real_Data/sorting_and_collation/README.md), added 2026-09-06 — three locales, three different alphabetical orders) |
+| [CRLF vs LF](07_Real_Data/crlf_vs_lf/README.md) | written, 2026-09-07 — Python and shell; the byte that cannot appear in its own output, why the totals reconcile while the keys do not, and git reporting a tree clean when every line on disk differs from the blob |
+| [07_Real_Data](07_Real_Data/README.md) — the other five pages | stubs (includes [Sorting and collation](07_Real_Data/sorting_and_collation/README.md), added 2026-09-06 — three locales, three different alphabetical orders) |
 | [From the telegraph to Unicode](09_History/from_telegraph_to_unicode/README.md) | written, 2026-09-05 |
 | [Why UTF-8 won](09_History/why_utf8_won/README.md) | written, 2026-09-05 |
 | [UTF-8 everywhere](10_Best_Practices/utf8_everywhere/README.md) | written, 2026-09-05 |
