@@ -98,7 +98,7 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 - **`F4 90 80 80` and the RFC 3629 cap** — the 2003 restriction to `U+10FFFF`, and the fact that `iconv` never got the memo. Measured; on [Validation is a boundary](03_Encodings/validation_is_a_boundary/README.md).
 - **UTF-8 in DFA form** — Björn Höhrmann's ~40-line table-driven validator, and Bob Steagall's SIMD version. The bridge from "the rule" to "the code everyone actually ships".
 - **`simdutf` / `simdutf8`** — validation at memory bandwidth. Rust-goal relevant, and a concrete answer to "does this cost anything".
-- **UTF-8B / surrogateescape** — the trick that round-trips undecodable bytes through a `str`, so a filename that is not UTF-8 can still be opened. **PEP 383 in Python; the reason `os.fsdecode` exists.** A genuine gap and squarely in the real-data chapter's territory.
+- **UTF-8B / surrogateescape** — the trick that round-trips undecodable bytes through a `str`, so a filename that is not UTF-8 can still be opened. **PEP 383 in Python; the reason `os.fsdecode` exists.** Written 2026-09-07 as [Bytes that are not text](04_Python/surrogateescape/README.md), in chapter 4 rather than chapter 7 — the mechanism is a Python one, and the real-data chapter can link it.
 - **Modified UTF-8's real home** — the JNI and the `.class` constant pool, not "Java strings".
 - **The maximum byte length of a character** — 4 under RFC 3629, 6 under the original design. Both numbers are in old code.
 

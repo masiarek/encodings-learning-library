@@ -1,0 +1,214 @@
+1. THE BYTE THAT IS NOT TEXT
+------------------------------------------------------------------------
+   A POSIX filename is any bytes except NUL and '/'. It is not
+   required to be UTF-8, and on a disk that has been around a while
+   some of it will not be. Here is one, twelve bytes:
+
+     b'caf\xe9 au lait'
+     63 61 66 e9 20 61 75 20 6c 61 69 74
+
+   Python 3 hands you filenames as str, so somebody has to decode it,
+   and the honest answer is that it cannot be done:
+
+     RAW.decode('utf-8')
+       UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe9 in
+         position 3: invalid continuation byte
+
+   That is correct and it is useless. The file exists, it has a name,
+   and a program that raises here cannot rename it, delete it, or
+   even finish listing the directory it sits in.
+
+2. THE MAPPING
+------------------------------------------------------------------------
+     RAW.decode('utf-8','surrogateescape')         'caf\udce9 au lait'
+
+   len(escaped) = 12, the same as the byte count, and the fourth
+   position now holds one code point that is not a character:
+
+     U+0063 U+0061 U+0066 U+DCE9 U+0020 U+0061 U+0075 U+0020 U+006C U+0061 U+0069 U+0074
+
+   PEP 383 puts every undecodable byte at U+DC00 + byte:
+
+     byte  code point
+     0x80  U+DC80
+     0xC3  U+DCC3
+     0xE9  U+DCE9
+     0xFF  U+DCFF
+     ...
+     every byte 0x80..0xFF lands on U+DC00+byte:  True
+
+   So the escape occupies exactly 128 code points, U+DC80..U+DCFF,
+   one for each byte that could ever need one.
+
+3. AND BYTES BELOW 0x80 ARE REFUSED, ON PURPOSE
+------------------------------------------------------------------------
+   The handler is an ordinary object, so you can ask it directly.
+   Hand it a failure over an ASCII byte and it declines to escape it,
+   re-raising the error it was called to fix:
+
+     handler(error over byte 0x41)
+       UnicodeDecodeError: 'utf-8' codec can't decode byte 0x41 in
+         position 0: invalid start byte
+     handler(error over byte 0x7F)
+       UnicodeDecodeError: 'utf-8' codec can't decode byte 0x7f in
+         position 0: invalid start byte
+     handler(error over byte 0x80)                 ('\udc80', 1)
+     handler(error over byte 0xFF)                 ('\udcff', 1)
+
+   PEP 383 states the reason: smuggled bytes would be a security risk
+   when the target system reads them as characters, 'such as path name
+   separators', so the PEP rejects smuggling bytes below 128. '/' is
+   0x2F and NUL is 0x00; the escape deliberately has no spelling for
+   the bytes that mean something to the kernel.
+
+4. WHY A SURROGATE
+------------------------------------------------------------------------
+   The range has to be one that correctly decoded text can never
+   contain, or the escape would collide with somebody's real data.
+   U+DC80..U+DCFF are unpaired low surrogates: reserved by Unicode for
+   UTF-16's pairing arithmetic, never assigned to a character, and not
+   encodable by any UTF at all --
+
+     chr(0xDCE9).encode('utf-8')
+       UnicodeEncodeError: 'utf-8' codec can't encode character '\udce9'
+         in position 0: surrogates not allowed
+     chr(0xDCE9).encode('utf-16-le')
+       UnicodeEncodeError: 'utf-16-le' codec can't encode character
+         '\udce9' in position 0: surrogates not allowed
+
+   -- which is exactly the property being borrowed. No decode of valid
+   input can produce one, so a str holding one has been through this
+   handler. The idea is Markus Kuhn's, who called it UTF-8b; PEP 383
+   credits him and is candid about what the argument does not cover:
+   'Data obtained from other sources may conflict with data produced
+   by this PEP. Dealing with such conflicts is out of scope of the
+   PEP.' Section 9 is what that sentence looks like in code.
+
+5. THE ROUND TRIP, PROVED BY EXHAUSTION
+------------------------------------------------------------------------
+   The claim is not 'it usually works'. Every one of the 65,536
+   two-byte strings, valid UTF-8 or not, decodes and re-encodes to
+   itself:
+
+     round-trip failures over all 65,536 two-byte strings:  0
+
+   And through the two functions that apply the policy for you, over
+   every single byte a filename may contain:
+
+     os.fsencode(os.fsdecode(b)) != b, for b in 0..255:     0
+
+     sys.getfilesystemencoding()       'utf-8'
+     sys.getfilesystemencodeerrors()   'surrogateescape'
+
+   Those two are what os.listdir(), open(), os.environ and sys.argv
+   already use on this system. You have been running this handler for
+   years without naming it.
+
+6. surrogateescape IS NOT surrogatepass
+------------------------------------------------------------------------
+   Two handlers one letter apart, one input, and the confusion is
+   expensive because both of them succeed:
+
+     escaped.encode('utf-8','surrogateescape')     b'caf\xe9 au lait'
+     escaped.encode('utf-8','surrogatepass')       b'caf\xed\xb3\xa9 au lait'
+
+   surrogateescape puts the byte back: 12 bytes in, 12 bytes out.
+   surrogatepass encodes the surrogate ITSELF, as the three bytes
+   ED B3 A9 -- the spelling the WTF-8 specification gives an unpaired
+   surrogate, and not valid UTF-8 by any reading.
+
+   Mix them and the length changes with no error anywhere:
+
+     surrogatepass out, surrogateescape back in:
+       14 bytes  ->  12 bytes
+       and the two str values in between are equal:  True
+
+   That second line is the finding. The str keeps no record of which
+   handler made it, so one byte and three bytes become the same object
+   the moment they are inside.
+
+7. WHERE IT LEAKS
+------------------------------------------------------------------------
+   The escaped str is an ordinary str until something turns it back
+   into bytes without being told how:
+
+     escaped.encode('utf-8')
+       UnicodeEncodeError: 'utf-8' codec can't encode character '\udce9'
+         in position 3: surrogates not allowed
+     json.dumps(escaped).encode('utf-8')
+       UnicodeEncodeError: 'utf-8' codec can't encode character '\udce9'
+         in position 4: surrogates not allowed
+
+   And it does not travel to every codec even when you do say the
+   handler's name. PEP 383: 'Encodings that are not compatible with
+   ASCII are not supported by this specification.'
+
+     escaped.encode('ascii','surrogateescape')     b'caf\xe9 au lait'
+     escaped.encode('latin-1','surrogateescape')   b'caf\xe9 au lait'
+     escaped.encode('cp1252','surrogateescape')    b'caf\xe9 au lait'
+     escaped.encode('utf-8','surrogateescape')     b'caf\xe9 au lait'
+     escaped.encode('utf-16-le','surrogateescape')
+       UnicodeEncodeError: 'utf-16-le' codec can't encode character
+         '\udce9' in position 3: surrogates not allowed
+     escaped.encode('utf-32-le','surrogateescape')
+       UnicodeEncodeError: 'utf-32-le' codec can't encode character
+         '\udce9' in position 3: surrogates not allowed
+
+   The four that work include 'ascii', which cannot represent the
+   character at all -- the handler returns the raw byte and the codec
+   passes it through. The two that fail are the ones whose own output
+   is code units, where a lone surrogate is illegal on the way out for
+   the same reason it is on the way in.
+
+   Meanwhile every operation that stays inside str succeeds silently:
+
+     len(escaped)                                  12
+     escaped.upper()                               'CAF\udce9 AU LAIT'
+     escaped.startswith('caf')                     True
+     escaped in {escaped: 1}                       True
+     json.dumps(escaped)                           '"caf\\udce9 au lait"'
+
+   That last one is a JSON document containing \udce9 -- syntactically
+   fine, accepted by json.loads, and impossible to write to a UTF-8
+   file. json.dumps did not fail; it deferred.
+
+8. AND PRINTING IT DEPENDS ON THE LOCALE
+------------------------------------------------------------------------
+   sys.stdout is a codec too, with an errors policy chosen at startup
+   from the environment. In this process:
+
+     sys.stdout.encoding  'utf-8'
+     sys.stdout.errors    'surrogateescape'
+
+   Both configurations modelled over a buffer, which is all a text
+   stream is -- same string, same encoding, two error policies:
+
+     errors=strict
+       UnicodeEncodeError: 'utf-8' codec can't encode character '\udce9'
+         in position 3: surrogates not allowed
+     errors=surrogateescape  wrote 12 bytes, positions 3-4 are e9 20
+
+   So the same print() raises on a machine in a UTF-8 locale and puts
+   a raw 0xE9 on the terminal in the C locale, where Python switches
+   UTF-8 mode on and hands stdout this very handler. Neither is a bug
+   and there is no portable answer, so a program that has to SHOW one
+   of these names should ask for the shape it wants:
+
+     escaped.encode('utf-8','backslashreplace')    b'caf\\udce9 au lait'
+
+9. THE ESCAPE IS NOT TAGGED
+------------------------------------------------------------------------
+   Section 6 said the str keeps no record of where its surrogate came
+   from. Here is the consequence, in four lines with no error in them:
+
+     JSON on the wire            "caf\udce9 au lait"
+     json.loads gives            'caf\udce9 au lait'
+     equal to our filename?      True
+     os.fsencode(loaded)         b'caf\xe9 au lait'
+
+   A JSON string may hold any \uXXXX escape, unpaired surrogates
+   included, and Python's decoder accepts them. So anything that
+   parses JSON and then builds a path can write one arbitrary byte per
+   escape into a filename -- a byte that never appeared in the
+   document. This is the conflict PEP 383 put out of scope, and it is
+   yours: check the name you parsed, not the one you print.

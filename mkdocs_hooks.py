@@ -63,6 +63,7 @@ LABEL_OVERRIDES: dict[str, str] = {
     "writing_a_code_point": "Writing a code point",
     "typing_a_character": "Typing a character",
     "pcre2": "PCRE2",
+    "surrogateescape": "surrogateescape",
     # 12_Adversarial: the folder names say what the page is ABOUT (and are
     # permanent URLs); the H1s say what it CLAIMS, which is what belongs in a
     # table of contents.
@@ -148,6 +149,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "README.md",
         "str_vs_bytes",
         "encode_decode_and_errors",
+        "surrogateescape",
         "opening_a_file",
         "normalization",
         "bytes_hex_and_int",

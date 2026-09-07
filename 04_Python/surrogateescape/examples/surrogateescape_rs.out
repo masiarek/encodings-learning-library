@@ -1,0 +1,79 @@
+1. THE SAME TWELVE BYTES
+------------------------------------------------------------------------
+     63 61 66 e9 20 61 75 20 6c 61 69 74
+
+     str::from_utf8      Err(invalid utf-8 sequence of 1 bytes from index 3)
+     valid_up_to()       3
+     error_len()         Some(1)
+
+   Same verdict as Python's strict decode, with the offset in a
+   method rather than in a sentence.
+
+2. THE ESCAPE HAS NOWHERE TO LIVE
+------------------------------------------------------------------------
+   PEP 383 parks the byte at U+DCE9. In Rust that value is not a
+   char, and the constructor says so rather than producing one:
+
+     char::from_u32(0xDCE9)   None
+     char::from_u32(0x00E9)   Some('é')
+
+   A char is a Unicode scalar value, and the surrogate range is
+   the part of the code space that definition removes. So the
+   trick is not merely absent from std -- there is no value for
+   it to use. String is bytes that promise UTF-8, and a promise
+   with an escape hatch in it is not one.
+
+3. WHAT std OFFERS INSTEAD: LOSSY, AND HONEST ABOUT IT
+------------------------------------------------------------------------
+     from_utf8_lossy          "caf� au lait"
+     its bytes                63 61 66 ef bf bd 20 61 75 20 6c 61 69 74
+     same as we started with? false
+
+   One byte in, three bytes out: U+FFFD is EF BF BD. This is
+   Python's errors='replace', and like it, it is a one-way door.
+   Nothing downstream can tell which byte was lost, or how many
+   there were.
+
+   The one piece of information std does hand back is whether
+   anything was replaced at all, and it is in the return type:
+   Cow::Borrowed means the bytes were already UTF-8 and nothing
+   was allocated, Cow::Owned means a replacement was made.
+
+     caf\xe9 au lait  Cow::Owned     (a byte was replaced)
+     caf au lait      Cow::Borrowed  (nothing was replaced)
+
+4. THE ANSWER IS A SECOND TYPE, NOT A SECOND ENCODING
+------------------------------------------------------------------------
+     OsStr::from_bytes(RAW)
+     name.len()               12
+     name.to_str()            None
+     name.as_bytes()          63 61 66 e9 20 61 75 20 6c 61 69 74
+     byte-identical to RAW?   true
+
+   That last line is the whole design. OsStr round-trips because
+   it never converted: on Unix it IS the bytes, and to_str()
+   returns Option rather than guessing. Python carries the byte
+   through a str by widening what a str may contain; Rust carries
+   it by refusing to call it a str at all.
+
+   Path is the same bytes with path methods on it, so a name you
+   cannot print is still one you can open, split and rename:
+
+     path.extension()         None
+     path.file_name()         true
+     path.display()           caf� au lait
+
+   display() is the show-it-anyway door, and it is lossy by
+   contract -- the U+FFFD above, not the bytes. It is for humans,
+   the way Python's backslashreplace is; neither is a value to
+   pass on to anything.
+
+5. THE TRADE, IN ONE TABLE
+------------------------------------------------------------------------
+     question                     Python 3            Rust
+     one type or two?             str                 String + OsString
+     undecodable byte becomes     U+DC80..U+DCFF      nothing; it stays a byte
+     reversible?                  yes, same handler   yes, no conversion happened
+     can it leak into text?       yes -- section 9    no; the types differ
+     cost                         a str may hold a    every use site must say
+                                  non-character       which of the two it wants
