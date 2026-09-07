@@ -125,17 +125,32 @@ Note that `-a` changes nothing, which rules out the binary heuristic — this is
 
 That is the third question of [this chapter](../README.md) — *what does it do when the text is not valid?* — with a rung below it that the other pages never reach. `grep` in the C locale is a pure byte matcher and finds this no better; the failure is not a tool's opinion about characters, it is the absence of the bytes. **Decompression is not a search flag. It is a step you have to have already done.**
 
-`rg` provides the hook for doing it, and gives up nothing: `--pre` names a program to run on each file, and `rg` reads that program's stdout instead of the file.
+`rg` provides the hook for doing it, and gives up nothing: `--pre` names a program to run on each file, and `rg` reads that program's stdout instead of the file. Save it as `~/.local/bin/rg-pre` and make it executable:
 
-```sh title="~/.local/bin/rg-pre"
+<!-- source:rg_pre_shim_sh -->
+*[`rg_pre_shim_sh.sh`](examples/rg_pre_shim_sh.sh) in full — pasted here by `tools/run_examples.py` from the file CI runs.*
+
+```bash
 #!/bin/sh
-# ripgrep --pre preprocessor: make PDFs searchable by piping them through pdftotext.
-# rg passes the filename as $1 and reads our stdout. Non-PDFs pass through unchanged.
+# A ripgrep --pre preprocessor: make PDFs searchable by piping them through
+# pdftotext. rg runs this once per file, hands it the filename as $1, and reads
+# this program's stdout instead of the file itself. Anything that is not a PDF
+# is passed through untouched, so the search result is the same as without it.
+#
+#     rg --pre <this file> --pre-glob '*.pdf' PATTERN .
+#
+# --pre-glob is not optional in practice: without it, every file in the search
+# pays for a spawned process, not just the PDFs.
+#
+# Run with no arguments it explains itself, which is also how CI verifies that
+# the copy printed on the page is the copy in this file.
 case "$1" in
+    "")          echo "usage: rg --pre $0 --pre-glob '*.pdf' PATTERN ." ;;
     *.pdf|*.PDF) exec pdftotext -q "$1" - ;;
     *)           exec cat "$1" ;;
 esac
 ```
+<!-- /source -->
 
 `--pre-glob` matters as much as `--pre` — without it every file pays for a spawned process; with it only PDFs take the slow path:
 
@@ -143,15 +158,7 @@ esac
 rg --pre ~/.local/bin/rg-pre --pre-glob '*.pdf' PATTERN .
 ```
 
-Worth wrapping, since nobody types that twice. In fish, as an autoloaded function — `--wraps rg` is what makes it inherit `rg`'s own completions:
-
-```fish title="~/.config/fish/functions/rgp.fish"
-function rgp --wraps rg --description "ripgrep that also searches inside PDFs (via pdftotext)"
-    command rg --pre $HOME/.local/bin/rg-pre --pre-glob '*.pdf' $argv
-end
-```
-
-In bash or zsh it is a function rather than an alias, because an alias cannot take arguments in the middle: `rgp() { rg --pre "$HOME/.local/bin/rg-pre" --pre-glob '*.pdf' "$@"; }`.
+Worth wrapping, since nobody types that twice. [rg — the menu](../../RIPGREP.md#searching-pdfs) carries the fish and bash wrappers; they live in one place so there is one copy to correct.
 
 The same hole and the same fix apply to every zip-shaped document — `.docx`, `.xlsx`, `.pptx`, `.epub`, `.odt` — each needing its own branch in the shim, or [ripgrep-all ↗](https://github.com/phiresky/ripgrep-all) instead of writing any of it. The one container `rg` seems to open unaided is a compressed *stream* — `-z` helps with `access.log.2.gz` and not with a PDF — but it does not open that one unaided either: `-z` shells out to `gzip`, `xz`, `zstd` and the rest, decides which from the **file extension** rather than the bytes, and when the binary is missing falls back to reading the file uncompressed without saying so. That is the exact opposite of how `--pre` fails, and [`--pre` and `-z` — decompress, then decode](../decompress_then_decode/README.md) is the page for both halves.
 

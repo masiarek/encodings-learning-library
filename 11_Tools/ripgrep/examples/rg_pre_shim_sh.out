@@ -1,0 +1,1 @@
+usage: rg --pre rg_pre_shim_sh.sh --pre-glob '*.pdf' PATTERN .

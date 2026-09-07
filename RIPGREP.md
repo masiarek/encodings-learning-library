@@ -115,17 +115,32 @@ A file named `10-Ownership.pdf` reports **no matches** for `ownership`. The word
 
 The reason is not binary detection, which is why `-a` changes nothing: a PDF keeps its text in **compressed streams** (usually FlateDecode, the same algorithm as gzip), so the letters `o-w-n-e-r-s-h-i-p` are never on disk as those bytes. There is nothing for a byte search to match. Anything that decompresses first will find it; nothing that does not, will.
 
-`--pre` is the hook for exactly this. It names a program that `rg` runs on each file, reading the program's stdout instead of the file:
+`--pre` is the hook for exactly this. It names a program that `rg` runs on each file, reading the program's stdout instead of the file. Save this one as `~/.local/bin/rg-pre` and make it executable — it is the file this library runs in CI, pasted here rather than retyped:
 
-```sh title="~/.local/bin/rg-pre"
+<!-- source:rg_pre_shim_sh -->
+*[`rg_pre_shim_sh.sh`](11_Tools/ripgrep/examples/rg_pre_shim_sh.sh) in full — pasted here by `tools/run_examples.py` from the file CI runs.*
+
+```bash
 #!/bin/sh
-# ripgrep --pre preprocessor: make PDFs searchable by piping them through pdftotext.
-# rg passes the filename as $1 and reads our stdout. Non-PDFs pass through unchanged.
+# A ripgrep --pre preprocessor: make PDFs searchable by piping them through
+# pdftotext. rg runs this once per file, hands it the filename as $1, and reads
+# this program's stdout instead of the file itself. Anything that is not a PDF
+# is passed through untouched, so the search result is the same as without it.
+#
+#     rg --pre <this file> --pre-glob '*.pdf' PATTERN .
+#
+# --pre-glob is not optional in practice: without it, every file in the search
+# pays for a spawned process, not just the PDFs.
+#
+# Run with no arguments it explains itself, which is also how CI verifies that
+# the copy printed on the page is the copy in this file.
 case "$1" in
+    "")          echo "usage: rg --pre $0 --pre-glob '*.pdf' PATTERN ." ;;
     *.pdf|*.PDF) exec pdftotext -q "$1" - ;;
     *)           exec cat "$1" ;;
 esac
 ```
+<!-- /source -->
 
 `--pre-glob` is not optional in practice. Without it every file gets a process spawned for it; with it, only PDFs take the slow path and everything else stays on `rg`'s normal one:
 
