@@ -12,7 +12,7 @@
 - `len` on each, and why they differ by exactly the number of non-ASCII characters' extra bytes
 - Literals: `'…'`, `b'…'`, and why `b'é'` is a syntax error
 - `repr` of each: what Python shows you, and why `b'A'` is a display choice, not a fact about the byte
-- `bytearray` and `memoryview`: the mutable and the zero-copy views of the same numbers
+- `bytearray` and `memoryview`: the mutable and the zero-copy views of the same numbers — now written next door as [`bytearray` is the mutable one ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/bytearray_is_mutable/index.html), so this page should point at it rather than repeat it
 - One line of history: Python 2's `str` was bytes, and every `u''` prefix in old code is that scar
 
 ## The example it will run
@@ -23,3 +23,4 @@ Python: the same four strings as `str` and as `bytes`, indexed, sliced, measured
 
 - [Encode and decode are verbs](../../03_Encodings/encode_and_decode_are_verbs/README.md)
 - [Encode, decode and errors](../encode_decode_and_errors/README.md)
+- [`bytearray` is the mutable one ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/bytearray_is_mutable/index.html) — the mutable half of the pair, and where mutability is recorded in six languages
