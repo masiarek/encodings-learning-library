@@ -1,0 +1,32 @@
+1. THE TOOL NAMED AFTER OCTAL STILL DEFAULTS TO IT
+   'od' is octal dump, and with no flags it prints 16-bit WORDS in octal,
+   in the CPU's own byte order. Both CI runners are little-endian, so:
+
+$ printf 'caf\303\251\n' | od | squeeze
+0000000 060543 141546 005251
+0000006
+   The file is the six bytes 63 61 66 c3 a9 0a, and not one of those three
+   numbers is a byte: 0o060543 is 0x6163, which is 'ca' read backwards.
+   That default is a fossil of a machine whose unit was the word, not the byte.
+
+2. -b IS THE FLAG THAT SHOWS BYTES IN OCTAL
+
+$ printf 'caf\303\251\n' | od -b | squeeze
+0000000 143 141 146 303 251 012
+0000006
+   Six bytes, three digits each: 18 octal digits, room for 54 bits, holding 48.
+   The same six bytes in hex are twelve digits holding 48 bits -- exactly the file,
+   which is what 'the base divides the word' buys you.
+
+$ printf 'caf\303\251\n' | xxd -p
+636166c3a90a
+
+3. THE ESCAPE THAT SURVIVED: \NNN IS POSIX, \xHH IS BASH
+
+$ printf '\303\251' | xxd     # octal escape: in POSIX printf, so it works in any shell
+00000000: c3a9                                     ..
+
+$ printf '\xc3\xa9' | xxd     # hex escape: a bash extension, absent from POSIX
+00000000: c3a9                                     ..
+   Same two bytes, the e-acute. When a script must run under /bin/sh, the octal
+   escape is the portable one -- which is the last place octal is not just legacy.

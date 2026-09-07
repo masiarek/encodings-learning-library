@@ -1,0 +1,43 @@
+1. THE BASE HAS TO DIVIDE THE WORD
+   one octal digit = 3 bits        one hex digit = 4 bits
+   a byte is 8 bits:   8 / 4 = 2 exactly      8 / 3 = 2.67  <- does not divide
+   That one fact is the whole argument. Everything below is it, seen from somewhere.
+
+2. SO THE LEADING OCTAL DIGIT OF A BYTE IS NOT A WHOLE DIGIT
+   Split 255 the way each base splits it, and look at the group sizes:
+   hex        1111 1111            = 0xFF    4 + 4
+              F    F
+   octal      11 111 111           = 0o377   2 + 3 + 3
+              3  7   7
+   Three octal digits would be 9 bits. A byte has 8, so the top digit is short one bit:
+   it runs 0-3 and no further. 0o377 = 255 is the biggest byte; 0o400 = 256 is past it.
+   Both hex digits are full digits, 0-F. Neither is a special case you have to remember.
+
+3. TWO BYTES: HEX SHOWS THE SEAM, OCTAL HIDES IT
+   'é' in UTF-8 is 2 bytes: c3 a9
+   as bits    11000011 10101001    <- the gap is the byte boundary
+   as hex     c3       a9          <- two digits each, and the gap survives
+   as octal   1 100 001 110 101 001 = 0o141651
+                        ^^^
+                        this digit (110 = 6) is part of BOTH bytes at once
+   In hex no digit is ever shared, because 4 divides 8. That is the entire reason a hex dump
+   can print bytes in a grid and an octal one cannot.
+
+4. OCTAL IS NOT WRONG. IT FITS A THREE-BIT FIELD PERFECTLY
+   Unix permissions are three rwx triples = 9 bits, and 9 / 3 = 3 exactly.
+   octal      111 101 101          = 0o755   one digit per triple
+              7   5   5
+   hex        0001 1110 1101       = 0x1ED   no digit lines up
+              1    E    D
+   Same nine bits. `0o755` says rwx r-x r-x out loud; `0x1ED` says nothing at all.
+   So the base is not a matter of taste — it is whichever one divides the field you are reading.
+
+5. WHICH IS WHY THE ANSWER CHANGED WHEN THE CHARACTER DID
+   6-bit character  (Fieldata, BCDIC, DEC SIXBIT)
+      octal  6 / 3 = 2.00   exactly
+      hex    6 / 4 = 1.50   NOT evenly
+   8-bit byte       (System/360 onward)
+      octal  8 / 3 = 2.67   NOT evenly
+      hex    8 / 4 = 2.00   exactly
+   Two octal digits held one 6-bit character. Two hex digits hold one 8-bit byte.
+   Same property, a different width — the notation followed the character, not the fashion.
