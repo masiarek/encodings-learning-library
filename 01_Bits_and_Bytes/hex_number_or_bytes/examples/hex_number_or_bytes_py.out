@@ -38,13 +38,17 @@
 4. AN ODD NUMBER OF DIGITS: FINE, FATAL, OR SILENTLY HALVED
 ------------------------------------------------------------------------
    int(odd, 16)               291          a number needs no even width
-   bytes.fromhex(odd)         ValueError   fromhex() arg must contain an even number of hexadecimal digits
+   bytes.fromhex(odd)         ValueError   three digits is not a whole number of bytes
    xxd -r -p (shell run)      0x12         drops the trailing nibble, exit 0, no message
 
    Three tools, three different answers to one malformed input, and
    only the middle one tells you. An odd-length hex field is almost
    always a truncated one -- a log line cut at a column limit, a copy
    that missed a character -- so the answer you want is the ValueError.
+
+   The message is not printed above on purpose. CPython reworded it in
+   3.14, so it is a fact about which interpreter ran, not about hex --
+   the page names both wordings with a date.
 
 5. WHAT int(s, 16) WILL SWALLOW
 ------------------------------------------------------------------------
@@ -90,7 +94,8 @@
    as data                  00 04 a1   3 bytes, which is what it is
    as a quantity            1185
    written back out         '4a1'   the leading zero byte is gone
-   and read as data again   ValueError: fromhex() arg must contain an even number of hexadecimal digits
+   and read as data again   ValueError -- five digits, not a whole
+                            number of bytes
 
    That is the whole failure in four lines. Nothing raised until the
    very end, the value was never wrong as a number, and what came

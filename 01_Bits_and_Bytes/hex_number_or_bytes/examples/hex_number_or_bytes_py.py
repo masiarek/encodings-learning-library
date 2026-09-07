@@ -43,8 +43,8 @@ for a, bb in pairs:
         fa = bytes.fromhex(a)
         fb = bytes.fromhex(bb)
         cmp = f"{fa!r} vs {fb!r}"
-    except ValueError as exc:
-        cmp = f"ValueError ({exc})"
+    except ValueError:
+        cmp = "ValueError (odd number of digits)"
     print(f"   {a!r:<8} {bb!r:<8} {str(same):<16} {cmp:<28}")
 print()
 print("   As numbers every row is a pair of equals. As bytes, no row is:")
@@ -72,14 +72,20 @@ odd = "123"
 print(f"   {'int(odd, 16)':<26} {int(odd, 16):<12} a number needs no even width")
 try:
     bytes.fromhex(odd)
-except ValueError as exc:
-    print(f"   {'bytes.fromhex(odd)':<26} {'ValueError':<12} {exc}")
+except ValueError:
+    # The CLASS, not the message: CPython reworded this one in 3.14, so the
+    # sentence is a fact about the interpreter and not about hex.
+    print(f"   {'bytes.fromhex(odd)':<26} {'ValueError':<12} three digits is not a whole number of bytes")
 print(f"   {'xxd -r -p (shell run)':<26} {'0x12':<12} drops the trailing nibble, exit 0, no message")
 print()
 print("   Three tools, three different answers to one malformed input, and")
 print("   only the middle one tells you. An odd-length hex field is almost")
 print("   always a truncated one -- a log line cut at a column limit, a copy")
 print("   that missed a character -- so the answer you want is the ValueError.")
+print()
+print("   The message is not printed above on purpose. CPython reworded it in")
+print("   3.14, so it is a fact about which interpreter ran, not about hex --")
+print("   the page names both wordings with a date.")
 
 say("5. WHAT int(s, 16) WILL SWALLOW")
 
@@ -128,8 +134,9 @@ print(f"   as a quantity            {int(field, 16)}")
 print(f"   written back out         {format(int(field, 16), 'x')!r}   the leading zero byte is gone")
 try:
     bytes.fromhex(format(int(field, 16), "x"))
-except ValueError as exc:
-    print(f"   and read as data again   ValueError: {exc}")
+except ValueError:
+    print("   and read as data again   ValueError -- five digits, not a whole")
+    print("                            number of bytes")
 print()
 print("   That is the whole failure in four lines. Nothing raised until the")
 print("   very end, the value was never wrong as a number, and what came")

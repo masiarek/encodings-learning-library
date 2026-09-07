@@ -45,6 +45,15 @@ Three tools, one malformed input, three different answers:
 
 Only the middle one tells you. An odd-length hex field is nearly always a *truncated* one — a log line cut at a column limit, a copy-paste that lost a character — so the error is the answer you want, and the silent halving is the one that ships. `xxd -r -p` behaves the same way on a non-hex character: it stops, keeps what it had, and exits 0. It is an excellent encoder of hex you produced and a poor validator of hex somebody sent you.
 
+**And the ValueError's *message* is not quotable.** CPython reworded it in 3.14, so the sentence you get is a fact about which interpreter ran rather than about hex:
+
+```text title="Measured 2026-09-07 — one line, five CPython builds"
+3.10.7, 3.12.0, 3.12.14, 3.13.11   non-hexadecimal number found in fromhex() arg at position 3
+3.14.7                             fromhex() arg must contain an even number of hexadecimal digits
+```
+
+The program below therefore prints the exception *class* and says in its own words why the call refused. This is the rule [The table has a version](../../02_Characters/the_table_has_a_version/README.md) sets out for Unicode lookups, reaching one layer further: an interpreter's diagnostic text is not a property of your data either.
+
 ## The parsers do not agree about what a hex digit is
 
 Same string, four languages, and the disagreement is not at the margins:
@@ -124,13 +133,17 @@ Rust makes the asymmetry visible by omission — `u32::from_str_radix` is in `st
 4. AN ODD NUMBER OF DIGITS: FINE, FATAL, OR SILENTLY HALVED
 ------------------------------------------------------------------------
    int(odd, 16)               291          a number needs no even width
-   bytes.fromhex(odd)         ValueError   fromhex() arg must contain an even number of hexadecimal digits
+   bytes.fromhex(odd)         ValueError   three digits is not a whole number of bytes
    xxd -r -p (shell run)      0x12         drops the trailing nibble, exit 0, no message
 
    Three tools, three different answers to one malformed input, and
    only the middle one tells you. An odd-length hex field is almost
    always a truncated one -- a log line cut at a column limit, a copy
    that missed a character -- so the answer you want is the ValueError.
+
+   The message is not printed above on purpose. CPython reworded it in
+   3.14, so it is a fact about which interpreter ran, not about hex --
+   the page names both wordings with a date.
 
 5. WHAT int(s, 16) WILL SWALLOW
 ------------------------------------------------------------------------
@@ -176,7 +189,8 @@ Rust makes the asymmetry visible by omission — `u32::from_str_radix` is in `st
    as data                  00 04 a1   3 bytes, which is what it is
    as a quantity            1185
    written back out         '4a1'   the leading zero byte is gone
-   and read as data again   ValueError: fromhex() arg must contain an even number of hexadecimal digits
+   and read as data again   ValueError -- five digits, not a whole
+                            number of bytes
 
    That is the whole failure in four lines. Nothing raised until the
    very end, the value was never wrong as a number, and what came
