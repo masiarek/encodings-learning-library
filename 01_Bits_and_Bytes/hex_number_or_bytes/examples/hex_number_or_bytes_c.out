@@ -1,0 +1,70 @@
+
+1. IT CONVERTS WHAT IT CAN AND RETURNS IT
+------------------------------------------------------------------------
+
+   input                        strtol(.., 16)  consumed  left over
+   41                                       65  2         (nothing)
+   0x41                                     65  4         (nothing)
+     41                                     65  4         (nothing)
+   +41                                      65  3         (nothing)
+   -41                                     -65  3         (nothing)
+   4_1                                       4  1         _1
+   4G                                        4  1         G
+   41xyz                                    65  2         xyz
+   zz                                        0  0         zz
+                                             0  0         (nothing)
+   FFFFFFFFFFFFFFFFFF      9223372036854775807  18        (nothing)
+
+   Only the first column is a return value. Rows 6, 7 and 8 all
+   succeeded as far as C is concerned -- 4, 4 and 65 -- and the
+   only trace of the rest of the string is the pointer. Row 9 and
+   row 10 return 0, which is also what a correct parse of "0"
+   returns, so the value alone cannot tell you they failed.
+
+2. AND IT ACCEPTS THREE THINGS A BYTE FIELD SHOULD NOT
+------------------------------------------------------------------------
+
+   "0x41"                 the prefix is part of base 16 in C, by the standard
+   "  41"                 leading whitespace is skipped before anything else
+   "-41"                  a sign is allowed, so a hex FIELD can arrive negative
+
+   The third is the one that surprises people. A two-digit hex
+   field is a byte, bytes have no sign, and strtol will hand you
+   -65 for "-41" without a murmur -- into a long, which is signed,
+   so the assignment to an unsigned char later is where it wraps.
+
+3. THE CHECKS THAT ARE PORTABLE
+------------------------------------------------------------------------
+
+   input                  no digits    trailing     ERANGE
+   41                     no           no           no
+   0x41                   no           no           no
+     41                   no           no           no
+   +41                    no           no           no
+   -41                    no           no           no
+   4_1                    no           yes          no
+   4G                     no           yes          no
+   41xyz                  no           yes          no
+   zz                     yes          no           no
+                          yes          no           no
+   FFFFFFFFFFFFFFFFFF     no           no           yes
+
+   Three questions, three answers, and none of them is the return
+   value. `end == input` is the only portable way to learn that
+   nothing was converted, and ERANGE on overflow is the only errno
+   the standard promises: after a failed conversion errno is
+   implementation-defined, and macOS and glibc genuinely differ.
+   This program therefore prints the pointer comparison and never
+   errno itself -- the same discipline the rest of the library
+   applies to any answer that belongs to the machine.
+
+4. WHAT THE OVERFLOW ROW IS REALLY SAYING
+------------------------------------------------------------------------
+
+   LONG_MAX on this build is 9223372036854775807, 8 bytes wide.
+   "FFFFFFFFFFFFFFFFFF" is 18 hex digits, so 9 bytes of data --
+   perfectly ordinary as a field, and unrepresentable as a long.
+   The number door has a ceiling and the byte door does not, which
+   is the same distinction one more time: a hex string that is
+   DATA has no maximum, and a hex string that is a QUANTITY is
+   bounded by a type it never mentions.

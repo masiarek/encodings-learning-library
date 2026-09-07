@@ -1,0 +1,58 @@
+
+1. THE NUMBER DOOR, AND THE BASE IT ASSUMES
+------------------------------------------------------------------------
+
+   printf '%d' 0x41             65
+   printf '%d' 41               41
+   $(( 16#41 ))                 65
+   $(( 0x41 ))                  65
+
+   Rows one and two are the same command on the same-looking input
+   and they differ by a factor of about one and a half. Without the
+   0x, 41 is forty-one -- correct, silent, and wrong if the field was
+   hex. $(( 16#41 )) is the spelling that cannot be misread, because
+   the base is written where the value is, not inferred from a prefix.
+
+2. THE BYTE DOOR
+------------------------------------------------------------------------
+
+   printf 'A' | xxd -p          41
+   printf '\x41' | xxd -p       41
+   printf '0041' | xxd -r -p    0041
+   how many bytes is that       2
+
+   xxd -r -p is the shell's bytes.fromhex: hex text in, bytes out,
+   two digits per byte, leading zeros kept because they are bytes.
+   Compare $(( 16#0041 )), which is 65 -- the same digits, one byte
+   shorter, because a number has no width to keep.
+
+3. AND IT DROPS WHAT IT CANNOT USE, WITHOUT SAYING SO
+------------------------------------------------------------------------
+
+   '123'        -> 12         exit 0
+   'c3zzA9'     -> c3         exit 0
+   'c3 a9'      -> c3a9       exit 0
+
+   Three malformed or unusual inputs, three quiet answers and three
+   zero exits. The first is an odd number of digits and the trailing
+   nibble is simply gone. The second stops at the first character
+   that is not a hex digit and keeps whatever it had. The third is
+   the benign one -- whitespace between bytes really is allowed, and
+   is what xxd -p emits with a width flag.
+
+   So xxd -r -p is a fine encoder of hex you produced and a poor
+   validator of hex somebody sent you. Nothing in this pipeline can
+   tell a short field from a complete one; check the length yourself,
+   before decoding, where the answer is still knowable.
+
+4. THE ROUND TRIP THAT IS SAFE
+------------------------------------------------------------------------
+
+   the word                     café
+   xxd -p                       636166c3a9
+   xxd -p | xxd -r -p           café
+   bytes in / bytes out         5 / 5
+
+   xxd -p and xxd -r -p are inverses on anything xxd -p produced,
+   which is the only guarantee either of them offers. Everything in
+   section 3 was hex that xxd -p had never written.

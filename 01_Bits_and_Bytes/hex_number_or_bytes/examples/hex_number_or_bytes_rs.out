@@ -1,0 +1,66 @@
+
+1. THE NUMBER DOOR IS STRICT ABOUT SPELLING AND BLIND TO WIDTH
+------------------------------------------------------------------------
+
+   input      u32::from_str_radix(s, 16)
+   "41"       Ok(65)
+   "0x41"     Err(invalid digit found in string)
+   "4_1"      Err(invalid digit found in string)
+   " 41 "     Err(invalid digit found in string)
+   "+41"      Ok(65)
+   "-41"      Err(invalid digit found in string)
+   "41\n"     Err(invalid digit found in string)
+   "4G"       Err(invalid digit found in string)
+   ""         Err(cannot parse integer from empty string)
+   "00041"    Ok(65)
+
+   Compare Python, which accepts the first seven of those. Rust
+   takes digits and an optional `+`, and nothing else -- no
+   prefix, no underscore, no whitespace, no newline. But look at
+   the last row: "00041" parses happily to 65, because leading
+   zeros are noise in a number and there is no width to violate.
+   Strictness about SPELLING is not strictness about MEANING.
+
+2. THE WIDTH IS IN THE TYPE, NOT IN THE STRING
+------------------------------------------------------------------------
+
+   u8  "ff"     -> Ok(255)
+   u8  "100"    -> Err("number too large to fit in target type")
+   u32 "100"    -> Ok(256)
+
+   "100" is three hex digits and fits no byte, and only the type
+   knows that. This is the width that a hex string does not
+   carry, supplied by the one place in Rust that always has it.
+   In a dynamically typed language nothing asks the question at
+   all, which is why the same string quietly becomes an int.
+
+3. THE BYTE DOOR, WHICH YOU HAVE TO WRITE
+------------------------------------------------------------------------
+
+   "0041"   as a number     65   as bytes 00 41 (2 bytes)
+   "41"     as a number     65   as bytes 41 (1 byte)
+   "123"    as a number    291   as bytes Err(3 digits is not a whole number of bytes)
+   "c3a9"   as a number  50089   as bytes c3 a9 (2 bytes)
+   "c3zz"   as a number      -   as bytes Err('z' is not a hex digit)
+   ""       as a number      -   as bytes nothing at all (0 bytes)
+
+   Read the first two rows together: as numbers they are the
+   same value, as bytes they are different lengths, and the
+   difference is a NUL byte. The third is the odd-length case --
+   which is an error here, an error in Python, and a silent
+   truncation in `xxd -r -p`. The last is empty, which is a
+   legitimate zero-byte value and not a number at all.
+
+4. WHY THE OMISSION IS THE ARGUMENT
+------------------------------------------------------------------------
+
+   std::primitive::u32::from_str_radix   exists
+   std::vec::Vec::<u8>::from_hex         does not exist
+
+   Every hex-to-bytes crate in the ecosystem re-implements the
+   twenty lines above, and they differ from each other exactly
+   where this page says they would: whether whitespace is
+   skipped, whether an odd length is an error or is left-padded,
+   whether the output length is checked against an expected one.
+   Those are not implementation details. They are the questions
+   a hex string cannot answer about itself, and somebody has to.

@@ -1,0 +1,99 @@
+
+1. ONE STRING, TWO OBJECTS
+------------------------------------------------------------------------
+   the string                 '0041'
+   int(s, 16)                 65         a number: 65, and nothing else is claimed
+   bytes.fromhex(s)           b'\x00A'   two bytes: 00 41
+   len of each                -          a number has no length; the bytes have 2
+
+   Both readings are correct and they are not the same object. Which
+   one a hex string means is not in the string -- it is in the field
+   it came out of, and that is what an interface agreement is for.
+
+2. LEADING ZEROS ARE NOISE, OR THEY ARE A NUL BYTE
+------------------------------------------------------------------------
+   a        b        int(a)==int(b)   fromhex                     
+   '41'     '0041'   True             b'A' vs b'\x00A'            
+   'ff'     '00ff'   True             b'\xff' vs b'\x00\xff'      
+   '0a'     '00000a' True             b'\n' vs b'\x00\x00\n'      
+
+   As numbers every row is a pair of equals. As bytes, no row is:
+   '0041' is a NUL followed by an 'A', and a NUL byte is the one that
+   truncates a C string, ends a field, or fails a database insert.
+   Padding a number is cosmetic; padding a byte string is editing it.
+
+3. A NUMBER HAS NO BYTE ORDER. BYTES DO.
+------------------------------------------------------------------------
+   (0x41).to_bytes(2, 'big')          00 41
+   (0x41).to_bytes(2, 'little')       41 00
+   and back, big                      65
+   and back, little                   16640
+
+   `to_bytes` will not let you leave the question out -- the argument
+   has no default, because there is no right answer. Note what that
+   means about the string in section 1: '0041' as a NUMBER is 65 on
+   every machine ever built, and as BYTES it is 65 or 16640 depending
+   on a convention the digits do not record.
+
+4. AN ODD NUMBER OF DIGITS: FINE, FATAL, OR SILENTLY HALVED
+------------------------------------------------------------------------
+   int(odd, 16)               291          a number needs no even width
+   bytes.fromhex(odd)         ValueError   fromhex() arg must contain an even number of hexadecimal digits
+   xxd -r -p (shell run)      0x12         drops the trailing nibble, exit 0, no message
+
+   Three tools, three different answers to one malformed input, and
+   only the middle one tells you. An odd-length hex field is almost
+   always a truncated one -- a log line cut at a column limit, a copy
+   that missed a character -- so the answer you want is the ValueError.
+
+5. WHAT int(s, 16) WILL SWALLOW
+------------------------------------------------------------------------
+   input        int(s, 16)     bytes.fromhex(s)    
+   '41'         65             b'A'                
+   '0x41'       65             ValueError          
+   '0X41'       65             ValueError          
+   '4_1'        65             ValueError          
+   ' 41 '       65             b'A'                
+   '41\n'       65             b'A'                
+   '+41'        65             ValueError          
+   '-41'        -65            ValueError          
+   '٤١'         65             ValueError          
+   '4G'         ValueError     ValueError          
+   ''           ValueError     b''                 
+
+   The prefix, an underscore, surrounding whitespace, a newline and a
+   sign all pass. So does the ninth row, which is worth naming:
+     '٤'  U+0664  ARABIC-INDIC DIGIT FOUR
+     '١'  U+0661  ARABIC-INDIC DIGIT ONE
+   Two ARABIC-INDIC digits -- not in this library's cast, and here
+   because nothing else has the property: they are not ASCII, they
+   are not in '0123456789abcdefABCDEF', and int() takes them anyway.
+   int() accepts any Unicode character with a decimal digit value, in
+   every base, so a hex field validated by `int(s, 16)` accepts digits
+   your regex, your database and your partner's parser will not.
+
+   And the last two rows are the pair to keep straight:
+     int('', 16)          ValueError   -- no digits is not a number
+     bytes.fromhex('')    b''          -- no digits is an empty file
+
+6. SO: TWO DOORS, AND THE FIELD DECIDES WHICH ONE
+------------------------------------------------------------------------
+   int(s, 16) / f'{n:x}'         when the field is a QUANTITY
+     a length, an offset, a colour, a bitmask, an error code
+     -- leading zeros cosmetic, width free, order meaningless
+
+   bytes.fromhex(s) / b.hex()    when the field is DATA
+     a hash, a key, a certificate, a packet, an x/xstring from SAP
+     -- leading zeros load-bearing, width fixed, order agreed in writing
+
+   a three-byte field       '0004a1'
+   as data                  00 04 a1   3 bytes, which is what it is
+   as a quantity            1185
+   written back out         '4a1'   the leading zero byte is gone
+   and read as data again   ValueError: fromhex() arg must contain an even number of hexadecimal digits
+
+   That is the whole failure in four lines. Nothing raised until the
+   very end, the value was never wrong as a number, and what came
+   back is a different length from what went in. Reach for int()
+   because a string 'looked like a number' and this is the shape of
+   the bug you get -- usually much further downstream than here.
