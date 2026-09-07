@@ -2,7 +2,7 @@
 
 **Level:** 101 → 201 · for anyone with a terminal
 
-`xxd` and `od` were taught in chapter 1 because nothing later works without them. This chapter is the rest of the toolbox: putting known bytes on a pipe, the last byte of a text file and everything that depends on it, reading a dump's *other* columns without being lied to, re-encoding a file, the locale that silently sets every tool's default, the tool that guesses, and the bytes at offset 0 that decide whether a file runs at all.
+[`xxd`](../11_Tools/xxd/README.md) and [`od`](../11_Tools/od/README.md) were taught in chapter 1 because nothing later works without them. This chapter is the rest of the toolbox: putting known bytes on a pipe, the last byte of a text file and everything that depends on it, reading a dump's *other* columns without being lied to, re-encoding a file, the locale that silently sets every tool's default, the tool that guesses, and the bytes at offset 0 that decide whether a file runs at all.
 
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|
