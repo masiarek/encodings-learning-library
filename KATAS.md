@@ -91,3 +91,4 @@ That is deliberate, and the reason is that folders are URLs. A topic — the byt
 | K73 | [Forty pages nobody opens, and how to find them without the names](13_Documentation/the_encoding_man_pages/README.md#practice) | [The encoding man pages nobody opens](13_Documentation/the_encoding_man_pages/README.md) | 201 |
 | K74 | [Out of date, or wrong? -- and the three dates a page carries](13_Documentation/a_page_has_a_date/README.md#practice) | [A page has a date](13_Documentation/a_page_has_a_date/README.md) | 201 |
 | K75 | [The flag no page mentions, and the two platforms that disagree about it](13_Documentation/what_the_page_does_not_say/README.md#practice) | [What the page does not say](13_Documentation/what_the_page_does_not_say/README.md) | 201 |
+| K76 | [Five damaged fields, and the question that sorts them](07_Real_Data/mojibake_round_trip/README.md#practice) | [The mojibake round trip](07_Real_Data/mojibake_round_trip/README.md) | 201 |

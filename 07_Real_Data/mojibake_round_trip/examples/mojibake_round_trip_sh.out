@@ -1,0 +1,53 @@
+1. THE GUARD IS TWO CALLS, NOT ONE
+------------------------------------------------------------------------
+   correct file:        636166c3a90a
+   after 1 bad hop:     636166c383c2a90a
+   after 2 bad hops:    636166c383c283c382c2a90a
+
+   Now repair, checking the result each time instead of trusting the
+   exit status of the conversion:
+
+      repair 1: accepted   636166c383c2a90a
+      repair 2: accepted   636166c3a90a
+      repair 3: REFUSED    (the guard rejected the candidate)
+
+   current bytes: 636166c3a90a
+   identical to the original file: yes
+
+   Repair 3 is where a bare iconv pipeline keeps going: the conversion
+   itself succeeds, because Latin-1 can hold 'cafe-acute' perfectly
+   well. What stops the loop is the second call -- the four bytes
+   63 61 66 e9 are not UTF-8, so the candidate is thrown away and the
+   file is left where it was.
+
+2. WHY THE SECOND CALL IS THE ONE THAT KNOWS
+------------------------------------------------------------------------
+   converting the CORRECT file one hop too far: iconv exit=0
+   asking whether that hop's output is UTF-8:    exit=1
+
+   Two different questions. iconv answers 'could I convert this',
+   which is yes. Only the validator answers 'is the result still the
+   kind of thing I wanted', which is no. Neither call alone is a
+   repair decision; the pair is.
+
+3. SURVEY THE COLUMN BEFORE YOU CHANGE IT
+------------------------------------------------------------------------
+   five rows, one per damage mode:
+
+      row  bytes                      verdict
+      1    4e6f77616b0a               valid UTF-8, no repair applies
+      2    636166c3a90a               valid UTF-8, no repair applies
+      3    636166c383c2a90a           repairable -> 636166c3a90a
+      4    6361663f0a                 holds '?' -- byte discarded when WRITTEN
+      5    636166efbfbd0a             holds U+FFFD -- byte discarded when READ
+
+   Rows 4 and 5 are the ones to notice. Both are perfectly valid
+   UTF-8, so nothing downstream will complain, and both have lost a
+   byte for good -- row 4 in the sending system and row 5 in the
+   reading one. That is the difference worth knowing before you go
+   looking for whose fault it was.
+
+   Row 3 is the only one a repair helps. Running the repair over the
+   whole file would have left rows 1, 2, 4 and 5 untouched, because
+   the guard refuses each of them -- which is what makes a
+   column-wide repair safe to run at all.

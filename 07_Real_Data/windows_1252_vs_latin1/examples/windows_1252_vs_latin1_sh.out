@@ -1,0 +1,50 @@
+1. ONE BYTE, TWO TABLES
+------------------------------------------------------------------------
+   the file is one byte: 80
+
+   read as ISO-8859-1, written out as UTF-8:
+      c280   (U+0080, a C1 control)
+   read as CP1252, written out as UTF-8:
+      e282ac   (U+20AC, the euro sign)
+
+   Same byte on disk. The table is not in the file, so the reader
+   supplies it -- and these two readers disagree about this byte.
+
+2. THE EURO CANNOT BE WRITTEN AS LATIN-1 AT ALL
+------------------------------------------------------------------------
+   euro as UTF-8: e282ac
+   UTF-8 -> CP1252      exit=0   bytes: 80
+   UTF-8 -> ISO-8859-1  exit=1   bytes written: 0
+
+   Not a bug and not a setting: the character is absent from the table,
+   so there is nothing to write. An interface contract that says
+   Latin-1 has ruled out the euro sign, whatever the sender intends.
+   (The message text differs between BSD and GNU iconv, so only the
+   exit status is shown.)
+
+3. THE FINGERPRINT: WHICH TABLE DID THE READER USE?
+------------------------------------------------------------------------
+   e-acute as UTF-8 is c3a9, read back as...
+      ISO-8859-1   -> c383c2a9
+      CP1252       -> c383c2a9
+      the two are identical, so this character names no table
+
+   euro as UTF-8 is e282ac, read back as...
+      ISO-8859-1   -> c3a2c282c2ac
+      CP1252       -> c3a2e2809ac2ac
+      these differ, so this character DOES name the table
+
+   The rule behind it: the two tables differ only on 0x80-0x9F. The
+   euro's UTF-8 bytes include 0x82; e-acute's (c3 a9) do not.
+
+4. HOW MANY BYTES OF THE DISPUTED BLOCK EACH TABLE ACCEPTS
+------------------------------------------------------------------------
+   Converting each of the 32 bytes 0x80-0x9F to UTF-8, one at a time,
+   and counting how many the table can turn into a character:
+      ISO-8859-1   accepts 32 of 32
+      CP1252       accepts 27 of 32
+
+   Latin-1 has a character for every byte; CP1252 is missing five.
+   Convert to UTF-8 to ask this question, never CP1252 to CP1252 --
+   see the note on the page for why the same-to-same form is not
+   portable.

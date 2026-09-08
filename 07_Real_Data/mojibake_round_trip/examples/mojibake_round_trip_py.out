@@ -1,0 +1,141 @@
+1. THE DECIDING QUESTION
+------------------------------------------------------------------------
+   Mojibake is a function that was applied to your bytes. A function
+   can be undone when it threw nothing away. So the question is not
+   'how do I repair this' but:
+
+      Did the wrong step DISCARD any byte, or merely MISREAD it?
+
+   Misread bytes are all still there and the damage is reversible.
+   Discarded bytes are gone, and no amount of cleverness returns
+   them. Sections 2 to 4 work out which case you are in.
+
+2. WHY LATIN-1 ALWAYS REVERSES -- BY EXHAUSTION, NOT BY REPUTATION
+------------------------------------------------------------------------
+   bytes that survive .decode('latin-1').encode('latin-1'): 256 of 256
+
+   Latin-1 maps byte N to code point N for all 256 values, so the
+   decode is a total, one-to-one function and the encode is exactly
+   its inverse. A reader using Latin-1 cannot fail and cannot drop
+   anything -- so every byte of the original file is still sitting
+   inside the wrong-looking string, and .encode('latin-1') hands the
+   file back byte for byte.
+
+   That is why Latin-1 is the right tool for UNDOING mojibake and the
+   wrong tool for DETECTING anything: it accepts every file on earth.
+
+3. WHY CP1252 DOES NOT ALWAYS REVERSE
+------------------------------------------------------------------------
+   cp1252 leaves five byte values unassigned:
+      0x81 0x8D 0x8F 0x90 0x9D
+
+   Those five are all legal UTF-8 CONTINUATION bytes, so they appear
+   inside ordinary characters. Any character whose UTF-8 encoding
+   contains one cannot survive a cp1252 round trip. Below U+0800
+   that is 150 characters, and these are the everyday ones:
+
+      U+00C1  Á   c3 81
+      U+00CD  Í   c3 8d
+      U+00CF  Ï   c3 8f
+      U+00D0  Ð   c3 90
+      U+00DD  Ý   c3 9d
+      U+0101  ā   c4 81
+      U+010D  č   c4 8d
+      U+010F  ď   c4 8f
+      U+0110  Đ   c4 90
+      U+011D  ĝ   c4 9d
+      U+0141  Ł   c5 81
+      U+014D  ō   c5 8d
+      U+014F  ŏ   c5 8f
+      U+0150  Ő   c5 90
+      U+015D  ŝ   c5 9d
+
+   So the repair that fails is not an exotic corner: it is a Spanish
+   or Icelandic capital, or a Polish L-with-stroke.
+
+4. ONE STRING, FOUR WAYS OF GOING WRONG
+------------------------------------------------------------------------
+   original           'Łódź'
+   correct UTF-8      c5 81 c3 b3 64 c5 ba
+
+   (a) READ AS LATIN-1 -- every byte misread, none discarded
+       looks like     '\xc5\x81\xc3\xb3d\xc5\xba'
+       repair         repaired: 'Łódź'
+       identical to the original? True
+
+   (b) READ AS CP1252 -- the decode cannot even complete
+       UnicodeDecodeError: byte 0x81 at offset 1
+       A strict cp1252 reader REFUSES this file. That is the good
+       outcome -- it is the reader telling you the label is wrong
+       before anything is written down.
+
+   (c) READ AS CP1252 BY A LENIENT READER -- the byte survives, the
+       repair does not
+       looks like     '\xc5\x81\xc3\xb3d\xc5\xba'
+       repair         cannot re-encode under cp1252: character maps to <undefined>
+       unchanged?     True
+       Many readers outside Python map the five holes to the C1
+       controls rather than refusing. The text then looks repairable
+       and is not, because Python's cp1252 ENCODER has no entry to
+       write those characters back to. The guard returns the input.
+
+   (d) WRITTEN WITH A REPLACEMENT -- the byte is genuinely gone
+       errors=replace            -> '?ód?'
+       errors=ignore             -> 'ód'
+       errors=xmlcharrefreplace  -> '&#321;ód&#378;'
+       These happened at WRITE time, in the sending system, and no
+       byte of the original reached the file. 'replace' wrote 0x3F,
+       the ASCII question mark; 'ignore' wrote nothing at all. Only
+       xmlcharrefreplace is reversible, because it wrote the code
+       point down in ASCII instead of throwing it away.
+
+5. THE GUARD, AND WHY IT IS THE WHOLE POINT
+------------------------------------------------------------------------
+   try_repair() returns the INPUT unchanged whenever the round trip
+   fails, so running it on text that was never damaged is a no-op:
+
+      'already fine'       -> round trip is a no-op -- nothing to repair unchanged
+      'Łódź'               -> cannot re-encode under latin-1: ordinal not in range(256) unchanged
+      'café'               -> re-encoded, but the bytes are not UTF-8 unchanged
+
+   That property is what lets you run a repair over a whole column
+   without first sorting the good rows from the bad ones.
+
+6. THE GUARD'S LIMIT: A SUCCESSFUL ROUND TRIP IS NOT A PROOF
+------------------------------------------------------------------------
+   'Ã©' is a legitimate two-character string.
+   try_repair says: repaired -> 'é'
+   Correct text, silently changed. The guard proves the bytes form
+   valid UTF-8; it cannot prove they were MEANT to.
+
+   How often can that happen? Count every string of length N drawn
+   from Latin-1's printable top half, and ask how many are valid
+   UTF-8 by accident:
+
+      length 1:      0 of     96 =  0.000%
+      length 2:    960 of   9216 = 10.417%
+      length 3:  15360 of 884736 =  1.736%
+
+   Length 1 is impossible -- one high byte is never valid UTF-8 on
+   its own. Then the rate falls away as every extra character has to
+   keep fitting the UTF-8 grammar. The practical reading: the guard
+   is safe on a sentence and genuinely risky on a two-character
+   field, which is exactly the sort of column an interface has.
+   On a short field, check the whole column instead of each value.
+
+7. COUNTING THE LAYERS BEFORE REPAIRING THEM
+------------------------------------------------------------------------
+   after 0 bad hop(s): '\xe9'                     1 chars
+   after 1 bad hop(s): '\xc3\xa9'                 2 chars
+   after 2 bad hop(s): '\xc3\x83\xc2\xa9'         4 chars
+   after 3 bad hop(s): '\xc3\x83\xc2\x83\xc3\x82\xc2\xa9' 8 chars
+
+   Each hop turns one high byte into two, so the string grows and a
+   column that keeps overflowing is often this. Repair by looping
+   try_repair until the verdict stops being 'repaired':
+
+   stopped after 3 repair(s): 'é'
+   the ladder above took 3 hops, and the loop undid 3 -- they agree
+   The loop terminates because the last step is a UTF-8 DECODE, and
+   repaired text fails it. A shell pipeline has no such stop -- see
+   the mojibake page for iconv cheerfully taking one hop too many.

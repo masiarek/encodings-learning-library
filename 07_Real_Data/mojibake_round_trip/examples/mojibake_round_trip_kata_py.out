@@ -1,0 +1,79 @@
+THE FIVE FIELDS, AS THE READER SEES THEM
+------------------------------------------------------------------------
+   A   'caf\xc3\xa9'
+   B   'caf?'
+   C   'caf\ufffd'
+   D   '\xc5\x81\xc3\xb3d\xc5\xba'
+   E   'caf\xc3\u0192\xc2\xa9'
+
+THE EVIDENCE, BEFORE ANY REPAIR
+------------------------------------------------------------------------
+   Three questions decide it, and none of them changes the data:
+     1. Is there a '?' or a U+FFFD? Then a byte was DISCARDED, and
+        by whom depends on which of the two it is.
+     2. Does the text re-encode under the table that was misapplied?
+     3. Do those bytes then decode as UTF-8?
+
+   A   re-encodes under latin-1; re-encodes under cp1252
+   B   holds '?' (discarded on WRITE); re-encodes under latin-1; re-encodes under cp1252
+   C   holds U+FFFD (discarded on READ); will NOT re-encode under latin-1; will NOT re-encode under cp1252
+   D   re-encodes under latin-1; will NOT re-encode under cp1252
+   E   will NOT re-encode under latin-1; re-encodes under cp1252
+
+THE VERDICTS
+------------------------------------------------------------------------
+       through latin-1              through cp1252
+   A   'caf\xe9' (1 hop)            'caf\xe9' (1 hop)
+   B   no repair possible           no repair possible
+   C   no repair possible           no repair possible
+   D   '\u0141\xf3d\u017a' (1 hop)  no repair possible
+   E   no repair possible           'caf\xe9' (2 hop)
+
+READING THE TABLE
+------------------------------------------------------------------------
+   A  repairs, one hop. Ordinary mojibake: UTF-8 read as a one-byte
+      table. Both columns agree, because the bytes involved (c3, a9)
+      sit outside 0x80-0x9F, where the two tables are identical.
+
+   B  never repairs. The '?' is byte 0x3F, written by the SENDING
+      system when its table had no room for the character. Nothing
+      about the original survived the write, so no reader can undo it.
+
+   C  never repairs. U+FFFD was written by the READING system when it
+      met a byte its table could not use. Same loss, opposite end of
+      the wire -- and that is the whole diagnostic value of telling
+      the two apart: B is the sender's logs, C is the receiver's.
+
+   D  repairs through latin-1 and NOT through cp1252. This is the
+      case the page is about. The text contains U+0081, one of the
+      five code points cp1252 cannot write, so the re-encode fails
+      before a decode is ever attempted. Latin-1 has all 256 and
+      hands the bytes straight back.
+
+   E  repairs through cp1252 in TWO hops, and not through latin-1 --
+      the exact mirror of D. The field went through the same broken
+      interface twice, and the reader on the far side was a Windows
+      one, so the second hop put an f-with-hook in the string. That
+      character lives at 0x83 in cp1252 and does not exist in
+      latin-1 at all, so the latin-1 re-encode fails.
+
+      D and E together are the point: the table that repairs is the
+      table that BROKE it, and guessing wrong does not silently
+      half-work -- it refuses.
+
+   For the record, D was 'Łódź' (1 hop through latin-1)
+   and E was 'café' (2 hops through cp1252).
+
+THE ONE THAT IS NOT ON THE LIST
+------------------------------------------------------------------------
+   Every verdict above assumed the fields are damaged. Field A was
+   read as 'caf' + A-tilde + copyright, and repaired to 'cafe-acute'
+   -- but that same string is one a person could legitimately have
+   typed, and the method cannot tell:
+      'Ã©' -> repaired=True -> 'é'
+
+   Same two characters, same successful round trip, and no way to
+   know which was meant. The guard proves the bytes ARE valid UTF-8;
+   it cannot prove they were meant to be. So decide for the COLUMN
+   -- if most of it is damaged the odd innocent row is a price you
+   chose, and if only one row looks damaged, look at it by hand.

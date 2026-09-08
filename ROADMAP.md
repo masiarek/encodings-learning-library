@@ -64,10 +64,10 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [`file` guesses](06_Terminal/file_guesses/README.md) | stub — why `file`'s answer is an inference, and when it is sure |
 | [A BOM in a CSV](07_Real_Data/bom_in_a_csv/README.md) | written, 2026-09-05 — Python and shell; the decision procedure, and the two platform fingerprints |
 | [CRLF vs LF](07_Real_Data/crlf_vs_lf/README.md) | written, 2026-09-07 — Python and shell; the byte that cannot appear in its own output, why the totals reconcile while the keys do not, and git reporting a tree clean when every line on disk differs from the blob |
-| [SAP code pages](07_Real_Data/sap_code_pages/README.md) | stub — 1100, 1160, 4110 and 4103, and reproducing an interface's mojibake outside SAP |
-| [Mojibake round trip](07_Real_Data/mojibake_round_trip/README.md) | stub — when damaged text can be repaired, and when the data is gone |
+| [SAP code pages](07_Real_Data/sap_code_pages/README.md) | written, 2026-09-07 — Python and shell; three numbering catalogues that all look alike, EBCDIC's alphabet in three pieces, the euro twins one byte apart, and the standing rule that every number is verified against the system |
+| [Mojibake round trip](07_Real_Data/mojibake_round_trip/README.md) | written, 2026-09-07 — Python and shell; the deciding question asked before the repair, Latin-1 total against cp1252's five holes, and a guard whose false-positive rate is measured rather than assumed |
 | [Fixed-width byte fields](07_Real_Data/fixed_width_byte_fields/README.md) | stub — why a 10-byte field holds five Polish letters, and how to truncate without cutting one in half |
-| [Windows-1252 vs Latin-1](07_Real_Data/windows_1252_vs_latin1/README.md) | stub — why the text is almost right except for `€` and the quotes |
+| [Windows-1252 vs Latin-1](07_Real_Data/windows_1252_vs_latin1/README.md) | written, 2026-09-07 — Python and shell; cp1252 keeps zero of Latin-1's disputed 32 bytes, so it is a replacement rather than a superset, and `é` cannot name the table while `€` can |
 | [Sorting and collation](07_Real_Data/sorting_and_collation/README.md) | stub — added 2026-09-06; three locales, three different alphabetical orders |
 | [From the telegraph to Unicode](09_History/from_telegraph_to_unicode/README.md) | written, 2026-09-05 |
 | [Why UTF-8 won](09_History/why_utf8_won/README.md) | written, 2026-09-05 |

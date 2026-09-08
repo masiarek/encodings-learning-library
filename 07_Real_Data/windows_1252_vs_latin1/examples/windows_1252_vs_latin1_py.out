@@ -1,0 +1,114 @@
+1. WHERE THE TWO TABLES STAND ON EVERY BYTE
+------------------------------------------------------------------------
+   identical in both tables        224 bytes
+   cp1252 maps to a DIFFERENT char  27 bytes
+   cp1252 has NO entry at all        5 bytes
+                                   256 total
+
+   Every byte in the last two rows lies in 0x80-0x9F, and that
+   range is 32 bytes wide -- so the two tables agree everywhere else.
+
+2. SO IS CP1252 A SUPERSET OF LATIN-1?
+------------------------------------------------------------------------
+   A superset would keep every mapping and add more. Count the bytes
+   where cp1252 KEEPS what Latin-1 says, over the disputed 32:
+      kept: 0 of 32
+   Zero. Every one of the 32 is either given away to another
+   character or dropped, so cp1252 REPLACES that block rather than
+   extending it. There is no byte on which cp1252 says everything
+   Latin-1 says and more -- which is what 'superset' would require.
+
+3. THE DISPUTED BLOCK, SIDE BY SIDE
+------------------------------------------------------------------------
+   byte   ISO-8859-1        Windows-1252
+   0x80   U+0080     €
+   0x81   U+0081    --   <- no entry in cp1252
+   0x82   U+0082     ‚
+   0x83   U+0083     ƒ
+   0x84   U+0084     „
+   0x85   U+0085     …
+   0x86   U+0086     †
+   0x87   U+0087     ‡
+   0x88   U+0088     ˆ
+   0x89   U+0089     ‰
+   0x8A   U+008A     Š
+   0x8B   U+008B     ‹
+   0x8C   U+008C     Œ
+   0x8D   U+008D    --   <- no entry in cp1252
+   0x8E   U+008E     Ž
+   0x8F   U+008F    --   <- no entry in cp1252
+   0x90   U+0090    --   <- no entry in cp1252
+   0x91   U+0091     ‘
+   0x92   U+0092     ’
+   0x93   U+0093     “
+   0x94   U+0094     ”
+   0x95   U+0095     •
+   0x96   U+0096     –
+   0x97   U+0097     —
+   0x98   U+0098     ˜
+   0x99   U+0099     ™
+   0x9A   U+009A     š
+   0x9B   U+009B     ›
+   0x9C   U+009C     œ
+   0x9D   U+009D    --   <- no entry in cp1252
+   0x9E   U+009E     ž
+   0x9F   U+009F     Ÿ
+
+   The left column is the C1 control range, U+0080 to U+009F.
+   ISO-8859-1 assigns no printable character there at all; the control
+   functions that use the range are defined by ISO/IEC 6429, and almost
+   nothing emits them. That is why the block was available to take.
+
+4. THE FIVE BYTES CP1252 LEAVES EMPTY
+------------------------------------------------------------------------
+   0x81 0x8D 0x8F 0x90 0x9D
+
+   Latin-1 maps all 256 byte values, so decoding under it CANNOT fail.
+   cp1252 maps 251. Those five are the difference between a table that
+   always round-trips and one that does not, which is the subject of
+   the mojibake round-trip page.
+      latin-1  decodes 256 of 256 single bytes
+      cp1252   decodes 251 of 256 single bytes
+
+5. THE EURO IS THE SHARPEST SINGLE CASE
+------------------------------------------------------------------------
+   '€' in cp1252     -> 80
+   '€' in Latin-1    -> UnicodeEncodeError: ordinal not in range(256)
+
+   ISO-8859-1 dates from 1987 and the euro sign postdates it by about a
+   decade, so the character is simply not in that table. This is why an
+   interface declared as Latin-1 can never carry a euro sign, whatever
+   the sender does -- ISO-8859-15 was published to add it, at 0xA4.
+
+6. WHICH TABLE WAS WRONGLY APPLIED? NOT EVERY CHARACTER TELLS YOU
+------------------------------------------------------------------------
+   Take UTF-8 bytes and read them under each of the two tables.
+
+   'é' = c3 a9
+      as Latin-1 : '\xc3\xa9'
+      as cp1252  : '\xc3\xa9'
+      IDENTICAL -- tells you nothing
+
+   '€' = e2 82 ac
+      as Latin-1 : '\xe2\x82\xac'
+      as cp1252  : '\xe2\u201a\xac'
+      DIFFERENT -- names the table
+
+   The reason is in section 1: the two tables differ only on 0x80-0x9F.
+   The bytes of 'e-acute' are 0xC3 0xA9, both outside that block, so
+   both tables give the same garbage. The euro's UTF-8 bytes include
+   0x82, which IS inside it -- so the middle character differs, and
+   that one character names the table the reader used.
+
+7. WHAT THE WEB DECIDED
+------------------------------------------------------------------------
+   The WHATWG Encoding Standard lists 17 labels for windows-1252, and
+   'iso-8859-1', 'latin1', 'ascii' and 'us-ascii' are four of them --
+   so a browser told a page is Latin-1 reads it as cp1252 on purpose,
+   and so does one told the page is ASCII.
+
+   That is a decision about labels on the web. It is NOT a licence to
+   treat the two as interchangeable in a file interface, where the
+   five unassigned bytes decide whether a repair is possible at all.
+   Label list checked against https://encoding.spec.whatwg.org/,
+   2026-09-07.

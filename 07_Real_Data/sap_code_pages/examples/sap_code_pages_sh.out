@@ -1,0 +1,65 @@
+1. THE SAME LETTERS, A DIFFERENT TABLE
+------------------------------------------------------------------------
+   text        ABC abc 123
+   as ASCII    4142432061626320313233
+   as CP037    c1c2c34081828340f1f2f3
+
+   Not a rearrangement you can do in your head: 'A' is 0x41 in ASCII
+   and 0xC1 in EBCDIC, and the space is 0x20 against 0x40.
+
+2. THE ALPHABET IS IN THREE PIECES
+------------------------------------------------------------------------
+   a-z in ASCII:  6162636465666768696a6b6c6d6e6f707172737475767778797a
+   a-z in CP037:  818283848586878889919293949596979899a2a3a4a5a6a7a8a9
+
+   Read the second row along: 81..89, then a jump to 91..99, then a
+   jump to a2..a9. Three runs of 9, 9 and 8. The ASCII row has
+   no jumps at all, which is the whole reason 'is it between a and z'
+   became an idiom.
+
+   a is 0x81 and z is 0xa9, so that test spans 41 byte values
+   to cover 26 letters.
+
+3. TWO EBCDIC PAGES THAT AGREE ON EVERY LETTER
+------------------------------------------------------------------------
+   a name is identical in both:
+      CP037   d296a68193a29289
+      CP500   d296a68193a29289
+
+   a bracketed field is not:
+      CP037   ba81bb
+      CP500   4a815a
+
+   Seven bytes differ between the two pages and every one of them is
+   punctuation: [ ] ! | ^ and the cent and not signs. So master data
+   crosses a wrongly configured interface unharmed and anything with
+   SYNTAX in it -- a JSON payload, a delimited file, a script -- does
+   not. Choosing the wrong one of these two is invisible until the
+   day the payload has a bracket in it.
+
+4. THE LINE SEPARATOR MOVES TOO, AND EVERY LINE TOOL GOES BLIND
+------------------------------------------------------------------------
+   ASCII file    616c7068610a626574610a
+   CP037 file    8193978881258285a38125
+   LF (0x0a) became 25 -- EBCDIC's NL
+
+   wc -c says 11 bytes and wc -l says 0 lines
+
+   Two lines went in and the file is not empty, but nothing on a Unix
+   box will find a line in it: wc, grep, sed, sort, head and read all
+   look for 0x0a and there is not one in the file. This is why an
+   EBCDIC extract is moved in BINARY mode and converted at one end,
+   rather than streamed through a pipeline of text tools.
+
+5. SORT ORDER IS NOT A REARRANGEMENT EITHER
+------------------------------------------------------------------------
+   8197979385               apple
+   c197979385               Apple
+   e985829981               Zebra
+   f99389a585a2             9lives
+
+   Sorted by their EBCDIC bytes, small letters come first, then
+   capitals, then digits -- the opposite grouping to ASCII, where
+   digits sort before capitals before small letters. A report ordered
+   on the mainframe and the same report ordered after transfer
+   disagree, and neither of them is broken.
