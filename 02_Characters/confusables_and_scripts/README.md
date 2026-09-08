@@ -6,6 +6,7 @@
 
 ```python
 import unicodedata
+'\u00e1' == '\u0430\u0301'                  # False       <- both render 'á'
 'a' == 'а'                                  # False       <- U+0061 and U+0430
 unicodedata.normalize('NFKC', 'а') == 'a'   # False       <- and no form merges them
 unicodedata.name('а').split()[0]            # 'CYRILLIC'  <- the only script test in the stdlib
@@ -63,6 +64,38 @@ This is the misconception worth killing first, because it is the natural guess a
    look-alike only where the standard already said the two are the
    same character wearing different clothes. Visual similarity is a
    fact about fonts, and no normalization form has ever claimed it.
+
+   The sharpest version of the rule is a pair that LOOKS like a
+   normalization problem, because one side really is a combining
+   sequence -- Russian marks stress with a real combining acute, so
+   this is ordinary dictionary typography, not a contrived string:
+
+      both render as    á   а́
+
+      latin     U+00E1          LATIN SMALL LETTER A WITH ACUTE
+      cyrillic  U+0430 U+0301   CYRILLIC SMALL LETTER A + COMBINING ACUTE ACCENT
+
+      form   latin       cyrillic    equal   lengths
+      NFC    00e1        0430 0301   False   1 vs 2
+      NFD    0061 0301   0430 0301   False   2 vs 2
+      NFKC   00e1        0430 0301   False   1 vs 2
+      NFKD   0061 0301   0430 0301   False   2 vs 2
+
+   Read the NFD row twice. It gives the two strings the SAME length
+   and the SAME combining mark, and they are still unequal -- so the
+   difference has been squeezed down to one code point, 0061 against
+   0430, which is section 1 again. A reader who reached for
+   normalize() because the lengths differed has been walked back to
+   the letters, which is where the problem always was.
+
+   And NFC does not close the gap, it WIDENS it: latin composes to a
+   single U+00E1, the cyrillic pair stays two. Not a composition
+   exclusion -- Unicode never encoded a precomposed cyrillic a with
+   acute at all. Nothing in the block carries a plain acute; the
+   nearest is U+04F2/U+04F3, which are U with DOUBLE acute. So
+   len() reports 1 against 2 forever, and the invariant a beginner
+   reaches for -- same picture, same length -- is not available in
+   either direction.
 
 3. ONE LETTER, AND IT IS SOMEBODY ELSE'S DOMAIN
 ------------------------------------------------------------------------
@@ -153,6 +186,10 @@ This is the misconception worth killing first, because it is the natural guess a
 Section 2 is the one to keep. Eight of the nine look-alikes survive every normalization form there is, and they *should* — [normalization](../../04_Python/normalization/README.md) reconciles two spellings of the **same** character, and Cyrillic er is not a spelling of Latin p. Folding them would corrupt every Russian word ever written.
 
 The ninth is the exception that states the rule. `U+217C SMALL ROMAN NUMERAL FIFTY` folds to `l` under NFKC, because Unicode itself had already declared the two **compatibility-equivalent**. So normalization catches a look-alike exactly when the standard has already said they are the same character in different clothes, and never because they look alike. Visual similarity is a fact about fonts, and no normalization form has ever claimed to know about fonts.
+
+The pair worth carrying away is the one that **looks** like a normalization problem, because half of it genuinely is one: `'\u00e1'` and `'\u0430\u0301'` both render `á`. The first is a single Latin letter; the second is Cyrillic `а` followed by a real [combining](../a_code_point_is_not_a_character/README.md) acute — and the two-code-point form is the *correct* spelling of the two, since Russian marks stress exactly that way. Nothing here is an attack string; it is dictionary typography.
+
+So `len()` says 1 against 2, and reaching for `normalize()` is the obvious move. It does not work, and **the NFD row is the one to read twice**: it gives the two strings the same length *and* the same combining mark, and they are still unequal — the whole difference has been squeezed down to one code point, `0061` against `0430`, which is section 1 again. A reader who reached for normalization because the lengths differed has been walked straight back to the letters, which is where the problem was the entire time. NFC does not close the gap either; it **widens** it, composing the Latin side to a single `U+00E1` while the Cyrillic pair stays two — and not as a composition exclusion, but because Unicode never encoded a precomposed Cyrillic `а` with acute at all. Nothing in the block carries a plain acute; the nearest characters are `U+04F2`/`U+04F3`, which are `U` with a *double* acute. The invariant a beginner reaches for — same picture, same length — is unavailable in both directions at once.
 
 That is also why [RFC 3454 §9.1 ↗](https://datatracker.ietf.org/doc/html/rfc3454#section-9.1) declines the problem in writing: mapping look-alikes together needs context — which font, which reader — that a protocol does not have. Twenty-four years later that is still the answer.
 

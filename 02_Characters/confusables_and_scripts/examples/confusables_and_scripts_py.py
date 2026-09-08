@@ -24,6 +24,12 @@ PAIRS = [
     ("l", "ⅼ"), ("/", "∕"), ("-", "‐"),
 ]
 
+# The same rule, one turn harder: a cross-script look-alike where one side is a
+# genuine combining sequence. Russian marks stress with U+0301, so the
+# two-code-point form is the CORRECT spelling, not the corrupted one.
+ACUTE_LAT = "\u00e1"          # LATIN SMALL LETTER A WITH ACUTE
+ACUTE_CYR = "\u0430\u0301"    # CYRILLIC SMALL LETTER A + COMBINING ACUTE ACCENT
+
 
 def head(n, title):
     print(f"\n{n}. {title}\n{BAR}")
@@ -80,6 +86,42 @@ print("   so NFKC folds it. That is the whole rule: normalization catches a")
 print("   look-alike only where the standard already said the two are the")
 print("   same character wearing different clothes. Visual similarity is a")
 print("   fact about fonts, and no normalization form has ever claimed it.")
+print()
+print("   The sharpest version of the rule is a pair that LOOKS like a")
+print("   normalization problem, because one side really is a combining")
+print("   sequence -- Russian marks stress with a real combining acute, so")
+print("   this is ordinary dictionary typography, not a contrived string:")
+print()
+print(f"      both render as    {ACUTE_LAT}   {ACUTE_CYR}")
+print()
+for label, s2 in (("latin", ACUTE_LAT), ("cyrillic", ACUTE_CYR)):
+    pts = " ".join("U+%04X" % ord(c) for c in s2)
+    names = " + ".join(unicodedata.name(c) for c in s2)
+    print(f"      {label:<10}{pts:<16}{names}")
+print()
+print(f"      {'form':<7}{'latin':<12}{'cyrillic':<12}{'equal':<8}lengths")
+for f in FORMS:
+    a = unicodedata.normalize(f, ACUTE_LAT)
+    b = unicodedata.normalize(f, ACUTE_CYR)
+    ha = " ".join("%04x" % ord(c) for c in a)
+    hb = " ".join("%04x" % ord(c) for c in b)
+    print(f"      {f:<7}{ha:<12}{hb:<12}{str(a == b):<8}{len(a)} vs {len(b)}")
+print()
+print("   Read the NFD row twice. It gives the two strings the SAME length")
+print("   and the SAME combining mark, and they are still unequal -- so the")
+print("   difference has been squeezed down to one code point, 0061 against")
+print("   0430, which is section 1 again. A reader who reached for")
+print("   normalize() because the lengths differed has been walked back to")
+print("   the letters, which is where the problem always was.")
+print()
+print("   And NFC does not close the gap, it WIDENS it: latin composes to a")
+print("   single U+00E1, the cyrillic pair stays two. Not a composition")
+print("   exclusion -- Unicode never encoded a precomposed cyrillic a with")
+print("   acute at all. Nothing in the block carries a plain acute; the")
+print("   nearest is U+04F2/U+04F3, which are U with DOUBLE acute. So")
+print("   len() reports 1 against 2 forever, and the invariant a beginner")
+print("   reaches for -- same picture, same length -- is not available in")
+print("   either direction.")
 
 # ------------------------------------------------------------------ 3
 head(3, "ONE LETTER, AND IT IS SOMEBODY ELSE'S DOMAIN")

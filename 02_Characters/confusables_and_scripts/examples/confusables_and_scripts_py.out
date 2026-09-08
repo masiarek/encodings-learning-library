@@ -38,6 +38,38 @@
    same character wearing different clothes. Visual similarity is a
    fact about fonts, and no normalization form has ever claimed it.
 
+   The sharpest version of the rule is a pair that LOOKS like a
+   normalization problem, because one side really is a combining
+   sequence -- Russian marks stress with a real combining acute, so
+   this is ordinary dictionary typography, not a contrived string:
+
+      both render as    á   а́
+
+      latin     U+00E1          LATIN SMALL LETTER A WITH ACUTE
+      cyrillic  U+0430 U+0301   CYRILLIC SMALL LETTER A + COMBINING ACUTE ACCENT
+
+      form   latin       cyrillic    equal   lengths
+      NFC    00e1        0430 0301   False   1 vs 2
+      NFD    0061 0301   0430 0301   False   2 vs 2
+      NFKC   00e1        0430 0301   False   1 vs 2
+      NFKD   0061 0301   0430 0301   False   2 vs 2
+
+   Read the NFD row twice. It gives the two strings the SAME length
+   and the SAME combining mark, and they are still unequal -- so the
+   difference has been squeezed down to one code point, 0061 against
+   0430, which is section 1 again. A reader who reached for
+   normalize() because the lengths differed has been walked back to
+   the letters, which is where the problem always was.
+
+   And NFC does not close the gap, it WIDENS it: latin composes to a
+   single U+00E1, the cyrillic pair stays two. Not a composition
+   exclusion -- Unicode never encoded a precomposed cyrillic a with
+   acute at all. Nothing in the block carries a plain acute; the
+   nearest is U+04F2/U+04F3, which are U with DOUBLE acute. So
+   len() reports 1 against 2 forever, and the invariant a beginner
+   reaches for -- same picture, same length -- is not available in
+   either direction.
+
 3. ONE LETTER, AND IT IS SOMEBODY ELSE'S DOMAIN
 ------------------------------------------------------------------------
    'apple.com'    U+0061 U+0070 U+0070 ...
