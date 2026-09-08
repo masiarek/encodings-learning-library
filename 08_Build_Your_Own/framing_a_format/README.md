@@ -525,6 +525,7 @@ THE FOUR RECORDS
 - [Tribit — a silly 3-bit encoding, specified](../tribit/README.md) — the format these three fields are missing from, and where to put them
 - [An encoding is four layers](../../03_Encodings/the_encoding_model/README.md) — the four layers a frame sits outside of; read it first if *encoding* and *format* still feel like one word
 - [Binary to text](../../03_Encodings/binary_to_text/README.md) — base16, base32, base64 and what each costs; Intel HEX's DATA field is the first of those
+- [UTF-7, and the seven-bit transport](../../03_Encodings/utf7_and_the_seven_bit_transport/README.md) — the same 7-bit constraint section 2 of the shell example measures, answered by an encoding rather than by a frame, and deprecated for a reason worth knowing before you make anything optional
 - [Escaping into ASCII](../../03_Encodings/escaping_into_ascii/README.md) — the other way of surviving a text channel, and how it differs from armouring the whole stream
 - [The byte that means something to somebody else](../../12_Adversarial/in_band_signals/README.md) — what happens to a format whose delimiter turns up in its data
 - [Hex: a number, or a picture of bytes](../../01_Bits_and_Bytes/hex_number_or_bytes/README.md) — `RECLEN` is a number and `DATA` is a picture, in the same record, in the same notation
