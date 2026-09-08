@@ -1,0 +1,33 @@
+input  01 02 03 04   32 bits, and 32 is not a multiple of 5
+
+   RFC 4648 standard   AEBAGBA=
+   RFC 4648 base32hex  0410610=
+   z-base-32 symbols   yrbygby
+
+The first three are ONE encoding with three symbol tables. Same bit
+cutting, same padding, same length -- you can convert between them with
+a 32-entry lookup and nothing else. The alphabet is a presentation
+choice: base32hex sorts in the same order as the data, z-base-32 drops
+the characters people mistype.
+
+CROCKFORD IS THE ODD ONE, AND HERE IS THE PROOF
+   as a NUMBER            16909060  = 0x1020304
+   Crockford (base 32 of that number)   G40R4
+   RFC 4648 of the same bytes           AEBAGBA=
+
+They are not re-tablings of each other, and the reason is which end gets
+padded. RFC 4648 cuts the BIT STREAM from the left and zero-fills the
+last group on the RIGHT, then marks it with '='. Crockford is a notation
+for an INTEGER, so leading zeros are meaningless and any padding is on
+the LEFT -- there is no '=' because there is no partial group, only a
+smaller number.
+
+So the two agree exactly when the input is a whole number of five-bit
+pieces and disagree otherwise:
+   0000000000   40 bits, 0 left over -> same shape
+   01020304     32 bits, 2 left over -> DIFFERENT ANSWERS
+
+Which is why 'Base32' on a converter menu is not a specification. Ask
+which alphabet, and ask whether the thing being encoded is a byte string
+or a number -- those are two different questions and only one of them is
+about symbols.

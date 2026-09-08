@@ -1,0 +1,38 @@
+the bytes   63 61 66 e9 2e 74 78 74   -- e9 is not a legal UTF-8 lead byte
+
+PYTHON: THE CHECK IS AT THE DOOR, AND THEN IT IS OVER
+   strict            UnicodeDecodeError at byte 3
+   errors='replace'  'caf�.txt'   lossy, and cannot be undone
+   errors='surrogateescape' 'caf\udce9.txt'
+   ...and back       True
+   Once decode() returns, the value is a str and the str type makes no
+   promise about where it came from. Nothing downstream can tell a
+   checked string from a repaired one -- which is why the error handler
+   is a POLICY DECISION and not a convenience.
+
+RUST: THE CHECK IS AT THE DOOR AND THE TYPE REMEMBERS
+   String::from_utf8(v)        -> Result<String, FromUtf8Error>
+   String::from_utf8_lossy(v)  -> Cow<str>, U+FFFD substituted
+   str::from_utf8_unchecked    -> unsafe, and the word is the point
+   A &str is a PROOF that the bytes were checked. The check happens
+   once, at the same boundary Python checks at, and then it is carried
+   in the type -- so a function taking &str cannot be handed unchecked
+   bytes by accident, and no later code re-validates 'to be safe'.
+
+C: THERE IS NO DOOR
+   char* is bytes. Nothing decodes, so nothing can refuse, and a
+   sequence like this travels to the far end of the program unexamined
+   -- where strlen counts 8, printf emits whatever the terminal makes of
+   it, and the first thing that notices is a person looking at output.
+
+WHAT THE THREE HAVE IN COMMON, WHICH IS THE ACTUAL LESSON
+   All three agree these bytes are not UTF-8. The decoders are the same
+   algorithm. What differs is how much of that knowledge survives the
+   function call:
+       C       nothing was ever asked
+       Python  it was asked and the answer was discarded
+       Rust    it was asked and the answer is in the type
+
+   So 'is this string valid' is a question you can only ask at a
+   boundary. One byte further in, the honest answer in two of the three
+   languages is: it depends who checked, and you cannot find out.

@@ -1,0 +1,35 @@
+channel                é                        what the scheme wraps
+JSON string            "\u00e9"                 UTF-16 code units
+URL percent-encoding   %C3%A9                   BYTES -- of an unnamed encoding
+MIME encoded-word      =?utf-8?q?=C3=A9?=       bytes, of a charset it NAMES
+punycode (IDNA)        xn--caf-dma              code points -- no bytes at all
+
+THE SAME FOUR ON AN ASTRAL CHARACTER, WHERE THEY SEPARATE
+   JSON     "\ud83d\ude00"   TWO escapes -- a surrogate pair, because
+                            \u is a 16-bit code unit and nothing bigger
+   URL      %F0%9F%98%80   four bytes, four %XX, because UTF-8
+                            spells it in four -- and nothing in the URL
+                            says that it was UTF-8
+
+WHY THE UNIT MATTERS MORE THAN THE SPELLING
+
+JSON escapes CODE UNITS, so its escape hatch inherits UTF-16's shape --
+which is how a JSON document, whose transport is UTF-8 by RFC 8259, ends
+up containing a surrogate pair that has no UTF-8 encoding at all.
+
+%XX escapes BYTES and never records whose. urllib defaults to UTF-8,
+but Latin-1 would give %E9 for the same character, and the URL is
+the same shape either way. The receiver has to be told out of band --
+which is why old query strings are a graveyard of guessed charsets.
+
+A MIME encoded-word is the only one of the four that CARRIES the charset
+name inside the encoded text. That is why an email header can mix
+charsets word by word, and why it is the least ambiguous of the four.
+
+Punycode does not touch bytes. It re-spells the sequence of CODE POINTS
+as ASCII letters using a delta-encoding, so it has no encoding
+parameter to get wrong -- and it is why an internationalized domain has
+an xn-- prefix rather than a percent sign.
+
+So 'it is escaped' is not a description. Ask WHICH UNIT is escaped, and
+you have also asked which layer is allowed to decode it.

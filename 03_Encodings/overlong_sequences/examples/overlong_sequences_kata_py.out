@@ -1,0 +1,37 @@
+legal     2f       bits 00101111
+overlong  c0 af    bits 00000 101111
+the payload of both, as a number: 47 and 47
+Same value. A decoder that just assembles the bits gets '/' from both.
+
+Python: UnicodeDecodeError -- refused, and it is right to
+
+WHY REFUSING IS NOT PEDANTRY
+
+The moment one character has two byte strings, a check that reads BYTES
+and a step that reads CHARACTERS can be made to disagree -- and they
+will disagree in the attacker's favour, because the check runs first.
+
+   a filter looks for the byte 2f              -- the path separator
+   the request carries c0 af                   -- not 2f, filter passes
+   a lenient decoder later yields '/'          -- and the path escapes
+
+That is not hypothetical: it is the shape of the IIS directory-traversal
+bug, and it is why RFC 3629 made the shortest form a REQUIREMENT rather
+than a recommendation. One character, one spelling, so the two readings
+cannot come apart.
+
+THE RULE, AS ARITHMETIC
+   U+002F first needs 1 byte(s); anything longer for this code point is overlong
+   U+0080 first needs 2 byte(s); anything longer for this code point is overlong
+   U+0800 first needs 3 byte(s); anything longer for this code point is overlong
+   U+10000 first needs 4 byte(s); anything longer for this code point is overlong
+   So each length has a minimum code point, and a sequence is legal only
+   if its value reaches its own length's floor. Two bytes must carry at
+   least U+0080; c0 and c1 can never begin a legal sequence at all,
+   which is why they appear nowhere in valid UTF-8.
+
+AND THE SAME TRAP WITHOUT THE ENCODING
+   canonicalize, THEN check. Any time a value has more than one
+   representation -- overlong UTF-8, %2f in a URL, a Windows short
+   filename, a trailing dot -- a check that runs before normalization is
+   checking a different string from the one that gets used.

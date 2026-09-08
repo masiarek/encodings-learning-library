@@ -1,0 +1,31 @@
+start with   'café'   ->  utf-8 bytes 63 61 66 c3 a9
+
+   B.decode('utf-8')            round trip      str  'café'
+   B.decode('latin-1')          wrong table     str  'cafÃ©'
+   B.decode('ascii')            table too small UnicodeDecodeError
+   S.encode('latin-1')          works, and is lossy later bytes b'caf\xe9'
+   B.decode('latin-1').encode() decoded, re-encoded bytes b'caf\xc3\x83\xc2\xa9'
+
+Line 1 is the only one that is a round trip: same table both ways.
+
+Line 2 is MOJIBAKE, and notice that nothing failed. Latin-1 has a
+character for all 256 bytes, so it can never raise -- it just tells you
+the wrong thing, quietly, with an exit status of zero.
+
+Line 3 is the good failure. ASCII has no character for c3, so the decode
+stops and says which byte and where. A table that CAN fail is a feature.
+
+Line 4 succeeds and is the trap underneath a lot of legacy data: 'café'
+really does fit in Latin-1, so nothing warns you -- until the next
+string has a character Latin-1 has never heard of.
+
+Line 5 is DOUBLE ENCODING, and this is the one that ruins databases.
+   5 bytes in, 7 bytes out: 63 61 66 c3 83 c2 a9
+   The text was decoded with the wrong table and then honestly encoded
+   with the right one, so the mojibake is now CORRECT UTF-8 of the wrong
+   characters. It round-trips perfectly from here on, which is exactly
+   why it survives every later check and reaches the user.
+
+The verbs, one more time. ENCODE goes text -> bytes. DECODE goes bytes
+-> text. Each needs a named table, and neither can guess it: the bytes
+do not carry it.
