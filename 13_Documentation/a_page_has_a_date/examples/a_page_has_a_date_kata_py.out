@@ -1,0 +1,43 @@
+WHAT THE PAGE SAYS
+   man 5 utf8 on a 2026 Mac describes UTF-8 as encoding up to SIX bytes,
+   covering 0x00000000 to 0x7FFFFFFF, and cites RFC 2279.
+
+WHAT IS TRUE OF UNICODE TODAY
+   RFC 3629 superseded RFC 2279 in NOVEMBER 2003. UTF-8 is at most FOUR
+   bytes and stops at U+10FFFF -- the ceiling UTF-16's surrogate pairs
+   can express. Five- and six-byte forms are ill-formed, and every
+   modern decoder rejects them.
+   the largest code point:   U+10FFFF = 1114111
+   its UTF-8 length:         4 bytes
+
+SO IS THE PAGE WRONG?
+   No -- and this is the part worth sitting with. That page documents
+   the machine's own iconv, which still ACCEPTS the six-byte forms it
+   describes. The page is an accurate description of a 1998 standard
+   that a 2026 binary still implements. Unicode moved; that copy of the
+   software did not; the page describes the software.
+
+   'Out of date' and 'wrong' are different findings, and only one of
+   them tells you to stop reading.
+
+THE THREE DATES ON ANY PAGE, AND WHAT EACH IS EVIDENCE OF
+   the date at the foot     when somebody last EDITED the page
+   the standard it cites    which version of the world it describes
+   the binary's --version   what will actually run
+   They are three independent facts and they are routinely years apart.
+   Only the third one is evidence about what your command will do.
+
+HOW TO READ A PAGE THAT MIGHT BE OLD
+   1. Find the citation. An RFC number, an ISO number, a standard's
+      year -- that is the page telling you which era it is from.
+   2. Check whether that standard was superseded. RFC 2279 -> 3629 is
+      the example here; there are many.
+   3. Then ask the binary anyway, because a superseded standard that is
+      still implemented is exactly the situation that produces a bug
+      report nobody can reproduce.
+
+AND THE REASON THIS MATTERS BEYOND MAN PAGES
+   The six-byte forms are not a curiosity. A decoder that accepts them
+   accepts a SECOND spelling for code points that already have one --
+   which is the overlong-sequence problem, and the reason RFC 3629
+   tightened the definition rather than merely narrowing the range.

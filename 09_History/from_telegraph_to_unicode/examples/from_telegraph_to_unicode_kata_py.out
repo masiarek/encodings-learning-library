@@ -1,0 +1,45 @@
+1. THE CASE BIT -- ASCII 1963
+   A 0x41 1000001    a 0x61 1100001   differ in bit 5
+   Z 0x5a 1011010    z 0x7a 1111010   differ in bit 5
+   chr(ord('A') ^ 0x20) = 'a'
+   The committee laid the two alphabets 0x20 apart so a teleprinter
+   could shift case by flipping one wire. The scar: every program that
+   still does case with XOR breaks on the first non-ASCII letter, and
+   'ß'.upper() is two characters, which no bit flip can produce.
+
+2. \r\n -- THE CARRIAGE AND THE PLATEN, 1901
+   CR returned the carriage; LF advanced the paper. Two motions, two
+   characters, because the machine really did do two things -- and a
+   Teletype needed the time both took.
+   'a\r\nb'.split(chr(10)) -> ['a\r', 'b']
+   The scar: half the world kept both bytes and half kept one, so every
+   text file crossing between them has an invisible byte at the end of
+   every line, and every tool that shows you TEXT hides it.
+
+3. latin-1 AS A BYTE HACK
+   bytes(range(256)).decode('latin-1') -> 256 characters, no error
+   Latin-1 maps all 256 byte values to code points 0-255, so it is TOTAL
+   -- it can never fail. That makes it the standard trick for smuggling
+   arbitrary bytes through a text API, and the standard cause of
+   mojibake, and the reason a wrong decode is silent rather than loud.
+
+4. .length COUNTING THE WRONG THING
+   😀   Python len 1   utf-16 units 2   utf-8 bytes 4   graphemes 1
+   Four numbers, four correct answers, one question. The systems that
+   answer 2 adopted Unicode while it was still 16 bits wide.
+
+5. THE EXTRACT THAT IS NOT ASCII AT ALL
+   EBCDIC is not a rearrangement of ASCII: its letters come in three
+   runs with gaps, so 'is this a letter' cannot be a range check and
+   sorting bytes does not sort the alphabet.
+   EBCDIC cp037   A=0xc1 I=0xc9 J=0xd1 S=0xe2
+   ASCII          A=0x41 I=0x49 J=0x4a S=0x53
+   Look at I to J in the EBCDIC row: the run breaks. That is the scar a
+   mainframe extract still carries into a modern pipeline.
+
+THE POINT OF THE HISTORY
+   Not one of those five was a mistake at the time. Each was the right
+   answer to a real constraint -- a wire, a platen, a byte budget, a
+   16-bit machine word, a punched card. The mess is what you get when
+   six good local decisions have to keep working together for sixty
+   years, which is also a fair description of any system you maintain.

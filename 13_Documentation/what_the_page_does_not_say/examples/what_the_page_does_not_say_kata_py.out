@@ -1,0 +1,45 @@
+THE CLAIM TO TEST
+   iconv accepts //TRANSLIT and //IGNORE as suffixes on the target
+   encoding, and not one man page on this library's Mac mentions
+   either -- 17,264 pages searched, 2026-09-07.
+
+SO ASK THE PROGRAM. MEASURED 2026-09-07, INPUT 'café' AS UTF-8:
+
+                        macOS 26 (BSD iconv)        Ubuntu 24.04 (glibc)
+   -t ASCII             refuses, exit 1             refuses, exit 1
+   -t ASCII//TRANSLIT   caf'e      exit 1           caf?       exit 0
+   -t ASCII//IGNORE     caf        exit 1           caf        exit 1
+
+   Read the middle row twice. The flag exists on both, it is documented
+   on neither, it produces DIFFERENT TEXT on the two systems -- an
+   approximation on one and a question mark on the other -- and it
+   disagrees about whether that counts as success.
+
+   So 'use //TRANSLIT' is not portable advice, and no page would have
+   told you: the feature is undocumented in both places, and the
+   difference is undocumented everywhere.
+
+DOCUMENTATION FAILS SILENTLY IN BOTH DIRECTIONS
+   It can OMIT a feature that exists -- the case above.
+   It can DESCRIBE a feature that no longer behaves as stated: a man
+   page carries the date of whoever last edited it, not the date of the
+   binary sitting beside it.
+   Neither failure announces itself. Both look like a complete page.
+
+THE THREE QUESTIONS THAT ACTUALLY SETTLE SOMETHING
+   1. What does it DO?        run it on a two-line input and read the
+      output AND the exit status -- the middle row above differs in both
+   2. WHICH program is it?    --version, and `which -a`; there are two
+      of most of these tools and you have one
+   3. WHEN was this written?  the date at the foot of the page and the
+      RFC number it cites are evidence about the DOCUMENT, never about
+      the binary
+
+THE RECIPE, WHICH IS THE ACTUAL ANSWER
+   printf 'caf\303\251\n' | iconv -f UTF-8 -t ASCII//TRANSLIT; echo $?
+   Two lines, thirty seconds, and it answers for YOUR machine -- which
+   is the only machine the answer was ever true for.
+
+   That is not cynicism about documentation. It is this library's own
+   rule pointed at its sources: a claim is worth what the program that
+   produced it is worth, and a page is a claim nobody re-ran.

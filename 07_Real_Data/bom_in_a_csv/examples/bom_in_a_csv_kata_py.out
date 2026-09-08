@@ -1,0 +1,34 @@
+without BOM  49 44 2c 6e 61 6d 65 0a ...
+with BOM     ef bb bf 49 44 2c 6e 61 ...
+
+READ THE BOM'D FILE FOUR WAYS
+   BOM'd  read as utf-8      first key '\ufeffID'   row['ID'] would raise KeyError
+   plain  read as utf-8      first key 'ID'         row['ID'] would work
+   BOM'd  read as utf-8-sig  first key 'ID'         row['ID'] would work
+   plain  read as utf-8-sig  first key 'ID'         row['ID'] would work
+
+   utf-8-sig is the only reading that works on BOTH files: it strips the
+   mark if it is there and does nothing if it is not. That is the whole
+   recommendation for reading a CSV that might have come from Excel.
+
+WHAT THE BROKEN KEY ACTUALLY IS
+   repr          '\ufeffID'
+   code points   U+FEFF U+0049 U+0044
+   it prints as  ﻿ID   -- indistinguishable from ID on any screen
+   U+FEFF is ZERO WIDTH NO-BREAK SPACE. It draws nothing, it is not
+   whitespace to strip(), and it makes the header look perfectly correct
+   in the KeyError message that mentions it.
+
+AND NOW THE OTHER DIRECTION, WHICH IS WHY THIS IS NOT SIMPLY A BUG
+   Excel on Windows reads a UTF-8 CSV correctly only if the BOM is
+   there; without it, it falls back to the system code page and the
+   accented names arrive as mojibake. So the same three bytes are:
+       the FIX      for a person double-clicking the file
+       the BUG      for the program parsing it
+   There is no setting that is right for both, which means the skill is
+   not 'strip BOMs' -- it is knowing which of the two consumers a given
+   file is for, and writing it accordingly.
+
+WRITING, THE TWO WAYS
+   open(p,'w',encoding='utf-8')      -> 49 44 2c ...  for programs
+   open(p,'w',encoding='utf-8-sig')  -> ef bb bf  for Excel

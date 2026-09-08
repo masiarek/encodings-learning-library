@@ -1,0 +1,35 @@
+TWO STRINGS THAT DRAW THE SAME
+   NFC  café  len 4  bytes 5  0063 0061 0066 00E9
+   NFD  café  len 5  bytes 6  0063 0061 0066 0065 0301
+   equal? False     hash equal? False
+
+THE FOUR FORMS
+   form   café       ﬁle      2⁵     what it does
+   NFC    café       ﬁle      2⁵     composes, canonical only
+   NFD    café      ﬁle      2⁵     decomposes, canonical only
+   NFKC   café       file     25     composes, and folds compatibility spellings
+   NFKD   café      file     25     decomposes, and folds compatibility spellings
+
+   The K forms are LOSSY on purpose: 2⁵ becomes 25 and the ligature
+   becomes two letters. That is right for a search index and wrong for
+   anything you will display back to the person who typed it.
+
+THE THREE PLACES IT BITES
+   1. comparison   NFC == NFD is False
+   2. dict/set     {NFC: 1}.get(NFD) -> None   (the key is not there)
+   3. length       4 vs 5 code points for one four-letter word
+   A dict lookup that misses is the worst of the three, because nothing
+   raises -- the key is simply not there, and the two keys print the
+   same in the traceback.
+
+WHERE THE TWO SPELLINGS COME FROM
+   Not from carelessness. A Mac's filesystem has historically handed
+   back decomposed names, most keyboards and most Windows software
+   produce composed ones, and both are correct Unicode. So a filename
+   that made a round trip through macOS and a filename typed on Windows
+   can be the same word and different strings.
+
+THE RULE
+   Normalize at the BOUNDARY -- once, on the way in -- and store one
+   form. Normalizing to compare is free; normalizing in place is an
+   edit to somebody's data, and NFKC in particular cannot be undone.

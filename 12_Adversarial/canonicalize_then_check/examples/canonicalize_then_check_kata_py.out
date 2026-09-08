@@ -1,0 +1,35 @@
+input                    check first                canonicalise first
+/etc/passwd              REFUSED                    REFUSED
+/etc/./passwd            opened /etc/passwd         REFUSED
+/var/../etc/passwd       opened /etc/passwd         REFUSED
+/etc/%70asswd            opened /etc/passwd         REFUSED
+/tmp/ok                  opened /tmp/ok             opened /tmp/ok
+
+   Four of the five reach /etc/passwd, and the guard that runs FIRST
+   stops exactly one of them -- the one spelled the obvious way. The
+   check was not wrong: it told the truth about the string it was given.
+   Everything after it handed the next stage a different string.
+
+THE RULE, AND WHY IT IS NOT 'CHECK HARDER'
+   You cannot enumerate the spellings. Percent-encoding, dot segments,
+   symlinks, case folding, Unicode normalization and overlong UTF-8 all
+   produce the same resource from different bytes, and a blocklist has
+   to be right about all of them at once. Canonicalising first makes the
+   check compare ONE value against ONE value.
+
+THE UNICODE VERSION OF THE SAME BUG
+   stored user   'ADMIN'
+   admin    -> NFKC+casefold 'admin'    MATCHES the reserved name
+   ADMIN    -> NFKC+casefold 'admin'    MATCHES the reserved name
+   ａdmin    -> NFKC+casefold 'admin'    MATCHES the reserved name
+   Ⓐdmin    -> NFKC+casefold 'admin'    MATCHES the reserved name
+   If you compare before folding, all four are different users. If you
+   fold before comparing, all four are one. Neither is 'safe' on its
+   own -- what makes it safe is that ONE of them is the stored form and
+   everything is converted to it before any comparison happens.
+
+AND THE ORDER THAT IS STILL WRONG
+   canonicalise -> check -> canonicalise again is not belt and braces;
+   the second canonicalisation can move the value again. Do it once, as
+   early as possible, and pass the CANONICAL value downstream -- never
+   the original alongside it, or something will use the wrong one.

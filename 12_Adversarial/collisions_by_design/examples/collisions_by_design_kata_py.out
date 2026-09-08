@@ -1,0 +1,36 @@
+SIX SIGNUPS, AND THE CLASSES THEY FALL INTO
+   'admin'    <- ['admin', 'ADMIN', 'Admin', 'ａdmin', 'ⓐdmin']
+   'admın'    <- ['admın']
+
+   6 distinct strings became 2 identities. That is not a
+   failure of the folding function -- it is the definition of one. Any
+   function that decides two different strings are the same person is
+   many-to-one by construction.
+
+SO THE QUESTION IS NEVER 'DOES IT COLLIDE'
+   It is: who gets the class? Three answers, and every system picks one
+   whether it knows it or not:
+     FIRST COMES, FIRST SERVED   the earliest registration owns the
+       class and every later spelling is refused. Simple, and it means
+       an attacker who registers first owns YOUR name's class.
+     RESERVE THE WHOLE CLASS     registering 'admin' also blocks every
+       spelling that folds to it. Safe, and it burns names.
+     REFUSE AMBIGUITY            reject any name whose folded form
+       differs from itself -- so only the canonical spelling can ever be
+       registered. Strictest, and it excludes legitimate scripts.
+
+THE ONE THAT IS NOT AN ANSWER
+   Storing the ORIGINAL and comparing the FOLDED. Then two accounts
+   exist, both display the same name, and which one a lookup finds
+   depends on the index. That is not a policy; it is the absence of one.
+
+THE SAME SHAPE OUTSIDE TEXT
+   A hash function, a case-insensitive filesystem, an email provider
+   that ignores dots before the @, a phone number normalizer. Each
+   creates classes; each has to answer the ownership question; and the
+   ones that made news answered it late.
+
+WHAT TO WRITE DOWN
+   The folding function, the stored form, and the owner rule -- three
+   sentences, in the spec, before the first account is created. They
+   cannot be changed afterwards without invalidating identities.

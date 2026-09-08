@@ -1,0 +1,40 @@
+THE SHAPE
+   A character that means 'stop here' or 'what follows is an
+   instruction' to one program is ordinary data to another. Put it in a
+   field and the two disagree about where the field ends -- and one of
+   them is the one that acts.
+
+   byte   char  means                      to
+   00     NUL   ends a C string            the kernel and every C library
+   0a     LF    ends a record              line-oriented tools, log parsers, HTTP headers
+   2c     ,     ends a field               every CSV reader
+   22     "     ends a quoted field        CSV, JSON, shell
+   3d     =     ends a formula's name      a spreadsheet, if it is the FIRST byte
+
+THE ONE THAT IS NOT A BYTE AT ALL
+   A leading =, +, - or @ in a CSV cell is data to your program and a
+   FORMULA to a spreadsheet. Nothing in the file changed; the meaning
+   was assigned by the reader. Prefixing the cell with a quote or a
+   space is the fix, and it is a fix in the WRITER, because the reader
+   is not yours.
+
+WHY ESCAPING IS NOT ONE PROBLEM
+   the value  'O"Brien, Jr.\nadmin'
+   To put that in a CSV cell you double the quote and wrap the field.
+   To put it in a JSON string you backslash the quote and the newline.
+   To put it in a shell command you do something different again.
+   Three destinations, three escapings, and the value is unchanged in
+   all three -- so escaping is a property of the CHANNEL, never of the
+   data, and a single 'sanitise' function that runs early is the bug.
+
+THE TWO DEFENCES, AND ONLY ONE OF THEM SCALES
+   1. Escape at the boundary, per destination, with the destination's
+      own library. csv.writer, json.dumps, shlex.quote, a parameterised
+      query -- each knows its own in-band signals.
+   2. Get the data out of the band entirely: a length-prefixed field, a
+      separate argument, a bound parameter. Then no byte can mean
+      'field ends here' because the length already said where.
+
+   Everything else -- stripping, blocklists, replacing quotes on input
+   -- is guessing which channel the value will eventually cross, and
+   values usually cross more than one.

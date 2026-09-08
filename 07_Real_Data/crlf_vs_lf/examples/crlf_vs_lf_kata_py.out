@@ -1,0 +1,39 @@
+THE SAME REPORT, TWO LINE ENDINGS
+   dos   69 64 2c 61 6d 6f 75 6e 74 0d 0a 31 ...   28 bytes
+   unix  69 64 2c 61 6d 6f 75 6e 74 0a 31 2c ...   25 bytes
+
+READ BOTH WITHOUT TELLING PYTHON ANYTHING
+   dos   last value '3.25'     float() -> 3.25   key 'amount'
+   unix  last value '3.25'     float() -> 3.25   key 'amount'
+
+   The numbers are identical and correct to the cent. Now look at the
+   values as bytes -- that is where the difference is hiding.
+
+WHERE THE EXTRA BYTE GOES
+   csv.reader with newline='' -> [['id', 'amount'], ['1', '10.50'], ['2', '3.25']]
+   split('\n')                 -> [['id', 'amount\r'], ['1', '10.50\r'], ['2', '3.25\r'], ['']]
+   Splitting by hand leaves a 0d on the end of every last field. It
+   never shows on screen, it survives str.strip() only if you remember
+   to call it, and it makes '10.50\r' a string that float() still
+   accepts -- so the totals come out right and the KEYS do not match.
+
+THE COMPARISON THAT FAILS
+   dos id field '1' == '1' ? True
+   That is the shape of the whole bug: arithmetic is fine because the
+   trailing byte is stripped by the number parser, and lookups fail
+   because they are not.
+
+THE THREE FIXES, IN ORDER OF PREFERENCE
+   1. open(p, newline='') and let the csv module handle it -- it knows
+      about \r\n and it is the documented way to open a CSV.
+   2. open(p) in text mode with universal newlines, which translates
+      \r\n to \n before your code sees it -- fine for line-oriented
+      data, wrong for csv, which needs to see the raw line endings.
+   3. .rstrip('\r\n') by hand, which works and which you will forget
+      exactly once.
+
+AND THE ONE THAT IS NOT A FIX
+   'a\r\nb'.splitlines() -> 'a\r\nb'.splitlines() = ['a', 'b']
+   splitlines() cuts on eleven different sequences, not one, so it will
+   also split a string containing U+2028 or a form feed. Right for text,
+   wrong for a format whose record separator is defined.

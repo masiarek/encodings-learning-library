@@ -1,0 +1,38 @@
+THE LINE, AS CODE POINTS
+   length 50 characters, 60 bytes
+   invisible format characters at index [24, 25, 27, 45, 47]:
+       24  U+202E  RIGHT-TO-LEFT OVERRIDE
+       25  U+2069  POP DIRECTIONAL ISOLATE
+       27  U+2066  LEFT-TO-RIGHT ISOLATE
+       45  U+2069  POP DIRECTIONAL ISOLATE
+       47  U+2066  LEFT-TO-RIGHT ISOLATE
+
+   Every one of those has General_Category Cf -- FORMAT. They have no
+   width, no glyph and no effect on what the parser reads. They change
+   only the ORDER a renderer draws the surrounding text in.
+
+THE TWO READERS
+   the compiler   reads the ordered list of code points, in order, and
+                  ignores Cf characters entirely
+   the reviewer   reads a RENDERING, produced by a bidi algorithm that
+                  is doing exactly what those characters ask
+   Both are correct. They are given different objects.
+
+WHY THE REVIEWER IS THE VULNERABLE ONE
+   Every other reader in the pipeline sees the bytes: the compiler, the
+   linter, the test suite, git's own hashing. The code reviewer is the
+   only participant whose input is a picture -- and a picture is the one
+   representation the attacker gets to choose.
+
+THE DETECTION, WHICH IS THREE LINES
+   [c for c in text if unicodedata.category(c) == 'Cf']
+   -> 5 hits on this line, 0 on ordinary source
+   That is a whole-repo grep, it has no false-negative story to worry
+   about, and it belongs in CI rather than in a reviewer's eyes. GitHub,
+   rustc and gcc all added warnings for exactly this after CVE-2021-42574.
+
+THE GENERAL LESSON
+   Any time a human approves something on the strength of a rendering,
+   the rendering is part of the trust boundary. Source review, a diff, a
+   signed document, a URL in an address bar -- the question is always
+   whether the thing the person SAW is the thing that will ACT.

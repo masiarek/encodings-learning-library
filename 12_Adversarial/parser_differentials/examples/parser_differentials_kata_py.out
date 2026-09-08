@@ -1,0 +1,35 @@
+1. THE SAME BYTES, TWO ALPHABETS
+   as latin-1   'café'
+   as cp1252    'café'
+   as utf-8     UnicodeDecodeError -- refuses
+   Nothing in the bytes says which. A checker that decodes one way and
+   an actor that decodes another are looking at different strings.
+
+2. THE CLASSIC: A CHECK IN BYTES, AN ACTION IN CHARACTERS
+   filter looks for the byte 2f in c0 af -> not found, passes
+   a STRICT decoder refuses this outright
+   a LENIENT decoder that assembles the payload bits yields '/'
+   Two components, one input, opposite conclusions. The check passed
+   because it was true about the bytes; the action happened because it
+   was true about the characters.
+
+3. A JSON DIFFERENTIAL YOU CAN RUN TODAY
+   {"role": "user", "role": "admin"}
+   Python json.loads -> {'role': 'admin'}
+   Duplicate keys are not an error in the JSON spec; it says nothing
+   about which wins. Python keeps the LAST. Other parsers keep the
+   first. A gateway that validates with one library and a service that
+   acts with another can disagree about a single request -- and neither
+   is violating the specification.
+
+4. AND ONE MORE, IN THE SAME LIBRARY
+   json.loads(\'"\ud800"\') accepts a lone surrogate: '\ud800'
+   ...and the resulting str cannot be encoded as UTF-8 at all
+   So a document that parses is not a document that can be re-emitted
+   in the encoding its own RFC requires.
+
+THE DEFENCE
+   One parser. If the checking stage and the acting stage cannot share
+   an implementation, they must share a CANONICAL FORM: parse once,
+   re-serialise, and pass the re-serialised value on -- so the second
+   stage never sees the attacker's spelling, only yours.

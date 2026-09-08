@@ -1,0 +1,43 @@
+RULE 1 -- BYTES AT THE EDGES, TEXT IN THE MIDDLE
+   forbidden:  data = open(p, 'rb').read(); data.replace(b'a', b'b')
+               ...then treating data as text for the next 200 lines
+   Decode once, at the boundary. Everything inside works on str, and
+   the encode happens at the far edge. A program that carries bytes
+   through its middle has to remember an encoding at every step.
+
+RULE 2 -- THE ENCODING COMES FROM THE PROTOCOL, NEVER FROM THE BYTES
+   these bytes 63 61 66 c3 a9 are:
+      valid utf-8     -> 'café'
+      valid latin-1   -> 'cafÃ©'
+      valid cp1252    -> 'cafÃ©'
+   Three readings, all successful, one intended. Nothing in the file
+   says which. So the encoding is a fact about the CONTRACT -- the
+   Content-Type header, the database column, the interface spec -- and
+   guessing is what you do when the contract failed to say.
+
+RULE 3 -- errors= IS A DECISION
+   replace          'caf�'
+   ignore           'caf'
+   surrogateescape  'caf\udce9'
+   Every one of those succeeded and every one of them means something
+   different about your data. Choosing by which one stops the traceback
+   is choosing at random.
+
+RULE 4 -- NORMALIZE BEFORE COMPARING
+   'café' == 'café' -> True
+   after NFC      -> True
+   forbidden:  if user_input == stored_name:
+   ...on anything that came from a filesystem, a browser or a Mac.
+
+RULE 5 -- 'LENGTH' HAS THREE ANSWERS, SO SAY WHICH
+   'café'       code points 4   utf-8 bytes 5   utf-16 units 4
+   '😀'          code points 1   utf-8 bytes 4   utf-16 units 2
+   'é'         code points 2   utf-8 bytes 3   utf-16 units 2
+   forbidden:  VARCHAR(20) with no note about what 20 counts
+   A field limit, a truncation and a progress bar are three different
+   questions, and only one of them is about bytes.
+
+THE RULES AS ONE SENTENCE
+   Decode at the door, work in text, encode at the far door, and write
+   the encoding down in the contract -- because the bytes will not
+   remember it for you and neither will the next person.

@@ -1,0 +1,42 @@
+DECODING BYTES THAT ARE NOT UTF-8
+   input 63 61 66 e9 2e 74 78 74
+   strict             UnicodeDecodeError     nothing produced -- an outage, on purpose
+   replace            'caf�.txt'             lossy
+   ignore             'caf.txt'              lossy
+   backslashreplace   'caf\\xe9.txt'         lossy
+   surrogateescape    'caf\udce9.txt'        REVERSIBLE
+
+   Exactly one of the five is reversible, and it is the one that looks
+   strangest: surrogateescape maps each bad byte to a lone surrogate in
+   a private range, so the original byte can be recovered on the way
+   out. That is why it is what Python uses for FILENAMES, which are
+   bytes that must survive a round trip even when they are not text.
+
+   ignore is silent data loss. replace is visible data loss -- U+FFFD is
+   a record that something was there, not of what. backslashreplace is
+   lossless as TEXT but the escape is now literal characters, so a later
+   consumer sees six characters where there was one byte.
+
+ENCODING TEXT A TABLE CANNOT HOLD
+   text 'café → ż' -> ascii
+   strict             UnicodeEncodeError
+   replace            b'caf? ? ?'
+   ignore             b'caf  '
+   backslashreplace   b'caf\\xe9 \\u2192 \\u017c'
+   xmlcharrefreplace  b'caf&#233; &#8594; &#380;'
+   namereplace        b'caf\\N{LATIN SMALL LETTER E WITH ACUTE} \\N{RIGHTWARDS ARROW} \\N{LATIN SMALL LETTER Z WITH DOT ABOVE}'
+
+   Two of those exist only for encoding, and both are round-trippable by
+   a reader that knows the convention: xmlcharrefreplace produces valid
+   HTML/XML, namereplace produces Python source. Neither is 'safe' in
+   general -- they are safe for one consumer each.
+
+THE DECISION, STATED PLAINLY
+   strict           an outage at 3am, and the only one that cannot
+                    silently ship wrong data
+   replace/ignore   a smaller or wronger value, and a green log
+   surrogateescape  a round trip, at the price of a str that is not
+                    encodable by anything else
+   The handler is not a convenience argument. It is where you write down
+   what your program should do when the world hands it something it
+   cannot explain -- and the default, strict, is a defensible answer.

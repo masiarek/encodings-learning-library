@@ -1,0 +1,41 @@
+1. PASS encoding= TO EVERY open(), EVEN WHEN IT IS THE DEFAULT
+   locale.getpreferredencoding(False) is the default on your machine,
+   and it is NOT necessarily utf-8: it is cp1252 on a western Windows
+   box and the locale's charset elsewhere. This machine's answer is
+   deliberately not printed -- it would make this key a fact about the
+   runner, which is the whole problem the habit prevents.
+   forbidden:  open('data.csv')
+   correct:    open('data.csv', encoding='utf-8')
+   Same file, same code, different result on a colleague's laptop -- and
+   nothing in the traceback points at the open() call.
+
+2. RUN THE TESTS ONCE UNDER -X warn_default_encoding
+   python3 -X warn_default_encoding -W error::EncodingWarning -m pytest
+   Every open() that relied on the default becomes a warning naming the
+   file and line. It is a one-off audit, not a permanent setting, and it
+   is the only way to find the ones you did not write.
+
+3. FILENAMES ARE BYTES WEARING A COSTUME
+   sys.getfilesystemencoding()      'utf-8'
+   sys.getfilesystemencodeerrors()  'surrogateescape'
+   os.fsdecode(b'caf\xe9.txt') -> 'caf\udce9.txt'
+   os.fsencode(that)    -> b'caf\xe9.txt'   round trip: True
+   The name is not valid UTF-8 and Python still round-trips it, because
+   surrogateescape puts each undecodable byte in a lone surrogate. The
+   cost: that str cannot be encoded by anything else, so printing it or
+   putting it in JSON raises -- correctly.
+
+4. bytes METHODS THAT LOOK LIKE str METHODS ARE ASCII-ONLY
+   b'CAF\xc3\x89'.lower() -> b'caf\xc3\x89'
+   'CAFÉ'.lower() -> 'café'
+   The bytes version lowercased C, A, F and left the two bytes of É
+   alone -- because bytes.lower() is defined on ASCII and nothing else.
+   That is documented and it is on purpose: bytes have no encoding, so
+   there is no other case mapping it could apply. It is still a silent
+   wrong answer if you thought you were working with text.
+
+THE ONE-LINE VERSION
+   Say the encoding out loud at every boundary, treat filenames as a
+   special case that Python has already solved for you, and never let a
+   bytes object anywhere near a method whose name suggests it knows
+   about language.

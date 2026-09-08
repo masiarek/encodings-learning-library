@@ -1,0 +1,41 @@
+THE PAGES THAT EXIST, AND WHERE
+   page           where      what it is
+   utf8(5)        BSD/macOS  the encoding itself -- and see the date kata
+   utf-8(7)       Linux      the same subject, different section AND spelling
+   euc(5)         BSD        Extended Unix Code, the CJK family
+   gbk(5)         BSD        the Chinese national standard
+   mskanji(5)     BSD        Shift-JIS, as Microsoft shipped it
+   big5(5)        BSD        traditional Chinese
+   multibyte(3)   both       the HUB: every multibyte function in libc
+   charsets(7)    Linux      the Linux hub page, a different tour
+   locale(1)      both       what your six variables currently are
+   iconv(1)       both       and iconv(3), which is a different page
+
+   Note rows 1 and 2. The SAME subject is utf8 in section 5 on a Mac and
+   utf-8 in section 7 on Linux -- different name, different section, so
+   `man utf8` finds it on one machine and nothing on the other. That is
+   the first reason these pages go unread: you cannot guess the name.
+
+HOW TO FIND THEM WITHOUT KNOWING THE NAME
+   man -k charset       # apropos: searches the one-line descriptions
+   man -k encoding
+   man -k multibyte
+   man -w utf8          # prints the PATH, or nothing -- the quickest
+                        # way to ask 'does this machine have it?'
+   ls /usr/share/man/man5 | head
+
+WHY THEY ARE WORTH THE HOUR
+   They are PRIMARY sources for the system you are actually on, written
+   by the people who shipped the libraries you are calling. Almost
+   everything else you will read about encodings is somebody's summary
+   of a standard, and a summary cannot tell you what YOUR iconv accepts.
+
+   multibyte(3) is the one to read first if you read only one: it names
+   mbrtowc, wcrtomb, mbsrtowcs and the rest in one place, and those
+   functions are what every command-line tool on the machine is
+   actually calling when it decides what a character is.
+
+AND THE HEALTH WARNING FROM THE PAGE NEXT DOOR
+   A man page has a date and cites a standard, and both can be decades
+   old while still describing the binary correctly. Read them as
+   evidence about YOUR system, not as a description of Unicode.
