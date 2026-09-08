@@ -1,0 +1,53 @@
+   file       first 6 bytes              shebang line, as bytes
+   good.sh    23212f62696e               23212f62696e2f73680a
+   bom.sh     efbbbf23212f               efbbbf23212f62696e2f73680a
+   crlf.sh    23212f62696e               23212f62696e2f73680d0a
+
+RUN THEM DIRECTLY -- this is the kernel reading the first two bytes
+   ./good.sh    ran
+   ./bom.sh     ran
+   ./crlf.sh    did NOT run (126 or 127)
+
+NOW HAND THE SAME FILES TO sh, WHICH DOES NOT LOOK AT THE FIRST TWO BYTES
+   sh good.sh    ran
+   sh bom.sh     ran
+   sh crlf.sh    ran
+
+WHAT HAPPENED, LINE BY LINE
+
+good.sh   23 21 is '#!', so the kernel reads the rest of the line as an
+          interpreter path and execs /bin/sh. Nothing else about the file
+          matters at this point -- not the name, not the extension.
+
+bom.sh    starts ef bb bf. The kernel compares the first TWO bytes
+          against 0x23 0x21, they do not match, so the file has no
+          shebang and execve fails with ENOEXEC -- and yet it exited 0.
+          That is the shell catching the failure and re-running the file
+          with itself, a POSIX fallback older than the shebang. So three
+          bytes nothing draws took the kernel out of the loop, the script
+          still ran, and no status anywhere records that anything
+          unusual happened. Under a different interpreter -- python3,
+          awk -- there is no fallback and it simply does not run.
+
+          The status it fails with is itself platform-dependent -- 126
+          on macOS, 127 on Ubuntu, measured 2026-09-07 -- which is why
+          the table above records a verdict and not a number. A script
+          testing for one of the two is testing its own machine.
+
+crlf.sh   the shebang matches, so the kernel takes the rest of the line
+          -- and the line ends 0d 0a, so the interpreter it looks for is
+          '/bin/sh' with a CARRIAGE RETURN on the end. There is no such
+          file. The error names /bin/sh, which is present and correct,
+          and the invisible byte is the whole problem.
+
+THE PART THAT CATCHES PEOPLE
+   Look at the second block. Both broken files RUN under sh, because the
+   shell was told which interpreter to use and never consults the first
+   two bytes. So the same file fails one way and works the other, and a
+   CI job that invokes 'sh script.sh' passes while the deployed cron
+   entry that runs './script.sh' fails.
+
+   crlf.sh under sh is worth its own line: it runs, and every command in
+   it receives an argument with a trailing 0d. That usually still exits 0
+   -- which is the worst of the three outcomes, because nothing at all
+   reports it.

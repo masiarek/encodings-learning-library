@@ -1,0 +1,33 @@
+   file           bytes        wc -l      wc -c      last byte
+   with.txt       610a         1          2          0a
+   without.txt    61           0          1          61
+
+   without.txt holds a letter and reports ZERO LINES. wc -l does not
+   count lines; it counts newline BYTES, which is the same number only
+   for a file that ends in one. POSIX defines a line as ending in 0a, so
+   wc is right and the file is, strictly, not text.
+
+READING IT BACK IN A LOOP
+   while read < without.txt   iterations: 0
+   while read < with.txt      iterations: 1
+   read returns false on the last piece when it hits EOF instead of a
+   newline, so the loop body never runs for it. The data is not lost --
+   the variable was set -- but the loop dropped it. This is the single
+   most common way a last record vanishes from a shell pipeline.
+
+CONCATENATION, WHICH IS WHERE IT SPREADS
+   cat without.txt with.txt -> 61610a   (one line: aa)
+   Two files, one line. The missing byte did not stay in its own file;
+   it merged two records. A CSV assembled this way has a row that is two
+   rows, and nothing anywhere reports an error.
+
+WHAT DREW THE SYMBOL YOUR SHELL SHOWED
+   Nothing in the file. zsh prints a reverse-video % (bash prints
+   nothing) when the cursor is not in column 1 at the end of output. It
+   is your PROMPT saying the line was unfinished -- a fact about the
+   terminal, not a byte you can grep for.
+
+AND THE FIX, WHICH IS ONE BYTE
+   printf 'a\n'   writes it;  printf 'a'   does not.
+   echo appends one for you, which is why echo is the safer default for
+   writing a line and printf the right tool for writing exact bytes.

@@ -1,0 +1,40 @@
+THE FILE
+   6 bytes: 4869c3a9090a
+
+1. xxd -- one byte at a time, in file order
+   00000000: 4869 c3a9 090a                           Hi....
+   The middle column is the file. Nothing here was reordered, decoded or
+   guessed.
+
+2. THE TEXT COLUMN IS ALREADY A READING
+   Hi.... -- FOUR of the six bytes drew as dots. c3 and a9 are one
+   letter and the column shows two dots for it; 09 and 0a add two more.
+   The column tests each byte against ASCII on its own, so it can never
+   show you a character that took more than one byte.
+
+3. cat -v -- the same bytes respelled in ASCII
+   HiM-CM-)	
+   M-C M-) is c3 a9, and ^I is the tab. Nothing is lost and nothing is
+   decoded: it is a pure respelling, which is why it survives being
+   pasted into an email and xxd does not.
+
+4. WHAT THIS KEY DELIBERATELY DOES NOT RUN
+   od -a  names the low bytes -- ht, nl, sp -- and the names it uses
+          differ between the BSD and GNU builds. Its default is octal
+          WORDS at octal offsets, which is a C type, not a file.
+   hexdump  with no flags prints 16-bit words in your CPU's byte order,
+          so 'Hi' comes out as 6948 on a little-endian machine. The bytes
+          were reordered to suit an integer that is not in the file.
+   Both are recorded nowhere in this key because their output is a fact
+   about the machine. Use hexdump -C, or xxd, when you need the file.
+
+5. file -- the only one that is guessing
+   It reads the first bytes and matches a table. On this file it will say
+   something about text; on a file one byte longer it might say something
+   else. A guess is useful and it is not evidence.
+
+THE RULE
+   Exactly one column in this whole page is the file: the hex, printed
+   one byte at a time, in file order. Everything else -- the text column,
+   cat -v, od's names, file's verdict -- is a reading, and every reading
+   has already decided something on your behalf.

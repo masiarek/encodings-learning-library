@@ -1,0 +1,41 @@
+report.txt
+   1. NAME          extension .txt    (a convention; nothing enforces it)
+   2. CONTENT       first bytes 89504e470d0a1a0a
+      file(1) says something containing PNG
+      file(1) says something containing image
+   3. PERMISSION    mode -rw-r--r--  -- not executable
+   4. WHAT OPENS IT the desktop asks a MIME database keyed on the NAME,
+                    so it agrees with question 1 and not with 2
+
+data.png
+   1. NAME          extension .png    (a convention; nothing enforces it)
+   2. CONTENT       first bytes 23212f62696e2f73
+      file(1) says something containing shell
+      file(1) says something containing script
+      file(1) says something containing text
+      file(1) says something containing ASCII
+   3. PERMISSION    mode -rwxr-xr-x  -- the kernel will try to run it
+   4. WHAT OPENS IT the desktop asks a MIME database keyed on the NAME,
+                    so it agrees with question 1 and not with 2
+
+THE FOUR QUESTIONS, AND WHY THEY DISAGREE WITHOUT ANY OF THEM BEING WRONG
+
+   1. What is it CALLED?         the extension. A convention between
+      humans; the filesystem stores a name and has no opinion.
+   2. What is IN it?             magic bytes. file(1) reads a few and
+      matches a table -- a guess, and it says so by ranking candidates.
+   3. May it be EXECUTED?        a permission bit, which is about
+      authority, not about content. An empty file can carry it.
+   4. What OPENS it?             a desktop MIME association, usually
+      resolved from the extension -- so it answers question 1 again.
+
+report.txt is PNG content with a text name: 1 and 4 say text, 2 says PNG.
+data.png is a script with an image name and the execute bit: 1 and 4 say
+image, 2 says shell script, 3 says the kernel will try to run it -- and
+the kernel is right, because ./data.png works and none of the other three
+questions were consulted.
+
+So 'what type is this file' has no answer on its own. It has four, from
+four sources, and picking the wrong one is the whole of the security
+advice on the subject: trust the CONTENT for what a thing is, and never
+the name -- while remembering that content is a guess too.

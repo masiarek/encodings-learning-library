@@ -1,0 +1,31 @@
+THE LINE
+   $ printf '%s = ' "$(cat f)"; xxd -p f
+   ż = c5bc
+
+THREE DECISIONS, AND THE LINE NEEDS ALL THREE
+
+1. THE FILE HAS NO TRAILING NEWLINE.
+   f is 2 bytes: c5bc -- letter only
+   If it had one, $(cat f) would still be 'ż' -- command substitution
+   strips trailing newlines -- but xxd -p would print c5bc0a and the row
+   would claim the letter is three bytes. The file must be exactly the
+   character for the two halves of the line to be about the same thing.
+
+2. printf DOES NOT ADD ONE, SO THE ROW STAYS A ROW.
+   printf %s = -> no newline, so xxd continues the SAME line
+   With echo the '=' would end the line and the hex would land under it.
+
+3. xxd -p DOES ADD ONE, SO THE ROW ENDS.
+   xxd -p output ends with 0a
+   That is the 0a finishing the line -- supplied by the tool, not by the
+   file. Three separate decisions about one byte, and the readable
+   one-liner is what you get when all three line up.
+
+WHAT EACH HALF IS ACTUALLY DOING
+   $(cat f)   DECODES: the terminal draws these bytes using your locale.
+              Get the locale wrong and the left side is mojibake while
+              the right side stays correct.
+   xxd -p     does not decode at all. It is the file.
+   So the row is a decoded reading beside the bytes it came from -- which
+   is the whole reason it is worth typing: the two halves can disagree,
+   and when they do, the right one is right.
