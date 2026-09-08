@@ -1,0 +1,40 @@
+THE FOUR FILES
+   files/O'Brien.txt
+   files/plain.txt
+   files/quote".txt
+   files/two words.txt
+
+1. NAIVE: find | xargs
+   lines out: 1 of 4        xargs exit: 1
+   The apostrophe opens a quote that never closes, so xargs consumes the
+   rest of the input looking for the end of it and then reports an
+   unterminated quote. One filename broke the whole pipeline -- not just
+   its own line.
+
+2. WHY: xargs SPLITS ON MORE THAN NEWLINES
+      a
+      b
+      c
+      d
+   One line in, four arguments out. xargs splits on spaces and tabs as
+   well as newlines, so 'two words.txt' was already two files before the
+   quote problem started.
+
+3. THE FIX, AND IT IS NOT A REFINEMENT
+   find -print0 | xargs -0    lines out: 4 of 4
+   NUL is the one byte a filename cannot contain -- the kernel's own API
+   cannot express it -- so it is the only delimiter that can never occur
+   in the data. Every other separator is a guess about what people do not
+   name their files.
+
+4. THE OTHER CORRECT FORM, WITH NO xargs AT ALL
+   find -exec ... \;          lines out: 4 of 4
+   find hands the name to exec directly, so nothing ever parses it as
+   text. Use -exec ... + when you want them batched; it is the same
+   safety with one process instead of four.
+
+WHAT THIS IS REALLY ABOUT
+   A filename is a bag of bytes with exactly two forbidden values: 00 and
+   2f. Everything else -- spaces, quotes, newlines, escapes -- is legal,
+   and every tool that treats a list of filenames as TEXT has to invent a
+   convention the filesystem never agreed to.

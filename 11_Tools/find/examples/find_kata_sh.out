@@ -1,0 +1,33 @@
+ONE FILE, WHOSE NAME IS BYTES
+   ls says      café.txt
+   name bytes   636166c3a92e747874
+
+SEARCH FOR IT TWO WAYS
+   find . -name "<NFC>"    1 hit(s)
+   find . -name "<NFD>"    0 hit(s)
+   the two patterns differ: 636166c3a92e747874 vs 63616665cc812e747874
+
+   find compares BYTES. The two patterns are different byte strings, so
+   at most one of them can match -- and which one matches depends on
+   what the filesystem stored, not on what you typed.
+
+WHY THAT IS A MAC-SPECIFIC TRAP
+   On Linux the kernel stores the bytes you handed it, so the NFC pattern
+   finds the NFC file and that is the end of it.
+   On macOS the filesystem may DECOMPOSE the name on the way in -- HFS+
+   did this always, APFS normalizes on comparison -- so a file created
+   with c3 a9 can be listed back as 65 cc 81. Your shell then completes
+   the name correctly, cat opens it, and find -name with the composed
+   spelling finds nothing. Same machine, same second, one tool comparing
+   bytes and another comparing through a normalizing layer.
+
+WHAT WORKS ON EITHER
+   find . -name "caf*"     1 hit(s)   -- a pattern that avoids the letter
+   Or normalize both sides before comparing, in a language that can:
+       python3 -c "import unicodedata,sys;print(unicodedata.normalize('NFC',sys.argv[1]))"
+
+THE GENERAL SHAPE
+   A filename is a bag of bytes with two forbidden values, 00 and 2f. It
+   is not text, it has no declared encoding, and every tool that treats
+   it as text has quietly chosen one. find chose bytes -- which is the
+   defensible choice, and still surprises you.

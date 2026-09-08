@@ -1,0 +1,40 @@
+od WITH NO FLAGS
+   0000000 060543 141546 005251
+   0000006
+   Two things happened before a byte was printed. The offsets are OCTAL,
+   and the values are 16-bit WORDS in octal -- so neither column is in a
+   base you were thinking in, and the bytes are paired into integers.
+
+THE FLAG THAT ASKS FOR WHAT YOU WANTED
+   0000000 63 61 66 c3 a9 0a
+   0000006
+   -A d  address in decimal;  -t x1  type: heXadecimal, 1 byte at a time.
+   That is the whole interface. -t takes a C type letter and a size, so
+   x1 x2 x4 are the same reading at three widths and d1 d2 d4 are signed
+   decimals of the same bytes.
+
+ONE PASS, THREE READINGS -- THE THING NO OTHER DUMP DOES
+   0000000 63 61 66 c3 a9 0a
+    99 97 102 -61 -87 10
+    c a f 303 251 \n
+   0000006
+   Each -t adds a ROW under the same offsets, so you can line up the hex,
+   the signed decimal and the C escape for one byte without running the
+   file through three tools and hoping they agree about where they are.
+
+WHAT THIS KEY WILL NOT PRINT, AND WHY
+   od -a names each byte -- nl, sp, ht for the low ones. For bytes above
+   0x7f the two implementations disagree: measured 2026-09-07, BSD od
+   prints c3 and a9 as themselves, while GNU od masks the high bit and
+   prints C and ) -- names for the ASCII characters 0x43 and 0x29, which
+   are not in the file at all.
+   So od -a output cannot be quoted without naming the machine it came
+   from, which makes it the wrong thing to paste into a bug report and
+   the reason this page exists.
+
+WHEN TO REACH FOR od ANYWAY
+   It is the only dump POSIX guarantees, so it is the one that will be
+   there on a stripped container or an unfamiliar Unix. The two flags to
+   remember are the two that make it honest:
+       od -A d -t x1 file
+   and if you want the text column too, add -t c.

@@ -1,0 +1,33 @@
+target   ż   U+017C   LATIN SMALL LETTER Z WITH DOT ABOVE
+
+FOUR WAYS TO TYPE IT
+   X11 compose    <Compose> z .                      X11's Compose file -- one project's table
+   Vim digraph    Ctrl-K z .                         Vim's own table, which is not X11's
+   code point     U+017C, entered per-application    normative, but you must know the number
+   Unicode name   LATIN SMALL LETTER Z WITH DOT ABOVE normative, and the only one a PROGRAM can use
+
+THE TWO TABLES DISAGREE, AND THAT IS THE POINT
+   Measured on this library's own parse of both files: the compose file
+   and Vim's digraph table can produce 2,580 characters between them and
+   agree on only 611. So a sequence you learned in one is usually not a
+   sequence in the other, and neither is a property of the CHARACTER --
+   they are properties of two programs.
+
+THE NAME IS THE ONE THAT TRAVELS
+   ud.lookup('LATIN SMALL LETTER Z WITH DOT ABOVE' ) -> ż
+   ud.lookup('EURO SIGN'                           ) -> €
+   ud.lookup('GRINNING FACE'                       ) -> 😀
+   It is normative, it is stable for the life of the code point, and it
+   is the same in every language that ships a Unicode table -- Python's
+   \N{...}, Rust's char::from_u32 plus a lookup crate, and the name
+   column of every reference. That is why it is what to write in source
+   and in a bug report, and why 'the z with the dot' is not.
+
+AND WHEN YOU CANNOT TYPE IT AT ALL
+   The escape is always available, and its shape says what the language
+   thinks a character is:
+   Python  "\N{LATIN SMALL LETTER Z WITH DOT ABOVE}"  or  "\u017c"
+   Rust    '\u{17c}'
+   shell   printf '\xc5\xbc'   -- BYTES, not a character
+   The shell has no character escape at all -- only bytes -- which is
+   the same gap C has, and for the same reason.

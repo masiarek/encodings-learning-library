@@ -52,4 +52,21 @@ That is deliberate, and the reason is that folders are URLs. A topic — the byt
 | K34 | [Three scripts, six answers, and the two that surprise you](06_Terminal/the_first_two_bytes/README.md#practice) | [The first two bytes](06_Terminal/the_first_two_bytes/README.md) | 101 → 201 |
 | K35 | [Assemble the escape sequence, then find the byte nobody escapes](06_Terminal/terminal_hyperlinks/README.md#practice) | [Terminal hyperlinks, and the URI that is not one](06_Terminal/terminal_hyperlinks/README.md) | 201 |
 | K36 | [Six round trips, and the three that come back unchanged](10_Best_Practices/what_your_language_gives_you/README.md#practice) | ["Handles Unicode" is four questions](10_Best_Practices/what_your_language_gives_you/README.md) | 301 |
-| K37 | [Seven ways to blank a file, and the one that leaves the old bytes behind](11_Tools/creating_and_writing_files/README.md#practice) | [`touch`, `: >` and `install` are not three spellings of one command](11_Tools/creating_and_writing_files/README.md) | 201 |
+| K37 | [What does a dot match? Four answers, and who decided](11_Tools/grep/README.md#practice) | [`grep` on text that is not ASCII](11_Tools/grep/README.md) | 201 |
+| K38 | [Three marks, one missing encoding, and three defaults that hide a file](11_Tools/ripgrep/README.md#practice) | [`ripgrep` — the Rust grep](11_Tools/ripgrep/README.md) | 201 |
+| K39 | [The only engine that can match one grapheme, and what it stops telling you](11_Tools/pcre2/README.md#practice) | [PCRE2 — the other regex engine](11_Tools/pcre2/README.md) | 201 |
+| K40 | [Two stages, and why removing a container fixes no encoding](11_Tools/decompress_then_decode/README.md#practice) | [`--pre` and `-z` — decompress, then decode](11_Tools/decompress_then_decode/README.md) | 201 |
+| K41 | [A file cat can open and find -name cannot see](11_Tools/find/README.md#practice) | [`find`, and filenames that are bytes](11_Tools/find/README.md) | 201 |
+| K42 | [Four filenames, and how many survive the naive pipeline](11_Tools/xargs/README.md#practice) | [`xargs` splits on the wrong things](11_Tools/xargs/README.md) | 201 |
+| K43 | [The edit that works, the locale that breaks it, and the -i with no portable spelling](11_Tools/sed/README.md#practice) | [`sed` matches patterns, not bytes](11_Tools/sed/README.md) | 201 |
+| K44 | [Whose awk is this, and what does length() count?](11_Tools/awk/README.md#practice) | [`awk` is three programs](11_Tools/awk/README.md) | 201 |
+| K45 | [-b or -c, and the machine that changes the answer](11_Tools/cut/README.md#practice) | [`cut` counts what it is told to count](11_Tools/cut/README.md) | 201 |
+| K46 | [Delete one letter, damage two words -- sets against sequences](11_Tools/tr_and_sort/README.md#practice) | [`tr` and `sort` work a byte at a time](11_Tools/tr_and_sort/README.md) | 201 |
+| K47 | [Four ways to ask if two files match, none of them the question you meant](11_Tools/diff_and_cmp/README.md#practice) | [`diff` compares lines, `cmp` compares bytes, neither compares text](11_Tools/diff_and_cmp/README.md) | 201 |
+| K48 | [Three tools that take text as bytes, and the one with no opinion](11_Tools/look_paste_tee_split/README.md#practice) | [`split` cuts characters, `paste` cuts delimiters, `look` needs a sorted file, `tee` does nothing](11_Tools/look_paste_tee_split/README.md) | 201 |
+| K49 | [Seven ways to blank a file, and the one that leaves the old bytes behind](11_Tools/creating_and_writing_files/README.md#practice) | [`touch`, `: >` and `install` are not three spellings of one command](11_Tools/creating_and_writing_files/README.md) | 201 |
+| K50 | [Why the pairs came out swapped, and what a grouping width claims](11_Tools/hexdump/README.md#practice) | [`hexdump` is a format engine wearing six presets](11_Tools/hexdump/README.md) | 201 |
+| K51 | [Edit the dump and put it back -- and find the column that was ignored](11_Tools/xxd/README.md#practice) | [`xxd` is the dump you can put back](11_Tools/xxd/README.md) | 201 |
+| K52 | [Read the interface as a C type, and say why -a cannot be quoted](11_Tools/od/README.md#practice) | [`od` reads types, not bytes](11_Tools/od/README.md) | 201 |
+| K53 | [Six columns, and the one no dump tool has](11_Tools/uni/README.md#practice) | [`uni` — the character's name](11_Tools/uni/README.md) | 101 → 201 |
+| K54 | [Four ways to type it, and the two that identify the character](11_Tools/typing_a_character/README.md#practice) | [Typing a character you cannot type](11_Tools/typing_a_character/README.md) | 101 → 201 |

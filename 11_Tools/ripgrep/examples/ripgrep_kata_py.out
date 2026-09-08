@@ -1,0 +1,33 @@
+1. rg NEVER ASKS THE LOCALE
+   grep takes its definition of a character from LC_CTYPE, so the same
+   pattern gives different answers in different environments. rg has no
+   locale code path at all: patterns and haystacks are UTF-8 by
+   default, everywhere, on every platform. One implementation, one
+   answer -- which is the single biggest reason to reach for it.
+
+2. IT READS THE BOM, WHICH IS WHY IT CAN SEARCH UTF-16
+   utf-8, no mark         63 61 66 c3  -> nothing; searched as raw bytes
+   utf-8 + signature      ef bb bf 63  -> UTF-8
+   utf-16 + BOM           ff fe 63 00  -> UTF-16LE
+   utf-16-le, NO mark     63 00 61 00  -> nothing; searched as raw bytes
+   utf-32 + BOM           ff fe 00 00  -> UTF-32LE mark -- and rg tests only three, so it reads this as UTF-16LE
+
+   Three marks are tested, and UTF-32 is not one of them. A UTF-16 file
+   WITHOUT a BOM is also searched as raw bytes -- so 'rg reads UTF-16'
+   is true only of files that announce themselves.
+
+3. --column COUNTS BYTES, AND SAYS SO
+   'café x'
+   the x is character 6, and byte 7
+   rg reports the byte offset. That is the honest number for a tool
+   that works in bytes, and it is not the number an editor's cursor
+   shows -- so a script that jumps to rg's column lands one place early
+   on any line containing a multi-byte character.
+
+4. WHAT IT SKIPS BY DEFAULT, WHICH IS NOT AN ENCODING QUESTION
+   rg respects .gitignore, skips hidden files and skips binary files
+   unless told otherwise. Those are three separate defaults, three
+   separate flags (-u, -uu, -uuu stack them off), and every one of them
+   can make a search come back empty on a file that is right there.
+   grep has none of these defaults, which is why the two tools
+   disagreeing usually has nothing to do with the pattern.

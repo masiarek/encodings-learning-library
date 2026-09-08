@@ -1,0 +1,28 @@
+THE ROUND TRIP
+   original      636166650a
+   00000000: 6361 6665 0a                             cafe.
+   xxd -r back   636166650a   identical: yes
+
+NOW EDIT THE TEXT COLUMN AND PUT IT BACK
+   00000000: 6361 6665 0a                             XXXX.
+   result        636166650a   -> cafe
+   Nothing changed. xxd -r reads the OFFSET and the HEX and stops; the
+   text column is output only, and editing it edits nothing. That is the
+   sharpest demonstration in this library that the right-hand column is
+   the tool talking, not the file.
+
+NOW EDIT THE HEX COLUMN
+   6665 -> 7065   636170650a   -> cape
+   That is the column that is the file.
+
+THE OFFSET IS AN INSTRUCTION, NOT A LABEL
+   a dump with ONE line at offset 4 -> 5 bytes: 0000000021
+   xxd -r SEEKS to the offset, so the four bytes before it are whatever
+   the file already had -- here nothing, so they are NUL. Delete a line
+   from a dump and you do not shorten the file; you punch a hole in it.
+
+AND THE ONE FLAG THAT CHANGES THE CONTRACT
+   xxd -p | xxd -r -p  636166650a   identical: yes
+   -p has no offsets and no text column, so it is pure hex both ways --
+   which makes it the form to paste into a bug report and the form to
+   pipe. The full dump is for reading; -p is for round-tripping.

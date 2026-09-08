@@ -1,0 +1,29 @@
+TWO FILES, EACH GZIPPED
+   plain.txt   68656c6c6f0a
+   wide.txt    68000000650000006c0000006c0000006f0000000a000000   (UTF-32LE: four bytes per character)
+
+SEARCH THE COMPRESSED FILES
+   zgrep hello plain.txt.gz   1 hit(s)
+   zgrep hello wide.txt.gz    0 hit(s)
+
+WHY THE SECOND ONE FINDS NOTHING
+   decompressed, wide.txt is 68000000650000006c0000006c0000006f0000000a000000
+   The decompression worked perfectly. What came out is UTF-32, in which
+   'hello' is spelled 68 00 00 00 65 00 00 00 ... -- and the pattern
+   'hello' is five consecutive bytes. They are not in the file.
+
+THE TWO STAGES, AND WHY THE ORDER SETTLES IT
+   1. UNWRAP   gzip -> a byte stream.  This is what -z and zgrep do.
+   2. DECODE   bytes -> characters.    This is the locale/BOM machinery,
+      and it runs afterwards, exactly as it would on an uncompressed file.
+   A container is not an encoding. Removing the container hands the
+   encoding problem to the next stage untouched -- so anything that was
+   unreadable before compression is still unreadable after -z.
+
+THE STAGE THAT CAN FIX IT
+   iconv -f UTF-32LE -t UTF-8, then search: 1 hit(s)
+   That is what rg --pre buys: a command of YOUR choosing that runs
+   before stage 2, so you can put a decode there, or a pdftotext, or
+   anything else that turns a file into searchable bytes.
+   -z is a fixed list of decompressors; --pre is a general escape hatch,
+   and it is slower because it forks a process per file.

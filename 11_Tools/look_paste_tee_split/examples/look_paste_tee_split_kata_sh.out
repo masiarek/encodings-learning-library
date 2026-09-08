@@ -1,0 +1,32 @@
+1. split -b CUTS A CHARACTER IN HALF
+   piece_aa   636166c3
+   piece_ab   a90a
+   piece_aa is valid UTF-8? NO      piece_ab? NO
+   -b is a byte budget, and 4 lands inside é. Neither piece is text, and
+   split neither knows nor says. -l splits on lines and cannot do this.
+
+2. paste -d TAKES A LIST OF BYTES, NOT A DELIMITER
+   paste -d X      aX1Xx bX2Xy
+   paste -d é      a\xc31\xa9x b\xc32\xa9y
+   One 'delimiter' produced TWO different separators: -d is a LIST read
+   one byte at a time, and é is two bytes, so c3 joins the first pair and
+   a9 the second. The output is not valid UTF-8 either.
+
+3. look NEEDS A SORTED FILE, AND SAYS NOTHING WHEN IT IS NOT
+   look apple <unsorted>   exit=1
+   look apple <sorted>     exit=0
+   The word is in the file both times. look does a BINARY SEARCH, which
+   assumes an order -- and which order is a locale question, so even a
+   sorted file can be the wrong sorted file.
+
+4. tee IS THE CONTROL
+   through tee: 636166c3a900ff0a
+   the file tee wrote:  636166c3a900ff0a
+   NUL, ff, an incomplete sequence -- tee passes all of it through
+   unchanged, because it has no text model to get wrong. That is exactly
+   why it is the tool to insert in a pipeline you have stopped trusting:
+       ... | tee /tmp/raw | rest-of-pipeline    then xxd /tmp/raw
+
+THE PATTERN IN THE OTHER THREE
+   Each takes something you meant as TEXT -- a length, a delimiter, an
+   order -- and applies it as BYTES. None warns. Two of them exit 0.

@@ -1,0 +1,35 @@
+1. THE EDIT THAT WORKS
+   sed 's/é/e/'  -> cafe naïve
+   tr 'é' 'e'    -> cafee nae\xafve
+   sed matched a two-byte sequence and replaced it with one byte. tr was
+   given two source bytes and one replacement byte, so it maps BOTH c3
+   and a9 to 'e' -- and applies that to ï as well.
+
+2. WHY sed IS RIGHT WITHOUT KNOWING ANYTHING
+   in the C locale: cafe naïve
+   Identical. sed did not consult the locale to get this right; the
+   pattern is a byte sequence and the file contains that byte sequence.
+   Where the locale WOULD matter is a pattern like . or [[:alpha:]],
+   which have to know how wide a character is.
+   LC_ALL=C sed "s/f./X/" -> 636158a9206e61c3af76650a
+   In the C locale . is ONE BYTE, so f. matched f and the first half of
+   é -- and the a9 left behind is now an orphan, which is why the output
+   above is hex rather than text: it is not valid UTF-8 any more. LC_ALL=C
+   is the flag to reach for when you want no interpretation, and the trap
+   when you wanted some.
+
+3. THE -i SPLIT, WHICH IS A REAL PORTABILITY PROBLEM
+   GNU sed:  sed -i    's/a/b/' f        (no argument)
+   BSD sed:  sed -i '' 's/a/b/' f        (empty argument required)
+   Neither accepts the other's spelling, so there is NO -i form that runs
+   on both. The portable answer is not a clever quoting trick:
+       sed 's/a/b/' f > tmp && mv tmp f
+   which is also the only form that cannot half-write the file if the
+   command fails.
+   after the portable form: cafe naïve
+
+4. AND THE ONE THING BOTH seds AGREE ON
+   s/x/y/ with no match  exit=0
+   Zero. sed does not report whether it substituted anything, so a script
+   cannot tell 'edited' from 'found nothing to edit' by status alone.
+   That is what /q and grep -q are for, run first.

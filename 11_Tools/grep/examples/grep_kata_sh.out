@@ -1,0 +1,39 @@
+THE FILE
+   café   636166c3a90a   (6 bytes, 4 characters)
+
+1. HOW MANY CHARACTERS DOES caf. MATCH?
+   grep -c "^caf.$"      0
+   grep -c "^caf..$"     1
+   In the C locale a character IS a byte, so the four-character word
+   needs FIVE dots' worth of pattern -- and caf. does not reach the end
+   of the line. In a UTF-8 locale the first pattern matches and the
+   second does not. Same file, same grep, opposite answers, and the
+   only thing that changed was an environment variable.
+
+2. WHICH IS RIGHT?
+   Both. The question 'does caf. match café' has no answer until
+   somebody says what a character is, and grep asks the locale rather
+   than the file. The file has no opinion: it is five bytes either way.
+
+3. THE OTHER TOOLS ANSWER THE SAME QUESTION DIFFERENTLY
+   grep   asks LC_CTYPE
+   rg     never asks the locale; it reads the file's first bytes for a
+          BOM and otherwise works in bytes
+   find   asks nobody and compares bytes
+   python asks nothing since 3.7 -- str is code points, always
+   So four tools in one pipeline can hold four different definitions of
+   'a character' at the same moment, and none of them is misconfigured.
+
+4. THE ESCAPE, AND ITS PRICE
+   LC_ALL=C grep -c caf   1   -- a literal string is unaffected
+   For a FIXED string the locale changes nothing, which is why LC_ALL=C
+   is a safe default for searching: no interpretation, no undecodable
+   input, the same answer on every machine. It only bites when the
+   pattern contains ., [[:alpha:]], a range, or a case-insensitive flag
+   -- everything that needs to know how wide a character is.
+
+5. AND THE FAILURE SHAPE WORTH REMEMBERING
+   Of the tools in this chapter, grep is the one that can find FEWER
+   lines than are there and still exit 0 -- a short answer with a
+   success status. sed reports an illegal byte sequence, awk names the
+   record, cut refuses. Only grep can say nothing at all.

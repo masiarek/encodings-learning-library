@@ -1,0 +1,32 @@
+THE FILE: 12 bytes of text, 10 characters
+   café naïve
+   636166c3a9206e61c3af76650a
+
+IN THE C LOCALE, WHERE A CHARACTER IS A BYTE
+   cut -b1-4  636166c30a   caf\xc3
+   cut -c1-4  636166c30a   caf\xc3
+   Identical, and both end in c3 -- the first half of é. The output is
+   four bytes and is not valid UTF-8. In the C locale there is no
+   difference between the two flags because there is no difference
+   between a byte and a character.
+
+IN A UTF-8 LOCALE THE TWO cuts SEPARATE. Measured 2026-09-07:
+   BSD cut (macOS)     cut -c1-4 -> 63 61 66 c3 a9   FIVE bytes, four
+                       characters: it keeps the promise -c makes.
+   GNU cut (Ubuntu)    cut -c1-4 -> 63 61 66 c3      FOUR bytes, the
+                       same as -b: GNU treats -c as a synonym for -b.
+   So the same command on the same file gives four bytes on one machine
+   and five on the other, and neither prints a warning.
+
+WHY THE FLAG EXISTS AT ALL
+   POSIX defines -b as bytes and -c as characters precisely because they
+   are different questions. GNU's manual is honest about not
+   distinguishing them; the trap is that the FLAG still reads as a
+   promise, so a script written on a Mac and deployed on Linux changes
+   behaviour without changing a character of source.
+
+WHAT TO USE INSTEAD
+   cut -d" " -f1   café   -- fields, not offsets
+   A field boundary is in the data; a byte offset is a guess about the
+   data's width. Where the data really is fixed-width, it is fixed-width
+   in BYTES, and -b is then the correct and honest flag.

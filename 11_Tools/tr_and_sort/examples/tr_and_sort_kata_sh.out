@@ -1,0 +1,39 @@
+THE FILE
+   text  café naïve
+   bytes 636166c3a9206e61c3af76650a
+   é is c3a9 and ï is c3af
+
+1. tr -d 'é'
+   result caf na\xafve      bytes 636166206e61af7665
+   naïve lost a byte too. tr was never handed a character: it was handed
+   the byte SET {c3, a9}, and it deletes every occurrence of either. ï is
+   c3 af, so its c3 matched and vanished -- leaving af, which is not a
+   valid UTF-8 sequence on its own. The output is no longer text.
+
+2. sed 's/é//' ON THE SAME FILE
+   result caf naïve     bytes 636166206e61c3af7665
+   Correct, and it is not because sed knows about characters. sed was
+   given a two-byte SEQUENCE to match -- c3 then a9, in that order -- and
+   c3 af does not match it. A sequence has an order; a set does not.
+   That difference survives the C locale, where neither tool knows what a
+   character is.
+
+3. THE SAME SHAPE IN sort AND uniq
+   sort:  B a b é 
+   In the C locale sort compares BYTES, so uppercase sorts before
+   lowercase and é lands after everything -- e9 and c3 are just numbers.
+   Change the locale and the order changes, because collation is the one
+   thing sort does ask the environment about.
+
+4. AND cut -c, WHICH HAS NO ESCAPE AT ALL
+   cut -b1-4: 636166c30a
+   Four bytes: 63 61 66 c3. The last one is half a character, so the
+   output is not text -- and -b is the HONEST flag here, because it says
+   bytes. -c claims characters and the two cuts disagree about whether it
+   delivers them.
+
+THE RULE
+   Ask whether a tool takes a SET of bytes or a SEQUENCE. tr, cut -b and
+   sort take sets or offsets and cannot see a multi-byte character. sed,
+   grep and awk take patterns, which have order, and get this right even
+   when they have no idea what a character is.
