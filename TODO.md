@@ -25,7 +25,7 @@ So the ranking is: **finish the promise, then the goal that has no chapter yet (
 
 ## Tier 1 — the checkpoints (1–7)
 
-Nothing else in this library is worth more than these seven. Six are stubs; all six have their questions already written on the page.
+Nothing else in this library is worth more than these seven. Five are stubs; all five have their questions already written on the page.
 
 | # | Page | Lands in | The hook to verify |
 |---|---|---|---|
@@ -33,13 +33,13 @@ Nothing else in this library is worth more than these seven. Six are stubs; all 
 | 2 | ~~[Encode, decode and errors](04_Python/encode_decode_and_errors/README.md)~~ | 04 | **Written 2026-09-07.** Eight handlers, not six, and the blast radius came out sharper than the row predicted: `replace` is not *visible* data loss either, because a real `U+FFFD` in the input produces the same string |
 | 3 | [`char` is four bytes](05_Rust/char_is_four_bytes/README.md) | 05 | The checkpoint page. `char` is a scalar value, always 4 bytes in memory, 1–4 bytes in a `String` — so `size_of::<char>()` and `'é'.len_utf8()` disagree on purpose |
 | 4 | [A `str` vs `bytes`](04_Python/str_vs_bytes/README.md) | 04 | The page checkpoint 3 rests on. `len()` answers two different questions and neither is "characters" |
-| 5 | [UTF-16 and surrogates](03_Encodings/utf16_and_surrogates/README.md) | 03 | `U+1F600` → `D83D DE00` by hand, then the sting: **`json.dumps` emits that surrogate pair into a format that is UTF-8 by [RFC 8259 ↗](https://www.rfc-editor.org/rfc/rfc8259), and `json.loads('"\ud800"')` succeeds** (measured 2026-09-06). UTF-16 leaking into a place with no UTF-16 in it |
+| 5 | ~~[UTF-16 and surrogates](03_Encodings/utf16_and_surrogates/README.md)~~ | 03 | **Written 2026-09-07.** `U+1F600` → `D83D DE00` by hand, and the sting landed as written: `json.dumps` emits that surrogate pair into a format that is UTF-8 by [RFC 8259 ↗](https://www.rfc-editor.org/rfc/rfc8259), and `json.loads('"\ud800"')` succeeds |
 | 6 | [A code point is not a character](02_Characters/a_code_point_is_not_a_character/README.md) | 02 | **The five lengths** — bytes, code units, code points, graphemes, terminal columns. One string, five correct answers. `unicodedata.east_asian_width` makes the fifth machine-checkable even though no `len` in either language will tell you |
 | 7 | [`from_utf8` and lossy](05_Rust/from_utf8_and_lossy/README.md) | 05 | Three functions, three contracts: validate, replace, or promise. `valid_up_to()` against Python's `UnicodeDecodeError.start` — the same byte offset from two languages |
 
 ## Tier 2 — real data, the goal with the emptiest chapter (8–14)
 
-Goal three was *real SAP data*, and [07_Real_Data](07_Real_Data/README.md) is 1 written page against 6 stubs. Every one of these is a bug Adam will actually meet.
+Goal three was *real SAP data*, and [07_Real_Data](07_Real_Data/README.md) is 2 written pages against 5 stubs. Every one of these is a bug Adam will actually meet.
 
 | # | Page | Lands in | The hook to verify |
 |---|---|---|---|
@@ -47,7 +47,7 @@ Goal three was *real SAP data*, and [07_Real_Data](07_Real_Data/README.md) is 1 
 | 9 | [The mojibake round trip](07_Real_Data/mojibake_round_trip/README.md) | 07 | `text.encode('cp1252').decode('utf-8')` repairs it — **when it can**. Latin-1 is total so it always reverses; cp1252 has five unassigned bytes, so information is genuinely gone. The deciding question, asked before the repair |
 | 10 | [SAP code pages](07_Real_Data/sap_code_pages/README.md) | 07 | The one page that must say *verify against the system* on every number. EBCDIC's three letter runs, 1140–1149's euro twins, and `cl_abap_conv` as the boundary |
 | 11 | [Fixed-width byte fields](07_Real_Data/fixed_width_byte_fields/README.md) | 07 | A field is N **bytes**; `ż` is two of them. Truncating at N bytes splits a UTF-8 sequence and produces a file that is not text any more |
-| 12 | [CRLF vs LF](07_Real_Data/crlf_vs_lf/README.md) | 07 | **Python's `splitlines()` splits on eleven sequences**, not one — measured 2026-09-06, nine pieces from a string `split('\n')` returns whole. A parser differential inside one language |
+| 12 | ~~[CRLF vs LF](07_Real_Data/crlf_vs_lf/README.md)~~ | 07 | **Written 2026-09-07.** Python and shell; `splitlines()` splitting on eleven sequences where `split('\n')` sees one, the byte that cannot appear in its own output, and git reporting a tree clean when every line on disk differs from the blob |
 | 13 | [Sorting and collation](07_Real_Data/sorting_and_collation/README.md) | 07 | Three locales, three different correct orders for one list. Then the consequence: **the glibc 2.28 collation change silently invalidated PostgreSQL indexes worldwide** |
 | 14 | [Interfaces and storage](10_Best_Practices/interfaces_and_storage/README.md) | 10 | The closing rule: decode at the boundary, hold text in the middle, encode at the boundary, and write the encoding down in the contract |
 
