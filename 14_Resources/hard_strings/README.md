@@ -510,9 +510,23 @@ And when you decide what to do about them, the decision is one line in one place
 
 ## If you are coming from Python or ABAP
 
-**Python.** `unicodedata.normalize` for the four forms, `str.casefold()` for comparison and `str.lower()` for display, and `unicodedata.category(c)` to spot the invisibles — the six that survive `strip()` are all `Cf`, so a name rule can be written as a category test rather than a blocklist of code points. The identifier fold the standards actually specify is `NFKC_Casefold`, which Python has no single call for; the closest you can build is `normalize("NFKC", normalize("NFKC", s).casefold())`, and the difference is not nothing — the real property also maps default-ignorable characters to nothing, which is why the zero-width-space row in the table above is unmerged in Python and would be merged by a conformant implementation.
+**Python.** `unicodedata.normalize` for the four forms, `str.casefold()` for comparison and `str.lower()` for display, and `unicodedata.category(c)` to spot the invisibles — the six that survive `strip()` are all `Cf`, so a name rule can be written as a category test rather than a blocklist of code points. The identifier fold the standards specify is `NFKC_Casefold`, and Python has no single call for it; the usual reconstruction is `normalize("NFKC", normalize("NFKC", s).casefold())`, with the doubled call deliberate. That is an **approximation**, and the last two rows of the table above are where it comes apart — the real property maps the invisibles to nothing, and no composition of `normalize` and `casefold` will do that.
 
-**ABAP.** *(Not machine-checked — CI cannot run ABAP.)* There is no normalization in the language, so `=` on two `string`s is a code-unit comparison with every failure on this page available to it, and the most likely source of a decomposed name is a file from a Mac. `TRANSLATE ... TO UPPER CASE` is the case operation you have, and it is the one this page argues against for comparison — it merges the Turkish dotless i onto ASCII `I` and will not merge `ß` with `SS` in either direction. Practically: do the folding at the interface, in whatever is on the other side of it, and let ABAP receive text that has already been decided about.
+The property is a data file rather than an algorithm, so it can simply be read:
+
+```text
+DerivedNormalizationProps.txt, Unicode Public/UCD/latest, fetched 2026-09-08
+(an empty third field means: maps to nothing)
+
+  00A0          ; NFKC_CF; 0020           # Zs       NO-BREAK SPACE
+  00AD          ; NFKC_CF;                # Cf       SOFT HYPHEN
+  200B..200F    ; NFKC_CF;                # Cf   [5] ZERO WIDTH SPACE..RIGHT-TO-LEFT MARK
+  FEFF          ; NFKC_CF;                # Cf       ZERO WIDTH NO-BREAK SPACE
+```
+
+So a conformant identifier fold turns `ad<ZWSP>min` into `admin` and Python's two-call version does not, which is the difference between the `-` in that row and the `=` a username check needed. It is in a dated fence rather than an answer key because NFKC_Casefold is a derived property with a version, unlike the four normalization forms, which the [stability policy ↗](https://www.unicode.org/policies/stability_policy.html#Normalization) freezes.
+
+**ABAP.** *(Not machine-checked — CI cannot run ABAP.)* There is no normalization in the language, so `=` on two `string`s is a code-unit comparison with every failure on this page available to it, and the most likely source of a decomposed name is a file from a Mac. `TRANSLATE ... TO UPPER CASE` is the case operation you have, and its shape is the one this page argues against for comparison: a character-wise mapping, no locale argument, and no *fold* — so it is the `upper` column of the Rust matrix rather than the `cf` one, and that column merged the wrong pairs. Which specific pairs it merges is a question for the system that will run the job, not for a page: test it there, the same way you would verify a code-page number. Practically: do the folding at the interface, in whatever is on the other side of it, and let ABAP receive text that has already been decided about.
 
 ## Try it
 
