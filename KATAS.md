@@ -111,3 +111,4 @@ That is deliberate, and the reason is that folders are URLs. A topic — the byt
 | K93 | [Six questions about fourteen bytes, and the one with no answer](07_Real_Data/packing_a_record/README.md#practice) | [Packing a record](07_Real_Data/packing_a_record/README.md) | 201 → 301 |
 | K94 | [Six expressions, and the requirement each one is about](02_Characters/what_a_regex_matches/README.md#practice) | ["Supports Unicode" is a level, not a yes](02_Characters/what_a_regex_matches/README.md) | 301 |
 | K95 | [Four pairs, and the one no level can separate](07_Real_Data/sorting_and_collation/README.md#practice) | [Sorting and collation](07_Real_Data/sorting_and_collation/README.md) | 301 |
+| K96 | [Five pairs, and the checks that reach them](14_Resources/hard_strings/README.md#practice) | [The hard strings](14_Resources/hard_strings/README.md) | 301 |

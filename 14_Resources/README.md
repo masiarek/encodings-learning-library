@@ -4,11 +4,12 @@
 
 **One line:** Material that is not a lesson: things you review, print, or come back to after the reading is done.
 
-The thirteen chapters before this one are the course. This one is what you use once a page has been read and you want the fact to still be there in a month — starting with spaced repetition, which is the only tool on this list that does anything about forgetting.
+The thirteen chapters before this one are the course. This one is what you use once a page has been read: spaced repetition, which is the only tool here that does anything about forgetting, and a corpus, which is what you point at your own code once you believe you have understood it.
 
 | | What it is |
 |---|---|
 | [Anki: hexadecimal](anki/README.md) | 22 flashcards on hex, every snippet compiled and run in four languages first |
+| [The hard strings](hard_strings/README.md) | 19 test strings, one per behaviour, with a column per check saying which of them reaches each row |
 
 ## Why a deck at all, when the pages are right there
 
@@ -22,5 +23,6 @@ The idea and both scripts come from the sibling [rust-learning-library ↗](http
 
 ## What is not here yet
 
-- **Katas** — exercises on the lesson page with a compiled solution, which [ROADMAP.md](../ROADMAP.md) parks until chapter 3 exists, since *"encode this code point by hand"* is the natural first one and it needs the UTF-8 page to point at.
+- **Katas** — no longer pending: they live on the lesson pages, each with a solution CI runs, and [KATAS.md](../KATAS.md) puts them in an order. This line is kept because the *shape* of the answer is the interesting part — a kata belongs to its topic, not to a resources folder, so the only thing that could live here was the index, and the index lives at the root.
 - **More decks.** Hex is the first because it is the first thing the library teaches and the first thing people half-remember. The obvious next two are the code-point/byte distinction and the encode/decode boundary in Python — both of which are already written as lessons, which is the precondition: a deck that outruns its pages has nothing to check itself against.
+- **A corpus for a second question.** [The hard strings](hard_strings/README.md) is about text a field might be handed. The obvious sibling is a corpus of *bytes* a decoder might be handed — truncated sequences, overlongs, lone continuation bytes — which [Validation is a boundary](../03_Encodings/validation_is_a_boundary/README.md) and [Overlong sequences](../03_Encodings/overlong_sequences/README.md) already generate one at a time and nothing yet collects.

@@ -1,0 +1,235 @@
+1. FOUR SPELLINGS OF ONE WORD, AND WHY THERE ARE EXACTLY FOUR
+------------------------------------------------------------------------
+   To a reader these are one word, four times. To Python they are four
+   different values, and nothing about the picture says which you have.
+
+          chars bytes   code points
+      A       6     8   0072 00E9 0073 0075 006D 00E9
+      B       7     9   0072 00E9 0073 0075 006D 0065 0301
+      C       7     9   0072 0065 0301 0073 0075 006D 00E9
+      D       8    10   0072 0065 0301 0073 0075 006D 0065 0301
+
+   The count is not a curiosity, it is arithmetic. Each accented letter
+   can be written one way or two, the choices are independent, so a word
+   with k of them has 2**k spellings -- all of which normalize to one:
+
+      distinct values          4
+      distinct after NFC       1
+      distinct after NFD       1
+
+      the library's Polish pangram, 17 characters, has 8 of them
+      so it has 2**8 = 256 spellings, every one of them correct
+
+   A dictionary keyed on a name therefore has as many slots for that
+   name as the name has accents, and the user gets a different one
+   depending on which keyboard, phone or paste they arrived through.
+
+2. ONE PICTURE, MANY VALUES -- AND THE CHECK THAT MERGES EACH PAIR
+------------------------------------------------------------------------
+   16 pairs. Every one of them draws the same, or close enough that
+   no reader will query it, and every one is two different values. A '='
+   means that check calls them equal; a '-' means it does not.
+
+      left                 right                  ==  NFC  NFD NFKC   cf cf+K   what it is
+      'caf\xe9'            'cafe\u0301'            -    =    =    =    -    =   composed against decomposed
+      '\xc5'               '\u212b'                -    =    =    =    =    =   ANGSTROM SIGN against A WITH RING
+      '\u03a9'             '\u2126'                -    =    =    =    =    =   OHM SIGN against GREEK CAPITAL OMEGA
+      'q\u0307\u0323'      'q\u0323\u0307'         -    =    =    =    -    =   two marks, written in two orders
+      '\ufb01le'           'file'                  -    -    -    =    =    =   the fi ligature
+      '\xbd'               '1\u20442'              -    -    -    =    -    =   a vulgar fraction
+      '10\xb2'             '102'                   -    -    -    =    -    =   a superscript two
+      '\uff21\uff22'       'AB'                    -    -    -    =    -    =   fullwidth forms
+      '\u2168'             'IX'                    -    -    -    =    -    =   a Roman numeral
+      'stra\xdfe'          'STRASSE'               -    -    -    -    =    =   the German sharp s
+      '\u03a3'             '\u03c2'                -    -    -    -    =    =   Greek final sigma
+      '\u212a'             'k'                     -    -    -    -    =    =   KELVIN SIGN against the letter k
+      'I'                  '\u0131'                -    -    -    -    -    -   Turkish dotless i
+      'a'                  '\u0430'                -    -    -    -    -    -   Cyrillic a
+      'admin'              'ad\u200bmin'           -    -    -    -    -    -   a zero-width space
+      'admin'              'ad\xadmin'             -    -    -    -    -    -   a soft hyphen
+                           merged, of 16           0    4    4    9    6   12
+
+   Read it column by column and the checks separate into jobs.
+
+   NFC and NFD merge the same four rows and no others, because they are
+   the CANONICAL forms: they merge spellings of one character and refuse
+   to merge anything else. Note row 4 -- two combining marks in two
+   orders -- which is not about composing at all. Canonical ordering
+   sorts marks by combining class, so both forms fix it and == does not.
+
+   NFKC merges five more, and every one of those five is a DIFFERENT
+   character being flattened onto a letter it merely resembles. That is
+   why 10**2 becomes 102: the compatibility forms are a lossy fold, and
+   the loss is the point of them.
+
+   The casefold() column is the surprise, and it is why it is worth
+   printing rather than reasoning about. It merges six, and only three
+   of those six are about letter case. Full case folding also folds the
+   ANGSTROM SIGN onto a-ring and the fi ligature onto two letters, so it
+   is not a pure case operation and never was -- it is the fold that
+   makes two strings the same KEY, whatever made them differ.
+
+   Only the last column -- fold, casefold, fold again -- gets every
+   family at once, which is what an identifier comparison needs.
+
+   And the last four rows are merged by nothing here, which is the
+   important part of the table. Two of them are two genuinely different
+   letters that history drew alike; two are a character you cannot see
+   at all. No normalization form will ever touch either kind, because
+   neither is a spelling of the other.
+
+3. CASE MAPPING IS NOT A FOLD -- IT CHANGES LENGTH, IN BOTH DIRECTIONS
+------------------------------------------------------------------------
+      char       upper()      lower()      casefold()   name
+      '\xdf'     'SS'         '\xdf'       'ss'         LATIN SMALL LETTER SHARP S
+      '\ufb01'   'FI'         '\ufb01'     'fi'         LATIN SMALL LIGATURE FI
+      '\u0130'   '\u0130'     'i\u0307'    'i\u0307'    LATIN CAPITAL LETTER I WITH DOT ABOVE
+      '\u1e9e'   '\u1e9e'     '\xdf'       'ss'         LATIN CAPITAL LETTER SHARP S
+      '\u01c8'   '\u01c7'     '\u01c9'     '\u01c9'     LATIN CAPITAL LETTER L WITH SMALL LETTER J
+
+   Five things in that table are worth saying out loud.
+
+   One character can uppercase to two, so upper() is not a per-character
+   substitution and a fixed-width column can overflow on a name it
+   accepted yesterday. LATIN CAPITAL LETTER I WITH DOT ABOVE does it in
+   the other direction: it LOWERCASES to two characters.
+
+   Row four is the reason row one is not a typo. A capital sharp s does
+   exist, and it lowercases to the small one -- but upper() does not
+   produce it, because the two-letter answer is the one German readers
+   expect. So the pair is asymmetric on purpose.
+
+   Case conversion does not round-trip, and each of the two fails in a
+   different direction -- which is why one example would have misled:
+
+      char       upper().lower()    lower()        agree?
+      '\xdf'     'ss'               '\xdf'         False
+      '\u0130'   'i\u0307'          'i\u0307'      True
+
+      char       lower().upper()    upper()        agree?
+      '\xdf'     'SS'               'SS'           True
+      '\u0130'   'I\u0307'          '\u0130'       False
+
+   And lower() is not casefold(). lower() is for display -- it answers
+   'how is this written in lower case'. casefold() is for comparison and
+   answers 'what do I hash', which is why it may produce a string nobody
+   would ever write, and why it is the one to compare with.
+
+   The fifth row is the one people do not know is there: a TITLECASE
+   character, distinct from both its upper and its lower form, so the
+   mapping is three-way rather than two-way.
+
+   What Python cannot show you here is the locale. str.upper() is
+   locale-independent by design, so 'i'.upper() is 'I' on every machine
+   in the world. Java, C#, ICU and a database collation are not, and in
+   a Turkish locale that same call returns a NON-ASCII character. The
+   page has the measurement; the point for the corpus is that the row
+   exists and this program is the wrong tool to find it with.
+
+4. THE ONES YOU CANNOT SEE, AND WHICH OF THEM strip() TAKES
+------------------------------------------------------------------------
+      code point   cat   isspace   stripped   name
+      U+0020       Zs    True      yes        SPACE
+      U+00A0       Zs    True      yes        NO-BREAK SPACE
+      U+3000       Zs    True      yes        IDEOGRAPHIC SPACE
+      U+2007       Zs    True      yes        FIGURE SPACE
+      U+200B       Cf    False     NO         ZERO WIDTH SPACE
+      U+200C       Cf    False     NO         ZERO WIDTH NON-JOINER
+      U+200D       Cf    False     NO         ZERO WIDTH JOINER
+      U+00AD       Cf    False     NO         SOFT HYPHEN
+      U+2060       Cf    False     NO         WORD JOINER
+      U+FEFF       Cf    False     NO         ZERO WIDTH NO-BREAK SPACE
+
+   The break is between the two blocks and it is not where the eye puts
+   it. The first four are spaces: Unicode calls them whitespace, strip()
+   removes them, and a trimmed field is trimmed. The last six are format
+   characters -- Cf -- and every one of them is invisible, is not
+   whitespace to Python, and survives every trim in the standard library.
+
+      'admin'      'ad\u200bmin'    equal? False
+      len 5        len 6            and it is not the len that gets read
+      after strip()  'ad\u200bmin'
+      after NFKC     'ad\u200bmin'
+
+   Two usernames, one picture, one of them still there after every
+   cleaning step in the standard library. The fix is not a normalization
+   form; it is a rule that says which categories a name may contain.
+
+5. NORMALIZATION THROWS THINGS AWAY, AND NFC DOES IT TOO
+------------------------------------------------------------------------
+      before         NFKC after                   chars      what was lost
+      '10\xb2'       '102'                        3 -> 3     an exponent becomes a digit
+      '\xbd'         '1\u20442'                   1 -> 3     a fraction becomes three characters
+      '\u2168'       'IX'                         1 -> 2     a numeral becomes two letters
+      '\u337f'       '\u682a\u5f0f\u4f1a\u793e'   1 -> 4     one character becomes four
+
+   The champion expansion is an Arabic ligature this library does not
+   print, because a right-to-left character would reorder the row it
+   sits in and no page here teaches bidi. Its name and its numbers are
+   safe to give:
+
+      U+FDFA   ARABIC LIGATURE SALLALLAHOU ALAYHE WASALLAM
+               NFKC turns 1 character into 18
+
+   NFKC being lossy is well known. This is the one that is not:
+
+      '\ufa10'   CJK COMPATIBILITY IDEOGRAPH-FA10
+      NFC  -> '\u585a'   CJK UNIFIED IDEOGRAPH-585A
+
+   NFC -- the safe one, the one everybody recommends storing -- replaces
+   that character with a different one. It is a CJK compatibility
+   ideograph, and several of them are in Japanese personal names, which
+   is why 'just normalize on the way in' is a decision about somebody's
+   name and not a tidy-up.
+
+   And normalizing the pieces is not normalizing the whole:
+
+      NFC('e') + NFC('\u0301')   'e\u0301'    2 chars
+      NFC('e' + '\u0301')     '\xe9'       1 chars
+      equal? False
+
+   So a template that normalizes each field and then concatenates has
+   not produced normalized output, and a stream normalized chunk by
+   chunk is normalized nowhere except inside the chunks.
+
+6. THE STRING YOUR ENCODER WILL REFUSE
+------------------------------------------------------------------------
+      '\ud800'   len 1   Cs   a lone surrogate, in a str, legally
+      .encode()                 raises UnicodeEncodeError
+      .encode(errors='surrogatepass')  eda080
+
+   Python's str is a sequence of code points, and a surrogate is a code
+   point -- so it goes in, and only the encoder objects. That is the
+   shape of the whole family: the value is legal in memory, legal in
+   JSON, and not encodable, so it fails at the boundary rather than at
+   the assignment. Test the boundary, not the constructor.
+
+7. THE CORPUS, AS ESCAPES YOU CAN PASTE
+------------------------------------------------------------------------
+   Every entry above, written the only way that survives a copy through
+   an editor, a ticket and a chat window. A bare combining mark or a
+   zero-width space does not.
+
+      nfc_nfd          = 'cafe\u0301'
+      mark_order       = 'q\u0323\u0307'
+      singleton        = '\u212b'
+      ligature         = '\ufb01le'
+      superscript      = '10\xb2'
+      fullwidth        = '\uff21\uff22'
+      sharp_s          = 'stra\xdfe'
+      final_sigma      = '\u03c2'
+      kelvin           = '\u212a'
+      dotless_i        = '\u0131'
+      dotted_I         = '\u0130'
+      confusable       = '\u0430'
+      zero_width       = 'ad\u200bmin'
+      soft_hyphen      = 'ad\xadmin'
+      nbsp             = 'a\xa0b'
+      bom_inside       = 'a\ufeffb'
+      compat_han       = '\ufa10'
+      expanding        = '\u337f'
+      lone_surrogate   = '\ud800'
+
+   19 strings, one per behaviour. That is the whole list -- not
+   because nothing else is strange, but because everything else strange
+   is one of these 19 wearing a different alphabet.

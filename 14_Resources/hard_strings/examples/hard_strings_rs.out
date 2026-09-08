@@ -1,0 +1,119 @@
+1. == IS BYTES, AND THE TYPE SAYS SO
+------------------------------------------------------------------------
+          chars bytes   code points
+      A       6     8   0072 00E9 0073 0075 006D 00E9
+      B       7     9   0072 00E9 0073 0075 006D 0065 0301
+      C       7     9   0072 0065 0301 0073 0075 006D 00E9
+      D       8    10   0072 0065 0301 0073 0075 006D 0065 0301
+
+      distinct values   4
+
+   str::len() is the BYTE count and has never pretended otherwise,
+   so the number Python makes you ask for is the one Rust gives you
+   by default. Neither language merges the four.
+
+2. THE SAME SIXTEEN PAIRS, AND EVERYTHING std CAN DO TO THEM
+------------------------------------------------------------------------
+      left                 right                    ==  lower  upper asciieq   what it is
+      "café"               "cafe\u{301}"             -      -      -       -   composed against decomposed
+      "Å"                  "Å"                       -      =      -       -   ANGSTROM SIGN against A WITH RING
+      "Ω"                  "Ω"                       -      =      -       -   OHM SIGN against GREEK CAPITAL OMEGA
+      "q\u{307}\u{323}"    "q\u{323}\u{307}"         -      -      -       -   two marks, in two orders
+      "ﬁle"                "file"                    -      -      =       -   the fi ligature
+      "½"                  "1⁄2"                     -      -      -       -   a vulgar fraction
+      "10²"                "102"                     -      -      -       -   a superscript two
+      "ＡＢ"                 "AB"                      -      -      -       -   fullwidth forms
+      "Ⅸ"                  "IX"                      -      -      -       -   a Roman numeral
+      "straße"             "STRASSE"                 -      -      =       -   the German sharp s
+      "Σ"                  "ς"                       -      -      =       -   Greek final sigma
+      "K"                  "k"                       -      =      -       -   KELVIN SIGN against the letter k
+      "I"                  "ı"                       -      -      =       -   Turkish dotless i
+      "a"                  "а"                       -      -      -       -   Cyrillic a
+      "admin"              "ad\u{200b}min"           -      -      -       -   a zero-width space
+      "admin"              "ad\u{ad}min"             -      -      -       -   a soft hyphen
+                           merged, of 16             0      3      4       0
+
+   No column reaches more than four; between them they reach 7 of
+   the sixteen. Nothing std has touches the first row or the fourth:
+   composing and mark ordering are normalization, std has no
+   normalize(), and no amount of case conversion is going to help.
+   The four compatibility rows -- fraction, superscript, fullwidth,
+   numeral -- are out of reach for the same reason.
+
+   The rows it does get are split across the two case directions,
+   and no single direction gets them all:
+
+      "Å"          "Å"          lower true   upper false  ANGSTROM SIGN against A WITH RING
+      "straße"     "STRASSE"    lower false  upper true   the German sharp s
+      "K"          "k"          lower true   upper false  KELVIN SIGN against the letter k
+      "I"          "ı"          lower false  upper true   Turkish dotless i
+
+   The sharp s merges going UP, because uppercasing it produces
+   two letters. The KELVIN SIGN merges going DOWN, because its
+   lowercase is an ordinary k. Fold the other way in either case
+   and they stay apart. So neither direction of case conversion is
+   a comparison, and that is what a case FOLD is for: one operation
+   that catches both, defined so it need not produce a string
+   anyone would write. Python spells it casefold(). Rust's std has
+   no spelling for it at all.
+
+   And the fourth row above is the reason to want the fold rather
+   than a direction. Uppercasing merges Turkish dotless i onto
+   ASCII I -- Unicode's default mapping, and nothing to do with a
+   Turkish locale -- so a program comparing by to_uppercase() has
+   just decided that two different letters are one. Python's
+   casefold() keeps them apart. Comparing by uppercasing does not
+   merge FEWER pairs than a fold; it merges the WRONG ones.
+
+3. char::to_lowercase RETURNS AN ITERATOR, WHICH IS THE HONEST TYPE
+------------------------------------------------------------------------
+   One character can case-map to several, so the return type cannot
+   be char. Rust makes you collect it; Python hides the same fact
+   behind a str that is quietly longer than the one you passed in.
+
+      char       upper      n(up)  lower        n(lo)  code points of lower
+      'ß'        "SS"       2      "ß"          1      00DF
+      'ﬁ'        "FI"       2      "ﬁ"          1      FB01
+      'İ'        "İ"        1      "i\u{307}"   2      0069 0307
+      'ẞ'        "ẞ"        1      "ß"          1      00DF
+      'ǈ'        "Ǉ"        1      "ǉ"          1      01C9
+
+   Both n columns reach 2, in different rows: the sharp s and the
+   ligature grow going up, and LATIN CAPITAL LETTER I WITH DOT
+   ABOVE grows going down. A program that wrote c.to_uppercase()
+   and expected a char would not compile, which is the whole
+   difference between the two languages here -- Python returns a
+   str either way and lets you find out at the column width.
+
+4. str::to_lowercase IS NOT A MAP OVER chars
+------------------------------------------------------------------------
+   The Greek final sigma is decided by POSITION, so the str method
+   has to look at neighbours -- and it does, where the per-char one
+   cannot:
+
+      input                "ΣΣ"         03A3 03A3
+      str::to_lowercase    "σς"         03C3 03C2
+      char by char         "σσ"         03C3 03C3
+      same?                false
+
+   Two capital sigmas lowercase to a medial sigma and a FINAL one,
+   because the second ends the word. Doing it a character at a time
+   gives two medial sigmas and a Greek reader a typo. So even the
+   case operation std does keep is not a per-character table, and
+   the convenient-looking .chars().flat_map(...) is the wrong loop.
+
+5. WHAT IS MISSING IS A LINE, NOT A GAP
+------------------------------------------------------------------------
+   std has no normalize() and no casefold(), and it is worth being
+   clear that this is a decision rather than an omission.
+
+   Normalization needs a copy of the Unicode tables, and those
+   tables have a version -- the thing this library keeps out of
+   answer keys for exactly the same reason. A std that shipped
+   them would be promising to keep a data file in step with a
+   language release, forever, for every program that links it.
+
+   What std does keep is what a char can answer about itself, plus
+   the one context rule above. Everything past that is a crate:
+   unicode-normalization for the four forms, caseless or icu for a
+   fold. The corpus does not get easier in Rust; it gets explicit.

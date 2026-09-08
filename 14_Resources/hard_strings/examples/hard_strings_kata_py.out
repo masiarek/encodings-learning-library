@@ -1,0 +1,43 @@
+   left               right               NFC     NFKC       cf  NFKC+cf
+   '\u1e9b\u0323'     '\u1e69'              -        =        -        =
+   '\u0130'           'i\u0307'             -        -        =        =
+   '\u01c4'           'D\u017d'             -        =        -        =
+   '\xb5'             '\u03bc'              -        =        =        =
+   '\ufeffdata'       'data'                -        -        -        -
+
+   1. long s with dot above, plus a dot below, against s with both dots
+   2. capital I with dot above, against i plus a combining dot
+   3. the DZ-with-caron digraph, against the two letters
+   4. MICRO SIGN, against GREEK SMALL LETTER MU
+   5. a BOM in front of an ASCII word
+
+   1 is the example UAX #15 uses to show that NFC is not 'the composed
+      one'. Composing cannot help here -- there is no single character
+      for a long s with both dots -- so NFC leaves the pair alone and
+      the COMPATIBILITY form, which is allowed to replace the long s
+      with an ordinary one, is the first thing that merges them.
+
+   2 is merged by casefold() and by nothing before it. The capital I
+      with dot above has no canonical decomposition, so no amount of
+      normalizing produces 'i' plus a mark -- but its case mapping
+      does exactly that, which is a case question wearing a
+      normalization costume.
+
+   3 is a digraph with a compatibility decomposition, so NFKC splits
+      it into two letters. Note what that costs: the string got
+      LONGER, and a field with room for one character now holds two.
+
+   4 is the trap. casefold() merges MICRO SIGN onto Greek mu, and
+      there is no case anywhere in that pair -- both are lower case
+      already. Case folding is not a case operation with a tidy name;
+      it is the fold that makes two strings one KEY, and it inherits
+      a handful of compatibility mappings on the way.
+
+   5 is merged by nothing, and it is the one that will actually reach
+      your database. A BOM is a legal character in the middle of a
+      string, it draws nothing, no normalization form removes it, and
+      casefold() keeps it too. The check it fails is not a comparison
+      at all -- it is a rule about which characters a field may hold.
+
+   If you got 4 wrong you were reasoning from the NAME of the
+   function, which is the habit the whole page is arguing against.

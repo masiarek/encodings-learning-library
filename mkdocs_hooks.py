@@ -253,6 +253,7 @@ NAV_ORDER: dict[str, list[str]] = {
     "14_Resources": [
         "README.md",
         "anki",
+        "hard_strings",
     ],
     "07_Real_Data": [
         "README.md",

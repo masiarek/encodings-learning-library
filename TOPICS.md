@@ -816,7 +816,7 @@ The imported list's largest section, and the one furthest from this library's su
 
 ## 16. Testing, fuzzing and CI for text — **core, absent from the imported list**
 
-- **The Big List of Naughty Strings** — the standard hostile corpus; every field that accepts text should have met it once.
+- **The Big List of Naughty Strings** — the standard hostile corpus; every field that accepts text should have met it once. This library's answer to it is [The hard strings](14_Resources/hard_strings/README.md), which trades the pile for one string per behaviour and a column per check.
 - **Fuzzing a decoder** — the classic first fuzz target, and how most UTF-8 bugs were found.
 - **Property-based testing with Unicode generators** — round-trip properties (`decode(encode(x)) == x`) are exactly the shape hypothesis/proptest want.
 - **Golden files with invisible characters** — a recorded key holding a NBSP or a BOM that no reviewer can see. This library's own `check_decomposed_literals.py` exists for one instance of this.

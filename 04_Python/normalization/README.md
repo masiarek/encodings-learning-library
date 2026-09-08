@@ -381,6 +381,7 @@ THE RULE
 
 ## See also
 
+- [The hard strings](../../14_Resources/hard_strings/README.md) — the corpus this page's argument is aimed at: nineteen strings, one per behaviour, with a column per check saying which of them a normalization form actually reaches and which four it never will
 - [A code point is not a character](../../02_Characters/a_code_point_is_not_a_character/README.md) — the same combining marks, asked "how many characters is that"
 - [The table has a version](../../02_Characters/the_table_has_a_version/README.md) — why this page's stability policy is worth a section
 - [`find`, and filenames that are bytes](../../11_Tools/find/README.md) — the filesystem half, measured: APFS is normalization-insensitive and Linux is not

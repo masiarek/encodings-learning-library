@@ -1,0 +1,59 @@
+
+1. FOUR SPELLINGS ARRIVE AS FOUR LINES
+------------------------------------------------------------------------
+00000000: 72c3 a973 756d c3a9 0a72 c3a9 7375 6d65  r..sum...r..sume
+00000010: cc81 0a72 65cc 8173 756d c3a9 0a72 65cc  ...re..sum...re.
+00000020: 8173 756d 65cc 810a                      .sume...
+
+   bytes per line, newline included   9 10 10 11
+
+   Four byte counts for one word. Nothing in that file is malformed
+   and nothing in it is unusual; it is one name, typed on four
+   machines.
+
+2. sort -u IS THE DEDUPE EVERY PIPELINE USES
+------------------------------------------------------------------------
+   lines in the file                  4
+   after sort -u                      4
+
+   grep -c for the whole word         1
+   grep -c for its first five         2
+
+   One of four, then two of four. The prefix search finds the spellings
+   whose FIRST accent is precomposed and misses the two whose is not --
+   and the letter it disagrees about is not the letter you searched for.
+   A report built this way is not wrong in a way anybody will notice.
+
+3. VALID IS NOT THE SAME AS SAME
+------------------------------------------------------------------------
+   iconv -f UTF-8 -t UTF-8, exit      0
+
+   Zero: all four lines are well-formed UTF-8, because they are. A
+   validator answers a question about bytes and this is a question
+   about meaning, so no amount of validation upstream will help.
+
+4. THE ONE THE EYE CANNOT AUDIT
+------------------------------------------------------------------------
+00000000: 6164 6d69 6e0a 6164 e280 8b6d 696e 0a    admin.ad...min.
+
+   grep -c for the exact line         1
+   after sort -u                      2
+
+   Two accounts. Printed to a terminal, pasted into a ticket, or read
+   off a screenshot they are the same five letters -- the three bytes
+   E2 80 8B draw nothing at all. The only place the difference exists
+   is the hex dump above.
+
+5. WHAT THE SHELL CAN AND CANNOT DO HERE
+------------------------------------------------------------------------
+   Everything in this script ran under LC_ALL=C, where sort and grep
+   are pure byte matchers -- which is the right setting for auditing
+   unknown data, and is what makes the output above the same on every
+   machine. Turning the locale up does not fix any of it: a UTF-8
+   locale teaches these tools about character boundaries and collation
+   order, and none of the five sections above is a boundary question.
+
+   So the shell's honest job with this corpus is to SHOW it -- xxd, and
+   the byte counts -- and to hand the merging decision to a program
+   that has a Unicode table. Reach for sort -u to find duplicates and
+   you will get an answer; it just will not be about names.
