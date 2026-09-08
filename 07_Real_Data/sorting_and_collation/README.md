@@ -186,13 +186,18 @@ The thing worth noticing is what did **not** vary. Three C libraries, two operat
 
 Here is what it did, in four strings under one locale name:
 
-```text title="Measured 2026-09-07 — Python's locale.strxfrm under en_US.UTF-8, on glibc 2.27 (ubuntu:18.04), glibc 2.39 (ubuntu:24.04) and macOS 26.6.2"
+```text title="Measured 2026-09-07 under LC_ALL=en_US.UTF-8 on glibc 2.27 (ubuntu:18.04), glibc 2.39 (ubuntu:24.04) and macOS 26.6.2 — twice, through Python's locale.strxfrm and through sort(1), which agreed on every row"
   glibc 2.27     aa  ab  a b  a-b        strcoll('a-b','ab')  ->  a-b > ab
   glibc 2.39     aa  a b  a-b  ab        strcoll('a-b','ab')  ->  a-b < ab
   macOS 26.6.2   a b  a-b  aa  ab        strcoll('a-b','ab')  ->  a-b < ab
+
+  and for comparison, all three under LC_ALL=C
+                 a b  a-b  aa  ab
 ```
 
-Same four strings, same locale name, three different orders — and the comparison of `a-b` against `ab` **changed sign** across the glibc upgrade. Before 2.28, punctuation sorted after the letters; after it, punctuation is ignorable at the first level and the strings compare as though it were not there, then tie-break below. Nothing about that is a bug in either version. It is a data file being corrected, and a corrected data file is a different function.
+Same four strings, same locale name, three different orders — and the comparison of `a-b` against `ab` **changed sign** across the glibc upgrade. glibc 2.27 sorted punctuation *after* the letters; 2.39 makes it ignorable at the first level, so the strings compare as though it were not there and then tie-break below; macOS puts it *before* the letters, which for these four happens to coincide with byte order. Nothing about any of that is a bug. It is a data file being corrected, and a corrected data file is a different function.
+
+It is worth running the same four strings through `sort` yourself, because the second measurement is what rules out "this is a Python thing": `LC_ALL=en_US.UTF-8 sort` reproduced all three rows exactly, and `LC_ALL=C sort` gave the same single answer everywhere. Which is the practical rule for a script — **`LC_ALL=C` is the only ordering you can depend on across machines**, and it is the one that is wrong for every human reader.
 
 **Why that matters more than a wrong-looking list.** A B-tree index is a structure whose *invariant is the sort order*. PostgreSQL sorted the rows once, at insert time, using the collation the operating system provided then; the index records the resulting positions, not the rule. Change the rule underneath and the tree is still a tree, still passes every structural check, and no longer answers questions correctly. PostgreSQL's own documentation is blunt about the mechanism — a change in collation definitions can lead to **corrupt indexes**, because the system relies on stored objects having a particular order — and the wiki page above spells out the three symptoms: a query can fail to find data that is there, an update can insert a duplicate that should have been disallowed, and on a partitioned table a query can look in the wrong partition while an update writes to it.
 
