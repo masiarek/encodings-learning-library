@@ -65,6 +65,7 @@ LABEL_OVERRIDES: dict[str, str] = {
     "pcre2": "PCRE2",
     "sh": "The shell has no string type",
     "surrogateescape": "surrogateescape",
+    "what_a_regex_matches": '"Supports Unicode" is a level, not a yes',
     # 12_Adversarial: the folder names say what the page is ABOUT (and are
     # permanent URLs); the H1s say what it CLAIMS, which is what belongs in a
     # table of contents.
@@ -133,6 +134,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "confusables_and_scripts",
         "logical_and_visual_order",
         "unicode_in_identifiers",
+        "what_a_regex_matches",
     ],
     # The number is settled; now how to write it as bytes.
     "03_Encodings": [

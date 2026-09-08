@@ -123,6 +123,8 @@ Two of those are worth a sentence. **Invalid UTF-8 does not upset PCRE2 here** �
 
 So `-P` is not a second opinion about your text. It is a different set of questions you are allowed to ask about it, at a price paid in error messages.
 
+What *kind* of question, and how many of them an engine answers, is itself a measured thing — [UTS #18 ↗](https://www.unicode.org/reports/tr18/) numbers them, and ["Supports Unicode" is a level, not a yes](../../02_Characters/what_a_regex_matches/README.md) grades all three engines on this page against the list.
+
 ## In Python
 
 The rules above are short enough to apply by hand, which is how this page keeps a machine-checked half — and Python is unusually good for it, because `re` is a backtracking engine like PCRE2 and the `str`/`bytes` split is the same one `--no-unicode` makes.
@@ -281,3 +283,4 @@ THE RULE
 - [A code point is not a character](../../02_Characters/a_code_point_is_not_a_character/README.md) — what `\X` is counting, and why the standard libraries stop short of it
 - [Normalization](../../04_Python/normalization/README.md) — where the `e` + `U+0301` spelling of café comes from in the first place, and why you meet it without asking
 - [`grep` on text that is not ASCII](../grep/README.md) — the tool whose `-P` you cannot use on a Mac
+- ["Supports Unicode" is a level, not a yes](../../02_Characters/what_a_regex_matches/README.md) — the levels this page's `\X` and `\p{...}` come from, and the measurement that puts a number on "PCRE2 has its own Unicode tables": its `\w` gained the nonspacing marks between 10.42 and 10.45

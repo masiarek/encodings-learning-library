@@ -1,0 +1,58 @@
+PART ONE -- SIX EXPRESSIONS
+------------------------------------------------------------------------
+
+   #  expression                                    answer    requirement
+   1  len(re.findall(r'\w+', hindi))                3         RL1.2a
+   2  bool(re.fullmatch(rb'\d+', deva.encode()))    False     --
+   3  bool(re.search(composed, decomposed))         False     RL2.1
+   4  re.match(r'caf.', decomposed).group()         cafe      RL2.1
+   5  bool(re.fullmatch(r'[\w&&\d]', '&'))          True      RL1.3
+   6  len(re.findall(r'.', 'a' + U+2028 + 'b'))     3         RL1.6
+
+   1. one word, three matches: \w has no Mark in it
+   2. a bytes pattern is ASCII-only; the str one answers True
+   3. same picture, different code points, no match
+   4. the dot took the bare e and left the accent behind
+   5. no set operators, so && is two more class members
+   6. '.' means 'not U+000A', not 'not a line separator'
+
+   Line 2 is the one with no RL number, and it is the one most likely
+   to be in your code: it is not a shortfall in the engine, it is the
+   OTHER engine. `re` on bytes is a deliberate ASCII matcher, because
+   a byte string carries no encoding for it to consult. The switch is
+   the argument's type, so it flips when a value moves from a decoded
+   string to a raw pipe, and no flag on the pattern will tell you.
+
+   the same three characters through splitlines() 2 lines
+   Line 6 next to that one is the whole of RL1.6: the same standard
+   library reads the same three characters as one line and as two.
+
+
+PART TWO -- WHICH OF THE SIX DOES NORMALIZATION FIX?
+------------------------------------------------------------------------
+
+   #  expression                            as it stands   over NFC text  moved?
+   1  len(findall(r'\w+', hindi))           3              3              no
+   3  bool(search(composed, text))          False          True           YES
+   4  match(r'caf.', text).group()          cafe           café           YES
+   6  len(findall(r'.', a + U+2028 + b))    3              3              no
+
+   Two of the four move and two do not, and the split is the lesson.
+
+   3 and 4 are fixed outright, because RL2.1 is the requirement that
+   normalization IS the implementation of. The report says so: put the
+   text in a known form, write the pattern for that form, match code
+   point by code point. A system that does this conforms, provided it
+   documents that it does.
+
+   1 and 6 do not move an inch, and no normalization form will move
+   them. NFC composes a base and a mark where a single character for
+   the pair exists; Devanagari vowel signs have no precomposed forms,
+   so the marks are still there and \w still refuses them. U+2028 is
+   not a decomposition of anything. Normalization is a fix for one
+   named requirement, not a general repair for Unicode text.
+
+   5 is not in the table because there is nothing to normalize: the
+   pattern is wrong about the ENGINE, not about the string. It is the
+   only one of the six that silently widens rather than narrows, and
+   the only one that would still be wrong on an empty file.

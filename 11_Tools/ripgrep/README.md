@@ -377,3 +377,4 @@ Then the practical question: `rg pattern file` finds nothing and `grep pattern f
 - [Byte order and the BOM](../../03_Encodings/byte_order_and_bom/README.md) — the five marks, the three `rg` tests, and why the order of the check matters
 - [`String` is bytes that promise UTF-8](../../05_Rust/string_is_bytes_that_promise_utf8/README.md) — the Rust type that makes `rg`'s "no character there" the natural answer
 - [Inspecting a file](../../06_Terminal/inspecting_a_file/README.md) — why the `�` was drawn by your terminal
+- ["Supports Unicode" is a level, not a yes](../../02_Characters/what_a_regex_matches/README.md) — where `rg`'s default engine is measured against the specification's own definition of `\w` and comes out at zero disagreements over every code point

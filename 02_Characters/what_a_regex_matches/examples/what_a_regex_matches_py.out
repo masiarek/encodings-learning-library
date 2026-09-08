@@ -1,0 +1,258 @@
+
+1. ONE API, TWO ENGINES, AND THE SWITCH IS THE TYPE
+------------------------------------------------------------------------
+   the digits १२३   U+0967 U+0968 U+0969
+
+   r'\d+'  against the str                 True
+   rb'\d+' against the same bytes          False
+   r'\d+'  against the str, with re.ASCII  False
+   int() on that str                       123
+   rb'\d+' with re.UNICODE                 ValueError -- there is no such mode
+
+   Same three characters, same pattern text, two answers. A `str`
+   pattern is Unicode-aware and a `bytes` pattern is ASCII-only, and
+   `re.ASCII` turns the first into the second. There is no flag that
+   turns the second into the first: the type IS the mode, and asking
+   for re.UNICODE on bytes is refused rather than ignored.
+
+   Nothing here is careless. A byte string has no encoding attached, so
+   there is no table an engine could consult -- the refusal is the
+   honest answer. What it means in practice is that the same regex
+   moved from a decoded string to a raw pipe silently narrows to ASCII.
+
+2. RL1.2 PROPERTIES -- THE ONE PYTHON DOES NOT HAVE AT ALL
+------------------------------------------------------------------------
+   re.compile(r'\p{L}')               raises re.error
+   re.compile(r'\pL')                 raises re.error
+   re.compile(r'\p{Script=Greek}')    raises re.error
+   re.compile(r'\p{Alphabetic}')      raises re.error
+
+   RL1.2 asks for a minimal list of properties addressable from the
+   pattern: General_Category, Script and Script_Extensions, Alphabetic,
+   Uppercase, Lowercase, White_Space, Noncharacter_Code_Point,
+   Default_Ignorable_Code_Point, and ANY / ASCII / ASSIGNED.
+
+   Python's `re` has no syntax for any of them. Not a partial list, not
+   an older list -- no \p{...} at all, so RL1.2 is not partly met, and
+   nor is RL1.2a, which is written in terms of it. That is the single
+   largest thing on this page: the module every Python program reaches
+   for is below Level 1 by the standard's own first substantive test.
+
+   The properties are still in the standard library, just not in the
+   regex engine -- `unicodedata.category`, `.name`, `.numeric` and the
+   `str.is*` methods reach some of them, one character at a time. The
+   third-party `regex` module is where \p{...} lives in Python, and it
+   is not what `import re` gives you.
+
+3. RL1.2a COMPATIBILITY PROPERTIES -- WHAT \w AND \d ARE SUPPOSED TO BE
+------------------------------------------------------------------------
+   Annex C of the report defines the two classes every engine ships:
+
+       \d   \p{gc=Decimal_Number}
+       \w   \p{alpha} + \p{gc=Mark} + \p{digit}
+            + \p{gc=Connector_Punctuation} + \p{Join_Control}
+
+   Three of those five terms are a general category -- Mark, Connector
+   Punctuation, and \p{digit}, which Annex C says is gc=Decimal_Number --
+   so a sweep over every code point can check them with no table this
+   program does not already have. Counts of characters move with the
+   Unicode version and are not printed; disagreements are the claim.
+
+   code points where \d disagrees with gc=Nd        0
+   marks (gc=M*) that \w matches                    0
+   connector punctuation (gc=Pc) that \w matches    1
+
+   So \d is exactly right, and \w holds not one Mark of the thousands
+   there are, and exactly one connector. That one is the underscore,
+   written into the engine as a literal rather than looked up:
+       U+005F LOW LINE    gc=Pc   \w matches it: True
+       U+203F UNDERTIE    gc=Pc   \w matches it: False
+
+   And here is what the missing Mark costs, in a word chosen because
+   it is the name of a language, written in that language:
+
+       हिन्दी   U+0939 U+093F U+0928 U+094D U+0926 U+0940
+       U+0939  gc=Lo   in \w: yes
+       U+093F  gc=Mc   in \w: NO
+       U+0928  gc=Lo   in \w: yes
+       U+094D  gc=Mn   in \w: NO
+       U+0926  gc=Lo   in \w: yes
+       U+0940  gc=Mc   in \w: NO
+
+       re.findall(r'\w+', ...) finds 3 words: ह न द
+       re.fullmatch(r'\w+', ...)     False
+
+   Three of the six characters are marks -- two vowel signs and a
+   virama -- and \w rejects all three, so one word comes apart into
+   three consonants. The pattern did not fail. It reported success,
+   three times, with a wrong answer each time, which is the shape this
+   whole library keeps meeting.
+
+4. RL1.3 SUBTRACTION AND INTERSECTION -- COMPILES, MEANS SOMETHING ELSE
+------------------------------------------------------------------------
+   re.compile(r'[\w&&\d]')     compiles
+   ...and it matches '&'       True
+   ...and it matches 'a'       True
+
+   RL1.3 wants union, intersection and set difference inside a
+   character class, so that [\w&&\d] means the characters that are both.
+   Python has no such operator, so the two ampersands are just two more
+   members of the class: the expression means \w, or '&', or \d. It
+   does not raise, it does not warn on the page, and it matches every
+   word character -- the opposite of an intersection.
+
+   This is the failure mode worth remembering from the whole page. A
+   missing \p{...} announces itself; a missing set operator quietly
+   turns a narrowing expression into a widening one.
+
+5. RL1.4 SIMPLE WORD BOUNDARIES -- THE MARK IS NOT ITS OWN WORD
+------------------------------------------------------------------------
+   The requirement is two sentences: the word character class covers
+   Alphabetic plus the decimals plus ZWNJ and ZWJ, and -- separately --
+   nonspacing marks are never divided from their base characters.
+
+   re.findall(r'\b\w+\b', hindi)             ['ह', 'न', 'द']
+   re.findall(r'\b\w+\b', 'cafe'+U+0301)     ['cafe']
+
+   The second line is the sharper one, because the string is four
+   letters of ASCII and one accent. \b puts the boundary after the `e`
+   and leaves the acute outside the word, so a pattern anchored on \b
+   matches `cafe` and reports it as a whole word -- in a string whose
+   whole word is `café`. Nothing about that is visible in the output.
+
+6. RL1.5 SIMPLE LOOSE MATCHES -- THE CLOSURE IS NOT UNICODE'S
+------------------------------------------------------------------------
+   Which characters does re.IGNORECASE consider equal to each letter,
+   and does str.casefold() -- Python's own full case folding -- agree?
+
+   re.I class of 'i': U+0049 U+0069 U+0130 U+0131
+      casefold puts those in 3 classes: U+0069 / U+0069 U+0307 / U+0131
+   re.I class of 'k': U+004B U+006B U+212A
+      casefold puts those in 1 class: U+006B
+   re.I class of 's': U+0053 U+0073 U+017F
+      casefold puts those in 1 class: U+0073
+
+   re.fullmatch('ss', sharp-s, re.I)   False
+   sharp-s.casefold()                  'ss'
+
+   Two different disagreements, in two directions.
+
+   The sharp-s one is allowed and is the point of the word `simple` in
+   the requirement's title: Level 1 asks only for simple case folding,
+   where a match may not change length, so 'ss' is not required to
+   match it. casefold() does full folding and gives 'ss'. Both correct.
+
+   The `i` one is not the same shape. Unicode's default simple folding
+   leaves U+0130 and U+0131 -- the Turkish dotted capital and dotless
+   small i -- in classes of their own, and only the Turkic tailoring
+   merges them with the ASCII pair. Python's re merges them always, in
+   every locale, because its case-insensitive matching closes over the
+   simple case MAPPINGS rather than over case FOLDING. Its own
+   casefold() splits the same four characters into three classes and
+   is the half that agrees with Unicode.
+
+7. RL1.6 LINE BOUNDARIES -- ONE STANDARD LIBRARY, TWO ANSWERS
+------------------------------------------------------------------------
+   The report names seven newline characters plus the CR LF pair.
+   Python's own str.splitlines() knows them; Python's own re does not.
+
+   character              . matches it   $ before it (re.M)   splitlines
+   U+000A LINE FEED       False          True                 2
+   U+000B LINE TAB        True           False                2
+   U+000C FORM FEED       True           False                2
+   U+000D CARRIAGE RET    True           False                2
+   U+0085 NEXT LINE       True           False                2
+   U+2028 LINE SEP        True           False                2
+   U+2029 PARA SEP        True           False                2
+
+   Read the last two columns together. `re` breaks a line at exactly
+   one of the seven; splitlines() breaks at all seven. So a file read
+   with .splitlines() and searched with a MULTILINE `$` is being cut
+   twice, by two functions from the same standard library that do not
+   agree about where a line ends -- and `.`, which is documented as
+   'any character except a newline', matches six of the seven.
+
+8. RL1.1 AND RL1.7 -- THE TWO PYTHON PASSES OUTRIGHT
+------------------------------------------------------------------------
+   r'\U0001F600' matches the emoji           True
+   r'[\U0001F600-\U0001F64F]' is ONE unit    True
+   r'\N{LATIN SMALL LETTER E WITH ACUTE}'    True
+   len(one astral character)                1
+
+   RL1.1 wants the code point's own hex digits to appear in the syntax,
+   which rules out spelling an astral character as a surrogate pair or
+   as its UTF-8 bytes. `\U0001F600` contains 1F600, so it qualifies;
+   `\N{...}` is a bonus the requirement does not ask for.
+
+   RL1.7 wants a supplementary code point handled as one unit. Since
+   PEP 393 a Python str is a sequence of code points with no surrogate
+   pairs in it, so this one is free -- and it is not free in every
+   language: the same requirement is the whole of why a Java or
+   JavaScript engine has to say something about UTF-16.
+
+9. THE SCORECARD FOR LEVEL 1
+------------------------------------------------------------------------
+   RL1.1  Hex Notation                    yes   \U0001F600 and \N{NAME}
+   RL1.2  Properties                      NO    no \p{...} syntax exists
+   RL1.2a Compatibility Properties        NO    \w holds no Mark at all
+   RL1.3  Subtraction and Intersection    NO    && is two literal ampersands
+   RL1.4  Simple Word Boundaries          NO    \b divides a mark from its base
+   RL1.5  Simple Loose Matches            ~     closes over mappings, not folding
+   RL1.6  Line Boundaries                 NO    one separator of seven
+   RL1.7  Supplementary Code Points       yes   a str is code points
+
+   Two clear passes, five clear failures, one that depends on how you
+   read `at least`. The report allows exactly this -- an implementation
+   may claim Level 1 except for named requirements -- so the useful
+   sentence is not 'Python's re does not support Unicode'. It is:
+   Level 1 except RL1.2, RL1.2a, RL1.3, RL1.4 and RL1.6.
+
+   That sentence is checkable, and 'supports Unicode' is not.
+
+10. LEVEL 2, RL2.1 -- CANONICAL EQUIVALENCE, AND WHAT THE FIX IS
+------------------------------------------------------------------------
+   composed    café   U+0063 U+0061 U+0066 U+00E9
+   decomposed  café   U+0063 U+0061 U+0066 U+0065 U+0301
+   the two strings are equal                    False
+   NFC(decomposed) == composed                  True
+
+   re.search(composed, decomposed_text)         False
+   re.fullmatch(r'caf.', decomposed_text)       False
+   re.match(r'caf.', decomposed_text) grabs     'cafe'
+   re.fullmatch(r'caf..', decomposed_text)      True
+   after ud.normalize('NFC', text)              True
+
+   The third line is the one to keep. `caf.` was written by somebody
+   who meant 'caf and one more character', and on the decomposed
+   spelling the dot takes the bare `e` and stops -- the accent is left
+   behind, outside the match, and the captured group is a word that is
+   not in the file. Nothing raised.
+
+   RL2.1 is Level 2 because doing it inside the engine is genuinely
+   hard: canonical equivalence can reorder and merge characters, so a
+   pattern would have to match parts of characters. The report's own
+   advice is the last line above -- put the text in a known
+   normalization form, write the pattern for that form, and match code
+   point by code point as usual. Normalization is the fix. A cleverer
+   pattern is not, and the conformance clause says a system meets RL2.1
+   this way as long as it says so out loud.
+
+11. LEVEL 2, RL2.2 -- '.' IS A CODE POINT, AND THAT IS BY DESIGN
+------------------------------------------------------------------------
+   the family emoji           👨‍👩‍👧‍👦
+   UTF-8 bytes                25
+   code points                7
+   what a person counts       1
+   re.findall(r'.', ...)      7 matches
+   the first one is           👨   U+1F468
+
+   re has \X                   no -- re.error
+
+   `.` matched one seventh of a family and handed back a man. That is
+   not a bug in `re`: the report says in as many words that an engine
+   may treat `.` as one code point and spell the grapheme cluster \X,
+   and RL2.2 is the requirement to provide the second one. Python's re
+   provides neither \X nor any other way to ask the question.
+
+   The 25 bytes above become 26 in a file, once the newline is on the
+   end -- which is the number the PCRE2 page measured with wc -c.
