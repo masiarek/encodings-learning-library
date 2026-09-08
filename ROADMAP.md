@@ -4,7 +4,7 @@
 
 What is written, what is a stub, and what is next — in the order the stubs will be filled, which is the reading order.
 
-**Two companion pages, added 2026-09-06.** This one tracks the pages that exist; [TODO.md](TODO.md) ranks the next fifty against the four checkpoints in [00_Start_Here](00_Start_Here/README.md) — three of which are still stubs — and [TOPICS.md](TOPICS.md) is the wider inventory it was drawn from: every term the subject touches, imported from a list Adam pasted and then extended with what that list was missing. Neither has been through the gates that back a lesson; both say so at the top.
+**Two companion pages, added 2026-09-06.** This one tracks the pages that exist; [TODO.md](TODO.md) ranks the next fifty against the four checkpoints in [00_Start_Here](00_Start_Here/README.md) — all four written as of 2026-09-08 — and [TOPICS.md](TOPICS.md) is the wider inventory it was drawn from: every term the subject touches, imported from a list Adam pasted and then extended with what that list was missing. Neither has been through the gates that back a lesson; both say so at the top.
 
 ## Status
 
