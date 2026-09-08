@@ -408,4 +408,5 @@ THE DECISION, STATED PLAINLY
 - [`codecs` — error handlers ↗](https://docs.python.org/3/library/codecs.html#error-handlers) — the registry, and the full list
 - [`codecs` — standard encodings ↗](https://docs.python.org/3/library/codecs.html#standard-encodings) — every name and alias Python ships
 - [PEP 293 — codec error handling callbacks ↗](https://peps.python.org/pep-0293/) — why you can add your own
+- [The codecs registry ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/the_codecs_registry/index.html) — the ninth handler at full length, plus the two rules its signature does not state: one name serves both directions, and it fires once per *run* of bad input rather than once per character
 - [Unicode Standard, chapter 3 ↗](https://www.unicode.org/versions/Unicode16.0.0/core-spec/chapter-3/) — conformance clause C10

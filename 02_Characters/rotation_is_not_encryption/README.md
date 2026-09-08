@@ -317,6 +317,7 @@ Python's own codec agrees on the ASCII part: 'Nggnpx'
 - [A character is a number](../a_character_is_a_number/README.md) — the layout every number on this page comes from
 - [Binary to text](../../03_Encodings/binary_to_text/README.md) — the same "this is not encryption" claim, about Base64
 - [Encode and decode are verbs](../../03_Encodings/encode_and_decode_are_verbs/README.md) — why `str.encode` refuses a `str` → `str` transform
+- [The codecs registry ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/the_codecs_registry/index.html) — the *mechanism* of that refusal, measured: `codecs.lookup('rot13')` succeeds and it is a `_is_text_encoding` flag on the result, not a missing codec, that closes the door
 - [Logical and visual order](../logical_and_visual_order/README.md) — what `U+2068` actually does
 - [What you see is not what runs](../../12_Adversarial/trojan_source/README.md) — the same characters, chosen on purpose
 - [Breaking a cipher by counting ↗](https://masiarek.github.io/cryptography-learning-library/02_Classical_Ciphers/frequency_analysis/index.html) — where the cryptography starts, in the sibling library that begins where this page stops
