@@ -6,7 +6,7 @@ A [code point](../02_Characters/unicode_code_points/README.md) is a number, and 
 
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|
-| 1 | [UTF-8 by hand](utf8_by_hand/README.md) | How does `U+00E9` become `C3 A9`, with a pencil? | stub |
+| 1 | [UTF-8 by hand](utf8_by_hand/README.md) | How does `U+00E9` become `C3 A9`, with a pencil? | written, 2026-09-07 |
 | 2 | [Validation is a boundary](validation_is_a_boundary/README.md) | Who checks that a run of bytes really is UTF-8, and what is left of the check afterwards? | written, 2026-09-05 |
 | 3 | [Overlong sequences](overlong_sequences/README.md) | Why is `C1 BD` not just another way of writing `}`, and what else does that rule forbid? | written, 2026-09-05 |
 | 4 | [UTF-16 and surrogates](utf16_and_surrogates/README.md) | Why do Windows, Java, JavaScript and SAP say an emoji is two characters long? | written |

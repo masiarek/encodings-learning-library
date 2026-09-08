@@ -1,0 +1,88 @@
+1. char IS A SCALAR VALUE, AND THAT IS A TYPE
+   Rust's char is not a byte and not a UTF-16 unit. It is one code
+   point that is not a surrogate -- exactly the set Table 3-7 covers
+   -- and the type refuses everything outside it at construction.
+
+   size_of::<char>()        = 4 bytes, the same for every char
+   char::MAX                = U+10FFFF
+   char::from_u32(0x41)     = Some('A')  1 byte(s) in a String
+   char::from_u32(0xE9)     = Some('é')  2 byte(s) in a String
+   char::from_u32(0x17C)    = Some('ż')  2 byte(s) in a String
+   char::from_u32(0x20AC)   = Some('€')  3 byte(s) in a String
+   char::from_u32(0x1F600)  = Some('😀')  4 byte(s) in a String
+   char::from_u32(0xD800)   = None      a surrogate is not a scalar value
+   char::from_u32(0x110000) = None      above the top of Unicode
+
+   Two numbers that disagree on purpose. A char is always 4 bytes in
+   memory, because a fixed width is what makes it a type you can put
+   in an array; len_utf8() is 1 to 4, because that is what it costs
+   in a String. Neither is wrong and neither answers the other's
+   question.
+
+2. THE BUFFER IS FOUR BYTES, AND THAT IS THE WHOLE PROMISE
+   encode_utf8 writes into a caller's [u8; 4]. The 4 is not a guess:
+   it is the width of the last template, and the type system is
+   where this page's table ends up living.
+
+   U+0041   'A'  len_utf8() 1   returns 41           buf 41 00 00 00
+   U+00E9   'é'  len_utf8() 2   returns C3 A9        buf C3 A9 00 00
+   U+017C   'ż'  len_utf8() 2   returns C5 BC        buf C5 BC 00 00
+   U+20AC   '€'  len_utf8() 3   returns E2 82 AC     buf E2 82 AC 00
+   U+1F600  '😀'  len_utf8() 4   returns F0 9F 98 80  buf F0 9F 98 80
+
+   The trailing zeros are the buffer, not the character: encode_utf8
+   hands back a &str borrowing only the bytes it wrote. len_utf8()
+   answered the same question before a single byte was written.
+
+3. TABLE 3-7, CHECKED BY EXHAUSTION -- THE BYTE SIDE
+   Every byte combination the nine rows permit, decoded by hand, and
+   checked against the code point range the row claims. Then handed
+   to str::from_utf8, which is the decoder Rust ships.
+
+   the row's byte columns                    sequences   decoding into
+   00-7F                                          128   U+0000 - U+007F
+   C2-DF 80-BF                                   1920   U+0080 - U+07FF
+   E0-E0 A0-BF 80-BF                             2048   U+0800 - U+0FFF
+   E1-EC 80-BF 80-BF                            49152   U+1000 - U+CFFF
+   ED-ED 80-9F 80-BF                             2048   U+D000 - U+D7FF
+   EE-EF 80-BF 80-BF                             8192   U+E000 - U+FFFF
+   F0-F0 90-BF 80-BF 80-BF                     196608   U+10000 - U+3FFFF
+   F1-F3 80-BF 80-BF 80-BF                     786432   U+40000 - U+FFFFF
+   F4-F4 80-8F 80-BF 80-BF                      65536   U+100000 - U+10FFFF
+
+   1112064 byte sequences -- the same number the Python example
+   counted from the other end. The rows do not overlap and they leave
+   nothing out, so the table is a bijection: one sequence per scalar
+   value, one scalar value per sequence, and no exceptions to learn.
+
+4. WHAT MAKES A STREAM READABLE FROM THE MIDDLE
+   Four classes of byte value, and they do not overlap -- so any
+   byte announces which class it is in with no context at all:
+
+   00-7F          128  a whole character by itself
+   C2-F4           51  starts a two-, three- or four-byte character
+   80-BF           64  continues one, and can never start one
+   C0, C1, F5-FF   13  appear in no well-formed UTF-8 at all
+                  ---
+                  256  every byte value, in exactly one class
+
+   So from any offset, walk backwards over 80-BF and the first byte
+   that is not one is the start of the character you landed in. It
+   is never more than three steps, because no template is longer.
+
+   "aż😀b" is 8 bytes: 61 C5 BC F0 9F 98 80 62
+
+   offset  byte  is_char_boundary  the character it belongs to
+        0  61    true              'a' starting at offset 0
+        1  C5    true              'ż' starting at offset 1
+        2  BC    false             'ż' starting at offset 1
+        3  F0    true              '😀' starting at offset 3
+        4  9F    false             '😀' starting at offset 3
+        5  98    false             '😀' starting at offset 3
+        6  80    false             '😀' starting at offset 3
+        7  62    true              'b' starting at offset 7
+
+   is_char_boundary is that backward walk with a name. Rust exposes
+   it because &str indexing is by BYTE offset and the language will
+   not let you cut a character in half -- so the question the shell
+   answers with a hex dump is, here, a method on the type.

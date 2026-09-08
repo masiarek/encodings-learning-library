@@ -1,0 +1,46 @@
+THE FOUR SEQUENCES
+
+   Pad the number to the payload width, cut at the slot boundaries, put
+   the markers in front. Every line below is bash arithmetic -- the only
+   thing an encoder is asked is the last column, and only for the fifth.
+
+   U+00E9
+      padded to 11 slots   00011101001
+      the bytes            11000011 10101001
+      in hex               c3a9   and it shows as  é
+   U+017C
+      padded to 11 slots   00101111100
+      the bytes            11000101 10111100
+      in hex               c5bc   and it shows as  ż
+   U+20AC
+      padded to 16 slots   0010000010101100
+      the bytes            11100010 10000010 10101100
+      in hex               e282ac   and it shows as  €
+   U+1F600
+      padded to 21 slots   000011111011000000000
+      the bytes            11110000 10011111 10011000 10000000
+      in hex               f09f9880   and it shows as  😀
+
+   C3 A9   C5 BC   E2 82 AC   F0 9F 98 80
+   Two, two, three, four -- and the byte count came from where the number
+   sits on the number line, not from the alphabet the letter belongs to.
+
+AND THE FIFTH, WHICH IS THE POINT OF THE KATA
+
+   U+D800 goes through the same arithmetic without complaint:
+      padded to 16 slots   1101100000000000
+      the bytes            11101101 10100000 10000000
+      in hex               eda080
+
+      iconv says           exit 1   refused
+
+   The templates are a recipe and a rule, and here they part company. The
+   recipe produces ED A0 80; the rule -- Table 3-7's ED row, whose second
+   byte stops at 9F instead of BF -- forbids it. U+D800 is a surrogate:
+   one half of the pair UTF-16 uses to reach above U+FFFF, and not a
+   character at all, so no UTF-8 sequence is allowed to mean it.
+
+   That cap is the 2,048-number hole the lesson's exhaustion walks past:
+   0x110000 - 2048 = 1112064, and every one of those has bytes while
+   these 2,048 do not. If your pencil answered ED A0 80, the arithmetic
+   was right and the answer is still no.

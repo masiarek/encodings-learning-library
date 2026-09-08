@@ -11,13 +11,13 @@
 | Checkpoint | The page that settles it | Status |
 |---|---|---|
 | `0x41` ↔ 65 ↔ `0b01000001` by hand | chapter 1, three lessons | **written** |
-| Code point vs UTF-8 bytes | [UTF-8 by hand](03_Encodings/utf8_by_hand/README.md) | **stub** |
+| Code point vs UTF-8 bytes | [UTF-8 by hand](03_Encodings/utf8_by_hand/README.md) | **written**, 2026-09-07 |
 | Python `str` vs `bytes` | [Encode, decode and errors](04_Python/encode_decode_and_errors/README.md) | **written**, 2026-09-07 |
 | Rust `String` vs `&str` vs `char` | [`char` is four bytes](05_Rust/char_is_four_bytes/README.md) | **stub** |
 
-**Two of the four checkpoint pages are still stubs** (2026-09-07; it was three until the Python one landed), while 50-odd lessons are written around them — including a whole security chapter and a whole tools chapter. The library grew outward from its middle, which was the right call each time it was made ([ROADMAP.md](ROADMAP.md) explains each one) and is the wrong shape to leave.
+**One of the four checkpoint pages is still a stub** — [`char is four bytes`](05_Rust/char_is_four_bytes/README.md) (2026-09-07; it was three that day, until the Python one and then UTF-8 by hand landed). Fifty-odd lessons are written around it, including a whole security chapter and a whole tools chapter. The library grew outward from its middle, which was the right call each time it was made ([ROADMAP.md](ROADMAP.md) explains each one) and is the wrong shape to leave.
 
-So the ranking is: **finish the promise, then the goal that has no chapter yet (real SAP data), then the remaining stubs, then the pages the topic map exposed.** 22 of the 50 name a page that already exists, and **19 of those are still stubs** (re-counted 2026-09-07) with their questions written down and their URLs minted; graduating one of those beats minting a new page almost every time.
+So the ranking is: **finish the promise, then the goal that has no chapter yet (real SAP data), then the remaining stubs, then the pages the topic map exposed.** 22 of the 50 name a page that already exists, and **8 of those are still stubs** (re-counted 2026-09-08, after all of chapter 7 and this chapter's checkpoint landed) — rows 3, 4, 7, 15, 19, 20, 21 and 22 with their questions written down and their URLs minted; graduating one of those beats minting a new page almost every time.
 
 **Every hook below is a claim to verify, not a fact this library has checked.** That is the whole difference between this page and every other page here ([CONTRIBUTING.md](CONTRIBUTING.md)). Expect roughly one in three to come out differently once a program is pointed at it — which is the reason to point a program at it.
 
@@ -25,11 +25,11 @@ So the ranking is: **finish the promise, then the goal that has no chapter yet (
 
 ## Tier 1 — the checkpoints (1–7)
 
-Nothing else in this library is worth more than these seven. Five are stubs; all five have their questions already written on the page.
+Nothing else in this library is worth more than these seven. Three are stubs — rows 3, 4 and 7 — and all three have their questions already written on the page.
 
 | # | Page | Lands in | The hook to verify |
 |---|---|---|---|
-| 1 | [UTF-8 by hand](03_Encodings/utf8_by_hand/README.md) | 03 | The checkpoint page. Encode `é`, `ż`, `€`, `😀` with a pencil; the four row shapes; and Table 3-7 **verified by exhaustion in about a second** — 1,112,064 sequences, every one decoding inside the range its row claims — rather than quoted |
+| 1 | ~~[UTF-8 by hand](03_Encodings/utf8_by_hand/README.md)~~ | 03 | **Written 2026-09-07.** All four languages, and Table 3-7 walked from *both* ends rather than quoted — which is where the row's hook came out sharper than it was written. 1,112,064 scalar values encoded by hand, and separately 1,112,064 byte sequences enumerated from the nine rows' byte columns: the two counts meeting is what makes the table a **bijection**, and `0x110000 − 2048` and the nine byte products are the same number arrived at two incompatible ways. The **timing was wrong**: about *three* seconds in Python, not one, precisely because the encoder is hand-written rather than called (0.09 s in Rust, 0.05 s in C, and 0.28 s for the same Python loop using `.encode()`) |
 | 2 | ~~[Encode, decode and errors](04_Python/encode_decode_and_errors/README.md)~~ | 04 | **Written 2026-09-07.** Eight handlers, not six, and the blast radius came out sharper than the row predicted: `replace` is not *visible* data loss either, because a real `U+FFFD` in the input produces the same string |
 | 3 | [`char` is four bytes](05_Rust/char_is_four_bytes/README.md) | 05 | The checkpoint page. `char` is a scalar value, always 4 bytes in memory, 1–4 bytes in a `String` — so `size_of::<char>()` and `'é'.len_utf8()` disagree on purpose |
 | 4 | [A `str` vs `bytes`](04_Python/str_vs_bytes/README.md) | 04 | The page checkpoint 3 rests on. `len()` answers two different questions and neither is "characters" |
@@ -39,7 +39,7 @@ Nothing else in this library is worth more than these seven. Five are stubs; all
 
 ## Tier 2 — real data, the goal with the emptiest chapter (8–14)
 
-Goal three was *real SAP data*, and [07_Real_Data](07_Real_Data/README.md) is 2 written pages against 5 stubs. Every one of these is a bug Adam will actually meet.
+Goal three was *real SAP data*, and [07_Real_Data](07_Real_Data/README.md) is now finished: **every row in this tier has landed**, rows 8 to 14, between 2026-09-07 and 2026-09-08. Every one of these is a bug Adam will actually meet.
 
 | # | Page | Lands in | The hook to verify |
 |---|---|---|---|

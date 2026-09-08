@@ -86,7 +86,7 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 
 ### 1.3 UTF-8 — **core**
 
-*Covered:* [Overlong sequences](03_Encodings/overlong_sequences/README.md) · [Validation is a boundary](03_Encodings/validation_is_a_boundary/README.md) · [Why UTF-8 won](09_History/why_utf8_won/README.md) · [UTF-8 everywhere](10_Best_Practices/utf8_everywhere/README.md) · stub: [UTF-8 by hand](03_Encodings/utf8_by_hand/README.md)
+*Covered:* [UTF-8 by hand](03_Encodings/utf8_by_hand/README.md) · [Overlong sequences](03_Encodings/overlong_sequences/README.md) · [Validation is a boundary](03_Encodings/validation_is_a_boundary/README.md) · [Why UTF-8 won](09_History/why_utf8_won/README.md) · [UTF-8 everywhere](10_Best_Practices/utf8_everywhere/README.md)
 
 **Imported:** UTF-8 · 1/2/3/4-byte sequences · continuation byte · leading byte · overlong encoding · UTF-8 BOM · validity · MUTF-8 · CESU-8 · WTF-8 · RFC 3629 · UTF-8 Everywhere
 

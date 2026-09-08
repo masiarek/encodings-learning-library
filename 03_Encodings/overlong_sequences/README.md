@@ -80,7 +80,7 @@ Read the other way, the table's gaps are the yellow bands on the slide:
 | `F0 80 80 80` … `F0 8F BF BF` | `U+0000`–`U+FFFF` | overlong |
 | `F4 90 80 80` and up | `U+110000` and beyond | past the top of Unicode |
 
-That table is not quoted from memory. Every row above was checked by expanding it: 1,112,064 byte sequences, which is `0x110000` minus the 2,048 surrogates, each decoded and each landing inside the code point range its row claims — no gaps, no overlaps, nothing rejected.
+That table is not quoted from memory. Every row above was checked by expanding it: 1,112,064 byte sequences, which is `0x110000` minus the 2,048 surrogates, each decoded and each landing inside the code point range its row claims — no gaps, no overlaps, nothing rejected. The expansion is a program, and it lives on [UTF-8 by hand](../utf8_by_hand/README.md), which walks the table from both ends and finds the same number twice.
 
 ## Thirteen bytes that can never appear
 

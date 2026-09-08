@@ -1,0 +1,156 @@
+1. THE FOUR TEMPLATES
+   An x is a payload bit. Every other bit is a marker, and it announces
+   one of two things: how long this character is, or that this byte is
+   the continuation of one.
+
+   bytes  template                              payload  code points
+   1      0xxxxxxx                               7 bits  U+0000 - U+007F
+   2      110xxxxx 10xxxxxx                     11 bits  U+0080 - U+07FF
+   3      1110xxxx 10xxxxxx 10xxxxxx            16 bits  U+0800 - U+FFFF
+   4      11110xxx 10xxxxxx 10xxxxxx 10xxxxxx   21 bits  U+10000 - U+10FFFF
+
+   Two rules do all the work. A byte starting 0 is a whole character by
+   itself, so all 128 ASCII bytes mean in UTF-8 exactly what they meant
+   in ASCII. And a byte starting 10 is never a lead byte, only ever the
+   continuation of one -- which is what makes a UTF-8 stream readable
+   from any position, and is why the shell example can cut one in half
+   and still find its footing.
+
+2. FIVE CHARACTERS, DONE WITH A PENCIL
+   Write the number in binary. Pad it to the payload width of the
+   narrowest template that fits. Cut it at the slot boundaries. Put the
+   markers back in front. Read off the hex.
+
+   A   U+0041   ASCII: one byte, and the byte is unchanged
+      the number in binary        1000001
+      padded to 7 payload slots   1000001
+      cut at the slot boundaries  1000001
+      markers put back in front   01000001
+      the bytes                   41
+      CPython's own codec         41   agrees
+
+   é   U+00E9   the number fits in a byte; the character needs two
+      the number in binary        11101001
+      padded to 11 payload slots  00011101001
+      cut at the slot boundaries  00011 101001
+      markers put back in front   11000011 10101001
+      the bytes                   C3 A9
+      CPython's own codec         C3 A9   agrees
+
+   ż   U+017C   Polish: past U+00FF, so no 8-bit table can hold it
+      the number in binary        101111100
+      padded to 11 payload slots  00101111100
+      cut at the slot boundaries  00101 111100
+      markers put back in front   11000101 10111100
+      the bytes                   C5 BC
+      CPython's own codec         C5 BC   agrees
+
+   €   U+20AC   three bytes -- 16 slots for a 14-bit number
+      the number in binary        10000010101100
+      padded to 16 payload slots  0010000010101100
+      cut at the slot boundaries  0010 000010 101100
+      markers put back in front   11100010 10000010 10101100
+      the bytes                   E2 82 AC
+      CPython's own codec         E2 82 AC   agrees
+
+   😀   U+1F600   above U+FFFF: the four-byte row, 17 bits in 21 slots
+      the number in binary        11111011000000000
+      padded to 21 payload slots  000011111011000000000
+      cut at the slot boundaries  000 011111 011000 000000
+      markers put back in front   11110000 10011111 10011000 10000000
+      the bytes                   F0 9F 98 80
+      CPython's own codec         F0 9F 98 80   agrees
+
+   The second character is the one to sit with. U+00E9 is 233, which fits
+   in a byte with room to spare -- and it still takes two bytes, because
+   the one-byte template has seven payload slots and 233 needs eight.
+   'Does the number fit in a byte' is not the question UTF-8 asks.
+
+3. WHERE THE THRESHOLDS COME FROM
+   0x80, 0x800 and 0x10000 are not conventions to memorise. Each is two
+   raised to a template's payload width: the first number that template
+   can no longer hold, which is where the next one starts.
+
+    7 payload slots reach U+007F   -> 1 byte  covers U+0000 - U+007F
+   11 payload slots reach U+07FF   -> 2 bytes covers U+0080 - U+07FF
+   16 payload slots reach U+FFFF   -> 3 bytes covers U+0800 - U+FFFF
+   21 payload slots reach U+1FFFFF -> 4 bytes covers U+10000 - U+10FFFF
+
+   Only the last row stops early. Its 21 slots reach U+1FFFFF, and UTF-8
+   stops at U+10FFFF, so 983040 of the numbers it could express name
+   nothing. That ceiling is not this table's -- it is the largest number
+   UTF-16 can reach, and the arithmetic says so exactly:
+      0x10000 + 2**20 - 1 = 0x10FFFF   (a surrogate pair carries 20 bits)
+
+4. DECODING IS THE SAME TABLE READ BACKWARDS
+   Count the leading 1s of the first byte: none means one byte, two means
+   two, three means three, four means four. Strip every marker, join what
+   is left, and that is the number.
+
+   41            payload 1000001                = U+0041   ok
+   C3 A9         payload 00011101001            = U+00E9   ok
+   C5 BC         payload 00101111100            = U+017C   ok
+   E2 82 AC      payload 0010000010101100       = U+20AC   ok
+   F0 9F 98 80   payload 000011111011000000000  = U+1F600  ok
+
+   The width came out of the first byte alone. Nothing had to be counted
+   ahead, and nothing had to be remembered from earlier in the stream.
+
+5. TABLE 3-7, CHECKED BY EXHAUSTION -- THE CODE POINT SIDE
+   Every scalar value Unicode can hold, encoded by the pencil method in
+   section 2, placed in the one row whose code point range contains it,
+   then checked byte by byte against that row's byte columns.
+
+   code points            the row's byte columns                   scalars
+   U+0000 - U+007F        00-7F                                       128
+   U+0080 - U+07FF        C2-DF 80-BF                                1920
+   U+0800 - U+0FFF        E0-E0 A0-BF 80-BF                          2048
+   U+1000 - U+CFFF        E1-EC 80-BF 80-BF                         49152
+   U+D000 - U+D7FF        ED-ED 80-9F 80-BF                          2048
+   U+E000 - U+FFFF        EE-EF 80-BF 80-BF                          8192
+   U+10000 - U+3FFFF      F0-F0 90-BF 80-BF 80-BF                  196608
+   U+40000 - U+FFFFF      F1-F3 80-BF 80-BF 80-BF                  786432
+   U+100000 - U+10FFFF    F4-F4 80-8F 80-BF 80-BF                   65536
+
+   1112064 scalar values, every one encoding to bytes that lie
+   inside the row claiming it. None fell outside all nine rows, none
+   matched two, and CPython's codec agreed on every answer.
+
+6. THE HOLE IN THE MIDDLE IS THE SURROGATES
+   Rows five and six are neighbours in the table and their code point
+   ranges are not neighbours. Nothing was left out: the gap is what the
+   ED row's second byte, capped at 9F where every other row reaches BF,
+   is for.
+
+   row 5 (ED 80-9F ..) ends at    U+D7FF
+   row 6 (EE-EF ..) begins at     U+E000
+   the gap                        U+D800 - U+DFFF
+                                  2048 numbers that are not characters
+
+   0x110000 - 2048 = 1112064, which is the total in section 5.
+   Two ways of counting one set: subtract the hole from the ceiling, or
+   add up nine rows of a byte table. They have to agree, and they do.
+
+7. WHAT A CHARACTER COSTS, AND WHY BYTES >= CHARACTERS ALWAYS
+   A template row is a range of code points, so the byte cost of a letter
+   is settled by where its script sits on the number line. The library's
+   whole cast, sorted into the four rows:
+
+   1 byte   U+0000 - U+007F     A U+0041  ~ U+007E
+   2 bytes  U+0080 - U+07FF     ß U+00DF  é U+00E9  ż U+017C
+   3 bytes  U+0800 - U+FFFF     ಠ U+0CA0  € U+20AC  日 U+65E5
+   4 bytes  U+10000 - U+10FFFF  😀 U+1F600
+
+   And the cast's strings, measured rather than described:
+
+   code points   bytes   what costs what
+            13      13   ASCII only: the two rulers agree       Hello, World!
+             4       5   one two-byte letter                    café
+             4       7   Polish: three of four letters cost two żółw
+             3       9   CJK: three bytes each                  日本語
+             1       4   one emoji, and the widest row there is 😀
+
+   len(bytes) >= len(str), always, and never the other way, because the
+   narrowest template is one byte wide. The two are equal exactly when
+   every character is ASCII -- which is the whole compatibility story in
+   one sentence, and the reason an ASCII file is already a UTF-8 file.

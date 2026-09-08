@@ -1,0 +1,53 @@
+1. THE ENCODER IS THE PENCIL METHOD, IN TEN LINES
+   No character type, no string type, no library. Choose the
+   template by comparing against 0x80 / 0x800 / 0x10000, shift the
+   payload bits into place, or with the markers. That is all of it.
+
+   code point   bytes  the encoder's answer  as text
+   U+0041        1      41           A   ASCII
+   U+00E9        2      C3 A9        é   233 needs 8 bits, and 7 fit
+   U+017C        2      C5 BC        ż   past U+00FF
+   U+20AC        3      E2 82 AC     €   14 bits in 16 slots
+   U+1F600       4      F0 9F 98 80  😀   above U+FFFF
+
+2. AND THE DECODER IS THE SAME TABLE BACKWARDS
+   The first byte announces the width; every other byte gives up its
+   low six bits. Round-tripped over every scalar value below.
+
+   41           announced width 1   decodes to U+0041    ok
+   C3 A9        announced width 2   decodes to U+00E9    ok
+   C5 BC        announced width 2   decodes to U+017C    ok
+   E2 82 AC     announced width 3   decodes to U+20AC    ok
+   F0 9F 98 80  announced width 4   decodes to U+1F600   ok
+
+3. THE ROUND TRIP, OVER EVERY SCALAR VALUE UNICODE HAS
+   1112064 scalar values encoded, and every one decoded back to
+   the number it came from. No table, no library, no allocation.
+
+   1 byte        128   ASCII
+   2 bytes      1920
+   3 bytes     61440   (the surrogate hole is subtracted here)
+   4 bytes   1048576
+             1112064   = 0x110000 - 2048
+
+   Worst backward walk from a byte to its character's start: 3
+   -- three, because no template is longer. That loop is the whole
+   of self-synchronisation and it needs no state at all.
+
+4. WHY strlen NEVER HAD TO CHANGE
+   C strings end at a zero byte, so an encoding that put a zero byte
+   inside a character would have broken every C program ever written.
+   UTF-8 does not, and that is checkable rather than promised:
+
+   zero bytes found inside a multi-byte character : 0
+   bytes below 0x80 found inside one              : 0
+
+   "żółw"  strlen = 7   bytes: C5 BC C3 B3 C5 82 77
+   strchr(word, 'w') found the 'w' at byte 6, and it really is
+   a 'w' -- not the tail of a letter that happened to end in 0x77.
+
+   strlen counts bytes, and on this page that is not a bug: there is
+   no character type in C to count instead. What matters is that it
+   terminates in the right place and that a byte search cannot land
+   inside a character. Both fall out of the templates, and both are
+   why UTF-8 could be adopted without a flag day.

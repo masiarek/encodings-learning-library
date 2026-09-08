@@ -1,0 +1,79 @@
+1. THE TEMPLATES, ON A REAL PIPE
+   printf writes the bytes; xxd -b prints them back as bits. The markers
+   are in plain view: a lone 0, or 110/1110/11110 and then 10 each time.
+
+   A              01000001
+   e-acute        11000011 10101001
+   z-dot          11000101 10111100
+   euro           11100010 10000010 10101100
+   grinning face  11110000 10011111 10011000 10000000
+
+   Count the leading 1s of the first group and you have the length,
+   before reading any further byte. That is the whole decoder.
+
+2. FROM A HEX DUMP BACK TO A CHARACTER
+   The pencil loop closed: type the bytes you worked out, and the
+   terminal shows you what they say. No library, no table lookup.
+
+   printf '\x41'              writes 41         and the terminal shows  A
+   printf '\xc3\xa9'          writes c3a9       and the terminal shows  é
+   printf '\xc5\xbc'          writes c5bc       and the terminal shows  ż
+   printf '\xe2\x82\xac'      writes e282ac     and the terminal shows  €
+   printf '\xf0\x9f\x98\x80'  writes f09f9880   and the terminal shows  😀
+
+   That is also how you make a test file for a character you cannot
+   type -- and how you make one your editor would quietly repair.
+
+3. ONE FILE, AND WHY THE TWO RULERS DISAGREE
+   Four letters either way, and one file is bigger. Every non-ASCII
+   letter is paying for its second byte.
+
+    5 bytes on disk   7a6f6c770a         the word: zolw
+    8 bytes on disk   c5bcc3b3c582770a   the word: żółw
+
+   0a is the newline, one byte in both. Strip it and the Polish word is
+   7 bytes for 4 letters: three letters at two bytes, one at one. The
+   file records none of that -- a reader has to be told the encoding,
+   which is this chapter's whole argument.
+
+4. CUT THE PIPE IN THE MIDDLE OF A CHARACTER
+   The stream is 'a', z-dot, a grinning face, 'b' -- 8 bytes:
+
+      61c5bcf09f988062
+
+   Start reading at each byte in turn, as a program joining a stream
+   late would. A first byte in 80-BF says you have landed inside a
+   character: skip while that is true, and the next one starts there.
+
+   start  byte  class         skip  starts at  width  the character
+       1    61  ASCII            0          1      1  a
+       2    c5  lead of 2        0          2      2  ż
+       3    bc  continuation     1          4      4  😀
+       4    f0  lead of 4        0          4      4  😀
+       5    9f  continuation     3          8      1  b
+       6    98  continuation     2          8      1  b
+       7    80  continuation     1          8      1  b
+       8    62  ASCII            0          8      1  b
+
+   Never more than three bytes skipped, because no template is longer.
+   So a truncated or corrupted file costs you one character and not the
+   rest of the stream. Note what the resync did NOT need: no state from
+   earlier in the file, no byte count from the top, and no lookahead.
+   That is what self-synchronising means, and it is a consequence of one
+   decision -- continuation bytes start 10, and nothing else does.
+
+5. HALF A CHARACTER IS NOT TEXT
+   The templates are a rule as well as a recipe, so a piece of a
+   character is refused rather than decoded into something.
+
+   printf '\xc5\xbc'            exit 0   valid UTF-8
+   printf '\xc5'                exit 1   refused
+   printf '\xbc'                exit 1   refused
+   printf '\xf0\x9f\x98\x80'    exit 0   valid UTF-8
+   printf '\xf0\x9f'            exit 1   refused
+   printf '\x80\x80'            exit 1   refused
+
+   A lead byte with its continuations missing is refused, and so is a
+   continuation byte with no lead byte in front of it. Both are the
+   templates being read as a specification. Who runs that check, and
+   what is left of it downstream, is the next lesson.

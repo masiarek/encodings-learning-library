@@ -43,7 +43,7 @@ The chapters the diagram above is about. Each one needs the one before it.
 |---|---|---|
 | [01_Bits_and_Bytes](../01_Bits_and_Bytes/README.md) | A byte is 0..255 with no meaning of its own; hex is bits four at a time; a hex dump is three columns | 7 / 0 |
 | [02_Characters](../02_Characters/README.md) | A character is a number by agreement — 128, then 256 with everybody's own top half, then one numbering for all | 12 / 1 |
-| [03_Encodings](../03_Encodings/README.md) | How a code point becomes bytes: UTF-8 by hand, UTF-16, byte order, and mojibake as the wrong table | 10 / 1 |
+| [03_Encodings](../03_Encodings/README.md) | How a code point becomes bytes: UTF-8 by hand, UTF-16, byte order, and mojibake as the wrong table | 11 / 0 |
 | [04_Python](../04_Python/README.md) | `str` vs `bytes`, the `errors` policies, `open()`, normalization, binary formats | 6 / 1 |
 | [05_Rust](../05_Rust/README.md) | `String` is bytes that promise UTF-8; `char` is a code point; the three `from_utf8`s; byte slicing | 1 / 3 |
 | [06_Terminal](../06_Terminal/README.md) | `printf`, `iconv`, the locale, and why `file` only guesses | 7 / 3 |
@@ -84,7 +84,7 @@ One lesson per sitting. The chapters are short on purpose.
 
 ## Where C fits
 
-C is the language where a string *is* the bytes: `char` is one byte, `strlen` counts bytes up to the first NUL, and `"café"` is five bytes plus a terminator with nothing in the language that knows about characters. That is the truth Python hides behind `str` and Rust enforces with `&str` versus `&[u8]`, so one look at it in C makes both of the others click. It is not a fourth track here — the pointer arithmetic and `wchar_t` would cost more than they teach — but a short *The C view* section sits on the lessons where it sharpens the point, compiled and checked like every other example. The first is on [Control characters](../02_Characters/control_characters/README.md), where `strlen` stops at a NUL that Python and Rust carry happily; [UTF-8 by hand](../03_Encodings/utf8_by_hand/README.md) will get the second.
+C is the language where a string *is* the bytes: `char` is one byte, `strlen` counts bytes up to the first NUL, and `"café"` is five bytes plus a terminator with nothing in the language that knows about characters. That is the truth Python hides behind `str` and Rust enforces with `&str` versus `&[u8]`, so one look at it in C makes both of the others click. It is not a fourth track here — the pointer arithmetic and `wchar_t` would cost more than they teach — but a short *The C view* section sits on the lessons where it sharpens the point, compiled and checked like every other example. One is on [Control characters](../02_Characters/control_characters/README.md), where `strlen` stops at a NUL that Python and Rust carry happily. The one to read first is on [UTF-8 by hand](../03_Encodings/utf8_by_hand/README.md): with no character type and no library to call, the encoder there *is* the pencil method, and it is ten lines.
 
 ## When you want more than the lessons
 
