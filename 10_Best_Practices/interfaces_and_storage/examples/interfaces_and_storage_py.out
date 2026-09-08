@@ -1,0 +1,133 @@
+1. ONE NAME, EIGHT ROWS, AND HOW MANY DIFFERENT SIZES
+------------------------------------------------------------------------
+   the text itself            4 characters   Łódź
+   UTF-8 bytes                     7 bytes   c5 81 c3 b3 64 c5 ba
+   JSON, default                  31 bytes   {"city": "\u0141\u00f3d\u017a"}
+   JSON, ensure_ascii=False       19 bytes   {"city": "Łódź"}
+   CSV, no BOM                    13 bytes   'city,Łódź\n'
+   CSV, utf-8-sig                 16 bytes   'city,Łódź\n'
+   URL query string               24 bytes   city=%C5%81%C3%B3d%C5%BA
+   CHAR(10), byte-counted         10 bytes   c5 81 c3 b3 64 c5 ba 20 20 20
+
+   8 rows and 7 different byte sizes for one name. Every
+   pipeline above is correct; each is measuring a different layer.
+   A field width, a length limit or a quota applies to exactly ONE
+   of these rows, and it is rarely the first -- which is the
+   question to ask before sizing a column, not after the insert
+   fails in production.
+
+2. WHERE EACH CHANNEL DECLARES THE ENCODING
+------------------------------------------------------------------------
+   channel       the declaration                     who decides
+   HTTP          Content-Type: ...; charset=utf-8    in the header, and it wins
+   HTML          <meta charset> -- only if no header the header outranks it
+   JSON          nowhere: RFC 8259 fixes UTF-8       no charset parameter exists
+   XML           <?xml version encoding=...?>        in the document, self-describing
+   CSV           nowhere at all                      a BOM, or a document, or a guess
+   fixed-width   nowhere at all                      the interface specification
+   URL query     nowhere: %XX escapes bytes          RFC 3986 can only recommend
+   email header  =?utf-8?B?...?= names it inline     the only one that always does
+
+   Three groups, not two. 4 of the 8 carry the answer INSIDE the
+   data, where a reader can find it without being told. JSON has
+   nowhere to put it and does not need one, because the format FIXES
+   it -- one encoding, no parameter, no negotiation, which is the
+   design worth copying. And 3 -- CSV, fixed-width, URL query --
+   have nowhere to put it AND nothing fixing it, so the answer lives
+   in a document or in somebody's memory. Those three are the ones
+   that produce a ticket saying 'the file is corrupt'.
+
+3. JSON IS UTF-8 BY THE RFC, SO 'JSON IN ANOTHER ENCODING' IS NOT A THING
+------------------------------------------------------------------------
+   encoding this record as cp1252     UnicodeEncodeError
+     the character it stopped on      'Ł'  U+0141
+     of Polish's nine letters cp1252 holds  ó   (1 of 9)
+   So the question 'what if this JSON were cp1252' cannot even be
+   asked of this record -- the encode fails before any JSON exists.
+   ('ó' survives because it is in the Latin-1 half that cp1252 kept;
+   the other eight are the ones Latin-1 never had.) Take a value it
+   CAN hold, and the answer arrives one layer later instead:
+
+     as UTF-8    7b 22 63 69 74 79 22 3a 20 22 63 61 66 c3 a9 22 7d
+     as cp1252   7b 22 63 69 74 79 22 3a 20 22 63 61 66 e9 22 7d
+     json.loads(bytes encoded utf-8  ) -> {'city': 'café'}
+     json.loads(bytes encoded cp1252 ) -> UnicodeDecodeError
+
+   RFC 8259 section 8.1 fixes the encoding of an exchanged JSON text
+   to UTF-8, and the media type registration defines no charset
+   parameter -- so `Content-Type: application/json; charset=cp1252`
+   is not a JSON document in another encoding, it is a broken one
+   carrying a parameter nothing is required to read. json.loads
+   takes bytes and decodes them itself, which is why the refusal
+   above is a DECODE error rather than a syntax error: the parser
+   never got far enough to have an opinion about the JSON.
+
+   The escape form is the other half of that. json.dumps defaults to
+   ensure_ascii=True, which is not an encoding choice -- it is a
+   channel choice, for a pipe that will only carry ASCII:
+     default             {"city": "\u0141\u00f3d\u017a"}
+     ensure_ascii=False  {"city": "Łódź"}
+     same parsed value?  True
+   Same document, same parsed value, different size on the wire, and
+   a \uXXXX escape that is a UTF-16 code unit inside a UTF-8 format.
+
+4. CSV IS THE ONE WITH NOWHERE TO PUT IT
+------------------------------------------------------------------------
+   Read the BOM'd file with the wrong codec and the damage lands in
+   the one place a program will not look -- the first column NAME:
+     decode as utf-8      header[0] = '\ufeffcity'   len 5
+     decode as utf-8-sig  header[0] = 'city'   len 4
+
+   Both decodes SUCCEEDED. Nothing raised, nothing warned, and one of
+   them produced a column called something no lookup will match.
+   'utf-8-sig' strips a BOM if there is one and is harmless if there
+   is not, so it is the right codec for reading somebody else's CSV;
+   plain 'utf-8' is the right one for writing yours.
+
+   The other two arguments that belong on every csv open():
+     newline=''       the module handles line endings itself, and a
+                      quoted field may CONTAIN one
+     encoding='utf-8' because the default is the machine's, and the
+                      machine writing the file is not the one reading
+
+5. THE SANDWICH, AND THE ONE HOP THAT USUALLY MISSES IT
+------------------------------------------------------------------------
+   Decode at the boundary, hold text in the middle, encode at the
+   boundary. The failure is never the whole program -- it is one hop
+   where a value stayed bytes and got treated as text anyway:
+
+   bytes arriving from a socket    c5 81 c3 b3 64 c5 ba
+     .upper() on the BYTES         b'\xc5\x81\xc3\xb3D\xc5\xba'
+     .upper() on the TEXT          'ŁÓDŹ'
+
+   bytes.upper() did not raise and did not refuse. It is documented
+   as ASCII-only, so it changed exactly 1 byte of 7 -- the 'd' --
+   and left every byte of 'Ł', 'ó' and 'ź' as it found them. A
+   half-uppercased value, no error, no log line, and it will compare
+   unequal to the properly uppercased one forever.
+
+   Note what did NOT differ: both answers are the same length here.
+     'Łódź'.upper()   4 -> 4 characters, 7 -> 7 bytes
+   Case mapping is a table lookup and the table is free to change
+   the length -- 'ß'.upper() is 'SS', 1 character becoming 2 --
+   so 'uppercasing does not resize a field' is a fact about THIS
+   string, not a rule you can size a column with.
+
+6. AND WHAT 'WRITE IT DOWN' ACTUALLY MEANS
+------------------------------------------------------------------------
+   Seven lines, and every one of them is a question somebody will
+   otherwise answer for you, differently, at three in the morning:
+
+     encoding                                    UTF-8
+     normalization form                          NFC (this record already is: True)
+     line ending                                 LF
+     BOM                                         absent
+     field width unit                            bytes
+     what happens to a value that does not fit   reject the record
+     what happens to an undecodable byte         reject the record
+
+   Note the last two. 'Which encoding' is the famous question and it
+   is the easy one; the ones that decide whether an interface is
+   debuggable are what it does when the rule is broken. An
+   errors='ignore' nobody wrote down is a policy too -- it is just a
+   policy chosen by whoever typed fastest.
