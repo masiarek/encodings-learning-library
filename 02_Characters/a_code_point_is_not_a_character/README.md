@@ -235,6 +235,53 @@ The same five strings, and a language that names the rulers differently enough t
 ```
 <!-- /output -->
 
+## Who ships the fourth ruler
+
+"Nothing in either standard library" is true of the two languages this library teaches, and it is not a fact about programming languages. It is a choice each one made, and four of them chose differently. This section exists because of the question that prompted the page: *do we have a page on grapheme clusters — the equivalent term in .NET is text element?*, asked while reading [Microsoft's character encoding introduction ↗](https://learn.microsoft.com/en-us/dotnet/standard/base-types/character-encoding-introduction).
+
+| | what its `length` counts | how you get the fourth ruler | where the segmentation lives |
+|---|---|---|---|
+| **.NET** | UTF-16 code units | `StringInfo` — **in the box** | the base class library |
+| **Swift** | grapheme clusters — that *is* `String.count` | you already have it | the standard library |
+| **Rust** | bytes (`len()`) or code points (`chars()`) | the `unicode-segmentation` crate | deliberately outside `std` |
+| **Python** | code points | `regex`'s `\X`, or `grapheme`, from PyPI | nowhere |
+
+**.NET is the one worth knowing about, because it is the exception.** It calls the unit a **text element** rather than a grapheme cluster, and `System.Globalization.StringInfo` ships an enumerator for it — one of very few standard libraries that hand you the fourth ruler with no dependency. Both numbers at once, measured below: `"👩🏻‍🚒".Length` is `7` and `StringInfo` walks the same string in **one** step.
+
+**Swift made the opposite trade from Rust, on the same evidence.** `Character` *is* an extended grapheme cluster, so `count` is 1 for both spellings of an e-acute and iterating a string gives you what a reader sees, with `unicodeScalars`, `utf8` and `utf16` as views you ask for by name. The cost is that the default operation is O(n) and its answer moves when the tables underneath are updated. Rust chose the number that cannot change and makes you ask for the other; Swift chose the number people mean and pays for it. Neither is wrong, and the fence below is the bill Swift is paying.
+
+**Python is the outlier, and the absence is the lesson.** It ships the whole character database in `unicodedata` — categories, combining classes, widths — and no segmentation on top of it. So the honest answer to "how do I iterate graphemes in Python" is a dependency or an approximation, which is why the example above hand-rolls two rules and prints what it leaves out rather than pretending. The Python sibling library's [Counting characters ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/counting_characters/index.html) makes the same choice from the other side and marks it as crude on the page; point its rule at the woman firefighter and it answers **2**, because it knows about combining marks and joiners and not about emoji modifiers.
+
+### And the rules themselves have a version
+
+Four real segmenters, on one machine, on one afternoon. The first column is the two-rule subset the example above prints, and it is here to be distrusted.
+
+```text title="Measured on one Mac, macOS 26.6.2, 2026-09-08 — not machine-checked: four of these five are tools this library does not run in CI, and each ships its own copy of the rules"
+                                     code    this   PCRE2   Perl    .NET   Swift
+   string                          points    page   10.45   5.42   5.0.5   6.3.3
+   -----------------------------------------------------------------------------
+   WOMAN, MODIFIER, ZWJ, FIRE ENGINE    4       1       1      1       1       1
+   two flags -- four regional inds      4       2       1      2       2       2
+   HANGUL, as three jamo                3       3       1      1       1       1
+   U+0600, then an Arabic 7             2       2       1      1       1       1
+   THAI KO KAI, then SARA AM            2       2       1      1       1       1
+   a  ZWJ  b                            3       1       2      2       2       2
+   DEVANAGARI ka, virama, ssa           3       2       2      1       2       1
+
+   rg 15.1.0 (PCRE2 10.45)   rg -P -o '\X' f | wc -l
+   perl v5.42.0              $n++ while $s =~ /\X/g
+   .NET 5.0.5                StringInfo.GetTextElementEnumerator
+   Swift 6.3.3               String.count
+```
+
+**Read the middle rows first**, where four real implementations agree against the subset: three jamo spelling one Hangul syllable (`GB6`–`GB8`), an Arabic number sign that belongs to the digit behind it (`GB9b`, Prepend), a Thai vowel that Unicode classifies as a **letter** and segments as a mark (`GB9a`), and a joiner between two Latin letters, which `GB11` breaks because a ZWJ only welds *pictographs*. That is what a two-rule approximation costs, stated by the implementations rather than by this page.
+
+**Then read the last two rows, where the real ones disagree with each other.**
+
+`क` `्` `ष` — consonant, virama, consonant — is one conjunct to Perl 5.42 and Swift 6.3, and two to PCRE2 10.45 and .NET 5.0.5. Nothing is broken. `GB9c`, the rule that holds an Indic conjunct together, was added to [UAX #29 ↗](https://www.unicode.org/reports/tr29/) for Unicode 15.1, so an implementation built against an earlier revision breaks where a newer one does not. **"How many grapheme clusters" is therefore not a property of the string.** It is a property of the string *and* the UAX #29 revision your library implements — which is [the table has a version](../the_table_has_a_version/README.md) one layer up, with the segmentation *rules* carrying the version instead of the character data. It is also the bill named above: Swift's `count` is the number people mean, and this row is what "the answer moves when the tables update" looks like when it happens to you.
+
+**And one row is a plain defect worth carrying away.** PCRE2 10.45 matches an entire run of regional indicators as a single `\X`: four of them — two flags side by side — come back as one cluster, and so do three. `GB12`/`GB13` pair them up, which Perl, .NET and Swift all do. So `rg -P -o '\X' | wc -l`, which [PCRE2 — the other regex engine](../../11_Tools/pcre2/README.md) recommends and which is still the shortest way to get this number at a prompt, is right on every string on this page except a run of flags.
+
 ## If you are coming from Python or ABAP
 
 **Python.** `len(s)` counts code points, and it is the second ruler down from what you probably wanted. The practical rule: `len(s.encode())` for anything with a size limit measured in bytes — a database column, a network frame, a filename — and `len(s)` for nothing in particular, because a code point count is rarely the number any requirement was written in. Slicing has the same problem one level up: `s[0]` on a name stored as `e` + `U+0301` returns the bare `e` and leaves the accent behind as `s[1]`, so a "first initial" taken this way is wrong for exactly the users whose names carry marks. There is no standard library answer for the fourth ruler; `pip install regex` and `regex.findall(r'\X', s)` is the usual one, and `unicodedata.east_asian_width()` is as close as the standard library gets to the fifth — see the fence above for why that number deserves less trust than it looks like it deserves.
@@ -325,3 +372,8 @@ The decomposition is safe to write down, incidentally, and it is the one table f
 - [Slicing by byte](../../05_Rust/slicing_by_byte/README.md) — what Rust does when an index lands mid-character
 - [PCRE2 — the other regex engine](../../11_Tools/pcre2/README.md) — the one tool already on your machine that can count the fourth ruler, with `rg -P -o '\X'`
 - [The cast](../../CAST.md) — where all five demonstration strings come from
+- [UAX #29: Unicode Text Segmentation ↗](https://www.unicode.org/reports/tr29/) — the boundary rules themselves, `GB1` to `GB999`
+- [Character encoding in .NET ↗](https://learn.microsoft.com/en-us/dotnet/standard/base-types/character-encoding-introduction) — the introduction that prompted the crosswalk above, and where *text element* comes from
+- [Counting characters ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/counting_characters/index.html) — the same rulers from Python's side, with a grapheme rule the page marks as crude and this one measures
+- [Four lengths ↗](https://masiarek.github.io/rust-learning-library/14_Strings/four_lengths/index.html) — the same rulers from Rust's side
+- [It's Not Wrong that "🤦🏼‍♂️".length == 7 ↗](https://hsivonen.fi/string-length/) — one emoji and every honest answer to how long it is

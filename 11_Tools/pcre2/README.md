@@ -211,7 +211,7 @@ The general rule that falls out: **debug with the default engine, then switch.**
 ## Try it
 
 1. Make the decomposed file — `printf 'cafe\xcc\x81\n' > nfd.txt` — and run `rg -c '^.{4}$'`, `rg -c '^.{5}$'` and `rg -P -c '^\X{4}$'` on it. Then run the same three on a composed `café` and watch which answers move.
-2. Do the emoji count above on an emoji of your own — a flag, a skin-toned hand, a keycap. Every one of them is a different reason the two numbers differ, and `rg -P -o '\X' | wc -l` gets all of them right.
+2. Do the emoji count above on an emoji of your own — a skin-toned hand, a keycap, a joined sequence. Each is a different reason the two numbers differ and `\X` handles them all. Then try **two flags side by side**, which is the one case on this page where it does not: PCRE2 10.45 matches a whole run of regional indicators as a single `\X`, where `GB12`/`GB13` pair them up. Measured against Perl, .NET and Swift on [A code point is not a character](../../02_Characters/a_code_point_is_not_a_character/README.md), which has the fence.
 3. Run `rg 'a\nb' somefile` and then `rg -P 'a\nb' somefile`. Keep the first output; it is the better error message you will not get next time.
 4. Run `rg --version` and find the `+pcre2` line. If it says `-pcre2`, none of this page works on your build.
 
