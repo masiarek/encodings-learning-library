@@ -116,17 +116,33 @@ Section 7 is the version of this problem that actually reaches production: a fie
 
 **std ships this, and the method is worth knowing by name:** [`str::floor_char_boundary` ↗](https://doc.rust-lang.org/std/primitive.str.html#method.floor_char_boundary), stable since Rust **1.91**, with `ceil_char_boundary` as its complement. The four lines above are what it does, written out because the mechanism is the lesson and because they compile on any toolchain. One caveat std states in its own documentation and this page will not improve on: it rounds to a *character* boundary, so it can still split a **grapheme** — a scientist emoji truncated to a person, a letter separated from its combining accent. Both halves are valid UTF-8, which is all this operation ever promised.
 
-## What the panic says
+## What the panic says, and what it said last year
 
-The message is worth reading once, because it names the byte index, the character, and the byte range that character occupies — three facts that between them tell you what to fix. But **a panic message is a diagnostic, not a property of your data**, and this library does not put a compiler's wording into an answer key ([CONTRIBUTING.md](../../CONTRIBUTING.md)). So it goes here, with the builds it came from, rather than into the generated block above:
+The message names the byte index, the character, and the byte range that character occupies — three facts that between them tell you what to fix. It is worth reading once. It is not worth *depending* on, and this page can prove that rather than assert it, because the wording moved **twice in two consecutive releases** while the page was being written.
 
-```text title="Measured 2026-09-07. Identical on four builds: rustc 1.97.1, 1.98.0 and 1.100.0-nightly on macOS 26.6.2 (x86_64), and rustc 1.98.0 on Debian 13 under Docker (x86_64). Not machine-checked — no answer key in this library holds a compiler's diagnostic text."
-&s[0..4]    end byte index 4 is not a char boundary; it is inside 'é' (bytes 3..5 of string)
-&s[4..5]    start byte index 4 is not a char boundary; it is inside 'é' (bytes 3..5 of string)
-&s[0..99]   end byte index 99 is out of bounds for string of length 5
+```text title="Measured 2026-09-07/08 on eight rustc versions — 1.75.0, 1.90.0, 1.94.1, 1.95.0 and 1.96.1 on Debian under Docker (rust:N-slim, x86-64); 1.98.0 on both Debian and macOS 26.6.2; 1.97.1 and 1.100.0-nightly on macOS. The version ranges below say where each wording was OBSERVED, not that every release in between was checked. Not machine-checked, and it is the one thing on this page that could not be: no answer key in this library holds a compiler's diagnostic text."
+&s[0..4]   the end of the range lands inside 'é'
+
+  1.75.0 .. 1.94.1        byte index 4 is not a char boundary; it is inside 'é' (bytes 3..5) of `café`
+  1.95.0              end byte index 4 is not a char boundary; it is inside 'é' (bytes 3..5) of `café`
+  1.96.1 ..           end byte index 4 is not a char boundary; it is inside 'é' (bytes 3..5 of string)
+
+&s[0..99]  a different complaint — the range is simply too long
+
+  1.75.0 .. 1.94.1        byte index 99 is out of bounds of `café`
+  1.95.0              end byte index 99 is out of bounds of `café`
+  1.96.1 ..           end byte index 99 is out of bounds for string of length 5
 ```
 
-Two things in there repay attention. It says **`start`** or **`end`**, so a range with both ends wrong tells you about the first one only — and the `bytes 3..5` is the range of the character that got cut, which is the range you probably wanted. Note also that the third line is a different complaint entirely; if you are reading a panic and it says *out of bounds*, this page is not your problem.
+Two changes, one release apart, and each one takes something different away.
+
+**1.95 added the `start` / `end` prefix.** A range has two ends and only one of them is reported, so the prefix tells you which — genuinely useful, and absent from every toolchain older than that. Any advice that says *"read whether it says start or end"* is advice about a recent compiler.
+
+**1.96 removed your string from the message.** The older wording ended `` of `café` ``, quoting the actual value that was being sliced; the newer one says only `of string` and, for the out-of-bounds case, its length. That is the change with a consequence beyond readability: on a toolchain before 1.96, a panic in a request handler copies **the data it was handling** into the panic message, and from there into whatever collects your logs or crash reports. If you are pinned to an older compiler and slicing anything a user typed, that is worth knowing about.
+
+And this is exactly why the generated block above records `PANICKED` and the `is_char_boundary` column instead of the sentence. Had the key held the message, this page would have passed CI on the machine that wrote it and failed on any runner a few releases behind or ahead — the failure [CONTRIBUTING.md](../../CONTRIBUTING.md) calls out for interpreter diagnostics, met here in a compiler, and found by asking eight builds the same question rather than by asking one twice.
+
+The parts that have **not** moved across all eight are the parts worth teaching: it is a panic and not a `Result`; it names the offending byte index; it distinguishes a boundary violation from an out-of-bounds range; and `is_char_boundary` predicts which one you are about to get.
 
 ## `catch_unwind` is not a `try`/`catch`
 
