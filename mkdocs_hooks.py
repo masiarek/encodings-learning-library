@@ -63,6 +63,7 @@ LABEL_OVERRIDES: dict[str, str] = {
     "writing_a_code_point": "Writing a code point",
     "typing_a_character": "Typing a character",
     "pcre2": "PCRE2",
+    "sh": "The shell has no string type",
     "surrogateescape": "surrogateescape",
     # 12_Adversarial: the folder names say what the page is ABOUT (and are
     # permanent URLs); the H1s say what it CLAIMS, which is what belongs in a
@@ -214,6 +215,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "xargs",
         "sed",
         "awk",
+        "sh",
         "cut",
         "tr_and_sort",
         "diff_and_cmp",

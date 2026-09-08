@@ -1,0 +1,51 @@
+1. ONE VARIABLE, TWO LENGTHS
+   LC_ALL=C        ${#ż}=2   ${ż#?} leaves [bc]
+   a UTF-8 locale  ${#ż}=1   ${ż#?} leaves []
+   the byte count, either way: 2
+   Two answers for one unchanged variable, because ${#} is a question
+   about LC_CTYPE and not about the value. The C-locale ? stripped one
+   BYTE and left bc, which is half a ż and not a character at all.
+   printf '%s' "$v" | wc -c is the count that does not move, and the
+   one every shell on both platforms agreed on.
+
+2. AND THE BYTES THAT ARE NOT A CHARACTER IN ANY LOCALE
+   LC_ALL=C        held=61fffe62  ${#bad}=4
+   a UTF-8 locale  held=61fffe62  ${#bad}=4
+   Four both times, and no complaint either time. No UTF-8 sequence
+   begins with ff or fe, so there is nothing there for a UTF-8 locale to
+   count -- bash falls back to one per undecodable byte and moves on.
+   Python's str and Rust's String both refuse these bytes at the decode.
+   The shell has no decode: there is one type here, and it is bytes.
+
+3. THE BYTE THAT NEVER ARRIVES
+   the file  6100620a   the variable  6162   ${#v}=2
+   Two, not three. The NUL was not stored and no status said so -- the
+   warning is bash 5's, on stderr, and macOS's bash 3.2 prints nothing
+   at all, so a script cannot portably detect this. It is not a bash
+   limitation to route around either: execve takes NUL-terminated
+   arguments, so the value could not be passed on even if it were held.
+
+4. WHICH IS WHY THE OTHER RESERVED BYTE IS A NEWLINE
+   for f in $(ls)           3 words
+   for f in *               2 items
+   find -print  | xargs     3 runs
+   find -print0 | xargs -0  2 runs
+   Two files, three words. Newline is the default record separator of
+   every text channel a shell has, and it is a legal filename byte, so
+   any name-carrying pipeline needs a separator that is not legal in a
+   name. There is exactly one, and -print0 / -0 / -z / --null-data are
+   its four spellings. The glob got two because it never serialised.
+
+5. AND THE SPLIT THAT HAPPENS EVEN WHEN NOTHING IS WRONG
+   var='*.txt'   set -- $var -> 2   set -- "$var" -> 1
+   default IFS on "a  b" -> 2 fields: [a] [b]
+   IFS=: on "a::b"       -> 3 fields: [a] [] [b]
+   An unquoted expansion is re-parsed twice: split on IFS, then matched
+   against the filesystem. Quoting turns both off, which is why the rule
+   is quote everything rather than quote when it might have spaces --
+   the *.txt case has no space in it and still came apart.
+   The last two lines are the rule behind the empty field: a run of
+   WHITESPACE separators collapses into one, and a run of any other
+   separator does not. So one two-byte character used as IFS becomes two
+   separators with an empty field between them, which is the shell doing
+   to a delimiter exactly what tr does to a character.

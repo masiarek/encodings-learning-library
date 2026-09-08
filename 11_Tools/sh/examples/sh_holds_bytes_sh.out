@@ -1,0 +1,77 @@
+1. A VARIABLE HOLDS BYTES, AND NOTHING CHECKS THEM
+   good=636166c3a9   bad=61fffe62
+   $USER=ada (pinned)   its bytes=616461
+   The second assignment did not fail, warn, or replace anything: no
+   UTF-8 sequence begins with ff or fe, and the shell stored them
+   anyway. There is no other value here -- no str, no String, no
+   bytes-versus-text pair. A shell variable is a byte string, and an
+   environment variable is the same byte string one execve further on.
+
+2. SO WHAT DOES ${#var} COUNT?
+   LC_ALL=C        ${#café}=5  ${#ż}=2
+   a UTF-8 locale  ${#café}=4  ${#ż}=1
+   the bytes, either way: café=5  ż=2
+   ${#var} is not a length. It is a question about the locale, and it
+   has two answers for one unchanged variable. The byte count is the
+   one number that does not move, and the portable way to ask for it is
+   the third line: printf '%s' "$v" | wc -c.
+
+3. AND EVERY OTHER EXPANSION ASKS THE SAME QUESTION
+   LC_ALL=C        ${café:3:1}=c3     ${ż#?}=bc   case ż in ?) no match
+   a UTF-8 locale  ${café:3:1}=c3a9   ${ż#?}=     case ż in ?) matches
+   In the C locale the substring took HALF of the é and the ? stripped
+   half of the ż, leaving an orphan bc that is not text any more. This
+   is tr's failure mode with no tool involved: the cut happened inside
+   the shell, in an expansion that looks like string slicing.
+
+4. THE FIRST BYTE THE SHELL CANNOT CARRY: NUL
+   on disk                6100620a
+   through $(...)         6162     len=2
+   through $'a\x00b'      61       len=1
+   out through an execve  6162
+   Three different amputations of one three-byte string, none of them an
+   error. $(...) drops the NUL and keeps going; $'...' stops dead at it;
+   and execve could not have carried it in the first place, which is the
+   kernel's rule rather than the shell's. That is why -print0 exists.
+
+5. THE SECOND: NEWLINE, WHICH IS THE DEFAULT FIELD SEPARATOR
+   two files on disk:       2e2f706c61696e2e7478740a2e2f74776f0a6c696e65732e7478740a
+   for f in $(ls)           3 words
+   for f in *               2 items
+   find -print  | xargs     3 runs
+   find -print0 | xargs -0  2 runs
+   The loop is not the bug. $(ls) and a bare xargs both went through a
+   channel whose record separator is a newline, and one of these files
+   contains a newline -- so two names arrived as three. The glob never
+   serialised at all, and -print0 serialised with the one separator a
+   filename cannot contain, so both of those counted two.
+
+6. IFS IS A SET OF BYTES, NOT A DELIMITER
+   LC_ALL=C        IFS=é on "aéb" -> 3 fields: [61] [] [62]
+   a UTF-8 locale  IFS=é on "aéb" -> 2 fields: [61] [62]
+   Three fields in the C locale, and the middle one is empty: both bytes
+   of the é were separators, so one character became two delimiters with
+   nothing between them. IFS is a SET, exactly like tr's argument, and
+   the locale is the only thing deciding whether it is a set of bytes or
+   a set of characters. Use a single-byte separator and the question
+   never comes up.
+
+7. WHICH IS WHY ONE UNQUOTED EXPANSION IS THE WHOLE CLASS
+   var='*.txt'      set -- $var -> 2  |  set -- "$var" -> 1
+   var='one  two'   set -- $var -> 2  |  set -- "$var" -> 1
+   An unquoted expansion is not a value being read. It is a value being
+   re-parsed: split on IFS, then matched against the filesystem. Quoting
+   it turns both off, which is the whole of the advice -- and the reason
+   the advice is not 'quote when the value might have spaces'.
+
+8. echo IS NOT PORTABLE. printf IS.
+   printf "caf\303\251"   636166c3a9
+   echo   "caf\303\251"   6361665c3330335c3235310a
+   $'caf\xc3\xa9'         636166c3a9
+   Line one is six bytes on every shell this library has measured. Line
+   two is bash's echo leaving the backslashes alone -- and dash's echo,
+   which is /bin/sh on Ubuntu, expands them instead, so the same command
+   writes a different file. Line three is bash's own $'...' quoting,
+   which dash does not have at all: it prints a dollar sign and the
+   backslashes, and says nothing. printf with octal escapes is the one
+   spelling that means the same thing everywhere.

@@ -6,6 +6,8 @@ Chapters 1 to 10 are about what text *is*. This chapter is about the programs yo
 
 That is the chapter in a sentence, and it is why these pages exist separately from [06_Terminal](../06_Terminal/README.md). Chapter 6 is the tools whose *job* is bytes — `xxd`, `od`, `iconv`, `file` — shown inside a workflow: one file, five questions, which column is the file and which is a guess. This chapter is the tools whose job is something else entirely, and which turn out to have an opinion about your text anyway.
 
+[The shell itself](sh/README.md) is the odd one out and goes first in the toolkit table below, because it is not a tool you run over text — it is the program running every other row, and it is the only language in this library with no string type at all. Every quoting rule in the chapter's examples is that page's subject.
+
 The three dump tools — [`hexdump`](hexdump/README.md), [`xxd`](xxd/README.md) and [`od`](od/README.md) — are the deliberate exceptions, and they are here rather than in chapter 6 because the question they answer is a *tool-choice* question: which one to type, what each decided before it printed a line, which you can paste into a bug report and expect the reader to see what you saw, which will give you the file back afterwards, and which will simply be there when nothing else is. That is this chapter's job. Chapter 6 still owns the workflow.
 
 [Typing a character you cannot type](typing_a_character/README.md) is the other way round from the rest of the chapter, and belongs here for the same reason: it is a tool-choice question. The compose key, Vim's digraphs, `uni print` and a macOS keyboard layout are four tools for one job, each with its own table and its own idea of what a character is called — and the chapter's first question, *bytes or characters*, has a twin here: *whose table*.
@@ -17,7 +19,7 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 | | The question | Why it bites |
 |---|---|---|
 | 1 | Does it work in **bytes** or in **characters**? | `.` means one byte to `grep` in the C locale and one character to `grep` in a UTF-8 locale — [same file, two counts](grep/README.md) |
-| 2 | **Who decided** — the locale, a flag, or the tool itself? | [`grep` asks the locale](grep/README.md); [`rg` asks the first bytes of the file](ripgrep/README.md) and never the locale; [`find` asks nobody and compares bytes](find/README.md) |
+| 2 | **Who decided** — the locale, a flag, or the tool itself? | [`grep` asks the locale](grep/README.md); [`rg` asks the first bytes of the file](ripgrep/README.md) and never the locale; [`find` asks nobody and compares bytes](find/README.md); [the shell asks the locale afresh in every expansion](sh/README.md), because it has no decode to ask it once |
 | 3 | What does it do when the text is **not valid**? | The three answers are refuse, guess, and *silently skip* — and [the third one has no exit code](grep/README.md) |
 | 3b | …and when the **pattern** is not valid? | `rg` names the flag that would help; [`rg -P` matches nothing and says nothing](pcre2/README.md) |
 
@@ -33,23 +35,30 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 | 6 | [`xargs` splits on the wrong things](xargs/README.md) | Why does one apostrophe stop my `find` pipeline? | written |
 | 7 | [`sed` matches patterns, not bytes](sed/README.md) | Why does `sed` get right what `tr` gets wrong? | written |
 | 8 | [`awk` is three programs](awk/README.md) | Whose `awk` is this, and why does it disagree with itself? | written |
-| 9 | [`cut` counts what it is told to count](cut/README.md) | `-b` or `-c`? And why does the same command differ per machine? | written |
-| 10 | [`tr` and `sort` work a byte at a time](tr_and_sort/README.md) | Why did deleting `é` damage a different word? | written |
-| 11 | [`diff` compares lines, `cmp` compares bytes](diff_and_cmp/README.md) | Why does `diff` say the line changed when both sides look identical? | written, 2026-09-07 |
-| 12 | [`split`, `paste`, `look` and `tee`](look_paste_tee_split/README.md) | Why is the piece my splitter wrote not valid UTF-8 any more? | written, 2026-09-07 |
-| 13 | [`touch`, `: >` and `install` are not three spellings of one command](creating_and_writing_files/README.md) | Seven ways to blank a file — which of them does the *file* and which does the *name*? | written, 2026-09-07 |
-| 14 | [`hexdump` is a format engine wearing six presets](hexdump/README.md) | Why is my dump showing the bytes in the wrong order? | written |
-| 15 | [`xxd` is the dump you can put back](xxd/README.md) | Which column of a dump is the file, and how do I get the file back? | written |
-| 16 | [`od` reads types, not bytes](od/README.md) | Nothing else is installed. What are the two flags that make `od` honest? | written, 2026-09-07 |
-| 17 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
-| 18 | [Typing a character you cannot type](typing_a_character/README.md) | There is no `ż` on my keyboard — how do I produce one? | written, 2026-09-07 |
-| 19 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
+| 9 | [The shell has no string type](sh/README.md) | `${#var}` — what, exactly, does that count? | written, 2026-09-08 |
+| 10 | [`cut` counts what it is told to count](cut/README.md) | `-b` or `-c`? And why does the same command differ per machine? | written |
+| 11 | [`tr` and `sort` work a byte at a time](tr_and_sort/README.md) | Why did deleting `é` damage a different word? | written |
+| 12 | [`diff` compares lines, `cmp` compares bytes](diff_and_cmp/README.md) | Why does `diff` say the line changed when both sides look identical? | written, 2026-09-07 |
+| 13 | [`split`, `paste`, `look` and `tee`](look_paste_tee_split/README.md) | Why is the piece my splitter wrote not valid UTF-8 any more? | written, 2026-09-07 |
+| 14 | [`touch`, `: >` and `install` are not three spellings of one command](creating_and_writing_files/README.md) | Seven ways to blank a file — which of them does the *file* and which does the *name*? | written, 2026-09-07 |
+| 15 | [`hexdump` is a format engine wearing six presets](hexdump/README.md) | Why is my dump showing the bytes in the wrong order? | written |
+| 16 | [`xxd` is the dump you can put back](xxd/README.md) | Which column of a dump is the file, and how do I get the file back? | written |
+| 17 | [`od` reads types, not bytes](od/README.md) | Nothing else is installed. What are the two flags that make `od` honest? | written, 2026-09-07 |
+| 18 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
+| 19 | [Typing a character you cannot type](typing_a_character/README.md) | There is no `ż` on my keyboard — how do I produce one? | written, 2026-09-07 |
+| 20 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
 
 ## The whole toolkit, one row each
 
 If you came looking for *the list* — every command you are likely to run over text, and what each one quietly decided before it printed — this is it. Nothing here needs installing on macOS or Ubuntu.
 
 **A bold tool has a page in this chapter and its last column was measured.** A link that is *not* bold means the tool has no page of its own, so it goes to wherever this library does show it — a lesson in another chapter that runs it, or the page for the tool it is a flag of. And a name with **no link at all** has no page anywhere here: its last column links the *concept* instead, and names the question worth asking rather than a verdict, which is the honest state of the evidence. `rev` and `strings` are the two exceptions, [measured below](#two-of-the-unbolded-rows-measured). The three questions at the top of this page are how you settle one for yourself in about a minute.
+
+### The program running all of them
+
+| Tool | Its actual job | Its opinion about your text |
+|---|---|---|
+| **[`sh`, `bash`](sh/README.md)** | run the other rows | the only one here with **no string type** — a variable is bytes, so `${#var}` is a locale question rather than a length, and it answers differently on the two platforms because `sh` is bash on a Mac and dash on Ubuntu. Two bytes it cannot carry at all: [NUL](../02_Characters/the_nul_byte/README.md) and, in any unquoted expansion, the newline |
 
 ### Search and match
 

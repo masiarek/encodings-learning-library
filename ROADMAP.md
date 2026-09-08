@@ -89,6 +89,7 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [`xargs` splits on the wrong things](11_Tools/xargs/README.md) | written, 2026-09-06 — shell; one apostrophe breaks the pipeline, and `-s` is a byte budget so the encoding sets the batch count |
 | [`sed` matches patterns, not bytes](11_Tools/sed/README.md) | written, 2026-09-06 — shell; a sequence beats a byte set, and `-i` has no portable spelling |
 | [`awk` is three programs](11_Tools/awk/README.md) | written, 2026-09-06 — shell, verified identical under BWK awk, mawk *and* gawk; BWK awk disagrees with itself |
+| [The shell has no string type](11_Tools/sh/README.md) | written, 2026-09-08 — shell, byte-identical on bash 3.2 and bash 5.2; `${#var}` has three answers and `sh` is a different program on the two runners, so the cross-shell tables are dated rather than keyed |
 | [`cut` counts what it is told to count](11_Tools/cut/README.md) | written, 2026-09-06 — shell; `-c` returns four bytes on Ubuntu and five on a Mac |
 | [`tr` and `sort` work a byte at a time](11_Tools/tr_and_sort/README.md) | written, 2026-09-06 — shell; deleting `é` damages the word next door |
 | [`diff` compares lines, `cmp` compares bytes](11_Tools/diff_and_cmp/README.md) | written, 2026-09-07 — shell and Python; two spellings of `café` that diff prints identically, and three BSD/GNU splits, one of them a binary heuristic that reads the whole file on a Mac and the first 8 KB on Linux |

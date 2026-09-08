@@ -191,4 +191,5 @@ Finish with the portability question: write the in-place edit that works on both
 - [`tr` and `sort` work a byte at a time](../tr_and_sort/README.md) — the tool `sed` is the answer to
 - [`grep` on text that is not ASCII](../grep/README.md) — the same multibyte machinery, failing silently instead of loudly
 - [`awk` is three programs](../awk/README.md) — the third member of the family, and the only one that names the record it choked on
+- [The shell has no string type](../sh/README.md) — where `s///`'s pattern and `y///`'s set become `IFS` and an unquoted `$var`, one layer out
 - [CRLF vs LF](../../07_Real_Data/crlf_vs_lf/README.md) — what `s/\r$//` is actually for

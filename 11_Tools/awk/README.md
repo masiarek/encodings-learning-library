@@ -198,5 +198,6 @@ THE PRACTICAL RULE
 
 - [`grep` on text that is not ASCII](../grep/README.md) — the same undecodable byte, handled silently instead of loudly
 - [`sed` matches patterns, not bytes](../sed/README.md) — the other pattern tool, and the one that refuses rather than guessing
+- [The shell has no string type](../sh/README.md) — the third of the three little languages, and the one whose variables `awk`'s fields arrive in
 - [`cut` counts what it is told to count](../cut/README.md) — `substr()`'s problem with a different flag on it
 - [UTF-8 by hand](../../03_Encodings/utf8_by_hand/README.md) — why `0x80`–`0xBF` is exactly the continuation range
