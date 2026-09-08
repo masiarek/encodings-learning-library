@@ -155,6 +155,25 @@
    cleaning step in the standard library. The fix is not a normalization
    form; it is a rule that says which categories a name may contain.
 
+
+   And four more, which are here because the ANSWER IS NOT THE SAME IN
+   EVERY LANGUAGE. These are C0 controls rather than spaces or format
+   characters, and Python calls them whitespace:
+
+      code point   cat   isspace   stripped   name
+      U+001C       Cc    True      yes        FILE SEPARATOR (FS)
+      U+001D       Cc    True      yes        GROUP SEPARATOR (GS)
+      U+001E       Cc    True      yes        RECORD SEPARATOR (RS)
+      U+001F       Cc    True      yes        UNIT SEPARATOR (US)
+
+   Unicode does not: none of the four has the White_Space property, so
+   a language that asks Unicode rather than carrying its own table
+   gives the opposite answer. The Rust section on this page prints its
+   column for the same fourteen characters, and these are the four rows
+   where the two blocks disagree -- which matters because U+001E is the
+   ASCII record separator, reached for precisely BECAUSE it is not
+   supposed to be text a trim would touch.
+
 5. NORMALIZATION THROWS THINGS AWAY, AND NFC DOES IT TOO
 ------------------------------------------------------------------------
       before         NFKC after                   chars      what was lost

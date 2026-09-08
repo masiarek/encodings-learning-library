@@ -102,7 +102,97 @@
    case operation std does keep is not a per-character table, and
    the convenient-looking .chars().flat_map(...) is the wrong loop.
 
-5. WHAT IS MISSING IS A LINE, NOT A GAP
+5. THE SAME FOURTEEN INVISIBLES, AND WHERE THE TWO LANGUAGES PART
+------------------------------------------------------------------------
+   char::is_whitespace() IS Unicode's White_Space property, and
+   trim() is defined in terms of it. The Python section above asks
+   str.isspace() and str.strip() over these same fourteen.
+
+      code point   is_whitespace    trimmed    name
+      U+0020       true             yes        SPACE
+      U+00A0       true             yes        NO-BREAK SPACE
+      U+3000       true             yes        IDEOGRAPHIC SPACE
+      U+2007       true             yes        FIGURE SPACE
+      U+200B       false            NO         ZERO WIDTH SPACE
+      U+200C       false            NO         ZERO WIDTH NON-JOINER
+      U+200D       false            NO         ZERO WIDTH JOINER
+      U+00AD       false            NO         SOFT HYPHEN
+      U+2060       false            NO         WORD JOINER
+      U+FEFF       false            NO         ZERO WIDTH NO-BREAK SPACE
+      U+001C       false            NO         FILE SEPARATOR (FS)
+      U+001D       false            NO         GROUP SEPARATOR (GS)
+      U+001E       false            NO         RECORD SEPARATOR (RS)
+      U+001F       false            NO         UNIT SEPARATOR (US)
+
+   The first ten rows agree with Python's, value for value. The
+   last four do not: Python calls all four whitespace and strips
+   them, and Rust calls none of them whitespace and keeps them.
+
+   Neither is wrong, and the reason is worth having. Rust asks
+   Unicode, which does not give White_Space to any C0 control in
+   that block; Python carries a table of its own that predates the
+   property and has to stay compatible with itself. So "trim the
+   whitespace" is not one operation across two languages, and the
+   four characters it disagrees about are the ASCII separators --
+   reached for as delimiters precisely BECAUSE they are not text.
+   A record separator that survives a Rust trim and vanishes in a
+   Python one is a framing bug that only shows up at the seam.
+
+6. THE ONE ROW RUST CANNOT EVEN HOLD
+------------------------------------------------------------------------
+   The corpus ends with a lone surrogate, which Python puts in a
+   str quite happily and refuses only at the encoder. Rust refuses
+   it at the type:
+
+      char::from_u32(0xD7FF)       is_some true   the code point just below the surrogates
+      char::from_u32(0xD800)       is_some false  the first surrogate
+      char::from_u32(0xDFFF)       is_some false  the last surrogate
+      char::from_u32(0xE000)       is_some true   the code point just above them
+      char::from_u32(0x10FFFF)     is_some true   the highest code point there is
+      char::from_u32(0x110000)     is_some false  one past the end
+
+      str::from_utf8(ED A0 80)   Err, valid_up_to 0, error_len Some(1)
+
+   A char is a Unicode SCALAR VALUE, which is a code point that is
+   not a surrogate -- so the literal '\u{D800}' is not a value this
+   program could contain even if it wanted to; it is a compile
+   error, which is why the bytes are built by hand above.
+
+   That is the sharpest difference on the page. Python's str holds
+   the whole code point range and fails at the boundary; Rust's
+   types hold the encodable subset and fail at construction. Both
+   are defensible, and a corpus has to know which it is testing:
+   in Python the lone surrogate is a value your code can carry to
+   the edge of the system, and in Rust it is three bytes that will
+   never become a String at all.
+
+7. THE CORPUS, AS RUST ESCAPES YOU CAN PASTE
+------------------------------------------------------------------------
+      let nfc_nfd          = "cafe\u{301}";
+      let mark_order       = "q\u{323}\u{307}";
+      let singleton        = "\u{212b}";
+      let ligature         = "\u{fb01}le";
+      let superscript      = "10\u{b2}";
+      let fullwidth        = "\u{ff21}\u{ff22}";
+      let sharp_s          = "stra\u{df}e";
+      let final_sigma      = "\u{3c2}";
+      let kelvin           = "\u{212a}";
+      let dotless_i        = "\u{131}";
+      let dotted_i         = "\u{130}";
+      let confusable       = "\u{430}";
+      let zero_width       = "ad\u{200b}min";
+      let soft_hyphen      = "ad\u{ad}min";
+      let nbsp             = "a\u{a0}b";
+      let bom_inside       = "a\u{feff}b";
+      let compat_han       = "\u{fa10}";
+      let expanding        = "\u{337f}";
+
+   18 of the 19. The nineteenth, the lone surrogate, has no line here
+   for the reason section 6 gives -- it cannot be written as a Rust
+   literal, so a corpus in this language carries it as bytes or not
+   at all.
+
+8. WHAT IS MISSING IS A LINE, NOT A GAP
 ------------------------------------------------------------------------
    std has no normalize() and no casefold(), and it is worth being
    clear that this is a decision rather than an omission.

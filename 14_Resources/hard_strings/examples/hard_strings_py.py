@@ -229,6 +229,31 @@ print("   Two usernames, one picture, one of them still there after every")
 print("   cleaning step in the standard library. The fix is not a normalization")
 print("   form; it is a rule that says which categories a name may contain.")
 print()
+print()
+print("   And four more, which are here because the ANSWER IS NOT THE SAME IN")
+print("   EVERY LANGUAGE. These are C0 controls rather than spaces or format")
+print("   characters, and Python calls them whitespace:")
+print()
+SEPARATORS = [
+    ("\u001c", "FILE SEPARATOR (FS)"),
+    ("\u001d", "GROUP SEPARATOR (GS)"),
+    ("\u001e", "RECORD SEPARATOR (RS)"),
+    ("\u001f", "UNIT SEPARATOR (US)"),
+]
+print(f"      {'code point':<12} {'cat':<5} {'isspace':<9} {'stripped':<10} name")
+for c, name in SEPARATORS:
+    stripped = ("x" + c).strip() == "x"
+    print(f"      U+{ord(c):04X}       {ud.category(c):<5} {str(c.isspace()):<9} "
+          f"{('yes' if stripped else 'NO'):<10} {name}")
+print()
+print("   Unicode does not: none of the four has the White_Space property, so")
+print("   a language that asks Unicode rather than carrying its own table")
+print("   gives the opposite answer. The Rust section on this page prints its")
+print("   column for the same fourteen characters, and these are the four rows")
+print("   where the two blocks disagree -- which matters because U+001E is the")
+print("   ASCII record separator, reached for precisely BECAUSE it is not")
+print("   supposed to be text a trim would touch.")
+print()
 
 # ---------------------------------------------------------------- 5
 

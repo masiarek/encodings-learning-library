@@ -5,8 +5,11 @@
 //! opinion about the rest, which makes it the better place to see WHICH half
 //! is a language's job and which half is a policy the program has to choose.
 //!
-//! The sixteen pairs below are the same sixteen the Python example uses, in
-//! the same order, so the two matrices can be read side by side.
+//! Sections 2 and 5 are deliberately the same data as the Python example's --
+//! the same sixteen pairs in the same order, and the same fourteen invisible
+//! characters -- so the two blocks can be read against each other. The rest is
+//! what only this language can say: the type of a case mapping, the one string
+//! Rust cannot hold at all, and where std stops.
 //!
 //! Build:  rustc --edition 2024 hard_strings_rs.rs && ./hard_strings_rs
 
@@ -24,6 +27,27 @@ fn cps(s: &str) -> String {
 
 fn mark(flag: bool) -> &'static str {
     if flag { "=" } else { "-" }
+}
+
+/// A Rust string literal in which every non-ASCII character is an escape.
+///
+/// `{:?}` will not do here: it leaves a printable character as a glyph, and a
+/// glyph is exactly what a paste through an editor or a clipboard is allowed to
+/// renormalize. `\u{...}` survives that trip; an accent does not.
+fn rust_literal(s: &str) -> String {
+    let mut out = String::from("\"");
+    for c in s.chars() {
+        match c {
+            '"' | '\\' => {
+                out.push('\\');
+                out.push(c);
+            }
+            c if c.is_ascii_graphic() || c == ' ' => out.push(c),
+            c => out.push_str(&format!("\\u{{{:x}}}", c as u32)),
+        }
+    }
+    out.push('"');
+    out
 }
 
 fn main() {
@@ -214,7 +238,145 @@ fn main() {
     println!();
 
     // ------------------------------------------------------------------ 5
-    println!("5. WHAT IS MISSING IS A LINE, NOT A GAP");
+    println!("5. THE SAME FOURTEEN INVISIBLES, AND WHERE THE TWO LANGUAGES PART");
+    bar();
+    println!("   char::is_whitespace() IS Unicode's White_Space property, and");
+    println!("   trim() is defined in terms of it. The Python section above asks");
+    println!("   str.isspace() and str.strip() over these same fourteen.");
+    println!();
+    // The C0 controls have no Unicode name, so the last four names are written
+    // down here rather than derived: they are ISO 646 and have not moved.
+    let invisible: [(u32, &str); 14] = [
+        (0x0020, "SPACE"),
+        (0x00A0, "NO-BREAK SPACE"),
+        (0x3000, "IDEOGRAPHIC SPACE"),
+        (0x2007, "FIGURE SPACE"),
+        (0x200B, "ZERO WIDTH SPACE"),
+        (0x200C, "ZERO WIDTH NON-JOINER"),
+        (0x200D, "ZERO WIDTH JOINER"),
+        (0x00AD, "SOFT HYPHEN"),
+        (0x2060, "WORD JOINER"),
+        (0xFEFF, "ZERO WIDTH NO-BREAK SPACE"),
+        (0x001C, "FILE SEPARATOR (FS)"),
+        (0x001D, "GROUP SEPARATOR (GS)"),
+        (0x001E, "RECORD SEPARATOR (RS)"),
+        (0x001F, "UNIT SEPARATOR (US)"),
+    ];
+    println!("      {:<12} {:<16} {:<10} name", "code point", "is_whitespace", "trimmed");
+    for (u, name) in invisible {
+        let c = char::from_u32(u).expect("every entry above is a scalar value");
+        let padded = format!("x{c}");
+        let trimmed = padded.trim() == "x";
+        println!(
+            "      U+{:04X}       {:<16} {:<10} {}",
+            u,
+            c.is_whitespace().to_string(),
+            if trimmed { "yes" } else { "NO" },
+            name
+        );
+    }
+    println!();
+    println!("   The first ten rows agree with Python's, value for value. The");
+    println!("   last four do not: Python calls all four whitespace and strips");
+    println!("   them, and Rust calls none of them whitespace and keeps them.");
+    println!();
+    println!("   Neither is wrong, and the reason is worth having. Rust asks");
+    println!("   Unicode, which does not give White_Space to any C0 control in");
+    println!("   that block; Python carries a table of its own that predates the");
+    println!("   property and has to stay compatible with itself. So \"trim the");
+    println!("   whitespace\" is not one operation across two languages, and the");
+    println!("   four characters it disagrees about are the ASCII separators --");
+    println!("   reached for as delimiters precisely BECAUSE they are not text.");
+    println!("   A record separator that survives a Rust trim and vanishes in a");
+    println!("   Python one is a framing bug that only shows up at the seam.");
+    println!();
+
+    // ------------------------------------------------------------------ 6
+    println!("6. THE ONE ROW RUST CANNOT EVEN HOLD");
+    bar();
+    println!("   The corpus ends with a lone surrogate, which Python puts in a");
+    println!("   str quite happily and refuses only at the encoder. Rust refuses");
+    println!("   it at the type:");
+    println!();
+    for (u, what) in [
+        (0xD7FFu32, "the code point just below the surrogates"),
+        (0xD800, "the first surrogate"),
+        (0xDFFF, "the last surrogate"),
+        (0xE000, "the code point just above them"),
+        (0x10FFFF, "the highest code point there is"),
+        (0x110000, "one past the end"),
+    ] {
+        println!(
+            "      {:<28} is_some {:<6} {}",
+            format!("char::from_u32(0x{u:04X})"),
+            char::from_u32(u).is_some().to_string(),
+            what
+        );
+    }
+    println!();
+    let bad = vec![0xEDu8, 0xA0, 0x80];
+    match std::str::from_utf8(&bad) {
+        Ok(_) => println!("      ED A0 80 decoded, which cannot happen"),
+        Err(e) => println!(
+            "      str::from_utf8(ED A0 80)   Err, valid_up_to {}, error_len {:?}",
+            e.valid_up_to(),
+            e.error_len()
+        ),
+    }
+    println!();
+    println!("   A char is a Unicode SCALAR VALUE, which is a code point that is");
+    println!("   not a surrogate -- so the literal '\\u{{D800}}' is not a value this");
+    println!("   program could contain even if it wanted to; it is a compile");
+    println!("   error, which is why the bytes are built by hand above.");
+    println!();
+    println!("   That is the sharpest difference on the page. Python's str holds");
+    println!("   the whole code point range and fails at the boundary; Rust's");
+    println!("   types hold the encodable subset and fail at construction. Both");
+    println!("   are defensible, and a corpus has to know which it is testing:");
+    println!("   in Python the lone surrogate is a value your code can carry to");
+    println!("   the edge of the system, and in Rust it is three bytes that will");
+    println!("   never become a String at all.");
+    println!();
+
+    // ------------------------------------------------------------------ 7
+    println!("7. THE CORPUS, AS RUST ESCAPES YOU CAN PASTE");
+    bar();
+    let corpus: [(&str, &str); 18] = [
+        ("nfc_nfd", "cafe\u{301}"),
+        ("mark_order", "q\u{323}\u{307}"),
+        ("singleton", "\u{212b}"),
+        ("ligature", "\u{fb01}le"),
+        ("superscript", "10\u{b2}"),
+        ("fullwidth", "\u{ff21}\u{ff22}"),
+        ("sharp_s", "stra\u{df}e"),
+        ("final_sigma", "\u{3c2}"),
+        ("kelvin", "\u{212a}"),
+        ("dotless_i", "\u{131}"),
+        ("dotted_i", "\u{130}"),
+        ("confusable", "\u{430}"),
+        ("zero_width", "ad\u{200b}min"),
+        ("soft_hyphen", "ad\u{ad}min"),
+        ("nbsp", "a\u{a0}b"),
+        ("bom_inside", "a\u{feff}b"),
+        ("compat_han", "\u{fa10}"),
+        ("expanding", "\u{337f}"),
+    ];
+    for (name, value) in corpus {
+        println!("      let {name:<16} = {};", rust_literal(value));
+    }
+    println!();
+    println!(
+        "   {} of the {}. The nineteenth, the lone surrogate, has no line here",
+        corpus.len(),
+        corpus.len() + 1
+    );
+    println!("   for the reason section 6 gives -- it cannot be written as a Rust");
+    println!("   literal, so a corpus in this language carries it as bytes or not");
+    println!("   at all.");
+    println!();
+
+    // ------------------------------------------------------------------ 8
+    println!("8. WHAT IS MISSING IS A LINE, NOT A GAP");
     bar();
     println!("   std has no normalize() and no casefold(), and it is worth being");
     println!("   clear that this is a decision rather than an omission.");
