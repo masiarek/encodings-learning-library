@@ -1,0 +1,103 @@
+1. FIVE RULERS, ONE STRING AT A TIME
+   bytes  u16 chars graph cols   what it is
+       1    1     1     1    1   A -- all five rulers agree
+       6    5     5     4    4   cafe + U+0301 -- a mark is its own code point
+       9    3     3     3    6   nihongo -- a wide character costs two columns
+       4    2     1     1    2   grinning face -- above U+FFFF: two UTF-16 units
+      18    8     5     1    6   family -- one picture, five code points
+
+   bytes  what a file costs, and what Rust's .len() returns
+   u16    16-bit units: Java, JavaScript and ABAP call these characters
+   chars  code points: what Python's len() returns
+   graph  grapheme clusters: what a cursor moves over, and what a
+          person means by 'character'
+   cols   how wide a terminal draws it -- see section 5
+
+2. EACH ROW SPLITS ONE MORE COLUMN OFF THE OTHERS
+   A               1 1 1 1 1   the case that teaches nothing, and the
+                               reason every other row is surprising
+   cafe + U+0301   bytes and code points part company, and so do code
+                   points and graphemes: 5 code points, 4 graphemes,
+                   and it prints as four letters
+   nihongo         3 code points, 9 bytes, 6 columns -- the first row
+                   where the terminal disagrees with everybody
+   grinning face   1 code point and 2 UTF-16 units: the BMP boundary,
+                   which is why a Java length() says 2
+   family          every ruler gives a different answer
+
+3. THE FAMILY, CODE POINT BY CODE POINT
+   U+1F468  4 bytes  2 u16   MAN
+   U+200D   3 bytes  1 u16   ZERO WIDTH JOINER
+   U+1F469  4 bytes  2 u16   WOMAN
+   U+200D   3 bytes  1 u16   ZERO WIDTH JOINER
+   U+1F467  4 bytes  2 u16   GIRL
+   5 code points, 18 bytes, 8 UTF-16 units, and 1 cluster.
+   A name is the one question this program asks the Unicode table,
+   and it is the only question whose answer Unicode promises never
+   to change. That is why this section quotes names, and why the
+   next one refuses to quote a width.
+
+4. WHAT THIS SEGMENTER DOES NOT IMPLEMENT
+   A               -> 1 cluster(s): A
+   cafe + U+0301   -> 4 cluster(s): c | a | f | é
+   nihongo         -> 3 cluster(s): 日 | 本 | 語
+   grinning face   -> 1 cluster(s): 😀
+   family          -> 1 cluster(s): 👨‍👩‍👧
+
+   Two rules, GB9 and GB11, over ranges written into this file. A
+   real UAX #29 implementation reads the Grapheme_Cluster_Break
+   property for every code point instead, and it also handles:
+     - CR LF as one cluster, and controls as their own
+     - spacing marks, which this misses outside U+0300..U+036F
+     - regional indicator pairs, so a flag is one cluster
+     - emoji modifiers, so a skin tone joins the emoji before it
+     - Indic conjunct clusters, the newest rule in the list
+   Python has no grapheme segmenter in the standard library; the
+   third-party 'regex' module spells one \X. Rust's std has none
+   either, and the unicode-segmentation crate is the usual answer.
+
+5. THE FIFTH RULER IS NOT A FACT ABOUT THE STRING
+   The 'cols' column above came from this table, written into this
+   program on purpose:
+     U+0300..U+036F     -> 0   combining marks take no column of their own
+     U+200D             -> 0   ZWJ is a joiner, not a glyph
+     U+4E00..U+9FFF     -> 2   CJK ideographs are drawn double-width
+     U+1F300..U+1FAFF   -> 2   emoji are drawn double-width
+     everything else    -> 1
+
+   unicodedata.east_asian_width() would answer this too, and this
+   program does not call it. A width class is read out of the
+   Unicode table, so recording the answer would make this file a
+   fact about whichever Python ran it -- and unlike a name, a width
+   class is not one of the properties Unicode promises to freeze.
+   The page prints what this machine's table says, in a fence with
+   a date on it, which is where a measurement like that belongs.
+
+   It would be the wrong program to ask in any case. The terminal
+   drawing this text has its own width table, compiled into the
+   terminal, at its own Unicode version -- so a width from Python
+   is a guess about a different program on the same machine.
+
+   The family emoji has THREE defensible column counts, and that is
+   the strongest evidence here that the fifth ruler measures the
+   terminal rather than the string:
+      8  every code point counted, joiners included
+      6  the same sum, with the joiners given no width
+      2  what a terminal that understands ZWJ draws: one glyph,
+         the same width as any other emoji
+   All three follow a defensible rule, and none of them is a
+   property of the string. Your own terminal has already picked one
+   of them to draw the table in section 1 -- look at whether the
+   columns there line up, and you will know which.
+
+6. SO WHAT DOES len() ANSWER?
+   Python   len(s)                 ->  5   code points
+   Python   len(s.encode())        -> 18   UTF-8 bytes
+   Rust     s.len()                -> 18   UTF-8 bytes
+   Rust     s.chars().count()      ->  5   code points
+   Java/JS  s.length               ->  8   UTF-16 units
+   a person 'how many characters'  ->  1   grapheme cluster
+
+   Four of the six rows are the same question asked of different
+   units, and the last one is the question everybody actually asked.
+   No standard library on this page answers it.

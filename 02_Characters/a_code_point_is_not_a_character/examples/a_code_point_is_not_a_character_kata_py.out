@@ -1,0 +1,36 @@
+1. THE FIVE NUMBERS, BOTH SPELLINGS
+   bytes  u16 chars graph cols   spelling
+       7    4     4     4    4   as you would type it
+       9    6     6     4    4   decomposed
+
+   Both spellings print the same four letters, and a reader cannot
+   tell them apart on screen. Two of the five rulers noticed.
+
+2. THE TRAP IS IN THE SECOND ROW: 6 CODE POINTS, NOT 8
+   composed decomposed   cps   why
+   U+017C   z + U+0307     2   ż  the dot above comes off
+   U+00F3   o + U+0301     2   ó  the acute comes off
+   U+0142   U+0142         1   ł  the STROKE does not -- it is drawn through
+   U+0077   U+0077         1   w  nothing to take off
+                           6   total
+
+   Four letters, three of them decorated, and only two come apart.
+   A stroke through a letter is part of the letter; a mark above it
+   is a code point of its own. Nothing about looking at 'ł' tells
+   you which kind it is -- you have to ask.
+
+   The graph column did not move, and that is the whole lesson:
+   'żółw' is four graphemes in both spellings, because a grapheme
+   cluster is what a person calls a letter. Only the code point
+   count changed, and code points are the ruler len() reaches for.
+
+3. THE COLUMN COUNT HAS MORE THAN ONE RIGHT ANSWER
+   the family emoji: 18 bytes, 8 u16, 5 code points, 1 grapheme
+   and for columns, three defensible answers:
+      8  every code point counted, joiners included
+      6  the same sum, with the joiners given no width
+      2  what a terminal that understands ZWJ draws
+   If you wrote one number here and did not hedge, that is the
+   answer this kata was looking for. The other four rulers are
+   properties of the string; the fifth is a property of whatever
+   is drawing it.

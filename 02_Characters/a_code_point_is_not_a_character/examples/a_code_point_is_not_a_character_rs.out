@@ -1,0 +1,56 @@
+1. FIVE RULERS, AND THE THREE RUST HANDS YOU
+   bytes  u16 chars graph cols   what it is
+       1    1     1     1    1   A
+       6    5     5     4    4   cafe + U+0301
+       9    3     3     3    6   nihongo
+       4    2     1     1    2   grinning face
+      18    8     5     1    6   family
+
+2. THE NAMES ARE THE TRAP
+   Rust    s.len()             UTF-8 BYTES      -- an O(1) field read
+   Python  len(s)              CODE POINTS      -- a different question
+   Rust    s.chars().count()   code points      -- O(n), and it says so
+   Java    s.length()          UTF-16 units     -- a third answer
+
+   One spelling, len(), means two different rulers in the two
+   languages on this page. Rust makes the count you did not ask
+   for expensive to write by accident: .chars().count() is a
+   visible walk, where len() is a field on the string.
+
+3. WHAT THE TYPES ACTUALLY GUARANTEE
+   a &str is guaranteed valid UTF-8, so these two never disagree:
+     family.len()                 = 18
+     family.as_bytes().len()      = 18
+   a char is a single code point, always 4 bytes as a value:
+     size_of::<char>()            = 4
+     family.chars().count()       = 5
+   and nothing in the standard library counts the fourth ruler:
+     family.graphemes()           does not exist
+     graphemes(family)            = 1   <- the two rules in this file
+
+   Slicing is where this stops being trivia. &s[0..1] on the
+   family panics: byte 1 is inside a four-byte character, and Rust
+   refuses rather than hand back half a code point. Python's
+   s[0:1] returns the whole emoji, because its index is a code
+   point index. Neither one can slice off a whole grapheme.
+
+4. THE FIFTH RULER IS NOT IN THE STANDARD LIBRARY AT ALL
+   Python at least has unicodedata.east_asian_width() to argue
+   about. Rust's std has no width property at all, and no
+   grapheme segmenter. It does carry Unicode tables -- enough for
+   is_alphabetic(), for a to_uppercase() that turns one letter
+   into two, and for char::UNICODE_VERSION to have a value -- so
+   the missing two were left out, not merely never added.
+   So the 'cols' column above came from the table in this file:
+     U+0300..U+036F   -> 0   combining marks
+     U+200D           -> 0   ZWJ
+     U+4E00..U+9FFF   -> 2   CJK ideographs
+     U+1F300..U+1FAFF -> 2   emoji
+     everything else  -> 1
+
+   Both of the missing rulers need a table that changes every
+   September, and both have an answer outside std: the
+   unicode-segmentation crate for rule 4, unicode-width for rule
+   5. Those are versioned separately from the compiler, which is
+   the same table skew this library keeps meeting -- moved into a
+   Cargo.toml, where at least it has a version number you can read.
