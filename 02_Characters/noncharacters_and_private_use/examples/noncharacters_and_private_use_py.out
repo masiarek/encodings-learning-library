@@ -1,0 +1,157 @@
+1. THE SET, GENERATED RATHER THAN QUOTED
+------------------------------------------------------------------------
+   U+FDD0..U+FDEF, one block in the middle of the BMP      32
+   the last two code points of each of 17 planes           34
+                                                         ----
+   noncharacters, total                                    66
+
+   first four   U+FDD0  U+FDD1  U+FDD2  U+FDD3
+   last four    U+FFFFE  U+FFFFF  U+10FFFE  U+10FFFF
+
+   That 66 may go in an answer key, which almost nothing read out of
+   the Unicode table may. The set of noncharacters is formally
+   IMMUTABLE -- a stability policy, not a fact about this release --
+   so the number is arithmetic over a rule that cannot change, rather
+   than a lookup a September might move.
+
+2. RESERVED IS NOT INVALID: EVERY UTF ENCODES ALL 66
+------------------------------------------------------------------------
+   utf-8       encodes and decodes back all 66:  True
+   utf-16-le   encodes and decodes back all 66:  True
+   utf-16-be   encodes and decodes back all 66:  True
+   utf-32-le   encodes and decodes back all 66:  True
+   utf-32-be   encodes and decodes back all 66:  True
+   utf-7       encodes and decodes back all 66:  True
+
+   Not one refusal, and not one loss. To an encoder a noncharacter is
+   an ordinary code point -- three UTF-8 bytes for the BMP ones, four
+   for the rest:
+      U+FDD0     ef b7 90     3 bytes
+      U+FFFE     ef bf be     3 bytes
+      U+FFFF     ef bf bf     3 bytes
+      U+1FFFE    f0 9f bf be  4 bytes
+      U+10FFFF   f4 8f bf bf  4 bytes
+
+   The contrast is the whole point. THESE two are refused, and neither
+   refusal has anything to do with being reserved:
+      U+D800     UnicodeEncodeError   a surrogate: not a scalar value, so no UTF carries it
+      U+110000   ValueError           not a code point at all -- past U+10FFFF
+
+   So of everything a reader files under 'not really a character',
+   the encoder objects to exactly one class, and the noncharacters
+   are not it. A conformant decoder may not reject them either: the
+   standard requires the value to be preserved, not sanitised.
+
+3. WHICH IS WHY THE BOM CAN PROVE ANYTHING
+------------------------------------------------------------------------
+   U+FEFF written little-endian      ff fe
+   those same bytes read big-endian  U+FFFE
+   ...and U+FFFE is a noncharacter:  True
+
+   A reader that decodes U+FFFE has not found a rare character. It has
+   found a value guaranteed never to mean anything, so it knows for
+   certain the byte order is backwards. The reservation is what turns
+   a convention into a proof.
+
+4. THE OTHER RESERVATION: PRIVATE USE
+------------------------------------------------------------------------
+   U+E000  ..U+F8FF       6400   Private Use Area (BMP)
+   U+F0000 ..U+FFFFD     65534   Supplementary Private Use Area-A (plane 15)
+   U+100000..U+10FFFD    65534   Supplementary Private Use Area-B (plane 16)
+                        137468   total
+
+   code points this interpreter's table calls Co (Private_Use):  137468
+   the same set as the three ranges above:                       True
+
+   Two independent sources, one answer: the ranges above are written
+   from the standard, the Co set is read out of unicodedata. They
+   agree exactly, so neither is a typo -- and were a release ever to
+   move a boundary, that line would flip to False rather than go
+   unnoticed.
+
+   Note where the supplementary areas STOP. Plane 15 ends at U+FFFFD,
+   not U+FFFFF, because the last two of every plane are already spoken
+   for. The two reservations do not overlap by a single code point.
+
+5. WHAT NEITHER OF THEM HAS -- AND THE ONE DIFFERENCE THE TABLE SEES
+------------------------------------------------------------------------
+   code point  cat  name()                  alpha  print  what it is
+   U+0041      Lu   LATIN CAPITAL LETTER A  True   True   an ordinary letter
+   U+E000      Co   ValueError              False  False  private use -- yours by agreement
+   U+F8FF      Co   ValueError              False  False  private use -- Apple's logo, on Apple's machines
+   U+100000    Co   ValueError              False  False  private use, plane 16
+   U+FDD0      Cn   ValueError              False  False  noncharacter -- nobody's, ever
+   U+FFFE      Cn   ValueError              False  False  noncharacter -- the BOM's mirror
+   U+0378      Cn   ValueError              False  False  unassigned -- may become a letter one day
+
+   Read the category column. Private use is Co and says so. A
+   noncharacter is Cn -- and so is U+0378, which is merely unassigned
+   and could be a letter in some future release. The table cannot tell
+   those two apart, because Cn means UNASSIGNED and a noncharacter is,
+   permanently, unassigned.
+
+   And there is no API for it. unicodedata exports 16 public names and
+   not one of them answers 'is this a noncharacter'. The property is in
+   the UCD -- Noncharacter_Code_Point -- and the standard library does
+   not expose it. Which is why section 1 generates the set from the two
+   rules: not for elegance, but because nothing here will tell you.
+
+6. WHAT HAPPENS WHEN ONE REACHES SOMETHING REAL
+------------------------------------------------------------------------
+   JSON
+      json.dumps(U+FFFE)                    "\ufffe"
+      json.dumps(U+E000)                    "\ue000"
+      round trips through loads:            True
+      ensure_ascii=False writes the bytes:  22 ef bf be 22
+      No objection anywhere. \uFFFE is a well-formed escape and the
+      three raw bytes are well-formed UTF-8, so both spellings survive.
+
+   XML -- where the write and the read disagree, inside one module
+      ET.tostring on U+FFFE                 <a>\ufffe</a>
+      ET.fromstring of what it just wrote   ParseError: not well-formed (invalid token)
+
+      of the 66 noncharacters, XML 1.0 accepts       64
+                                     and refuses      2
+      the two it refuses                             U+FFFE U+FFFF
+      of four private-use code points sampled, XML accepts 4
+
+      So 'noncharacter' and 'what XML forbids' are two different sets
+      that overlap in exactly two places. XML 1.0's Char production
+      excludes U+FFFE and U+FFFF and says nothing about the other 64.
+      A numeric character reference does not help either: &#xFFFE; is
+      refused as well -- the same shape as XML refusing to carry
+      U+0001 even when escaped.
+
+   SQLite -- a database in the standard library
+      stored and read back unchanged:       True
+      SQL length() of each:                 [1, 1]
+      No complaint. TEXT is UTF-8, these are UTF-8, and the engine has
+      no opinion about what the code points were supposed to mean.
+
+   Sorting and word breaking -- the quiet one
+      of 6 strings sorted, the two reserved ones land at [4, 5]
+      'a\ue000b'.split()          ->  1 piece(s)
+      'a\ue000b'.isidentifier()   ->  False
+      'a\ue000b'.isprintable()    ->  False
+      Default sort is code point order, so a private-use string lands
+      after every Latin letter and ahead of the emoji -- an order
+      nobody chose. There is no collation weight to consult and no
+      word-break class to honour, because the standard declines to
+      have an opinion about what you decided these mean.
+
+7. THE TWO RESERVATIONS, SIDE BY SIDE
+------------------------------------------------------------------------
+                              noncharacter             private use
+   how many                   66                       137468
+   General_Category           Cn (unassigned)          Co (private use)
+   has a name                 no                       no
+   well-formed in every UTF   yes                      yes
+   will ever be assigned      no, and guaranteed so    no, that is the point
+   meaning                    none, permanently        whatever you agreed
+   safe to interchange        no -- that is the deal   only inside the agreement
+   what it is for             your program's internals your font, your protocol
+
+   One sentence apart: private use is YOURS TO DEFINE, a noncharacter
+   is NOBODY'S, EVER. Both are useless for interchange, and useful for
+   exactly that reason -- a value you can be certain did not arrive
+   from outside is the only kind of sentinel that cannot be forged.

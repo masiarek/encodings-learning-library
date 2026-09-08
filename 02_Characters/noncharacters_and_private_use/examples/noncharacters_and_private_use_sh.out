@@ -1,0 +1,38 @@
+1. THE BYTES, WRITTEN AND READ BACK
+------------------------------------------------------------------------
+   U+FDD0   noncharacter  efb790    3 bytes   iconv UTF-8 -> UTF-8: accepted
+   U+FFFE   noncharacter  efbfbe    3 bytes   iconv UTF-8 -> UTF-8: accepted
+   U+FFFF   noncharacter  efbfbf    3 bytes   iconv UTF-8 -> UTF-8: accepted
+   U+E000   private use   ee8080    3 bytes   iconv UTF-8 -> UTF-8: accepted
+   U+D800   surrogate     eda080    3 bytes   iconv UTF-8 -> UTF-8: REFUSED
+   U+110000 past the end  f4908080  4 bytes   iconv UTF-8 -> UTF-8: accepted
+
+   Five of six accepted, and the one refusal is the surrogate -- not
+   a reserved code point. The last row is a different story and the
+   iconv page tells it: both iconvs take f4 90 80 80, which is above
+   U+10FFFF and which Python and Rust each refuse. What matters here
+   is the first four rows, where there is simply nothing to object to.
+
+2. THE TEXT TOOLS HAVE NO OPINION EITHER
+------------------------------------------------------------------------
+   the file, as bytes:  616c706861efbfbe626574610a
+   wc -c                13
+   wc -l                1
+   grep -c alpha        1
+   grep -c beta         1
+   cat -v               alphaM-oM-?M->beta
+
+   Nine letters you can read, one code point you cannot see, thirteen
+   bytes on disk, one line, and every tool content. cat -v is the row
+   worth keeping: it is how you SEE a reserved code point at a
+   terminal, because nothing is going to draw it for you.
+
+3. AND THEY SURVIVE A REAL PIPE
+------------------------------------------------------------------------
+   original          61efbfbe62ee8080630a
+   through cat       61efbfbe62ee8080630a
+   through iconv     61efbfbe62ee8080630a
+   through tr -d c   61efbfbe62ee80800a
+
+   Byte for byte, unchanged. Which is the practical half of the claim:
+   a pipeline will not clean these up for you, and will not warn you.

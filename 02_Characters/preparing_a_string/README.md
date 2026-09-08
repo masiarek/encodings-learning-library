@@ -412,6 +412,7 @@ NFKC-then-casefold can differ, which is why the specs pin the order:
 ## See also
 
 - [The table has a version](../the_table_has_a_version/README.md) — the frozen table this page is built on, and why `Cn` is a trap
+- [Noncharacters and the private use areas](../noncharacters_and_private_use/README.md) — the two classes stringprep prohibits by number in tables C.3 and C.4, explained rather than only listed: both are legal UTF-8 and neither is interchangeable
 - [Normalization](../../04_Python/normalization/README.md) — step 2 on its own, including what NFKC costs
 - [A code point is not a character](../a_code_point_is_not_a_character/README.md) — the other question the table alone will not answer
 - [Validation is a boundary](../../03_Encodings/validation_is_a_boundary/README.md) — the same argument for bytes: decide where the check runs

@@ -14,11 +14,12 @@ A [byte](../01_Bits_and_Bytes/a_byte_is_eight_bits/README.md) is a number. Text 
 | 6 | [Unicode code points](unicode_code_points/README.md) | What is `U+00E9`, and why is it a number rather than a byte? | written, 2026-09-05 |
 | 7 | [Writing a code point](writing_a_code_point/README.md) | You have the number — how do you write it down, and why does every language spell it differently? | written, 2026-09-06 |
 | 8 | [The table has a version](the_table_has_a_version/README.md) | Whose copy of Unicode is your program actually reading, and what may you write down? | written, 2026-09-06 |
-| 9 | [Preparing a string](preparing_a_string/README.md) | Are these two strings the same name, and who decides which differences count? | written, 2026-09-06 |
-| 10 | [A code point is not a character](a_code_point_is_not_a_character/README.md) | Why does `len()` still not count what a person calls a character? | written, 2026-09-07 |
-| 11 | [Confusables and scripts](confusables_and_scripts/README.md) | Two strings, one picture, different code points — why does no normalization form merge them? | written, 2026-09-06 |
-| 12 | [Logical and visual order](logical_and_visual_order/README.md) | Why is the order you store not the order you see, and why is a screenshot not evidence? | stub |
-| 13 | [Unicode in identifiers](unicode_in_identifiers/README.md) | Why does `ﬁle = 2` define `file`, and why does Rust refuse to do that? | written, 2026-09-06 |
+| 9 | [Noncharacters and the private use areas](noncharacters_and_private_use/README.md) | Which code points are reserved forever, and why "reserved" is not "invalid"? | written, 2026-09-08 |
+| 10 | [Preparing a string](preparing_a_string/README.md) | Are these two strings the same name, and who decides which differences count? | written, 2026-09-06 |
+| 11 | [A code point is not a character](a_code_point_is_not_a_character/README.md) | Why does `len()` still not count what a person calls a character? | written, 2026-09-07 |
+| 12 | [Confusables and scripts](confusables_and_scripts/README.md) | Two strings, one picture, different code points — why does no normalization form merge them? | written, 2026-09-06 |
+| 13 | [Logical and visual order](logical_and_visual_order/README.md) | Why is the order you store not the order you see, and why is a screenshot not evidence? | stub |
+| 14 | [Unicode in identifiers](unicode_in_identifiers/README.md) | Why does `ﬁle = 2` define `file`, and why does Rust refuse to do that? | written, 2026-09-06 |
 
 ## The through-line
 

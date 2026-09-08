@@ -1,0 +1,61 @@
+THE QUESTION: WHICH DOES A UTF-8 ENCODER REFUSE?
+------------------------------------------------------------------------
+   code point   UTF-8              verdict   what it is
+   U+FFFE       ef bf be           encoded   noncharacter -- the last but one code point of the BMP
+   U+FDD0       ef b7 90           encoded   noncharacter -- first of the block of 32
+   U+E000       ee 80 80           encoded   private use -- first of the BMP area
+   U+D800       --                 refused   surrogate -- a high surrogate, on its own
+   U+0378       cd b8              encoded   unassigned -- a gap that may be filled one day
+
+   refused: 1 of 5
+
+   ONE. Not four, and not three. The one refusal is U+D800, and it is
+   refused for a reason no reader guesses from the list: a surrogate is
+   not a Unicode SCALAR VALUE, so no UTF has a spelling for it. It is
+   plumbing that UTF-16 reserved for itself in 1996.
+
+   Everything else on the list encodes. The two noncharacters encode,
+   the private-use character encodes, and so does the unassigned code
+   point that is not anything yet. Reserved is not invalid, and a
+   conformant DECODER must hand all four of them back to you unchanged
+   rather than filtering them out.
+
+THE SECOND HALF: EVERY LAYER DRAWS ITS OWN LINE
+------------------------------------------------------------------------
+   code point   encoder  name()      XML 1.0  General_Category
+   U+FFFE       encodes  ValueError  refuses  Cn
+   U+FDD0       encodes  ValueError  carries  Cn
+   U+E000       encodes  ValueError  carries  Co
+   U+D800       refuses  ValueError  refuses  Cs
+   U+0378       encodes  ValueError  carries  Cn
+
+   Four columns, four different answers about the same five values.
+   The encoder refuses one. XML refuses TWO, and the second one is the
+   interesting half: U+FFFE falls outside XML 1.0's Char production
+   while U+FDD0, equally and identically a noncharacter, does not.
+   unicodedata names none of the five. And the category column puts
+   the two noncharacters in the same box as the merely unassigned
+   U+0378, because Cn means unassigned and that is what they are.
+
+   The lesson is not that one of these is right. It is that 'invalid'
+   is never a property of a code point on its own -- it is a property
+   of a code point AND the door it is standing at.
+
+AND THE PART THE QUESTION DOES NOT ASK
+------------------------------------------------------------------------
+   Encoding is not the same question as interchange. All four of the
+   encodable rows above go into a file happily. Only the first two
+   below are things you may legitimately SEND someone, and even the
+   first carries a warning:
+
+      U+0378   unassigned   nothing forbids it, and it may become a
+                            real letter, at which point your data is
+                            retroactively about something
+      U+E000   private use  fine inside the agreement that defines it,
+                            and meaningless one hop outside
+      U+FDD0   noncharacter never. Reserved for internal use, and the
+      U+FFFE   noncharacter guarantee that they are never in the input
+                            is exactly what they are worth
+
+   Which is why the answer to 'is this legal?' is one, and the answer
+   to 'may I put it in the export?' is a different number entirely.

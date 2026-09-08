@@ -64,7 +64,7 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 
 ### 1.2 Unicode — **core**
 
-*Covered:* [Unicode code points](02_Characters/unicode_code_points/README.md) · [The table has a version](02_Characters/the_table_has_a_version/README.md) · [Preparing a string](02_Characters/preparing_a_string/README.md) · [Confusables and scripts](02_Characters/confusables_and_scripts/README.md) · [Unicode in identifiers](02_Characters/unicode_in_identifiers/README.md)
+*Covered:* [Unicode code points](02_Characters/unicode_code_points/README.md) · [The table has a version](02_Characters/the_table_has_a_version/README.md) · [Preparing a string](02_Characters/preparing_a_string/README.md) · [Noncharacters and the private use areas](02_Characters/noncharacters_and_private_use/README.md) · [Confusables and scripts](02_Characters/confusables_and_scripts/README.md) · [Unicode in identifiers](02_Characters/unicode_in_identifiers/README.md)
 
 **Imported:** Unicode · Unicode Consortium · the Standard · UCS / ISO-IEC 10646 · plane · BMP · SMP · SIP · TIP · SSP · Private Use Areas · block · category · version · scalar value · UCD · character name · UBA / BiDi · RTL · LTR · emoji · math symbols · currency symbols · diacritics · Han unification · CJK Unified Ideographs · UTF · stability policy · Age property · name alias · deprecated character · noncharacter
 
@@ -254,6 +254,8 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 
 ### 2.1 Code points — **core**
 
+*Covered:* [Unicode code points](02_Characters/unicode_code_points/README.md) · [Noncharacters and the private use areas](02_Characters/noncharacters_and_private_use/README.md)
+
 **Imported:** code point · `U+` notation · scalar value · reserved · unassigned · noncharacter · private use · surrogate · code space · first / last code point · total 1,114,112 · assigned count · property · General_Category · Script · Block · Bidi_Class
 
 **Missing — add:**
@@ -262,6 +264,7 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 - **Why the ceiling is `U+10FFFF`** — because that is what UTF-16 surrogates can address. The whole code space is the shape of a 1996 compromise.
 - **`Age`** — the release a character was first assigned in. The concrete version of [The table has a version](02_Characters/the_table_has_a_version/README.md).
 - **`Cn` does not mean "not in my edition"** — it means unassigned, with no hedge. A stale table states a false fact rather than reporting a gap. Measured; on [The table has a version](02_Characters/the_table_has_a_version/README.md).
+- ~~**reserved · unassigned · noncharacter · private use**~~ — **written 2026-09-08** as [Noncharacters and the private use areas](02_Characters/noncharacters_and_private_use/README.md), and the imported list had them filed under one heading when they are three different things. `Cn` covers *unassigned* and *noncharacter* alike and cannot separate them; `Co` names private use and does; **reserved is not invalid** — all 66 noncharacters and all 137,468 private-use code points encode in every UTF, and the class an encoder actually refuses is the surrogates. What is still open here is the PUA's social half: who decides what a private-use code point means is nobody, by design, and the ConScript Unicode Registry is the closest thing to an answer. The `Age` and `Default_Ignorable_Code_Point` bullets above are untouched.
 
 ### 2.2 Characters, glyphs and graphemes — **core**
 

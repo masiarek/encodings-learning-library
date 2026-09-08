@@ -1,0 +1,90 @@
+1. THE SAME TWO SETS, COUNTED BY A DIFFERENT LANGUAGE
+------------------------------------------------------------------------
+   noncharacters   66
+   private use     137468
+   the two sets are disjoint:  true
+
+   Two programs, two languages, one sweep of the number line each,
+   and the same 66 and 137,468. Neither number was typed in.
+
+2. char::from_u32 SAYS YES TO EVERY ONE OF THEM
+------------------------------------------------------------------------
+   noncharacters that char::from_u32 accepts:   66 of 66
+   private-use code points it accepts:          137468 of 137468
+
+   Which is worth pausing on, because `char` is the type that
+   REFUSES things. It is the strictest character type in this
+   library -- and it refuses exactly one class:
+      char::from_u32(0xD7FF)     Some   an ordinary scalar value
+      char::from_u32(0xD800)     None   a surrogate -- not a scalar value
+      char::from_u32(0xDFFF)     None   a surrogate -- not a scalar value
+      char::from_u32(0xE000)     Some   private use -- an ordinary scalar value
+      char::from_u32(0xFDD0)     Some   a NONCHARACTER, and still a scalar value
+      char::from_u32(0xFFFE)     Some   a NONCHARACTER, and still a scalar value
+      char::from_u32(0x10FFFF)   Some   a NONCHARACTER, and still a scalar value
+      char::from_u32(0x110000)   None   past U+10FFFF -- not a code point
+
+   Scalar value is the whole rule. `char` holds every code point
+   that is not a surrogate, and reservation is not part of the
+   contract -- so a noncharacter is as welcome in a String as an
+   'a' is. It also compiles as a LITERAL: '\u{FFFE}' is accepted
+   by rustc with no lint and no warning.
+
+3. AND SO DOES UTF-8, IN BOTH DIRECTIONS
+------------------------------------------------------------------------
+   encoded to UTF-8 and validated back:  66 of 66
+
+   str::from_utf8 is THE validator in this language -- the
+   boundary every &str is built behind -- and it has no objection:
+      ef bf be     Ok                U+FFFE, a noncharacter
+      ef b7 90     Ok                U+FDD0, a noncharacter
+      ee 80 80     Ok                U+E000, private use
+      ed a0 80     Err at byte 0     U+D800 spelled in UTF-8, a surrogate
+
+   One of those four is rejected and it is not one of the reserved
+   ones. That is the page in a line.
+
+4. NO PROPERTY, IN EITHER SET
+------------------------------------------------------------------------
+   code point  alpha  ctrl   ws     upper  len_utf8  what it is
+   U+0041      true   false  false  true   1         an ordinary letter
+   U+E000      false  false  false  false  3         private use -- yours by agreement
+   U+F8FF      false  false  false  false  3         private use -- Apple's logo, on Apple's machines
+   U+FDD0      false  false  false  false  3         noncharacter -- nobody's, ever
+   U+FFFE      false  false  false  false  3         noncharacter -- the BOM's mirror
+   U+0378      false  false  false  false  2         unassigned -- may become a letter one day
+
+   Every column false on all four reserved rows -- and the same
+   five falses for the merely-unassigned U+0378. Rust cannot tell
+   you which is which either -- there is no is_noncharacter and no
+   is_private_use in std, which is why this file opens with two
+   range tests written by hand.
+
+5. THE ONE PLACE RUST IS MORE HELPFUL THAN PYTHON
+------------------------------------------------------------------------
+   Debug on a string holding one of each:
+      "a\u{fffe}b"
+      "a\u{e000}b"
+      escape_unicode:  \u{fffe}
+
+   Debug escapes a non-printable scalar rather than emitting it, so
+   dbg! and a {:?} in a log show you the number. Display does not:
+   println!("{}", c) writes the three raw bytes and your terminal
+   draws a box, or nothing, or whatever a font privately decided.
+   When you are hunting one of these, {:?} is the tool.
+
+6. WHAT THEY ARE ACTUALLY FOR
+------------------------------------------------------------------------
+   A sentinel has to be a value your input cannot contain. That is
+   the entire requirement, and it is why a noncharacter beats every
+   ASCII character somebody once picked for the job:
+      joined on U+FFFF, then split:  ["field one", "field two", "field three"]
+      pieces: 3
+
+   Nothing arriving from outside can contain U+FFFF, because no
+   conformant producer may emit it as text -- so unlike a comma, a
+   tab, a NUL or a pipe, this separator cannot be forged by the
+   data. Inside one process that is a real guarantee. The moment
+   the string leaves -- to a file, a socket, an XML document, a
+   filename -- the guarantee is gone and you have shipped a value
+   the standard says you must not interchange.

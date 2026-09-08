@@ -104,3 +104,4 @@ That is deliberate, and the reason is that folders are URLs. A topic — the byt
 | K86 | [Four writes that look identical, and the one character that breaks the tie](06_Terminal/printf_writes_bytes/README.md#practice) | [`printf` writes bytes](06_Terminal/printf_writes_bytes/README.md) | 101 |
 | K87 | [Three files, one verdict, and only one of them is ASCII](06_Terminal/file_guesses/README.md#practice) | [`file` guesses](06_Terminal/file_guesses/README.md) | 101 |
 | K88 | [The same script, two commands, and the line that never arrives](06_Terminal/pipe_is_not_a_terminal/README.md#practice) | [A pipe is not a terminal](06_Terminal/pipe_is_not_a_terminal/README.md) | 201 |
+| K89 | [Five code points, and the one a UTF-8 encoder actually refuses](02_Characters/noncharacters_and_private_use/README.md#practice) | [Noncharacters and the private use areas](02_Characters/noncharacters_and_private_use/README.md) | 201 |

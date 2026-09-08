@@ -506,6 +506,7 @@ AND HERE IS THE CSV BUG, IN FULL
 ## See also
 
 - [UTF-16 and surrogates](../utf16_and_surrogates/README.md) — the encoding this mark was actually invented for
+- [Noncharacters and the private use areas](../../02_Characters/noncharacters_and_private_use/README.md) — the half this page assumes: why `U+FFFE` is guaranteed never to mean anything, and why that makes the mirror a proof rather than a convention
 - [The first two bytes](../../06_Terminal/the_first_two_bytes/README.md) — offset 0 of an executable, where the mark is fatal and the failure still exits `0`
 - [A BOM in a CSV](../../07_Real_Data/bom_in_a_csv/README.md) — the same three bytes, met by everybody, in the place they do the most damage
 - [Encode and decode are verbs](../encode_and_decode_are_verbs/README.md) — the two operations a signature is trying to disambiguate

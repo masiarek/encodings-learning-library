@@ -126,6 +126,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "unicode_code_points",
         "writing_a_code_point",
         "the_table_has_a_version",
+        "noncharacters_and_private_use",
         "preparing_a_string",
         "a_code_point_is_not_a_character",
         "confusables_and_scripts",
