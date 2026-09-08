@@ -1,0 +1,98 @@
+
+1. THE STRUCT IS A MEMORY LAYOUT, AND IT HAS HOLES IN IT
+------------------------------------------------------------------------
+
+   struct order { uint32_t id; int16_t qty; double price; };
+
+   sizeof(struct order)            -- not printed: it is this
+   offsetof(struct order, price)      compiler and this ABI, not
+                                      the record. The comparisons
+                                      below are the portable part.
+
+   4 + 2 + 8, the fields alone              14
+   sizeof(struct order) == that sum         false
+   sizeof(struct order) >  that sum         true
+   offsetof(price) == 6, where a file wants it   false
+
+   The struct is bigger than its fields and the third field does
+   not start where the wire wants it. The difference is ALIGNMENT
+   PADDING: a double has to begin at an address divisible by its
+   ALIGNMENT, so the compiler inserts unnamed bytes after `qty`
+   until it does. You cannot see them, you did not ask for them,
+   and their contents are indeterminate.
+
+   That alignment is the ABI's number rather than the standard's,
+   and _Alignof is how you ask this machine instead of guessing.
+   It is not printed here for the usual reason -- but the page
+   carries it measured on four targets, including one where a
+   double aligns to four rather than eight.
+
+   This is exactly what Python's unprefixed 'Ihd' inherits -- the
+   `struct` module's native mode asks the C compiler these same
+   two questions and answers with the same padding.
+
+2. SO THE ONE-LINE WRITE IS THE BUG
+------------------------------------------------------------------------
+
+   fwrite(&r, sizeof r, 1, fp);
+
+   That compiles, runs, and writes a file that reads back
+   perfectly -- with the same program, on the same machine, built
+   by the same compiler. It writes:
+
+     * this CPU's byte order, chosen for you by the hardware
+     * this ABI's padding, in bytes whose values C does not define
+     * this compiler's field order and widths
+
+   None of the three is in the file, so a reader cannot check any
+   of them. Padding is the one worth pausing on: those bytes are
+   INDETERMINATE, so two records with identical fields can differ
+   byte for byte, which breaks memcmp, hashing and any signature
+   taken over the struct -- and it is why they are not printed
+   here. There is nothing stable to print.
+
+3. THE PORTABLE ANSWER IS TO WRITE THE BYTES YOURSELF
+------------------------------------------------------------------------
+
+   shift and mask, field by field  00 00 12 67 ff fd 40 33 80 00 00 00 00 00          14 bytes
+
+     0..4   id     >> 24, >> 16, >> 8, & 0xff
+     4..6   qty    cast to uint16_t first, then shift
+     6..14  price  memcpy, then reversed if this CPU is little
+
+   Fourteen bytes, no padding, byte order stated in the code. The
+   same fourteen bytes Python's struct.pack('>Ihd') and Rust's
+   three to_be_bytes calls produce, which is what "agreeing on a
+   format" looks like when nobody shares a library.
+
+   Two details the shifts are carrying quietly. `qty` is cast to
+   uint16_t before shifting, because shifting a negative signed
+   value right is implementation-defined and the cast is the only
+   way to say "the two's complement bits, please". And `price`
+   needs a memcpy because C has no shift operator for a double --
+   which means the float field is the one place where you have to
+   ask what this machine does before you can write a portable file.
+
+4. READING IT BACK, AND WHERE C WILL NOT HELP YOU
+------------------------------------------------------------------------
+
+   get_u32_be(wire)            id = 4711
+   round trips                 true
+
+   And the mistake with no diagnostic anywhere in this file:
+
+     the same four bytes read the other way round   1729232896
+
+   Both are valid uint32_t values, so there is no error to report
+   and nothing to test against. C has no type that means "a
+   big-endian 32-bit field" -- Rust's from_be_bytes and Python's
+   '>' both name the order in the call, and C names it only in
+   whichever helper you remembered to write.
+
+   The name field is worse again, and this page's other half:
+   `char buf[10]` is ten bytes and C has no opinion at all about
+   what encoding they hold, so nothing here can tell you that a
+   strncpy landed in the middle of a UTF-8 sequence. There is no
+   equivalent of Rust's str::from_utf8 refusing, or of Python's
+   decode raising. The bytes just go out.
+

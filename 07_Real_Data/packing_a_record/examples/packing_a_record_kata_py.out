@@ -1,0 +1,79 @@
+
+1. HOW LONG IS THE RECORD?
+------------------------------------------------------------------------
+
+   struct.calcsize('>Ih10s')    16
+   struct.calcsize('<Ihd')      14
+   struct.calcsize('<Ihxxd')    16
+
+   4 + 2 + 10, 4 + 2 + 8, and the same again with two 'x' pads you
+   asked for by name. In standard mode a format string's length is
+   arithmetic you can do on paper -- which is the property the
+   unprefixed spelling gives away.
+
+2. THE SAME NUMBER, THE TWO ORDERS
+------------------------------------------------------------------------
+
+   struct.pack('>I', 4711).hex()   00001267
+   struct.pack('<I', 4711).hex()   67120000
+
+   Big-endian puts the most significant byte first, so 4711 -- which
+   is 0x1267 -- reads straight off as 00 00 12 67. Little-endian is
+   the same four bytes backwards. Two leading zeros either way,
+   because the field is four bytes wide and the number is not.
+
+3. AND WHAT THE WRONG READER MAKES OF IT
+------------------------------------------------------------------------
+
+   struct.unpack('>I', be)[0]           4711
+   struct.unpack('<I', be)[0]     1729232896
+
+   Both are valid unsigned 32-bit integers, so the wrong one raises
+   nothing, logs nothing, and looks like an ordinary large id. If you
+   predicted 'an error' here, that is the habit this page is aimed at.
+
+4. WHICH OF THE TWO PACKS RAISES, AND WITH WHAT CLASS
+------------------------------------------------------------------------
+
+   struct.pack('<10s', 'Zażółć')            struct.error
+   struct.pack('<10s', 'Zażółć'.encode())   5a 61 c5 bc c3 b3 c5 82 c4 87
+
+   's' packs bytes and will not encode a str for you. The class is
+   struct.error and NOT TypeError, so `except TypeError` around a pack
+   catches nothing -- which is the half of this answer most people
+   miss even after predicting the raise correctly.
+
+5. TEN BYTES OF NAME INTO A NINE-BYTE FIELD
+------------------------------------------------------------------------
+
+   len('Zażółć')             6 characters
+   len(encoded)             10 bytes
+   struct.pack('<9s', ...)  5a 61 c5 bc c3 b3 c5 82 c4
+
+   nine.decode('utf-8')     UnicodeDecodeError
+   with errors='replace'    'Zażół�'
+
+   No exception from the pack: 's' truncates on the right in silence.
+   The exception arrives later and somewhere else, in whatever tries
+   to read the file -- which is why the check belongs before the pack,
+   not after it.
+
+6. AND THE ONE YOU COULD NOT HAVE ANSWERED
+------------------------------------------------------------------------
+
+   struct.calcsize('Ihd')  =  ?
+
+   There is no right answer to write down. With no prefix the format
+   is NATIVE: the widths and the alignment padding come from the C
+   compiler that built this Python, so the number is a property of the
+   machine you ran it on and not of the string 'Ihd'.
+
+   What can be checked is the shape, and it is the finding:
+     struct.calcsize('Ihd') == struct.calcsize('<Ihd')   False
+
+   If you answered 14 -- the sum of the field widths -- you made
+   exactly the assumption the unprefixed format invites, and the
+   record you write will be a different length on somebody else's
+   machine. Naming the order (`<`, `>` or `!`) fixes the widths and
+   removes the padding in the same character.
+

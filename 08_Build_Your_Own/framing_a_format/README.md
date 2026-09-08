@@ -528,6 +528,7 @@ THE FOUR RECORDS
 - [UTF-7, and the seven-bit transport](../../03_Encodings/utf7_and_the_seven_bit_transport/README.md) — the same 7-bit constraint section 2 of the shell example measures, answered by an encoding rather than by a frame, and deprecated for a reason worth knowing before you make anything optional
 - [Escaping into ASCII](../../03_Encodings/escaping_into_ascii/README.md) — the other way of surviving a text channel, and how it differs from armouring the whole stream
 - [The byte that means something to somebody else](../../12_Adversarial/in_band_signals/README.md) — what happens to a format whose delimiter turns up in its data
+- [Packing a record](../../07_Real_Data/packing_a_record/README.md) — the layer inside this one: how the fields of one record become bytes at all, and the three decisions (width, byte order, alignment padding) a frame does not carry. Intel HEX dodges the byte-order question by being hex text; a binary frame does not
 - [Hex: a number, or a picture of bytes](../../01_Bits_and_Bytes/hex_number_or_bytes/README.md) — `RECLEN` is a number and `DATA` is a picture, in the same record, in the same notation
 - [`xxd` is the dump you can put back](../../11_Tools/xxd/README.md) — `xxd -r -p` is the DATA field's decoder, and you already have it
 - [Intel HEX ↗](https://en.wikipedia.org/wiki/Intel_HEX) — the article that prompted this page; the specification below is what it was checked against

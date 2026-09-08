@@ -1,0 +1,154 @@
+
+1. A RECORD IS SOME VALUES AND A LAYOUT NOBODY SENT WITH THEM
+------------------------------------------------------------------------
+
+   id    = 4711     unsigned, 4 bytes   'I'
+   qty   = -3       signed,   2 bytes   'h'
+   price = 19.5     float,    8 bytes   'd'
+
+   struct.pack('>Ihd', ...)     00 00 12 67 ff fd 40 33 80 00 00 00 00 00       14 bytes
+
+   Field by field, at the offsets the format string fixes:
+     0..4    00 00 12 67              id
+     4..6    ff fd                    qty, two's complement
+     6..14   40 33 80 00 00 00 00 00  price, IEEE 754 binary64
+
+   Nothing in those fourteen bytes says any of that. No header, no
+   field name, no length, no separator. The layout is an agreement
+   held somewhere else -- in a specification, in a comment, or, most
+   often, in the format string of whichever program wrote the file.
+
+2. THE BYTE ORDER IS THE FIRST CHARACTER OF THE STRING
+------------------------------------------------------------------------
+
+   struct.pack('<Ihd', ...)     67 12 00 00 fd ff 00 00 00 00 00 80 33 40       little-endian
+   struct.pack('>Ihd', ...)     00 00 12 67 ff fd 40 33 80 00 00 00 00 00       big-endian
+   struct.pack('!Ihd', ...)     00 00 12 67 ff fd 40 33 80 00 00 00 00 00       network order -- the same bytes as '>'
+
+   '!Ihd' and '>Ihd' agree, byte for byte: True
+
+   Same three values, same three widths, two different files. Which
+   one is correct is not a property of the data and cannot be worked
+   out from it. It is a property of whoever you are sending it to.
+
+3. AND THE PREFIX YOU DID NOT WRITE IS NOT 'NO PREFIX'
+------------------------------------------------------------------------
+
+   struct.calcsize('<Ihd')     14    4 + 2 + 8, and 14 on every machine
+   struct.calcsize('>Ihd')     14    the order changes no width
+   struct.calcsize('!Ihd')     14
+   struct.calcsize('=Ihd')     14    native ORDER, standard sizes
+   struct.calcsize('Ihd')      -- deliberately not printed: with no
+                                  prefix the sizes and the padding are
+                                  your C compiler's, so the number is a
+                                  fact about this machine, not 'Ihd'
+
+   Is the unprefixed format the same length as '<Ihd'?   False
+
+   That False is the whole section. 'Ihd' is not a shorter spelling of
+   '<Ihd' or of '>Ihd' -- it is a fourth format, and the bytes it adds
+   are ALIGNMENT PADDING: dead bytes the compiler inserts so each
+   field begins at an address its type is willing to start at.
+
+   Padding is not the enemy. Invisible padding is. In standard mode you
+   can write it down, and then it sits in the string somebody reviews:
+
+   struct.pack('<Ihd', ...)     67 12 00 00 fd ff 00 00 00 00 00 80 33 40       14 bytes, no padding
+   struct.pack('<Ihxxd', ...)   67 12 00 00 fd ff 00 00 00 00 00 00 00 80 33 40 16 bytes, two 'x' pads
+
+   'x' is a pad byte you asked for: it writes a zero, unpacks to
+   nothing, and is visible in the format. The padding inside 'Ihd'
+   does the same job and is visible nowhere.
+
+4. THE WRONG ORDER IS SILENT; ONLY THE WRONG LENGTH IS LOUD
+------------------------------------------------------------------------
+
+   written big-endian, read big-endian      (4711, -3, 19.5)
+   written big-endian, read little-endian   (1729232896, -513, 4.151005e-317)
+
+   No exception, no warning, nothing in the data to check against.
+   4711 read backwards is a perfectly good unsigned integer and 19.5
+   read backwards is a perfectly good float, so every field survives
+   and every field is wrong. That is the failure this page exists for.
+
+   The one mistake that does raise is a length mismatch, because a
+   format string knows exactly how many bytes it wants:
+     unpack('<Ihxxd', <14 bytes>)   struct.error   -- a 16-byte format cannot read 14 bytes
+
+   Worth reading twice: the check that fires is on the TOTAL LENGTH,
+   never on the meaning. A record of the right length in the wrong
+   order passes every check `struct` has.
+
+5. THE NAME FIELD, WHERE THIS BECOMES A QUESTION ABOUT TEXT
+------------------------------------------------------------------------
+
+   name               'Zażółć'
+     len(name)         6   characters
+     len(encoded)      10  bytes in UTF-8   5a 61 c5 bc c3 b3 c5 82 c4 87
+
+   struct.pack('<10s', name)       struct.error
+
+   Two things in that one line. 's' does not pack a string -- it packs
+   BYTES, and it will not encode for you, which is the right refusal:
+   it does not know which encoding the other end agreed to. And the
+   class is struct.error rather than TypeError, so a program guarding
+   its packs with `except TypeError` catches none of this.
+
+   The encode step is yours:
+
+   struct.pack('<10s', raw)     5a 61 c5 bc c3 b3 c5 82 c4 87                   10 bytes, exactly full
+
+   Six characters into a ten-byte field, filled to the byte. That is a
+   coincidence of this word rather than a rule: 'Zażółć' is two ASCII
+   letters and four Polish ones, and each of the four costs two bytes.
+   The same field holds ten letters of an English name and five of a
+   Polish one. A field width is a BYTE budget.
+
+6. A BYTE BUDGET THAT 's' WILL QUIETLY SPEND FOR YOU
+------------------------------------------------------------------------
+
+   struct.pack('<9s', raw)      5a 61 c5 bc c3 b3 c5 82 c4                      9 bytes -- one short
+
+   No exception. 's' truncates on the right and says nothing, because
+   as far as `struct` is concerned it was handed bytes and asked for
+   nine of them. Ask what those nine bytes are:
+
+     nine.decode('utf-8')            builtins.UnicodeDecodeError
+     nine.decode('utf-8', 'replace')  'Zażół�'
+
+   The cut landed between the two bytes that spell 'ć', so the field
+   is not text any more. It is nine bytes of which the last is a lead
+   byte with nothing behind it -- valid UTF-8 up to position 8 and
+   then a promise the file does not keep.
+
+   In a BINARY record the answer is not to truncate more carefully.
+   It is to refuse, before the pack, where you still know whose name
+   it was:
+
+     Adam     4 chars   4 bytes   fits a 10-byte field: True
+     Zażółć   6 chars  10 bytes   fits a 10-byte field: True
+     Zażółći  7 chars  11 bytes   fits a 10-byte field: False
+
+   Check the encoded length before you pack and raise at the boundary
+   the data entered, rather than shipping a field that is half a
+   character. Backing up to a character boundary is the right answer
+   for a fixed-width TEXT record, and that is a different lesson.
+
+7. THE ROUND TRIP, ONCE ALL FOUR DECISIONS ARE WRITTEN DOWN
+------------------------------------------------------------------------
+
+   struct.pack('>Ih10s', ...)   00 00 12 67 ff fd 5a 61 c5 bc c3 b3 c5 82 c4 87 16 bytes
+   unpacked           id=4711  qty=-3  name=b'Za\xc5\xbc\xc3\xb3\xc5\x82\xc4\x87'
+     name.decode()    'Zażółć'
+
+   round trips: True
+
+   Four decisions, all of them in that one string and the call around it:
+     >      byte order, named rather than inherited from the hardware
+     I h    widths, fixed by the standard rather than by the compiler
+     10s    a byte budget, checked by you before the pack
+     utf-8  an encoding, applied by you because 's' will not guess
+
+   A record whose writer and reader agree on all four is portable.
+   A record missing any one of them works on the machine that wrote it.
+

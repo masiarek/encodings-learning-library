@@ -256,6 +256,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "mojibake_round_trip",
         "bom_in_a_csv",
         "fixed_width_byte_fields",
+        "packing_a_record",
         "windows_1252_vs_latin1",
         "crlf_vs_lf",
         "sorting_and_collation",

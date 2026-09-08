@@ -269,6 +269,7 @@ The conversion between them is where the width changes, and it is explicit: `cl_
 
 ## See also
 
+- [Packing a record](../packing_a_record/README.md) — the sibling: the same byte budget in a **binary** record, where the layout is not in the file either, and where the answer is to refuse rather than to truncate
 - [Slicing by byte](../../05_Rust/slicing_by_byte/README.md) — the same boundary, met as a panic
 - [SAP code pages](../sap_code_pages/README.md) — the code page a fixed-width interface is measured in
 - [Encode, decode and errors](../../04_Python/encode_decode_and_errors/README.md) — all eight `errors=` handlers, and what each costs

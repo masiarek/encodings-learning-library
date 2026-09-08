@@ -1,8 +1,8 @@
-# 07_Real_Data — the seven ways it goes wrong at work
+# 07_Real_Data — the eight ways it goes wrong at work
 
 **Level:** 201 · for SAP and interface work
 
-Everything before this chapter is mechanism. This chapter is the seven shapes the mechanism takes on the way to or from somebody else's system: a code page named by number, mojibake that can or cannot be reversed, a BOM at the top of a CSV, a field measured in bytes, the 32 bytes where two tables disagree, the second byte at the end of every Windows line, and a list of names that no two locales agree how to order. Each page reproduces the damage in Python so it can be checked, and says what the ABAP side is doing in prose.
+Everything before this chapter is mechanism. This chapter is the eight shapes the mechanism takes on the way to or from somebody else's system: a code page named by number, mojibake that can or cannot be reversed, a BOM at the top of a CSV, a field measured in bytes, a record whose layout is not written in the file, the 32 bytes where two tables disagree, the second byte at the end of every Windows line, and a list of names that no two locales agree how to order. Each page reproduces the damage in Python so it can be checked, and says what the ABAP side is doing in prose.
 
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|
@@ -10,8 +10,9 @@ Everything before this chapter is mechanism. This chapter is the seven shapes th
 | 2 | [Mojibake round trip](mojibake_round_trip/README.md) | When can damaged text be repaired, and when is the data gone? | written, 2026-09-07 |
 | 3 | [A BOM in a CSV](bom_in_a_csv/README.md) | Why is my first column named `﻿ID`? | written, 2026-09-05 |
 | 4 | [Fixed-width byte fields](fixed_width_byte_fields/README.md) | Why does a 10-byte field hold five Polish letters, and how do I truncate without cutting one in half? | written, 2026-09-07 |
-| 5 | [Windows-1252 vs Latin-1](windows_1252_vs_latin1/README.md) | Why is the text almost right except for `€` and the quotes? | written, 2026-09-07 |
-| 6 | [CRLF vs LF](crlf_vs_lf/README.md) | Where do the `^M`s come from? | written, 2026-09-07 |
-| 7 | [Sorting and collation](sorting_and_collation/README.md) | Why does `sorted()` put `Łódź` after `Zebra`, and which locale is right? | written, 2026-09-07 |
+| 5 | [Packing a record](packing_a_record/README.md) | Where is a binary record's layout written down, and what happens when the two ends disagree? | written, 2026-09-08 |
+| 6 | [Windows-1252 vs Latin-1](windows_1252_vs_latin1/README.md) | Why is the text almost right except for `€` and the quotes? | written, 2026-09-07 |
+| 7 | [CRLF vs LF](crlf_vs_lf/README.md) | Where do the `^M`s come from? | written, 2026-09-07 |
+| 8 | [Sorting and collation](sorting_and_collation/README.md) | Why does `sorted()` put `Łódź` after `Zebra`, and which locale is right? | written, 2026-09-07 |
 
 *(ABAP claims on these pages are prose — CI cannot run ABAP — and the Python reproduction beside each one is the checked half.)*

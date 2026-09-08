@@ -1,0 +1,115 @@
+
+1. ONE METHOD CALL PER FIELD, AND THE ORDER IS IN THE NAME
+------------------------------------------------------------------------
+   order.id.to_be_bytes()      00 00 12 67                u32 -> 4 bytes
+   order.qty.to_be_bytes()     ff fd                      i16 -> 2 bytes
+   order.price.to_be_bytes()   40 33 80 00 00 00 00 00    f64 -> 8 bytes
+
+   the three concatenated         00 00 12 67 ff fd 40 33 80 00 00 00 00 00          14 bytes
+
+   Those are the same fourteen bytes Python's struct.pack('>Ihd')
+   produces, which is the point: two languages, no shared code,
+   one agreed layout written down in two different places.
+
+   There is no `to_bytes` without a suffix. `to_ne_bytes` exists
+   and is spelled out loud -- NATIVE endian -- so a program that
+   reaches for it has said so. The mistake Python's unprefixed
+   'Ihd' makes available by DEFAULT is, in Rust, six characters
+   you have to type on purpose.
+
+2. THE STRUCT IN MEMORY IS NOT THE RECORD ON THE WIRE
+------------------------------------------------------------------------
+   size_of::<Order>()   -- not printed: the default layout is
+   size_of::<OrderC>()     UNSPECIFIED and repr(C)'s padding is
+                           the ABI's, so both are facts about
+                           this machine rather than about the
+                           record. What is a fact about the
+                           record is the line below.
+
+   wire.len() == 4 + 2 + 8              true
+   wire.len() == size_of::<Order>()     false
+   wire.len() == size_of::<OrderC>()    false
+
+   The two size_of lines are false, and for two different
+   reasons. repr(C) is larger than the sum of its fields because
+   the ABI pads an f64 up to its alignment -- eight bytes on
+   every 64-bit target in common use, and a number that belongs
+   to the target rather than to the language. The default
+   layout is whatever the compiler liked -- it may reorder the
+   fields, and the language promises nothing about the result
+   between two builds.
+
+   So the C habit the C section of this page is about -- point
+   at the struct, write sizeof bytes, hope -- has no Rust
+   spelling. You cannot get the bytes of a struct without unsafe
+   code and an attribute, which is the language declining to let
+   a memory layout become a file format by accident.
+
+3. READING BACK: THE WIDTH IS CHECKED, THE MEANING IS NOT
+------------------------------------------------------------------------
+   read with from_be_bytes    id=4711  qty=-3  price=19.5
+   read with from_le_bytes    id=1729232896
+
+   Same four bytes, two methods, two integers, no error. Rust
+   makes the byte order impossible to LEAVE OUT and no harder to
+   get wrong; nothing in those four bytes says which end goes
+   first, in any language.
+
+   What the type system does catch is the width. `from_be_bytes`
+   takes [u8; 4] and not a slice, so a four-byte field read with
+   two bytes is a compile error -- see the page. From a slice the
+   same check happens at run time, and it is an error you can
+   handle rather than a truncation you cannot see:
+
+     <[u8; 4]>::try_from(&wire[0..2])   is_err: true
+     <[u8; 4]>::try_from(&wire[0..4])   is_err: false
+
+4. AND THE NAME FIELD, WHICH RUST HAS ALREADY DECIDED FOR YOU
+------------------------------------------------------------------------
+   let name = "Zażółć";
+     name.chars().count()   6   characters
+     name.len()             10  bytes -- len() on a str is BYTES
+     name.as_bytes()        5a 61 c5 bc c3 b3 c5 82 c4 87
+
+   `as_bytes` costs nothing and takes no encoding argument,
+   because a Rust `str` is UTF-8 by definition -- the decision
+   Python's struct.pack('10s', ...) refuses to make for you was
+   made when the string was constructed. That removes one of the
+   four decisions and none of the other three.
+
+   The byte budget is still yours, and the cut is still a cut:
+
+     Adam     4 chars   4 bytes   fits a 10-byte field: true
+     Zażółć   6 chars  10 bytes   fits a 10-byte field: true
+     Zażółći  7 chars  11 bytes   fits a 10-byte field: false
+
+   And where Python hands you nine bytes and finds out later,
+   Rust will not build a `str` out of a cut sequence at all:
+
+     &name.as_bytes()[..9]           5a 61 c5 bc c3 b3 c5 82 c4
+     str::from_utf8(that)  is_err:   true
+     name.is_char_boundary(9)        false
+     name.is_char_boundary(8)        true
+
+   `is_char_boundary` is the question a byte budget actually
+   asks, and it is on `str` in std rather than in a crate. Byte 9
+   is inside the two bytes that spell the last letter; byte 8 is
+   between characters. Slicing a `str` at 9 panics rather than
+   returning half a character -- loud where Python's '9s' is
+   silent.
+
+5. THE WHOLE RECORD, WITH THE NAME IN IT
+------------------------------------------------------------------------
+   id + qty + 10-byte name        00 00 12 67 ff fd 5a 61 c5 bc c3 b3 c5 82 c4 87    16 bytes
+
+   read back      id=4711  qty=-3  name="Zażółć"
+   round trips:   true
+
+   The `assert!` above is the whole difference from section 6 of
+   the Python run. Nothing in the language forces it -- a fixed
+   array and a `copy_from_slice` panic on an over-long name
+   rather than truncating, which is better than silence and
+   worse than a checked error at the edge of the system. The
+   width of a field is the one part of a binary layout that no
+   type can hold.
+

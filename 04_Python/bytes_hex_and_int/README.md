@@ -323,6 +323,7 @@ FOUR BYTES THAT ARE TWO NUMBERS
 
 ## See also
 
+- [Packing a record](../../07_Real_Data/packing_a_record/README.md) — `struct` past one number: a whole record, the same format string read in Rust, C and Perl, and alignment padding as a fact about the ABI rather than about the format
 - [Hex is a shorthand](../../01_Bits_and_Bytes/hex_is_a_shorthand/README.md) — binary written four bits at a time
 - [Hex: a number, or a picture of bytes](../../01_Bits_and_Bytes/hex_number_or_bytes/README.md) — the distinction these four calls implement
 - [Grouping is a choice](../../01_Bits_and_Bytes/grouping_is_a_choice/README.md) — `hex(sep, bytes_per_sep)`, and why the sign is the direction
