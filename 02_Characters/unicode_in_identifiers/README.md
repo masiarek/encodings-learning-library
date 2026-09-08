@@ -100,6 +100,58 @@ Every other page in this chapter is about text your program *handles*. This one 
    defence is not a language feature here -- it is a linter, a
    pre-commit hook, or a rule that identifiers stay ASCII and the
    other languages live in the strings.
+
+6. THE REPL SESSION THAT LOOKS LIKE A BROKEN INTERPRETER
+------------------------------------------------------------------------
+   Typed at a prompt, one line after another:
+
+       >>> value = 3
+       >>> value = 4          # the `a` here is U+0430, not U+0061
+       >>> value
+       3
+
+   The second assignment did not overwrite the first, so reading the
+   name back gives the value you set TWO lines ago. Nothing is wrong
+   with the interpreter and nothing was shadowed: there are two names
+   in the namespace and they are the same picture.
+
+      names bound   ['value', 'vаlue']
+      as code points
+         U+0076 U+0061 U+006C U+0075 U+0065   -> 3
+         U+0076 U+0430 U+006C U+0075 U+0065   -> 4
+
+   And the one-line version of the same fact, which is the thing to
+   reach for when a name will not resolve and the spelling looks
+   right:
+
+       >>> ord('a')
+       97
+       >>> ord('a')          # pasted from somewhere else
+       1072
+
+   97 is U+0061 LATIN SMALL LETTER A.
+   1072 is U+0430 CYRILLIC SMALL LETTER A.
+   ord() is the whole diagnosis, and it fits on one line.
+
+7. AND THE CHARACTERS THAT CANNOT GET IN AT ALL
+------------------------------------------------------------------------
+   The letter that slips through is an ORDINARY, ASSIGNED, VISIBLE
+   one. The reserved code points are refused at the door:
+
+   code point  what it is                                   isidentifier()  exec
+   U+0430      CYRILLIC SMALL LETTER A -- a real letter     True            bound
+   U+00E9      LATIN SMALL LETTER E WITH ACUTE              True            bound
+   U+E000      a private-use code point                     False           SyntaxError
+   U+FFFE      a noncharacter                               False           SyntaxError
+   U+0378      unassigned -- may be a letter one day        False           SyntaxError
+
+   Python rejects the last three with the same message -- `invalid
+   non-printable character` -- because none of them carries
+   XID_Continue, and a code point with no properties cannot be part
+   of a name. Which is the reassuring half and also the point: the
+   dangerous character in an identifier is never the exotic one. It
+   is a real letter from a real alphabet that happens to be drawn
+   the same as yours.
 ```
 <!-- /output -->
 
@@ -111,6 +163,10 @@ Sections 3 and 4 are the pair worth holding together, because the shape is uncom
 - Where they are **not** related, it abandons you — Cyrillic `а` and Latin `a` are two variables, rendered identically, and Python says nothing at all.
 
 That is the same rule as [confusables and scripts](../confusables_and_scripts/README.md), met from the other side: NFKC merges what Unicode declared *compatibility-equivalent* and never merges two letters that are merely drawn alike. The first case costs you an afternoon. The second is the one that gets through a code review.
+
+**Sections 6 and 7 are that second case as you actually meet it**, which is at a prompt, wondering whether the interpreter is broken. Assign `value = 3`, assign `value = 4` with a Cyrillic `а` in the middle, ask for `value`, and get **3** — the value you set two lines ago. Nothing was shadowed and nothing is wrong: there are two names in the namespace and they are the same picture. `ord()` is the entire diagnosis and it fits on one line — `97` is `U+0061`, `1072` is `U+0430`.
+
+Section 7 is the reassuring half, and it sharpens the point rather than softening it. A private-use code point, a [noncharacter](../noncharacters_and_private_use/README.md) and a merely unassigned one are all three refused outright, with the same `invalid non-printable character` — none of them carries `XID_Continue`, and a code point with no properties cannot be part of a name. So the character that gets into your identifier is never the exotic one. It is a real letter from a real alphabet that happens to be drawn like yours.
 
 ## Rust preserves, and warns
 
@@ -280,6 +336,7 @@ had to redesign twice; here it decides what your program is written in.
 ## See also
 
 - [Confusables and scripts](../confusables_and_scripts/README.md) — the same problem where the reader is a user rather than a reviewer
+- [Noncharacters and the private use areas](../noncharacters_and_private_use/README.md) — the three classes of code point section 7 shows an identifier refusing outright, and why none of them has the properties a name needs
 - [Preparing a string](../preparing_a_string/README.md) — the protocol-scale version of the same trade
 - [Normalization](../../04_Python/normalization/README.md) — what NFKC does, and why it is the aggressive form
 - [PEP 3131 ↗](https://peps.python.org/pep-3131/) — Python's decision, with its rationale

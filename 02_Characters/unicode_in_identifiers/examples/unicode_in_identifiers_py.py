@@ -115,3 +115,69 @@ print("   Python will bind both, run both, and warn about neither. The")
 print("   defence is not a language feature here -- it is a linter, a")
 print("   pre-commit hook, or a rule that identifiers stay ASCII and the")
 print("   other languages live in the strings.")
+
+# ------------------------------------------------------------------ 6
+head(6, "THE REPL SESSION THAT LOOKS LIKE A BROKEN INTERPRETER")
+CYR_A = "\N{CYRILLIC SMALL LETTER A}"
+ns = {}
+exec("value = 3", ns)
+exec(f"v{CYR_A}lue = 4", ns)
+print("   Typed at a prompt, one line after another:")
+print()
+print("       >>> value = 3")
+print("       >>> value = 4          # the `a` here is U+0430, not U+0061")
+print("       >>> value")
+print(f"       {ns['value']}")
+print()
+print("   The second assignment did not overwrite the first, so reading the")
+print("   name back gives the value you set TWO lines ago. Nothing is wrong")
+print("   with the interpreter and nothing was shadowed: there are two names")
+print("   in the namespace and they are the same picture.")
+print()
+print(f"      names bound   {sorted(k for k in ns if not k.startswith('__'))!r}")
+print(f"      as code points")
+for name in sorted(k for k in ns if not k.startswith("__")):
+    print("         %-24s %s  -> %s" % (
+        " ".join("U+%04X" % ord(c) for c in name), "", ns[name]))
+print()
+print("   And the one-line version of the same fact, which is the thing to")
+print("   reach for when a name will not resolve and the spelling looks")
+print("   right:")
+print()
+print("       >>> ord('a')")
+print("       %d" % ord("a"))
+print("       >>> ord('a')          # pasted from somewhere else")
+print("       %d" % ord(CYR_A))
+print()
+print("   97 is U+0061 %s." % unicodedata.name("a"))
+print("   1072 is U+0430 %s." % unicodedata.name(CYR_A))
+print("   ord() is the whole diagnosis, and it fits on one line.")
+
+head(7, "AND THE CHARACTERS THAT CANNOT GET IN AT ALL")
+print("   The letter that slips through is an ORDINARY, ASSIGNED, VISIBLE")
+print("   one. The reserved code points are refused at the door:")
+print()
+print("   code point  %-44s %-15s %s" % ("what it is", "isidentifier()", "exec"))
+for cp, label in [
+    (0x0430, "CYRILLIC SMALL LETTER A -- a real letter"),
+    (0x00E9, "LATIN SMALL LETTER E WITH ACUTE"),
+    (0xE000, "a private-use code point"),
+    (0xFFFE, "a noncharacter"),
+    (0x0378, "unassigned -- may be a letter one day"),
+]:
+    name = "val" + chr(cp) + "ue"
+    try:
+        exec(name + " = 1", {})
+        verdict = "bound"
+    except SyntaxError:
+        verdict = "SyntaxError"
+    print("   U+%-9s %-44s %-15s %s" % (
+        "%04X" % cp, label, name.isidentifier(), verdict))
+print()
+print("   Python rejects the last three with the same message -- `invalid")
+print("   non-printable character` -- because none of them carries")
+print("   XID_Continue, and a code point with no properties cannot be part")
+print("   of a name. Which is the reassuring half and also the point: the")
+print("   dangerous character in an identifier is never the exotic one. It")
+print("   is a real letter from a real alphabet that happens to be drawn")
+print("   the same as yours.")

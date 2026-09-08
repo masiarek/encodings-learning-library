@@ -80,3 +80,55 @@
    defence is not a language feature here -- it is a linter, a
    pre-commit hook, or a rule that identifiers stay ASCII and the
    other languages live in the strings.
+
+6. THE REPL SESSION THAT LOOKS LIKE A BROKEN INTERPRETER
+------------------------------------------------------------------------
+   Typed at a prompt, one line after another:
+
+       >>> value = 3
+       >>> value = 4          # the `a` here is U+0430, not U+0061
+       >>> value
+       3
+
+   The second assignment did not overwrite the first, so reading the
+   name back gives the value you set TWO lines ago. Nothing is wrong
+   with the interpreter and nothing was shadowed: there are two names
+   in the namespace and they are the same picture.
+
+      names bound   ['value', 'vаlue']
+      as code points
+         U+0076 U+0061 U+006C U+0075 U+0065   -> 3
+         U+0076 U+0430 U+006C U+0075 U+0065   -> 4
+
+   And the one-line version of the same fact, which is the thing to
+   reach for when a name will not resolve and the spelling looks
+   right:
+
+       >>> ord('a')
+       97
+       >>> ord('a')          # pasted from somewhere else
+       1072
+
+   97 is U+0061 LATIN SMALL LETTER A.
+   1072 is U+0430 CYRILLIC SMALL LETTER A.
+   ord() is the whole diagnosis, and it fits on one line.
+
+7. AND THE CHARACTERS THAT CANNOT GET IN AT ALL
+------------------------------------------------------------------------
+   The letter that slips through is an ORDINARY, ASSIGNED, VISIBLE
+   one. The reserved code points are refused at the door:
+
+   code point  what it is                                   isidentifier()  exec
+   U+0430      CYRILLIC SMALL LETTER A -- a real letter     True            bound
+   U+00E9      LATIN SMALL LETTER E WITH ACUTE              True            bound
+   U+E000      a private-use code point                     False           SyntaxError
+   U+FFFE      a noncharacter                               False           SyntaxError
+   U+0378      unassigned -- may be a letter one day        False           SyntaxError
+
+   Python rejects the last three with the same message -- `invalid
+   non-printable character` -- because none of them carries
+   XID_Continue, and a code point with no properties cannot be part
+   of a name. Which is the reassuring half and also the point: the
+   dangerous character in an identifier is never the exotic one. It
+   is a real letter from a real alphabet that happens to be drawn
+   the same as yours.

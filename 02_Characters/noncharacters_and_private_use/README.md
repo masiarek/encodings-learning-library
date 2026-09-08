@@ -488,6 +488,7 @@ AND THE PART THE QUESTION DOES NOT ASK
 - [Validation is a boundary](../../03_Encodings/validation_is_a_boundary/README.md) — the *scalar value* rule, which is the one an encoder actually enforces
 - [`char` is four bytes](../../05_Rust/char_is_four_bytes/README.md) — the surrogate hole, and why `char` refuses exactly one of the classes on this page
 - [Preparing a string](../preparing_a_string/README.md) — [RFC 3454 ↗](https://www.rfc-editor.org/rfc/rfc3454) prohibits both of these by number, twenty years before this page
+- [Unicode in identifiers](../unicode_in_identifiers/README.md) — where a name refuses all three of *private use*, *noncharacter* and *unassigned* with one error, and the character that does get through is an ordinary letter
 - [Bytes that are not text](../../04_Python/surrogateescape/README.md) — the same idea from the other end: to carry a byte you cannot read, spend a code point nobody can legitimately mean
 - [Two readers, one byte string](../../12_Adversarial/parser_differentials/README.md) — where *legal but unexpected* stops being a curiosity
 - [`find`, and filenames that are bytes](../../11_Tools/find/README.md) — the APFS `EILSEQ` this page sharpens
