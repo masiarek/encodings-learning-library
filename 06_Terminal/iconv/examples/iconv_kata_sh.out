@@ -1,0 +1,35 @@
+THE FILE
+   f = 61 e9 62 c3 a9 0a
+   'a', then the LATIN-1 byte for e-acute, then 'b', then e-acute
+   written properly in UTF-8, then a newline. One file, two spellings
+   of the same letter — which is what makes it worth four commands.
+
+THE FOUR COMMANDS
+   iconv -f UTF-8      -t UTF-8 f         exit=1  out=61
+   iconv -f ISO-8859-1 -t UTF-8 f         exit=0  out=61 c3 a9 62 c3 83 c2 a9 0a
+   iconv -c -f UTF-8   -t UTF-8 f         exit=0  out=61 62 c3 a9 0a
+   iconv -f UTF-8      -t ASCII//IGNORE f exit=1  out=61 62 0a
+
+WHAT EACH ONE DID
+   1  The validator. e9 is not a legal UTF-8 start byte, so iconv stops
+      there and exits 1 — after writing the 61 it had already converted.
+      A refusal is not an empty file; partial output is normal.
+   2  No failure is possible: Latin-1 has all 256 bytes. e9 became the
+      correct c3 a9, and the ALREADY-correct c3 a9 became c3 83 c2 a9.
+      Half the file was repaired and half was broken, in one pass,
+      exit 0. This is what a wrong -f looks like from the outside.
+   3  -c skips the byte it cannot read and keeps going: e9 is gone and
+      everything else survives, exit 0.
+   4  //IGNORE drops what ASCII cannot hold — the invalid byte AND the
+      valid e-acute, because neither is an ASCII character — and still
+      exits 1.
+
+WHICH ANSWERS TRAVEL, AND THE BYTE TO WATCH
+   Rows 1, 2 and 4 are identical on macOS and Ubuntu. Row 3 is identical
+   HERE and is the fragile one: after -c skips e9 there are four bytes
+   left, and macOS only differs when exactly one byte follows the skip,
+   in which case it discards it. Delete 'b' and the e-acute from f and
+   the two platforms print different answers for row 3.
+   The byte to watch is e9. It is a perfectly good e-acute in one table
+   and not a character at all in the other, and every line above is a
+   different policy for that one disagreement.

@@ -100,3 +100,7 @@ That is deliberate, and the reason is that folders are URLs. A topic — the byt
 | K82 | [Three ways to make one string wider, and the four calls that move a number](04_Python/str_in_memory/README.md#practice) | [A `str` in memory](04_Python/str_in_memory/README.md) | 201 |
 | K83 | [One file, four readings, and the same script on three machines](04_Python/opening_a_file/README.md#practice) | [Opening a file](04_Python/opening_a_file/README.md) | 201 |
 | K84 | [Six bytes, and a format spec you have not been given](04_Python/bytes_hex_and_int/README.md#practice) | [Bytes, hex and int](04_Python/bytes_hex_and_int/README.md) | 201 |
+| K85 | [Four iconv commands over one six-byte file](06_Terminal/iconv/README.md#practice) | [`iconv`](06_Terminal/iconv/README.md) | 201 |
+| K86 | [Four writes that look identical, and the one character that breaks the tie](06_Terminal/printf_writes_bytes/README.md#practice) | [`printf` writes bytes](06_Terminal/printf_writes_bytes/README.md) | 101 |
+| K87 | [Three files, one verdict, and only one of them is ASCII](06_Terminal/file_guesses/README.md#practice) | [`file` guesses](06_Terminal/file_guesses/README.md) | 101 |
+| K88 | [The same script, two commands, and the line that never arrives](06_Terminal/pipe_is_not_a_terminal/README.md#practice) | [A pipe is not a terminal](06_Terminal/pipe_is_not_a_terminal/README.md) | 201 |

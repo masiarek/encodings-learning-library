@@ -1,0 +1,76 @@
+1. ONE CHARACTER, SIX WAYS TO WRITE ITS TWO BYTES
+   e-acute is c3 a9 in UTF-8. Every line below puts those two bytes on
+   the pipe and nothing else — no newline, no eighth bit turned on by
+   accident, no locale consulted.
+   printf '\xc3\xa9'              c3 a9
+   printf '\303\251'              c3 a9
+   printf '%b' '\xc3\xa9'         c3 a9
+   printf '%b' '\0303\0251'       c3 a9
+   printf '%s' $'\xc3\xa9'        c3 a9
+   xxd -r -p <<< c3a9             c3 a9
+   \xHH is hex and \NNN is octal. Octal is the POSIX spelling and hex is
+   a bash extension, so a script that must run under /bin/sh writes 303
+   251 — which is why old code is full of octal nobody enjoys reading.
+
+2. WHERE THE ESCAPES ARE READ, AND WHERE THEY ARE NOT
+   printf '\x41'                  41
+   printf '%s' '\x41'             5c 78 34 31
+   printf '%b' '\x41'             41
+   printf '\101'                  41
+   printf '%s' '\101'             5c 31 30 31
+   printf '%b' '\101'             41
+   The FORMAT string is always read for escapes. An ARGUMENT is read for
+   them only under %b — under %s it is five literal bytes, 5c 78 34 31,
+   a backslash and three ASCII characters. That is the difference, and
+   it is the reason %b exists at all.
+
+3. THE STRING YOU CANNOT ECHO
+   echo '-n'                      []
+   echo '-e'                      [0a]
+   printf '%s\n' '-n'             [2d 6e 0a]
+   echo 'a\tb'                    [61 5c 74 62 0a]
+   The first line printed NOTHING — not the two characters, not even a
+   newline. echo read '-n' as its own option, which is what it is for.
+   There is no quoting that gets it back: the argument is gone before
+   echo starts. printf has no options after the format, so '-n' is data.
+
+4. THE ESCAPE THAT NAMES A CODE POINT, AND WHY IT IS NOT HERE
+   printf '\u20ac'  (a CODE POINT)    6 bytes
+   printf '\xe2\x82\xac' (BYTES)      3 bytes
+   is the \u output pure ASCII?       yes — so it is NOT a euro
+   Six bytes where three were wanted. This machine handed the escape
+   back as text instead of encoding it, and a different bash on a
+   different locale hands back six DIFFERENT bytes or three correct
+   ones. Three configurations, three answers, one of them a euro sign.
+   The table is on the page. \xHH and \NNN ask the locale nothing and
+   are identical everywhere, which is why this library writes bytes.
+
+5. THE FORMAT IS REUSED UNTIL THE ARGUMENTS RUN OUT
+   printf '%s-' a b c             61 2d 62 2d 63 2d
+   printf '<%s>' a                3c 61 3e
+   printf '<%s>'                  3c 3e
+   With three arguments the format ran three times; with none it ran
+   once and %s took the empty string. That is a loop you did not write,
+   and it is why printf DATA is a bug: a '%' inside the data becomes a
+   conversion. Put the data in an argument — printf '%s' "$var" —
+   never in the format.
+
+6. THE ONE BYTE A SHELL VARIABLE CANNOT CARRY
+   printf 'a\000b' > f  then wc -c < f 3
+   the file's bytes                   61 00 62
+   v=$(printf 'a\000b'); printf %s "$v" 61 62
+   printf wrote the NUL and the file kept it. The command substitution
+   did not: $( ) drops NUL bytes, so the same three bytes came back as
+   two. Build bytes with printf by all means — but redirect them to a
+   file, because a shell variable is the one container on this page
+   that cannot hold every byte.
+
+7. AND BACK AGAIN
+   the file                       63 61 66 c3 a9 0a
+   xxd -p round.bin               636166c3a90a
+   then xxd -r -p                 63 61 66 c3 a9 0a
+   cat -v round.bin               cafM-CM-)
+   xxd -p and xxd -r -p are printf's round trip: bytes to a hex string
+   you can paste into a bug report, and back to the same bytes. cat -v
+   is the third view — M-C M-) is c3 a9 with the high bit named rather
+   than drawn, which is the form that survives an email.

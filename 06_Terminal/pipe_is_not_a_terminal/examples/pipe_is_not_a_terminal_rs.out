@@ -1,0 +1,32 @@
+1. RUST ASKS THE SAME QUESTION
+   stdout.is_terminal() = false
+   stderr.is_terminal() = false
+   stdin.is_terminal()  = false
+   std::io::IsTerminal, stable since 1.70. Same syscall as the
+   shell's [ -t 1 ] and Python's sys.stdout.isatty(), and false
+   here for the same reason: a test runner captured the output.
+
+2. AND CHANGES NOTHING ABOUT HOW IT WRITES
+   The child wrote OUT 1, ERR 1, OUT 2, ERR 2 with both streams
+   redirected to one plain FILE — no terminal anywhere. It came
+   back in this order:
+     OUT 1 ERR 1 OUT 2 ERR 2
+   In order. Python, given exactly this arrangement, returns
+   ERR 1 ERR 2 OUT 1 OUT 2, because its stdout switched to block
+   buffering the moment it stopped being a terminal. Rust's did
+   not switch, because it never asked.
+
+3. THE TRADE, WHICH IS A REAL ONE
+   A LineWriter flushes on every newline, so a program printing a
+   million lines pays a write syscall per line. Rust's answer is
+   to make the fast path something you ASK for rather than
+   something the environment picks for you:
+     BufWriter::new(stdout().lock())  <- this line came
+     through one, and is block buffered until the flush
+   That is the same buffering Python gives you by default down a
+   pipe — with two differences that matter: you wrote it down, so
+   the next reader can see it; and the compiler will not let you
+   forget that it can fail, because flush() returns a Result.
+   The bug on the Python page — output lost when a process exits
+   without flushing — is still reachable here. It is just no
+   longer the default, and no longer invisible.

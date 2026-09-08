@@ -1,0 +1,43 @@
+1. WHICH LINES DIFFER
+   LC_ALL=C, the ordinary case
+     python3 show.py        isatty=True  encoding=utf-8  line_buffering=True
+     python3 show.py        euro=€
+     python3 show.py | cat  isatty=False  encoding=utf-8  line_buffering=False
+     python3 show.py | cat  euro=€
+   One property out of three. isatty() reports what it was asked and
+   line_buffering follows it; encoding is identical on both roads. The
+   euro printed fine down the pipe, which answers the second question
+   before it is asked.
+
+2. THE UnicodeEncodeError, AND WHAT REALLY CAUSES IT
+   PYTHONUTF8=0 (still LC_ALL=C)
+     python3 show.py        isatty=True  encoding=ascii  line_buffering=True
+     python3 show.py        euro raised UnicodeEncodeError
+     python3 show.py | cat  isatty=False  encoding=ascii  line_buffering=False
+     python3 show.py | cat  euro raised UnicodeEncodeError
+   Both roads raised it, and both roads say so in the same words. The
+   C locale means ASCII, UTF-8 Mode was switched off, and stdout could
+   not encode a euro sign no matter who was on the other end. The
+   locale causes this, not the pipe.
+   Anyone who has seen it appear on adding '| cat' was on Windows,
+   where a console really does get a different writer from a redirected
+   stream — the one platform this library cannot measure.
+
+3. WHICH RUN LOSES ITS OUTPUT
+   The same script again, with one line added at the end: os._exit(0),
+   which skips every flush on the way out.
+   LC_ALL=C, ending in os._exit(0)
+     python3 show.py        isatty=True  encoding=utf-8  line_buffering=True
+     python3 show.py        euro=€
+     python3 show.py | cat  (nothing arrived at all)
+   The pipe run lost BOTH lines — not truncated, not garbled, gone,
+   with exit status 0 and nothing on stderr. Down the terminal the same
+   two lines had already left at their newlines. That is the price of
+   the one property that changed in section 1, and it is charged only
+   when something goes wrong, which is when you needed the output.
+   The fixes, in order of how much you should like them:
+     flush=True on the print that matters      precise
+     sys.stdout.reconfigure(line_buffering=True)  for a whole stream
+     python3 -u  /  PYTHONUNBUFFERED=1         blunt, and fine in a
+                                               container
+     never call os._exit                       the actual bug here

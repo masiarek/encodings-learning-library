@@ -177,6 +177,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "file_type_is_four_questions",
         "the_first_two_bytes",
         "terminal_hyperlinks",
+        "pipe_is_not_a_terminal",
     ],
     "08_Build_Your_Own": [
         "README.md",

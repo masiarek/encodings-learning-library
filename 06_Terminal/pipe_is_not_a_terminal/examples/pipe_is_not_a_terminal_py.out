@@ -1,0 +1,70 @@
+1. THE SAME PROGRAM, TWO STDOUTS
+   LC_ALL=C, nothing else set
+     terminal  stdout isatty=True  encoding=utf-8   errors=surrogateescape  line_buffering=True
+     terminal  stderr isatty=False encoding=utf-8   errors=backslashreplace line_buffering=True
+     terminal  euro=€
+     pipe      stdout isatty=False encoding=utf-8   errors=surrogateescape  line_buffering=False
+     pipe      stderr isatty=False encoding=utf-8   errors=backslashreplace line_buffering=True
+     pipe      euro=€
+   Four properties on stdout, and exactly one of them moved. isatty()
+   answered the question honestly both times; line_buffering followed
+   it; encoding and errors did not budge.
+   The stderr rows are the control. Its line_buffering is True on both
+   roads — stderr is line-buffered whether or not anyone is watching,
+   which is the whole reason a diagnostic reaches you and the stdout
+   line above it does not. (Its isatty answer is about the DEVNULL and
+   pipe this parent handed it, and is not the point.)
+
+2. THE ENCODING FORK IS REAL — AND THE TTY IS NOT WHAT DECIDES IT
+   PYTHONUTF8=0 (and LC_ALL=C)
+     terminal  stdout isatty=True  encoding=ascii   errors=surrogateescape  line_buffering=True
+     terminal  stderr isatty=False encoding=ascii   errors=backslashreplace line_buffering=True
+     terminal  euro   -> UnicodeEncodeError (reason: ordinal not in range(128))
+     pipe      stdout isatty=False encoding=ascii   errors=surrogateescape  line_buffering=False
+     pipe      stderr isatty=False encoding=ascii   errors=backslashreplace line_buffering=True
+     pipe      euro   -> UnicodeEncodeError (reason: ordinal not in range(128))
+   PYTHONIOENCODING=ascii
+     terminal  stdout isatty=True  encoding=ascii   errors=strict           line_buffering=True
+     terminal  stderr isatty=False encoding=ascii   errors=backslashreplace line_buffering=True
+     terminal  euro   -> UnicodeEncodeError (reason: ordinal not in range(128))
+     pipe      stdout isatty=False encoding=ascii   errors=strict           line_buffering=False
+     pipe      stderr isatty=False encoding=ascii   errors=backslashreplace line_buffering=True
+     pipe      euro   -> UnicodeEncodeError (reason: ordinal not in range(128))
+   There is the UnicodeEncodeError — and it happened on BOTH roads, not
+   on the piped one. On this platform sys.stdout's encoding comes from
+   PYTHONIOENCODING, then UTF-8 Mode, then the locale, and isatty() is
+   not consulted at any step. Piping a program into `cat` does not
+   change what it can print; changing the locale does.
+   (Windows is the other story, and this library cannot measure it: a
+   console there gets a UTF-8 writer and a redirected stream gets the
+   ANSI code page, so on Windows the tty really is the fork. That is
+   where the folklore comes from.)
+
+3. WHAT LINE BUFFERING ACTUALLY COSTS
+   The child alternates stdout and stderr: OUT 1, ERR 1, OUT 2, ERR 2.
+   Both streams are pointed at the same place, so the order you read is
+   the order the bytes arrived.
+     down a terminal:  OUT 1 ERR 1 OUT 2 ERR 2
+     down a pipe:      ERR 1 ERR 2 OUT 1 OUT 2
+   Through the pipe the two ERR lines came out FIRST, although the
+   program wrote OUT 1 before either of them. stderr is never buffered
+   and stdout now is, so the whole of stdout was still sitting in its
+   own buffer when the program ended, and went out in one piece at
+   exit. Down the terminal the order is the order it was written in.
+   How big that buffer is deliberately does not appear here: it is
+   8192 bytes up to Python 3.13 and 131072 in 3.14, so the size is a
+   fact about the interpreter and not about the program. The page has
+   the numbers in a dated table.
+   Every interleaved log you have ever read out of order is this.
+
+4. AND WHERE THE BUFFER GOES WHEN THE PROCESS DOES NOT
+     down a terminal, default        'the child wrote this line'
+     down a pipe,     default        ''
+     down a pipe,     PYTHONUNBUFFERED=1  'the child wrote this line'
+   The child wrote a line and then called os._exit, which does not flush.
+   Down the terminal the line had already left at the newline. Down a
+   pipe it is simply gone — no error, no exit status, no trace of it
+   anywhere. Same program, same byte, one of them on the floor.
+   This is why a crashed job's last words are missing from the log and
+   present on the screen, and why PYTHONUNBUFFERED is in every
+   Dockerfile anyone has ever debugged at 2am.

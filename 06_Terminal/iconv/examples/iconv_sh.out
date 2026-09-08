@@ -1,0 +1,64 @@
+1. THE ONE JOB: BYTES IN ONE TABLE, OUT IN ANOTHER
+   the file (ISO-8859-1)    63 61 66 e9 20 a4 20 31 30 30 0a
+   -t UTF-8                 63 61 66 c3 a9 20 c2 a4 20 31 30 30 0a
+   and back again           63 61 66 e9 20 a4 20 31 30 30 0a
+   e9 became c3 a9 and a4 became c2 a4: same two characters, four bytes
+   instead of two. The text did not change; the agreement did.
+   Round trip identical: yes
+
+2. THE NAME IS NOT THE TABLE — six spellings, one conversion
+   -f ISO-8859-1   -> 63 61 66 c3 a9 20 c2 a4 20 31 30 30 0a
+   -f ISO8859-1    -> 63 61 66 c3 a9 20 c2 a4 20 31 30 30 0a
+   -f LATIN1       -> 63 61 66 c3 a9 20 c2 a4 20 31 30 30 0a
+   -f latin1       -> 63 61 66 c3 a9 20 c2 a4 20 31 30 30 0a
+   -f CP819        -> 63 61 66 c3 a9 20 c2 a4 20 31 30 30 0a
+   -f L1           -> 63 61 66 c3 a9 20 c2 a4 20 31 30 30 0a
+   Aliases, all of them, for one table. 'iconv -l' lists what your machine
+   knows — and prints a different SHAPE on the two platforms, so it is on
+   the page and not here.
+
+3. WHAT ICONV CANNOT DO IS DETECT
+   UTF-8 read as Latin-1    63 61 66 c3 83 c2 a9 20 c3 82 c2 a4 20 31 30 30 0a
+   exit=0. Every byte 00-FF is a character in Latin-1, so decoding UTF-8
+   as Latin-1 cannot fail — it can only be wrong. c3 a9 came back as
+   c3 83 c2 a9, which is 'Ã©'. That is mojibake, produced silently, by a
+   successful command. -f is a claim YOU make; iconv never checks it.
+
+4. THE REFUSAL, AND THE ONLY PART OF IT WORTH READING
+   invalid input        exit=1
+   valid input          exit=0
+   unknown table        exit=1
+   The exit status is the same on both platforms; the MESSAGE is not, and
+   on macOS it does not describe the problem at all. Test the status.
+
+5. THE THREE POLICIES FOR A CHARACTER THE TARGET CANNOT HOLD
+   the file (UTF-8)         61 e2 82 ac 62 0a
+   -t ASCII                 exit=1  out=61
+   -t ASCII//IGNORE         exit=1  out=61 62 0a
+   -t ASCII//TRANSLIT       out is pure ASCII: yes, and its bytes are NOT recordable
+   Plain stops at the character it cannot write and keeps what came before.
+   //IGNORE drops it — and still exits 1, on both platforms, so a script
+   under 'set -e' dies on the line that did exactly what it was asked.
+   //TRANSLIT substitutes: 'EUR' here, but WHAT it substitutes is a table
+   that ships with the implementation. See the page.
+
+6. THE VALIDATOR, AND THE ONE FAMILY IT WAVES THROUGH
+   'iconv -f UTF-8 -t UTF-8' is the portable yes/no test for 'are these
+   bytes valid UTF-8'. Judged on exit status, it agrees on both platforms:
+   plain ASCII            61 62 63          exit=0
+   cafe + U+00E9          63 61 66 c3 a9    exit=0
+   lone high byte         e9                exit=1
+   truncated 2-byte       c3                exit=1
+   stray continuation     80                exit=1
+   surrogate U+D800       ed a0 80          exit=1
+   overlong slash         c0 af             exit=1
+   overlong NUL           c0 80             exit=1
+   byte fe                fe                exit=1
+   U+10FFFF, the last     f4 8f bf bf       exit=0
+   U+110000, one past     f4 90 80 80       exit=0
+   f5: no code point      f5 90 80 80       exit=0
+   five-byte sequence     fb bf bf bf bf    exit=0
+   Read the last three rows. Those bytes are not valid UTF-8 by any
+   edition of the standard since 2003 — and iconv accepts them, on BOTH
+   platforms, exit 0. Python and Rust refuse all three. The validator is
+   right about every classic malformation and wrong about the range.

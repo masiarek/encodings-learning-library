@@ -1,0 +1,34 @@
+THE FOUR WRITES
+   printf '\x41\x42'          41 42                        2 bytes
+   printf '%s' '\x41\x42'     5c 78 34 31 5c 78 34 32      8 bytes
+   printf '%b' '\x41\x42'     41 42                        2 bytes
+   echo    '\x41\x42'         5c 78 34 31 5c 78 34 32 0a   9 bytes
+
+WHY THEY DIFFER
+   Rows 1 and 3 wrote AB. The escapes were read, because the FORMAT is
+   always scanned and %b asks for an ARGUMENT to be scanned too.
+   Row 2 wrote eight bytes: 5c is a backslash, and 78 34 31 is the ASCII
+   for x41. Under %s an argument is data, and a backslash is a character
+   like any other. Nothing was interpreted, which is usually what you
+   want when the string came from outside your script.
+   Row 4 wrote the same eight bytes plus 0a. bash's echo does not read
+   escapes without -e — but /bin/sh's echo on many systems does, and
+   there is your portability bug: one script, two byte counts, no error.
+
+THE ONE-CHARACTER CHANGE
+   Replace the x in row 1 with a u, and 41 becomes a CODE POINT rather
+   than a byte:  printf '\u0041'
+   printf '\x41'   here, and everywhere       1 byte
+   printf '\u0041' here                       NOT RECORDED — see below
+   \x41 is one byte on every machine ever built, which is why its length
+   is printed above and \u0041's is not. \u0041 writes ONE byte on a bash
+   that implements \u — 4.2 and later, in any locale, since A exists in
+   all of them — and SIX on macOS's bash 3.2, which predates the escape
+   and hands it back as text. Two answers, so no answer key.
+
+   Outside ASCII the fork has three tines rather than two:
+     printf '\u20ac'  bash 5.2 + a UTF-8 locale   e2 82 ac   a euro sign
+                     bash 5.2 + LC_ALL=C          \u20AC     hex uppercased
+                     bash 3.2 (macOS), any        \u20ac     untouched
+   Same command, three answers, one euro sign. Name bytes rather than
+   code points and the question never arises.

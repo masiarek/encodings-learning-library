@@ -1,0 +1,45 @@
+1. THE TEST EVERY SHELL HAS, AND THE ANSWER IT GIVES HERE
+   [ -t 0 ]  fd 0 is NOT a terminal
+   [ -t 1 ]  fd 1 is NOT a terminal
+   [ -t 2 ]  fd 2 is NOT a terminal
+   All three, because a test runner captured every one of them. Run this
+   script by hand and fd 1 and 2 change their answer while fd 0 may not.
+   [ -t N ] is the shell's isatty(): one syscall, three characters, and
+   the thing dozens of programs quietly branch on before they print.
+
+2. WHAT A PROGRAM DOES WITH THAT ANSWER: COLOUR
+   --color=auto    ESC bytes: 0   output: 61 6c 70 68 61 0a
+   --color=always  ESC bytes: 4   output: 1b 5b 30 31 3b 33 31 6d 1b 5b 4b 61 6c 1b 5b 6d 1b 5b 4b 70 68 61 0a
+   --color=never   ESC bytes: 0   output: 61 6c 70 68 61 0a
+   Same match, three answers. Under 'auto' grep asked [ -t 1 ], found a
+   pipe, and shipped plain text — which is why colour disappears the
+   moment you add '| less' and why nobody's log file is full of escape
+   codes. 'always' is the override, and it is what you want when the
+   thing on the other end of the pipe is a pager that understands them.
+
+3. WHAT 'ALWAYS' ADDED, AND WHY IT IS NOT TEXT
+   cat -v: ^[[01;31m^[[Kal^[[m^[[Kpha
+   bytes : 1b 5b 30 31 3b 33 31 6d 1b 5b 4b 61 6c 1b 5b 6d 1b 5b 4b 70 68 61 0a
+   wc -c : 23 bytes on the wire for 6 bytes of text — 17 bytes of instruction
+   1b is ESC. Everything between it and the letter 'm' is an instruction
+   to the terminal, not content — so a coloured line is longer than it
+   looks, sorts differently, and will not match a regex anchored with ^.
+   That is the cost of letting a display decision into the byte stream,
+   and it is the reason 'auto' is the default rather than 'always'.
+
+4. THE IDIOM TO WRITE IN YOUR OWN SCRIPTS
+     if [ -t 1 ]; then colour=always; else colour=never; fi
+     grep --color=$colour "$pattern" "$file"
+   Three lines, and it is the whole of good behaviour here: decide from
+   the file descriptor, never from a guess about who is running you.
+   The mirror of it is to always provide the override, because the one
+   thing [ -t 1 ] cannot see is a human on the far side of a pager.
+
+5. WHAT THE SHELL CANNOT DO
+   It cannot make a terminal. There is no builtin, and the one tool that
+   would — script(1) — takes incompatible arguments on the two platforms
+   and each rejects the other's spelling. That table is on the page.
+   So a portable script cannot test its own both-branches behaviour,
+   which is exactly the gap the Python example next door fills with the
+   pty module. A shell script can ask the question; it cannot arrange
+   for the other answer.

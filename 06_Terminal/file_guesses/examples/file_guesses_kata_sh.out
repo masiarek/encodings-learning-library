@@ -1,0 +1,40 @@
+1. THREE FILES, ONE VERDICT
+   a_really.txt             12 bytes   file says us-ascii
+   b_utf8_late.txt       65542 bytes   file says us-ascii
+   c_latin1_late.txt     65541 bytes   file says us-ascii
+   Only the first one is ASCII. The other two hold a non-ASCII character
+   past byte 65536, which is outside the window file(1) reads, so all
+   three get the same answer and two of them are wrong.
+
+2. THE TOOL THAT READS THE WHOLE FILE
+   a_really.txt       all ASCII? exit=0     valid UTF-8? exit=0
+   b_utf8_late.txt    all ASCII? exit=1     valid UTF-8? exit=0
+   c_latin1_late.txt  all ASCII? exit=1     valid UTF-8? exit=1
+   iconv converts every byte or stops, so its answer is about the file
+   rather than about a prefix. Read the two columns together: 0/0 is
+   ASCII, 1/0 is UTF-8 with something above 127 in it, 1/1 is neither —
+   an 8-bit table, and no tool in the terminal can tell you which.
+   Note the FIRST command: it is -f US-ASCII -t UTF-8, not the -f X -t X
+   form this library uses to validate UTF-8. Apple's iconv does not
+   refuse a high byte when ASCII is named on BOTH sides — it substitutes
+   a question mark and exits 0. Naming a different target avoids that
+   path and the two platforms agree. The measurement is on the page.
+
+3. WHICH ANSWER WAS EVIDENCE
+   ff fe 41 00                    utf-16le
+   the three files above          us-ascii, three times
+   The BOM row is the only claim on this page that rests on something
+   written IN the file. us-ascii, utf-8 and iso-8859-1 are all read OFF
+   the bytes — the first two by validating, the third by failing to.
+   A guess that reads 64 KiB is still a guess; a guess that reads the
+   whole file is a slower guess. Only a mark, a manifest, a Content-Type
+   header or a contract makes it a fact.
+
+4. WHAT TO DO ABOUT IT
+   * Ask --mime-encoding, never the English wording: the prose moved
+     the word 'executable' between file 5.41 and 5.44 and the MIME
+     output did not change at all.
+   * Use file(1) to triage and iconv to decide.
+   * If you control the producer, write the encoding down somewhere a
+     program can read: that is the only way the answer stops being an
+     inference.
