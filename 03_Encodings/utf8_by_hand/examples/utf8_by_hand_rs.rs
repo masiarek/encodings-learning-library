@@ -6,6 +6,12 @@
 //! say the table is a bijection: 1,112,064 scalar values, 1,112,064 sequences,
 //! and nothing on either side without a partner on the other.
 //!
+//! Both of those walk what the table ALLOWS, so neither ever meets a byte
+//! string the table exists to refuse. Section 5 closes that hole by sweeping
+//! the whole space instead of the permitted part of it: every three-byte
+//! string there is, 2^24 of them, put to a validator written from the nine
+//! rows and to `str::from_utf8` side by side.
+//!
 //! Everything here is arithmetic over the number line. No character is named
 //! and nothing is asked about which characters are assigned, so the answers do
 //! not depend on the Unicode version this rustc was built against.
@@ -50,6 +56,48 @@ fn walk(cols: &[(u8, u8)], buf: &mut [u8; 4], at: usize, visit: &mut impl FnMut(
         buf[at] = b;
         walk(cols, buf, at + 1, visit);
     }
+}
+
+/// The nine rows re-read as a decision about ONE lead byte: how long the
+/// sequence is and what its second byte may be. Built from TABLE_3_7 rather
+/// than typed out again, so a table edit cannot leave this behind -- and built
+/// once, because section 5 asks it 2^24 times.
+fn lead_byte_table() -> [Option<(usize, u8, u8)>; 256] {
+    let mut map = [None; 256];
+    for (_, _, cols) in TABLE_3_7 {
+        let (first_lo, first_hi) = cols[0];
+        let second = if cols.len() > 1 { cols[1] } else { (0, 0) };
+        for b in first_lo..=first_hi {
+            map[b as usize] = Some((cols.len(), second.0, second.1));
+        }
+    }
+    map
+}
+
+/// A whole byte string, one sequence after another: a UTF-8 validator whose
+/// every rule came off the table above and nowhere else.
+fn scan(raw: &[u8], map: &[Option<(usize, u8, u8)>; 256]) -> bool {
+    let mut i = 0;
+    while i < raw.len() {
+        let Some((n, lo, hi)) = map[raw[i] as usize] else {
+            return false; // C0, C1, F5-FF, or a continuation byte in front
+        };
+        if i + n > raw.len() {
+            return false; // the lead byte promised more than the string holds
+        }
+        if n > 1 {
+            if !(lo..=hi).contains(&raw[i + 1]) {
+                return false; // the row's second-byte column is the whole rule
+            }
+            for k in 2..n {
+                if !(0x80..=0xBF).contains(&raw[i + k]) {
+                    return false;
+                }
+            }
+        }
+        i += n;
+    }
+    true
 }
 
 fn hexes(raw: &[u8]) -> String {
@@ -212,4 +260,59 @@ fn main() {
     println!("   it because &str indexing is by BYTE offset and the language will");
     println!("   not let you cut a character in half -- so the question the shell");
     println!("   answers with a hex dump is, here, a method on the type.");
+    println!();
+
+    // ------------------------------------------------------------ section 5
+    println!("5. THE HALF OF THE TABLE NEITHER SWEEP HAS TOUCHED YET");
+    println!("   Section 3 walked what the nine rows PERMIT and the Python example");
+    println!("   walked the code points, so between them they have never once met a");
+    println!("   byte string the table exists to REFUSE. This walks the whole space");
+    println!("   instead of the permitted part of it: every three-byte string there");
+    println!("   is, put to the validator above and to from_utf8 side by side.");
+    println!();
+    let map = lead_byte_table();
+    let (mut agree, mut valid, mut single) = (0u32, 0u32, 0u32);
+    for x in 0..0x0100_0000u32 {
+        let raw = [(x >> 16) as u8, (x >> 8) as u8, x as u8];
+        let mine = scan(&raw, &map);
+        let rust = std::str::from_utf8(&raw).is_ok();
+        if mine == rust {
+            agree += 1;
+        }
+        if rust {
+            valid += 1;
+        }
+        if mine && map[raw[0] as usize].expect("scan said yes").0 == 3 {
+            single += 1;
+        }
+    }
+    println!("     three-byte strings, 2^24                {:>10}", 0x0100_0000u32);
+    println!("     my scanner agrees with from_utf8        {:>10}", agree);
+    println!("     disagreements                           {:>10}", 0x0100_0000u32 - agree);
+    println!();
+    println!("   Nobody had to think of a case. Sweeping the space rather than the");
+    println!("   rows puts every overlong, every surrogate, every truncated sequence");
+    println!("   and every lone continuation byte in front of both decoders, because");
+    println!("   at three bytes there is nowhere else for them to be.");
+    println!();
+    println!("   And the count of the ones that ARE text is arithmetic before it is a");
+    println!("   measurement -- a three-byte string is UTF-8 in exactly four shapes:");
+    println!();
+    let ascii = 128u32;
+    let two = 0x800 - 0x80; // row two of the table: U+0080..U+07FF
+    let three = (0x10000 - 0x800) - 2048; // rows three to six, less the surrogates
+    println!("     three ASCII bytes           128^3    = {:>10}", ascii.pow(3));
+    println!("     ASCII, then a 2-byte char   128*1920 = {:>10}", ascii * two);
+    println!("     a 2-byte char, then ASCII   1920*128 = {:>10}", two * ascii);
+    println!("     one 3-byte char                      = {:>10}", three);
+    println!("                                            {:>10}", "----------");
+    println!("     predicted                              {:>10}", ascii.pow(3) + 2 * ascii * two + three);
+    println!("     from_utf8 accepted                     {:>10}", valid);
+    println!("     of which exactly one character long    {:>10}", single);
+    println!();
+    println!("   Every term came off Table 3-7 and not off a run: 1920 is row two's");
+    println!("   U+0080..U+07FF, and {three} is rows three to six added up -- U+0800");
+    println!("   through U+FFFF less the 2,048 surrogates. The table predicted the");
+    println!("   number and then the loop went and got it, which is the only order in");
+    println!("   which a sweep is a check rather than a description.");
 }

@@ -137,3 +137,38 @@ echo "   A lead byte with its continuations missing is refused, and so is a"
 echo "   continuation byte with no lead byte in front of it. Both are the"
 echo "   templates being read as a specification. Who runs that check, and"
 echo "   what is left of it downstream, is the next lesson."
+echo
+
+echo "6. AND THE ONES THAT FIT A TEMPLATE PERFECTLY AND ARE STILL NOT UTF-8"
+echo "   Section 5's failures are visible from the shape alone -- too few bytes,"
+echo "   or a tail with no head. These three have the right number of bytes with"
+echo "   the right markers on every one of them, and Table 3-7 refuses all three"
+echo "   anyway. Same command, same question, one different answer:"
+echo
+printf "   %-22s %-8s %s\n" "bytes" "iconv" "what Table 3-7 says"
+for pair in "\xc3\xa9:well-formed -- e-acute, the shortest spelling" \
+            "\xc0\x80:OVERLONG -- U+0000 already fits in one byte" \
+            "\xed\xa0\x80:SURROGATE -- U+D800 is not a scalar value" \
+            "\xf4\x90\x80\x80:ABOVE THE CEILING -- U+110000 is not a code point"; do
+  esc=${pair%%:*}
+  note=${pair#*:}
+  if printf "$esc" | iconv -f UTF-8 -t UTF-8 > /dev/null 2>&1; then
+    verdict="exit 0"
+  else
+    verdict="exit 1"
+  fi
+  printf "   %-22s %-8s %s\n" "$esc" "$verdict" "$note"
+done
+echo
+echo "   Three of the four rows are what the table predicts. The last one is not:"
+echo "   F4 90 80 80 matches the four-byte template and matches NO row of Table"
+echo "   3-7, because that row caps its second byte at 8F -- and iconv takes it."
+echo "   Measured on macOS and on ubuntu:24.04, which agree with each other and"
+echo "   disagree with Python and Rust, both of which refuse the same four bytes."
+echo
+echo "   It is not a bug and not a platform split. iconv is enforcing the older"
+echo "   31-bit UTF-8, which ran to six bytes and U+7FFFFFFF; RFC 3629 cut that"
+echo "   to four bytes and U+10FFFF in 2003 and iconv did not follow. So \"is this"
+echo "   UTF-8\" is not one question, and a validator answers whichever one it was"
+echo "   compiled with -- which is why the next lesson is about WHERE the check"
+echo "   runs and WHOSE it is, rather than about the templates."

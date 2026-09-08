@@ -86,3 +86,37 @@
    it because &str indexing is by BYTE offset and the language will
    not let you cut a character in half -- so the question the shell
    answers with a hex dump is, here, a method on the type.
+
+5. THE HALF OF THE TABLE NEITHER SWEEP HAS TOUCHED YET
+   Section 3 walked what the nine rows PERMIT and the Python example
+   walked the code points, so between them they have never once met a
+   byte string the table exists to REFUSE. This walks the whole space
+   instead of the permitted part of it: every three-byte string there
+   is, put to the validator above and to from_utf8 side by side.
+
+     three-byte strings, 2^24                  16777216
+     my scanner agrees with from_utf8          16777216
+     disagreements                                    0
+
+   Nobody had to think of a case. Sweeping the space rather than the
+   rows puts every overlong, every surrogate, every truncated sequence
+   and every lone continuation byte in front of both decoders, because
+   at three bytes there is nowhere else for them to be.
+
+   And the count of the ones that ARE text is arithmetic before it is a
+   measurement -- a three-byte string is UTF-8 in exactly four shapes:
+
+     three ASCII bytes           128^3    =    2097152
+     ASCII, then a 2-byte char   128*1920 =     245760
+     a 2-byte char, then ASCII   1920*128 =     245760
+     one 3-byte char                      =      61440
+                                            ----------
+     predicted                                 2650112
+     from_utf8 accepted                        2650112
+     of which exactly one character long         61440
+
+   Every term came off Table 3-7 and not off a run: 1920 is row two's
+   U+0080..U+07FF, and 61440 is rows three to six added up -- U+0800
+   through U+FFFF less the 2,048 surrogates. The table predicted the
+   number and then the loop went and got it, which is the only order in
+   which a sweep is a check rather than a description.

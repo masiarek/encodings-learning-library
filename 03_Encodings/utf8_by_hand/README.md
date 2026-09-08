@@ -405,10 +405,39 @@ Section 5 is the exhaustion, and section 6 is the count identity. Section 7 is t
    continuation byte with no lead byte in front of it. Both are the
    templates being read as a specification. Who runs that check, and
    what is left of it downstream, is the next lesson.
+
+6. AND THE ONES THAT FIT A TEMPLATE PERFECTLY AND ARE STILL NOT UTF-8
+   Section 5's failures are visible from the shape alone -- too few bytes,
+   or a tail with no head. These three have the right number of bytes with
+   the right markers on every one of them, and Table 3-7 refuses all three
+   anyway. Same command, same question, one different answer:
+
+   bytes                  iconv    what Table 3-7 says
+   \xc3\xa9               exit 0   well-formed -- e-acute, the shortest spelling
+   \xc0\x80               exit 1   OVERLONG -- U+0000 already fits in one byte
+   \xed\xa0\x80           exit 1   SURROGATE -- U+D800 is not a scalar value
+   \xf4\x90\x80\x80       exit 0   ABOVE THE CEILING -- U+110000 is not a code point
+
+   Three of the four rows are what the table predicts. The last one is not:
+   F4 90 80 80 matches the four-byte template and matches NO row of Table
+   3-7, because that row caps its second byte at 8F -- and iconv takes it.
+   Measured on macOS and on ubuntu:24.04, which agree with each other and
+   disagree with Python and Rust, both of which refuse the same four bytes.
+
+   It is not a bug and not a platform split. iconv is enforcing the older
+   31-bit UTF-8, which ran to six bytes and U+7FFFFFFF; RFC 3629 cut that
+   to four bytes and U+10FFFF in 2003 and iconv did not follow. So "is this
+   UTF-8" is not one question, and a validator answers whichever one it was
+   compiled with -- which is why the next lesson is about WHERE the check
+   runs and WHOSE it is, rather than about the templates.
 ```
 <!-- /output -->
 
 **Section 4 is why this page has a shell example at all.** Python and Rust can tell you a character is four bytes; only a pipe can be cut in the middle of one so you can watch a reader recover. The script starts reading the same eight-byte stream at each of its eight offsets, in turn, and prints how far it had to skip and which character it landed on. Three of the eight offsets land inside a character, the worst skip is three bytes, and none of it needs a byte count from the top of the file or any state at all.
+
+**Section 6 is the one finding on this page that the table does not predict.** Three of its four sequences behave exactly as Table 3-7 says: `é` passes, the overlong `C0 80` is refused, the surrogate `ED A0 80` is refused. The fourth is `F4 90 80 80` — four bytes with the right markers on every one of them, encoding `U+110000`, matching *no* row of the table because row nine caps its second byte at `8F` — and `iconv` **takes it**, exit 0, on macOS and on `ubuntu:24.04` alike. Python raises on those bytes and Rust refuses them.
+
+It is not a platform split and not a bug: `iconv` is enforcing the older 31-bit UTF-8 that ran to six bytes and `U+7FFFFFFF`, which [RFC 3629 ↗](https://www.rfc-editor.org/rfc/rfc3629) cut back in 2003. So *"is this UTF-8"* is not one question, and a validator answers whichever version of it the validator was compiled with. That is the hinge into the next lesson: [Validation is a boundary](../validation_is_a_boundary/README.md) is about *where* the check runs and *whose* it is, and this is the cheapest possible demonstration that those are not the same question as *what do the templates say*.
 
 Everything here writes bytes with `\xHH`, which names a *byte* and asks nothing of the locale or the bash version. The other spelling does not travel: `printf '\u20ac'` — the escape that names a *code point* rather than a byte — gives three different answers on three configurations, and only one of them is a euro sign — that story is on [Writing a code point](../../02_Characters/writing_a_code_point/README.md).
 
@@ -506,12 +535,50 @@ Everything here writes bytes with `\xHH`, which names a *byte* and asks nothing 
    it because &str indexing is by BYTE offset and the language will
    not let you cut a character in half -- so the question the shell
    answers with a hex dump is, here, a method on the type.
+
+5. THE HALF OF THE TABLE NEITHER SWEEP HAS TOUCHED YET
+   Section 3 walked what the nine rows PERMIT and the Python example
+   walked the code points, so between them they have never once met a
+   byte string the table exists to REFUSE. This walks the whole space
+   instead of the permitted part of it: every three-byte string there
+   is, put to the validator above and to from_utf8 side by side.
+
+     three-byte strings, 2^24                  16777216
+     my scanner agrees with from_utf8          16777216
+     disagreements                                    0
+
+   Nobody had to think of a case. Sweeping the space rather than the
+   rows puts every overlong, every surrogate, every truncated sequence
+   and every lone continuation byte in front of both decoders, because
+   at three bytes there is nowhere else for them to be.
+
+   And the count of the ones that ARE text is arithmetic before it is a
+   measurement -- a three-byte string is UTF-8 in exactly four shapes:
+
+     three ASCII bytes           128^3    =    2097152
+     ASCII, then a 2-byte char   128*1920 =     245760
+     a 2-byte char, then ASCII   1920*128 =     245760
+     one 3-byte char                      =      61440
+                                            ----------
+     predicted                                 2650112
+     from_utf8 accepted                        2650112
+     of which exactly one character long         61440
+
+   Every term came off Table 3-7 and not off a run: 1920 is row two's
+   U+0080..U+07FF, and 61440 is rows three to six added up -- U+0800
+   through U+FFFF less the 2,048 surrogates. The table predicted the
+   number and then the loop went and got it, which is the only order in
+   which a sweep is a check rather than a description.
 ```
 <!-- /output -->
 
 Rust is where this page's table stops being knowledge and becomes a type. `char` is *defined* as a scalar value — a code point that is not a surrogate, exactly the set Table 3-7 covers — so `char::from_u32(0xD800)` is `None` and there is no later point at which the question can be reopened. The buffer that `encode_utf8` writes into is `[u8; 4]`, and the `4` is not a safety margin; it is the width of the last template.
 
 The two sizes disagree on purpose, and it is the checkpoint this chapter builds toward: `size_of::<char>()` is always 4 because a fixed width is what makes `char` a type you can put in an array, while `len_utf8()` is 1 to 4 because that is what it costs inside a [`String`](../../05_Rust/string_is_bytes_that_promise_utf8/README.md). Neither answers the other's question. Section 4's `is_char_boundary` is the backwards walk from *Reading from the middle*, with a name — Rust exposes it because `&str` is indexed by byte offset and the language will not let you cut a character in half.
+
+**And section 5 closes the hole the other two sweeps leave.** Section 3 walks the sequences the nine rows *permit*, and the Python example walks the code points; both are the accepting side, so between them they never once meet a byte string the table exists to **refuse**. Section 5 therefore sweeps the space rather than the rows — every three-byte string there is, all 16,777,216 of them, put to a validator written from the same nine rows and to `str::from_utf8` side by side. **Zero disagreements**, and nobody had to think of a case: at three bytes there is nowhere for an overlong, a surrogate, a truncation or a lone continuation byte to hide.
+
+The count of the ones that *are* text falls out as arithmetic before it is a measurement, which is what makes the loop a check rather than a description. A three-byte string is UTF-8 in exactly four shapes — 128³ for three ASCII bytes, 128 × 1920 twice for ASCII beside a two-byte character, and 61,440 for a single three-byte one — and every term came off the table: 1,920 is row two's `U+0080`–`U+07FF`, and 61,440 is rows three to six added up, `U+0800`–`U+FFFF` less the 2,048 surrogates. Predicted 2,650,112; `from_utf8` accepted 2,650,112.
 
 ## The C view
 
