@@ -69,7 +69,7 @@ BLOCK = re.compile(
     re.DOTALL,
 )
 
-SKIP_DIRS = {".git", "site", ".venv", "__pycache__", ".github"}
+SKIP_DIRS = {".git", ".claude", "site", ".venv", "__pycache__", ".github"}
 
 # A fenced code block, opened or closed. The pages that DOCUMENT this mechanism
 # (README.md, CONTRIBUTING.md) show the markers inside a fence — those are
