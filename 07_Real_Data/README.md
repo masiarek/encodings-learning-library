@@ -12,6 +12,6 @@ Everything before this chapter is mechanism. This chapter is the seven shapes th
 | 4 | [Fixed-width byte fields](fixed_width_byte_fields/README.md) | Why does a 10-byte field hold five Polish letters, and how do I truncate without cutting one in half? | written, 2026-09-07 |
 | 5 | [Windows-1252 vs Latin-1](windows_1252_vs_latin1/README.md) | Why is the text almost right except for `€` and the quotes? | written, 2026-09-07 |
 | 6 | [CRLF vs LF](crlf_vs_lf/README.md) | Where do the `^M`s come from? | written, 2026-09-07 |
-| 7 | [Sorting and collation](sorting_and_collation/README.md) | Why does `sorted()` put `Łódź` after `Zebra`, and which locale is right? | stub |
+| 7 | [Sorting and collation](sorting_and_collation/README.md) | Why does `sorted()` put `Łódź` after `Zebra`, and which locale is right? | written, 2026-09-07 |
 
 *(ABAP claims on these pages are prose — CI cannot run ABAP — and the Python reproduction beside each one is the checked half.)*

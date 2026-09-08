@@ -2,27 +2,237 @@
 
 **Level:** 301 · for anyone who has shipped an alphabetical list
 
-> **Stub — an outline, not a lesson.** There is no runnable example behind this page yet, so nothing on it has been through [the check that backs every other claim in this library](../../CONTRIBUTING.md). The bullets below are the questions the finished page has to answer.
+**One line:** `sorted()` puts `Łódź` after `Zebra`, and no Polish speaker would — because code point order is not alphabetical order in any language, which order *is* right is a property of the locale rather than of the text, and the locale data is a versioned file on the machine that can change underneath a database that has already sorted on it.
 
-**One line:** `sorted()` puts `Łódź` after `Zebra`, and no Polish speaker would — because code point order is not alphabetical order in any language, and which order is right is a property of the *locale*, not of the text.
+## Three questions, and only the first one has an obvious answer
 
-## What the finished page has to answer
+*Are these two strings the same?* is [normalization](../../04_Python/normalization/README.md). *Which of these two strings comes first?* is collation, and it is the harder of the two, because equality has a right answer that Unicode can define and ordering does not — the correct order for one list of names genuinely differs between two readers, and both are right.
 
-- The demonstration, which needs no argument: a list of Polish names in code point order, in `pl_PL` order, and in `en_US` order — **three different answers**, and the two locales disagree with each other as well as with the code points
-- Why: a code point is an index into a table that was never sorted alphabetically, and accented letters were appended to it decades after the unaccented ones
-- Multi-level comparison — base letter first, then accent, then case — which is why `Óda` and `Osa` can swap places between two locales that both look "right"
-- `locale.strxfrm` and `LC_COLLATE`: how to actually do it in the standard library, and the two traps — it is **global process state**, and `LC_COLLATE` is a separate variable from `LC_CTYPE` ([locale and `LC_CTYPE`](../../06_Terminal/locale_and_lc_ctype/README.md) has the six of them)
-- Why the `sort` command is not the answer either — [`tr` and `sort` work a byte at a time](../../11_Tools/tr_and_sort/README.md)
-- Where the real answer lives: CLDR and ICU, the same locale-data-versus-character-data split the tools chapter meets in `uni`
-- Database collations, which is where this bites hardest in practice and which [interfaces and storage](../../10_Best_Practices/interfaces_and_storage/README.md) owes a paragraph to
+`sorted()` in Python and `.sort()` in Rust order by code point, which is an index into a table nobody ever sorted. The Latin letters got their numbers in three eras — ASCII in the 1960s, the Latin-1 supplement in the 1980s, Latin Extended-A when Unicode shipped in 1991 — so every accented letter is numerically behind every unaccented one, in a block. Section 1 of the run below shows the block. It is not a near miss to be nudged; it is a different principle.
 
-## The example it will run
+## The locale is the missing data, and it may not be there
 
-**The locale is the hazard.** Which locales exist differs between this Mac and both CI runners, so an example that asks for `pl_PL.UTF-8` will pass here and fail there. Do what [locale and `LC_CTYPE`](../../06_Terminal/locale_and_lc_ctype/README.md) did: probe for candidates, keep the locale *name* out of the recorded output, and record the *relationship* — that code point order and collated order differ, and where. The three-way comparison belongs in a dated fence.
+Which locales a machine has is not a property of your program. A stock `ubuntu:24.04` image ships exactly three — `C`, `C.utf8` and `POSIX` — and no human language at all, and `locale.setlocale` **raises** for anything else rather than falling back to something near enough. Section 2 measures that, including the part people miss: the call raises *and changes nothing*, so a program that needs Polish ordering has to have a plan for not getting it.
+
+That is also why this page's example does not ask for a locale. Every example in this library runs under a pinned environment (`LC_ALL=C`, `PYTHONUTF8=1`) so an answer key is a property of the code rather than of whoever ran it; [CONTRIBUTING](../../CONTRIBUTING.md) carves out a lesson whose *subject* is the locale, which may set its own inside the script, in view — and the [`LC_CTYPE` page](../../06_Terminal/locale_and_lc_ctype/README.md) does exactly that. Collation cannot take that carve-out, because the locales it would need are not installed on both CI runners and there is no answer key that matches a machine that has `pl_PL.UTF-8` and one that does not. So the recorded run holds only what no machine can disagree about, and the comparison the page is really about is below it in a dated fence.
+
+## In Python
+
+<!-- output:sorting_and_collation_py -->
+*Verified output of [`sorting_and_collation_py.py`](examples/sorting_and_collation_py.py) — regenerated by `tools/run_examples.py`, never hand-typed.*
+
+```text
+1. CODE POINT ORDER IS NOT ALPHABETICAL ORDER IN ANY LANGUAGE
+----------------------------------------------------------------------
+   sorted(names)             Cma Osa Swit Zebra Zuk Óda Ćma Łódź Świt Żuk
+
+   Read the tail: every accented word is behind every unaccented one,
+   in a block. That is not a near miss, it is a different principle.
+
+     Z  U+005A     90   ASCII, 1963
+     Ó  U+00D3    211   Latin-1 Supplement, 1987
+     Ć  U+0106    262   Latin Extended-A, 1991
+     Ł  U+0141    321   Latin Extended-A, 1991
+     Ż  U+017B    379   Latin Extended-A, 1991
+
+   Three blocks, three eras. 'Z' is in ASCII, which fixed its 128
+   numbers in the 1960s. 'Ó' is in the Latin-1 supplement, the second
+   half of an 8-bit table from the 1980s. 'Ł', 'Ć' and 'Ż' are in
+   Latin Extended-A, a block Unicode added in 1991 for the languages
+   the first two had no room for.
+
+   So 'Ł' is U+0141 and 'Z' is U+005A because of when each letter got
+   a number, not because of anything about the letters. A code point
+   is an index into a table nobody ever sorted; sorting by it is
+   sorting by the history of the standard.
+
+2. ASKING FOR A LOCALE IS A CALL THAT CAN FAIL, AND IT DOES NOT FALL BACK
+----------------------------------------------------------------------
+   LC_COLLATE at the start        'C'
+   asked for a locale nobody has  locale.Error
+   LC_COLLATE afterwards          'C'
+
+   It raised, and it changed nothing. There is no quiet fallback to a
+   near-enough locale, and there is no way to ask 'do you have one for
+   Polish?' other than trying it -- so a program that wants a specific
+   ordering has to handle NOT GETTING IT, on every machine it will run
+   on. A container is the likely place to find out: a stock
+   ubuntu:24.04 image ships C, C.utf8 and POSIX, and no human language
+   at all, so this call fails there for every locale you would want.
+
+   Two more things about the call, both of which surprise people:
+     * it is PROCESS-GLOBAL state, not an argument. Setting it in one
+       thread changes the sort in every other one.
+     * LC_COLLATE is not LC_CTYPE. Setting the character type to a
+       UTF-8 locale says nothing about ordering, and the wrong one of
+       the six is the usual reason 'I set the locale' did not work.
+
+3. THE TWO SPELLINGS, AND WHAT THE C LOCALE MEANS BY 'COLLATE'
+----------------------------------------------------------------------
+   key=locale.strxfrm        Cma Osa Swit Zebra Zuk Óda Ćma Łódź Świt Żuk
+   cmp_to_key(strcoll)       Cma Osa Swit Zebra Zuk Óda Ćma Łódź Świt Żuk
+   sorted(names)             Cma Osa Swit Zebra Zuk Óda Ćma Łódź Świt Żuk
+
+   the two collation spellings agree with each other   True
+   ...and with plain code point order                  True
+
+   Both are the real thing: strxfrm turns a string into a sort KEY so
+   the transformation happens once per element, strcoll compares two
+   strings and costs a comparison every time. Prefer strxfrm for a
+   sort and strcoll for a one-off test.
+
+   And here they change nothing, because this process is in the C
+   locale, where collation IS code point order. That is not a broken
+   configuration -- it is the default in every container, cron job and
+   CI runner, which means the production answer to 'sort these names'
+   is usually the one at the top of section 1.
+
+4. STRIPPING THE ACCENTS IS NOT COLLATION -- IT IS ONE LOCALE'S ANSWER
+----------------------------------------------------------------------
+   key=strip_marks           Ćma Cma Óda Osa Świt Swit Zebra Żuk Zuk Łódź
+
+   Look at the first two. 'Ćma' and 'Cma' are DIFFERENT WORDS and the
+   trick gives them the same key ('Cma' == 'Cma'), so it cannot
+   order them at all -- Python's sort is stable, so what you get back
+   is the order they arrived in. Shuffle the input and the output
+   changes. A collation has to be a total order over the strings it
+   is given; this is not one, and nothing reports that.
+
+   Polish's nine special letters   ą ć ę ł ń ó ś ź ż
+   NFD decomposes                  ą ć ę ń ó ś ź ż   (8 of 9)
+   NFD leaves alone                ł   (1 of 9)
+
+   That is the flaw, and it is silent. Eight of the nine come apart
+   into a base letter and a combining mark, so the trick files them
+   next to their base letter. 'ł' does not: U+0142 is a letter with a
+   stroke THROUGH it, and a stroke is not a combining mark, so there
+   is nothing to strip and 'Łódź' stays out at the end where the code
+   points put it. Same word list, same trick, two different rules
+   applied depending on how Unicode happened to encode each letter.
+
+   It is worth being precise about what the trick gets right, too:
+   filing 'ó' next to 'o' IS the correct answer -- in English. In
+   Polish 'ó' is a LETTER, with its own place after 'o', so a Polish
+   list sorts 'Osa' before 'Óda' and an English one the other way
+   round. The trick cannot express that, because it has thrown the
+   distinction away before the comparison starts.
+
+   Which is the general point: an accent is not noise on a letter.
+   Whether it is noise is a fact about the LANGUAGE, and it is the
+   fact a locale carries.
+
+5. WHAT A COLLATION ACTUALLY IS: LEVELS, OVER AN ALPHABET YOU DECLARE
+----------------------------------------------------------------------
+   key=pl_key (toy Polish)   Cma Ćma Łódź Osa Óda Swit Świt Zebra Zuk Żuk
+   key=strip_marks           Ćma Cma Óda Osa Świt Swit Zebra Żuk Zuk Łódź
+   sorted(names)             Cma Osa Swit Zebra Zuk Óda Ćma Łódź Świt Żuk
+
+   The toy gets Polish right for this list -- 'Cma' then 'Ćma', 'Osa'
+   then 'Óda', 'Swit' then 'Świt', 'Zuk' then 'Żuk', and 'Łódź' up
+   between 'l' and 'm' where it belongs -- and it does it with thirty
+   lines and ONE STRING: the alphabet, written out in order. That
+   string is the entire difference between this and sorted().
+
+   Two levels is also the shape of the real thing. Compare base
+   letters first; if they tie, compare accents; if they still tie,
+   compare case. That is why two locales can both look 'right' and
+   still disagree -- they are not disagreeing about the levels, they
+   are disagreeing about which differences belong on which level.
+
+   What the toy has no room for is the rest of the data, and the
+   omissions are not exotic:
+     * contractions -- Czech sorts 'ch' as ONE letter, after 'h', so
+       'chata' comes after 'hrad'; a per-character rank cannot say it
+     * expansions -- German 'ß' compares as 'ss', one character
+       weighing as two
+     * variable weighting -- whether a space or a hyphen counts at all
+       before the letters have been compared. Nobody thinks about that
+       one, and it is the rule that moved in glibc 2.28.
+```
+<!-- /output -->
+
+**Section 3 is the one to take to work.** In the C locale, `strxfrm` and `strcoll` agree with each other and with plain code point order, because the C locale *has* no collation. That is not a broken configuration — it is the default in every container, cron job and CI runner, which means the production answer to "sort these names" is usually the one at the top of section 1, arrived at through code that looks locale-aware.
+
+**Section 4 is the trick everybody tries first.** Decompose to NFD, drop the combining marks, sort on what is left. It has three faults and all three are silent. It **fails on `ł`** — eight of Polish's nine special letters decompose into a base letter and a mark, and `ł` does not, because a stroke through a letter is not a combining mark, so `Łódź` stays out at the end while `ó` and `ż` get filed correctly. It is **not a total order** — `Ćma` and `Cma` get the same key, so their order is whatever order they arrived in, and shuffling the input changes the output. And where it *works*, it has hard-coded English: filing `ó` next to `o` is right in English and wrong in Polish, where `ó` is a letter with its own place after `o`. Those decomposition facts are safe to build on, incidentally, in a way most Unicode data is not: canonical decompositions are frozen by Unicode's stability policy, so `ł` will not start decomposing in a later release.
+
+**Section 5 builds the real shape out of one string.** A toy two-level collation — primary weight from a declared alphabet, secondary from case — gets Polish right for this list in about thirty lines, and the only thing it knows that `sorted()` does not is the alphabet, written out in order. That is what a locale *is*, and shipping it for every language is what CLDR and ICU are. What the toy has no room for is the rest: contractions (Czech `ch` is one letter, after `h`), expansions (`ß` weighs as `ss`), and **variable weighting** — whether a space or a hyphen counts at all before the letters are compared. Nobody thinks about the last one. It is the rule that moved in glibc 2.28.
+
+## One list, five correct answers
+
+Nine words, five locales, measured through `locale.strxfrm` on three C libraries eight years apart:
+
+```text title="Measured 2026-09-07 — macOS 26.6.2 (Darwin libc), glibc 2.39 (ubuntu:24.04) and glibc 2.27 (ubuntu:18.04). All three produced these rows byte for byte identically."
+  code points    Aalborg  Azur  Osa  Zebra  chata  hrad  index  Óda  Öland
+  en_US          Aalborg  Azur  chata  hrad  index  Óda  Öland  Osa  Zebra
+  pl_PL          Aalborg  Azur  chata  hrad  index  Öland  Osa  Óda  Zebra
+  cs_CZ          Aalborg  Azur  hrad  chata  index  Óda  Öland  Osa  Zebra
+  sv_SE          Aalborg  Azur  chata  hrad  index  Óda  Osa  Zebra  Öland
+  da_DK          Azur  chata  hrad  index  Óda  Osa  Zebra  Öland  Aalborg
+```
+
+Five orders, and each is the only acceptable one to the people who use it:
+
+- **English** treats an accent as a small difference on a base letter, so `Óda` files with `O`, before `Osa` on the second letter.
+- **Polish** treats `ó` as a **letter**, with its own place immediately after `o` — so `Osa` comes before `Óda`, the opposite of English, and the two lists differ by one swap that looks like a bug from either side.
+- **Czech** sorts `ch` as **one letter**, after `h` — so `hrad` comes before `chata`, which no per-character comparison can produce.
+- **Swedish** puts `Ö` **after `Z`**, at the end of the alphabet rather than beside `O`.
+- **Danish** does the same with `Å`, and reads `Aa` as a way of spelling it — so `Aalborg` moves from the very front of the list to the very back.
+
+The thing worth noticing is what did **not** vary. Three C libraries, two operating systems, eight years, and the letter rules are identical — which is the opposite of the usual result in this library, where [`tr`, `paste`, `od`, `grep` and `base64` all disagree across the same two platforms](../../CONTRIBUTING.md). Collation data is shared: glibc took its ordering from ISO 14651 and macOS's derives from the same CLDR-shaped source, so on letters they have converged. The disagreements are in the punctuation, which is the next section, and that is the reverse of where anybody looks.
+
+## The change that invalidated indexes: glibc 2.28
+
+**glibc 2.28 was released on 2018-08-01, and its release notes record a locale-data update to match the 2016 edition of ISO 14651 — bringing it in line with Unicode 9.0.0** ([glibc bug #14095 ↗](https://sourceware.org/bugzilla/show_bug.cgi?id=14095) is the work). Roughly eighteen years of accumulated changes landed in one release. It reached ordinary machines fast: Ubuntu 18.10 and later, Debian 10, RHEL/Rocky/Alma 8 and later, and SLE 15 SP3, per [the PostgreSQL wiki's page on the change ↗](https://wiki.postgresql.org/wiki/Locale_data_changes).
+
+Here is what it did, in four strings under one locale name:
+
+```text title="Measured 2026-09-07 — Python's locale.strxfrm under en_US.UTF-8, on glibc 2.27 (ubuntu:18.04), glibc 2.39 (ubuntu:24.04) and macOS 26.6.2"
+  glibc 2.27     aa  ab  a b  a-b        strcoll('a-b','ab')  ->  a-b > ab
+  glibc 2.39     aa  a b  a-b  ab        strcoll('a-b','ab')  ->  a-b < ab
+  macOS 26.6.2   a b  a-b  aa  ab        strcoll('a-b','ab')  ->  a-b < ab
+```
+
+Same four strings, same locale name, three different orders — and the comparison of `a-b` against `ab` **changed sign** across the glibc upgrade. Before 2.28, punctuation sorted after the letters; after it, punctuation is ignorable at the first level and the strings compare as though it were not there, then tie-break below. Nothing about that is a bug in either version. It is a data file being corrected, and a corrected data file is a different function.
+
+**Why that matters more than a wrong-looking list.** A B-tree index is a structure whose *invariant is the sort order*. PostgreSQL sorted the rows once, at insert time, using the collation the operating system provided then; the index records the resulting positions, not the rule. Change the rule underneath and the tree is still a tree, still passes every structural check, and no longer answers questions correctly. PostgreSQL's own documentation is blunt about the mechanism — a change in collation definitions can lead to **corrupt indexes**, because the system relies on stored objects having a particular order — and the wiki page above spells out the three symptoms: a query can fail to find data that is there, an update can insert a duplicate that should have been disallowed, and on a partitioned table a query can look in the wrong partition while an update writes to it.
+
+None of those three announces itself. Every one is a correct-looking answer to a query that ran without error.
+
+**And for two years nothing said a word.** PostgreSQL **10** had added ICU as an optional collation provider, and its release notes give ICU's own versioning — which allows a collation change to be *detected* — as part of the reason; the default stayed the operating system's library, which had no such handle. Detection for that default arrived in **PostgreSQL 13**, released 2020-09-24, whose release notes describe using the glibc version as a collation version identifier and warning about possible corruption of collation-dependent indexes when it changes. glibc 2.28 shipped in August 2018. So for the two years between them the failure mode was: upgrade the OS, restart the database, get no message of any kind, and run a subtly wrong index until somebody noticed a missing row. On a modern server the warning reads:
+
+```text title="PostgreSQL's collation version mismatch warning, quoted from the ALTER COLLATION documentation"
+WARNING:  collation "xx-x-icu" has version mismatch
+DETAIL:  The collation in the database was created using version 1.2.3.4, but the operating system provides version 2.3.4.5.
+HINT:  Rebuild all objects affected by this collation and run ALTER COLLATION pg_catalog."xx-x-icu" REFRESH VERSION, ...
+```
+
+The remedy is what the wiki says it is: `REINDEX` every index over `text`, `varchar`, `char` and `citext` before the upgraded instance takes traffic, then `ALTER COLLATION … REFRESH VERSION` to clear the warning. The lesson for this library is one line and it is not about databases: **an encoding is a fact about bytes and a collation is a versioned data file, so anything you persist in collated order has a dependency on a version you did not write down.**
+
+## Rust has no collation at all, on purpose
+
+`String` and `&str` compare by their UTF-8 bytes, which for [well-formed UTF-8 is exactly code point order](../../05_Rust/from_utf8_and_lossy/README.md), and no environment variable changes it. There is no `strcoll` in `std` and no plan for one: Rust's position is that a comparison whose answer depends on an ambient setting is worse than a consistent one you can override deliberately — the same argument [PEP 540 ↗](https://peps.python.org/pep-0540/) makes about encodings, reached from the other side.
+
+The price is that the correct answer is simply unavailable in the standard library, and you reach for a crate (`icu_collator`, or `rust_icu`) to get it. That is the same gap ["Handles Unicode" is four questions](../../10_Best_Practices/what_your_language_gives_you/README.md) names when it says most languages' text handling is ICU wearing a hat — and the page that will demonstrate it is ranked but unwritten, as item 34 in [TODO.md](../../TODO.md). Being explicit about the gap is the honest version of what every other language does implicitly, which is to sort correctly only where somebody installed the data.
+
+## If you are coming from Python or ABAP
+
+The Python half is above. The one habit to carry: `key=locale.strxfrm` for a sort, `locale.strcoll` for a single comparison — the key form transforms once per element, the comparator costs a call per comparison — and both are useless unless something set `LC_COLLATE` first, which is a separate variable from the `LC_CTYPE` you probably set.
+
+**ABAP separates the two orders in the statement itself, which is more honest than most languages manage.** A plain `SORT itab BY name` compares the internal representation — binary order, the same class of answer as `sorted()`. `SORT itab BY name AS TEXT` asks for the *text* order instead, and that one is resolved against the current text environment, which `SET LOCALE LANGUAGE` changes. So the two readings of "alphabetical" are two different keywords rather than a hidden setting, and a report that returns different orders in two systems has almost always been written without `AS TEXT` in one of them.
+
+What transfers unchanged is the dependency, not the syntax: `AS TEXT` is only as portable as the locale data the system carries, so the same list can order differently on two application servers, and the order is not a property of the table. Do not persist a sorted order and assume it survives an upgrade — sort at read time, or store an explicit sort key you generate yourself and can version. Verify any locale or code-page setting against the system rather than a document. *(Not machine-checked — CI cannot run ABAP.)*
+
+## Try it
+
+1. Run `locale` and then `printf 'Osa\nÓda\nZebra\nŁódź\n' | sort` in your own shell, then the same pipeline under `LC_ALL=C`. If the two agree, your `LC_COLLATE` is `C` and every `sort` you have ever run in that shell was byte order. ([`tr` and `sort` work a byte at a time](../../11_Tools/tr_and_sort/README.md) has the rest of that story.)
+2. `locale -a | wc -l` on your machine, then in a container: `docker run --rm ubuntu:24.04 locale -a`. The gap between those two numbers is the gap between where you tested and where it runs.
+3. Take a name column out of a system you maintain, sort it with your database and with `sorted()` in Python, and diff the two lists. Every line that moved is a place where the two components disagree about your users' names.
+4. If you run PostgreSQL on Linux: `SELECT collname, collversion FROM pg_collation WHERE collversion <> '';` and compare against `pg_database`'s `datcollversion`. If your instance has ever crossed a distribution major version without a `REINDEX`, that is the query that tells you.
 
 ## See also
 
-- [Locale and `LC_CTYPE`](../../06_Terminal/locale_and_lc_ctype/README.md) — six independent variables, and this is a different one
+- [Locale and `LC_CTYPE`](../../06_Terminal/locale_and_lc_ctype/README.md) — six independent variables, and this page is about a different one
 - [`tr` and `sort` work a byte at a time](../../11_Tools/tr_and_sort/README.md) — the tool-level version of the same gap
-- [Normalization](../../04_Python/normalization/README.md) — equality has the same shape of problem as ordering
+- [Normalization](../../04_Python/normalization/README.md) — equality has the same shape of problem as ordering, with a defined answer
 - [Interfaces and storage](../../10_Best_Practices/interfaces_and_storage/README.md) — where a collation is actually chosen, usually by accident
+- ["Handles Unicode" is four questions](../../10_Best_Practices/what_your_language_gives_you/README.md) — which languages ship the data, and which make you install it

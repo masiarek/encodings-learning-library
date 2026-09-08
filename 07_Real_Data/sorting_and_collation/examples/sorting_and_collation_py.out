@@ -1,0 +1,126 @@
+1. CODE POINT ORDER IS NOT ALPHABETICAL ORDER IN ANY LANGUAGE
+----------------------------------------------------------------------
+   sorted(names)             Cma Osa Swit Zebra Zuk Óda Ćma Łódź Świt Żuk
+
+   Read the tail: every accented word is behind every unaccented one,
+   in a block. That is not a near miss, it is a different principle.
+
+     Z  U+005A     90   ASCII, 1963
+     Ó  U+00D3    211   Latin-1 Supplement, 1987
+     Ć  U+0106    262   Latin Extended-A, 1991
+     Ł  U+0141    321   Latin Extended-A, 1991
+     Ż  U+017B    379   Latin Extended-A, 1991
+
+   Three blocks, three eras. 'Z' is in ASCII, which fixed its 128
+   numbers in the 1960s. 'Ó' is in the Latin-1 supplement, the second
+   half of an 8-bit table from the 1980s. 'Ł', 'Ć' and 'Ż' are in
+   Latin Extended-A, a block Unicode added in 1991 for the languages
+   the first two had no room for.
+
+   So 'Ł' is U+0141 and 'Z' is U+005A because of when each letter got
+   a number, not because of anything about the letters. A code point
+   is an index into a table nobody ever sorted; sorting by it is
+   sorting by the history of the standard.
+
+2. ASKING FOR A LOCALE IS A CALL THAT CAN FAIL, AND IT DOES NOT FALL BACK
+----------------------------------------------------------------------
+   LC_COLLATE at the start        'C'
+   asked for a locale nobody has  locale.Error
+   LC_COLLATE afterwards          'C'
+
+   It raised, and it changed nothing. There is no quiet fallback to a
+   near-enough locale, and there is no way to ask 'do you have one for
+   Polish?' other than trying it -- so a program that wants a specific
+   ordering has to handle NOT GETTING IT, on every machine it will run
+   on. A container is the likely place to find out: a stock
+   ubuntu:24.04 image ships C, C.utf8 and POSIX, and no human language
+   at all, so this call fails there for every locale you would want.
+
+   Two more things about the call, both of which surprise people:
+     * it is PROCESS-GLOBAL state, not an argument. Setting it in one
+       thread changes the sort in every other one.
+     * LC_COLLATE is not LC_CTYPE. Setting the character type to a
+       UTF-8 locale says nothing about ordering, and the wrong one of
+       the six is the usual reason 'I set the locale' did not work.
+
+3. THE TWO SPELLINGS, AND WHAT THE C LOCALE MEANS BY 'COLLATE'
+----------------------------------------------------------------------
+   key=locale.strxfrm        Cma Osa Swit Zebra Zuk Óda Ćma Łódź Świt Żuk
+   cmp_to_key(strcoll)       Cma Osa Swit Zebra Zuk Óda Ćma Łódź Świt Żuk
+   sorted(names)             Cma Osa Swit Zebra Zuk Óda Ćma Łódź Świt Żuk
+
+   the two collation spellings agree with each other   True
+   ...and with plain code point order                  True
+
+   Both are the real thing: strxfrm turns a string into a sort KEY so
+   the transformation happens once per element, strcoll compares two
+   strings and costs a comparison every time. Prefer strxfrm for a
+   sort and strcoll for a one-off test.
+
+   And here they change nothing, because this process is in the C
+   locale, where collation IS code point order. That is not a broken
+   configuration -- it is the default in every container, cron job and
+   CI runner, which means the production answer to 'sort these names'
+   is usually the one at the top of section 1.
+
+4. STRIPPING THE ACCENTS IS NOT COLLATION -- IT IS ONE LOCALE'S ANSWER
+----------------------------------------------------------------------
+   key=strip_marks           Ćma Cma Óda Osa Świt Swit Zebra Żuk Zuk Łódź
+
+   Look at the first two. 'Ćma' and 'Cma' are DIFFERENT WORDS and the
+   trick gives them the same key ('Cma' == 'Cma'), so it cannot
+   order them at all -- Python's sort is stable, so what you get back
+   is the order they arrived in. Shuffle the input and the output
+   changes. A collation has to be a total order over the strings it
+   is given; this is not one, and nothing reports that.
+
+   Polish's nine special letters   ą ć ę ł ń ó ś ź ż
+   NFD decomposes                  ą ć ę ń ó ś ź ż   (8 of 9)
+   NFD leaves alone                ł   (1 of 9)
+
+   That is the flaw, and it is silent. Eight of the nine come apart
+   into a base letter and a combining mark, so the trick files them
+   next to their base letter. 'ł' does not: U+0142 is a letter with a
+   stroke THROUGH it, and a stroke is not a combining mark, so there
+   is nothing to strip and 'Łódź' stays out at the end where the code
+   points put it. Same word list, same trick, two different rules
+   applied depending on how Unicode happened to encode each letter.
+
+   It is worth being precise about what the trick gets right, too:
+   filing 'ó' next to 'o' IS the correct answer -- in English. In
+   Polish 'ó' is a LETTER, with its own place after 'o', so a Polish
+   list sorts 'Osa' before 'Óda' and an English one the other way
+   round. The trick cannot express that, because it has thrown the
+   distinction away before the comparison starts.
+
+   Which is the general point: an accent is not noise on a letter.
+   Whether it is noise is a fact about the LANGUAGE, and it is the
+   fact a locale carries.
+
+5. WHAT A COLLATION ACTUALLY IS: LEVELS, OVER AN ALPHABET YOU DECLARE
+----------------------------------------------------------------------
+   key=pl_key (toy Polish)   Cma Ćma Łódź Osa Óda Swit Świt Zebra Zuk Żuk
+   key=strip_marks           Ćma Cma Óda Osa Świt Swit Zebra Żuk Zuk Łódź
+   sorted(names)             Cma Osa Swit Zebra Zuk Óda Ćma Łódź Świt Żuk
+
+   The toy gets Polish right for this list -- 'Cma' then 'Ćma', 'Osa'
+   then 'Óda', 'Swit' then 'Świt', 'Zuk' then 'Żuk', and 'Łódź' up
+   between 'l' and 'm' where it belongs -- and it does it with thirty
+   lines and ONE STRING: the alphabet, written out in order. That
+   string is the entire difference between this and sorted().
+
+   Two levels is also the shape of the real thing. Compare base
+   letters first; if they tie, compare accents; if they still tie,
+   compare case. That is why two locales can both look 'right' and
+   still disagree -- they are not disagreeing about the levels, they
+   are disagreeing about which differences belong on which level.
+
+   What the toy has no room for is the rest of the data, and the
+   omissions are not exotic:
+     * contractions -- Czech sorts 'ch' as ONE letter, after 'h', so
+       'chata' comes after 'hrad'; a per-character rank cannot say it
+     * expansions -- German 'ß' compares as 'ss', one character
+       weighing as two
+     * variable weighting -- whether a space or a hyphen counts at all
+       before the letters have been compared. Nobody thinks about that
+       one, and it is the rule that moved in glibc 2.28.
