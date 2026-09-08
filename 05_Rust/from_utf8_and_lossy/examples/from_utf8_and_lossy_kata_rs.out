@@ -1,0 +1,41 @@
+THE INPUT: 63 61 66 e9   'caf' and a Latin-1 e-acute
+
+1. from_utf8 — CHECK
+   Err(FromUtf8Error). Nothing was converted and nothing was lost:
+   into_bytes() returns 63 61 66 e9 — identical to the input? true
+   You still hold the bytes, so you can still decide this file was Latin-1.
+
+2. from_utf8_lossy — REPLACE
+   "caf�"   6 bytes out of 4 in
+   Cow::Owned — so something WAS replaced
+   One byte in, three out: U+FFFD is ef bf bd. The e9 is gone, and no
+   later code can tell it was ever there or what it was.
+
+3. from_utf8_unchecked — PROMISE
+   A String whose bytes are not UTF-8. Not a panic and not a wrong answer:
+   undefined behaviour, because every &str method is allowed to assume the
+   promise. Correct only where something upstream already checked and you
+   can point at the check. Nothing is run here, deliberately.
+
+4. THE TWO NUMBERS, AND WHY ONE BYTE CHANGES THEM
+   63 61 66 e9     valid_up_to 3   error_len None
+   63 61 66 e9 20  valid_up_to 3   error_len Some(1)
+   valid_up_to is 3 both times: 'caf' is text either way.
+   error_len changes because e9 is a legal START byte — it opens a three-byte
+   sequence. On its own at the end of input, the decoder cannot yet say the
+   input is wrong, only that it is INCOMPLETE, so it answers None. Append any
+   byte that is not a continuation (0x20 is a space) and the sequence can
+   never be completed, so the verdict becomes Some(1): one byte, definitely
+   not text. None means 'read more'; Some(n) means 'skip n and carry on'.
+
+5. THREE STRAY CONTINUATION BYTES
+   from_utf8_lossy(80 80 80) -> "���"
+   3 replacement characters, not one.
+   The rule is one U+FFFD per MAXIMAL SUBPART — the longest prefix that could
+   still have become a character. 0x80 is a continuation byte, so it cannot
+   begin anything; each one is a failed start of its own and gets its own
+   mark. Compare a truncated sequence, where the bytes DO belong together:
+     e0 b2        -> 1 mark
+     f0 9f 98     -> 1 mark
+   Two and three bytes, one mark each, because each is one interrupted
+   character. The count is about structure, not about how many bytes went bad.

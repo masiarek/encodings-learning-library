@@ -1,0 +1,55 @@
+THE NAME: 63 61 66 e9 2e 74 78 74   'caf', a Latin-1 e-acute, and '.txt'
+
+1. to_str()  ->  Option<&str>
+   value          None
+   still holding  the OsStr, if you kept it. The None itself carries nothing —
+                  it does not tell you which byte was wrong, or what the name
+                  was. Use it to FILTER, where dropping the name is the point.
+
+2. to_string_lossy()  ->  Cow<'_, str>
+   value          "caf�.txt"
+   its bytes      63 61 66 ef bf bd 2e 74 78 74
+   Cow variant    Owned — so a substitution happened
+   still holding  a String that is NOT this file. e9 became ef bf bd, so the
+                  name is three bytes longer and opening it gives ENOENT.
+
+3. into_string()  ->  Result<String, OsString>
+   value          Err(OsString)
+   the Err holds  63 61 66 e9 2e 74 78 74 — byte-identical to the input? true
+   still holding  THE NAME. This is the only one of the three whose
+                  failure path leaves you able to carry on.
+
+4. SO: WHICH ONE FOR WHICH JOB
+   into the error message   to_string_lossy(). Its output is for a person to
+                            read, and a person can read caf<?>.txt. Never pass
+                            that string to anything that will open a file.
+   to keep processing       neither — keep the OsStr or the Path and never
+                            convert at all. Path will join, split, compare,
+                            open and rename it as it stands. If a String is
+                            genuinely required, into_string(), because its Err
+                            gives the name back so the fallback still has it.
+
+5. Path EQUALITY COMPARES COMPONENTS, AND EACH COMPONENT AS BYTES
+   a  11 bytes  c5 bc c3 b3 c5 82 77 2e 74 78 74
+   b  13 bytes  7a cc 87 6f cc 81 c5 82 77 2e 74 78 74
+   a == b   false
+   Both draw the word zolw with its Polish diacritics, and Path calls them
+   different — because Path::eq compares components() and each component is
+   compared as BYTES. No Unicode normalization, and no case folding.
+
+   What components() DOES normalize is separator syntax, and only that:
+     "a/b"     == "a//b"      true
+     "a/b"     == "a/b/"      true
+     "a/b"     == "a/./b"     true
+     "a/b"     == "./a/b"     false
+     "a/c"     == "a/b/../c"  false
+     "a.txt"   == "A.TXT"     false
+   Repeated and trailing separators collapse, and so does an inner '.'; a
+   leading './' does not, and '..' is left alone on purpose — 'b' might be a
+   symbolic link, so 'a/b/..' need not be 'a' and std will not pretend it is.
+
+   Every false above except the case one names two spellings that may well be
+   the same file, and the case one is the same file on a default macOS or
+   Windows volume. So the honest summary is that Path equality answers a
+   question about NAMES, tidying only the syntax it can be certain about.
+   If you meant to ask about FILES, ask the OS: fs::canonicalize.

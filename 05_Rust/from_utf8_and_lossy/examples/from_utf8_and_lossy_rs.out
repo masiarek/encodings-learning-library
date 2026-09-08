@@ -1,0 +1,82 @@
+1. THREE FUNCTIONS, THREE CONTRACTS
+   String::from_utf8(v)             -> Result<String, FromUtf8Error>
+       CHECK. Returns the bytes to you on failure; nothing is lost or changed.
+   String::from_utf8_lossy(&v)      -> Cow<str>
+       REPLACE. Always succeeds, and the bad bytes are gone for good.
+   String::from_utf8_unchecked(v)   -> String            (unsafe)
+       PROMISE. No check at all. You are the proof, and a wrong one is
+       undefined behaviour rather than a panic.
+   Same input, same output type, three different things done about failure.
+
+2. THE ERROR IS TWO NUMBERS, NOT A SENTENCE
+   case                  bytes                  valid_up_to  error_len
+   valid                 63 61 66 c3 a9                  Ok          -
+   Latin-1 é             63 61 66 e9 20 61 75             3          1
+   cut mid-character     e0 b2                            0       None
+   bad continuation      e0 b2 28                         0          2
+   surrogate, as UTF-8   ed a0 80                         0          1
+   three stray bytes     80 80 80                         0          1
+   valid_up_to() is a byte offset: everything before it IS text, and slicing
+   there is safe without another check. That is the number a tool reports when
+   it says which byte of your file stopped making sense.
+
+3. AND error_len() IS A VERDICT, WHICH IS THE HALF PEOPLE MISS
+   Some(n)   these n bytes are DEFINITELY not text. Skip them and carry on.
+   None      the input just ENDED mid-character. More bytes might fix it.
+
+   Same three bytes, arriving whole and arriving in two reads:
+     all 4      f0 9f 98 80  -> from_utf8 is Ok
+     first 1    f0           -> valid_up_to 0  error_len None
+     first 2    f0 9f        -> valid_up_to 0  error_len None
+     first 3    f0 9f 98     -> valid_up_to 0  error_len None
+   Every prefix says None. A chunked reader that treats None as an error
+   corrupts every character that straddles a read boundary; one that treats
+   it as 'hold these bytes and ask again' is correct. That is the whole
+   difference between a decoder and an incremental decoder.
+
+4. LOSSY, AND HOW MANY U+FFFD IT SPENDS
+   case                  bytes                  U+FFFD   result
+   valid                 63 61 66 c3 a9              0   "café"
+   Latin-1 é             63 61 66 e9 20 61 75        1   "caf� au"
+   cut mid-character     e0 b2                       1   "�"
+   bad continuation      e0 b2 28                    1   "�("
+   surrogate, as UTF-8   ed a0 80                    3   "���"
+   three stray bytes     80 80 80                    3   "���"
+   The count is not one per bad byte, and not one per attempt. It is one per
+   MAXIMAL SUBPART: the longest prefix of the bad run that could still have
+   become a character. 'e0 b2' is one such prefix, so one mark; three stray
+   continuation bytes are three failed starts, so three. The Unicode Standard
+   makes this a RECOMMENDATION and not a rule, so it is worth checking that
+   your other language agrees rather than assuming it does.
+
+5. Cow: THE RETURN TYPE TELLS YOU WHETHER ANYTHING HAPPENED
+   valid                 Borrowed  — the bytes were already text, nothing allocated
+   Latin-1 é             Owned     — a replacement was made, so a new String exists
+   cut mid-character     Owned     — a replacement was made, so a new String exists
+   bad continuation      Owned     — a replacement was made, so a new String exists
+   surrogate, as UTF-8   Owned     — a replacement was made, so a new String exists
+   three stray bytes     Owned     — a replacement was made, so a new String exists
+   So `matches!(s, Cow::Owned(_))` is the question 'was my input damaged?',
+   asked after the fact and for free. from_utf8_lossy is the only repair in
+   std that hands back that flag; the Result version hands back the bytes.
+
+6. THE HANDLER std DOES NOT SHIP, BUILT FROM THOSE TWO NUMBERS
+   valid                 café
+   Latin-1 é             caf\xe9 au
+   cut mid-character     \xe0\xb2
+   bad continuation      \xe0\xb2(
+   surrogate, as UTF-8   \xed\xa0\x80
+   three stray bytes     \x80\x80\x80
+   That loop is short, and it is reversible where lossy is not: every byte is
+   still named. Python spells this errors='backslashreplace' and ships eight
+   such handlers; Rust ships one, and the two numbers you need to write the
+   others yourself. That is the trade, and it is the same one the whole
+   language makes: fewer defaults, and the parts in reach.
+
+7. AND THE unsafe ONE
+   from_utf8_unchecked on bytes that ARE valid  -> "café"   (sound, and free)
+   from_utf8_unchecked on bytes that are NOT     -> undefined behaviour.
+   Not a panic, not a wrong answer, not an error you can catch: a &str whose
+   promise is false, handed to code that is allowed to assume it. The right
+   use is a hot path where something upstream already checked and you can
+   point at the check. 'It has always been UTF-8 so far' is not the check.

@@ -1,0 +1,51 @@
+THE STRING "żółw"
+   chars    ż  ó  ł  w
+   bytes    c5 bc c3 b3 c5 82 77
+   len()    7 bytes for 4 characters
+   Three of the four letters cost two bytes; only 'w' is one.
+
+WHERE YOU MAY CUT
+   boundaries      [0, 2, 4, 6, 7]
+   not boundaries  [1, 3, 5]
+   Five legal indices for a seven-byte string. The odd ones below 6 are all
+   inside a two-byte letter, and 7 is the end, which always counts.
+
+THE FOUR EXPRESSIONS
+   &s[0..2]             ż
+   s.get(0..2)          Some("ż")
+   &s[..s.len()]        żółw
+   &s[..s.len() - 1]    żół
+
+   &s[0..2]           byte 2 is the START of 'ó', so this is legal — it is
+                      the whole of 'ż' and nothing else. Legal by luck: the
+                      same expression on "café" would have been fine too, and
+                      on a string starting with a three-byte character it is not.
+   s.get(0..2)        the same answer, wrapped in Some. On a bad index it is
+                      None instead of a panic, which is the entire difference.
+   &s[..s.len()]      always legal, for every string. The end of a string is a
+                      boundary by definition, so this can never fail.
+   &s[..s.len() - 1]  works HERE and is the one that can fail. 'w' is one
+                      byte, so len()-1 lands on a boundary; on a string ending
+                      in any non-ASCII character the same expression panics.
+
+AND THAT LAST PAIR IS THE LESSON
+   len()-1 is 6 here, and is_char_boundary(6) is true.
+   "żółw" ends in 'w', a one-byte character, so cutting one byte off the end
+   removes exactly one character and is safe. Reverse the word and it is not:
+     "włóż"  len 7  boundary at len-1? false
+   Same expression, same four letters, different answer — because the question
+   was never about the string's length. It was about its LAST CHARACTER, and
+   the expression does not mention that.
+
+FIVE BYTES OF FIELD
+   truncate_to_bytes("żółw", 5) = "żó"   4 bytes, 2 characters
+   Two characters survive, in four bytes. Byte 5 is inside 'ł', so the honest
+   answer is to stop at 4 and leave the field one byte short.
+
+   The naive &s[..5] does not get an answer at all:
+     &s[..5] PANICS — byte 5 is not a char boundary
+   And the version people actually write, in a language with no such check,
+   is the byte slice — which does not panic and does not work either:
+     &s.as_bytes()[..5]  = c5 bc c3 b3 c5   valid UTF-8? false
+   Five bytes written to a five-byte field, no error anywhere, and the file is
+   no longer text. That is the bug this page exists to make loud.

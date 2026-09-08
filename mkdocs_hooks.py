@@ -163,6 +163,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "char_is_four_bytes",
         "from_utf8_and_lossy",
         "slicing_by_byte",
+        "osstr_path_and_wtf8",
     ],
     "06_Terminal": [
         "README.md",

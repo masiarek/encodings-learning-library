@@ -1,0 +1,76 @@
+1. THE RANGE IS BYTES. THE STRING IS CHARACTERS.
+   "café"   len() = 5 bytes, chars().count() = 4
+   bytes           63 61 66 c3 a9
+   byte index      0  1  2  3  4
+   character       c  a  f  <-- é -->
+   There are five byte positions and only four characters, so one index — 4 —
+   points at the middle of a character. Every bug on this page is that index.
+
+2. ASK BEFORE YOU CUT: is_char_boundary
+   index       boundary?   what is there
+   0                true   the start of 'c'
+   1                true   the start of 'a'
+   2                true   the start of 'f'
+   3                true   the start of 'é'
+   4               false   a continuation byte, inside a character
+   5                true   the end of the string
+   Note that len() itself is a boundary — the end of a string always is, which
+   is what makes &s[..s.len()] legal and &s[..s.len()-1] a coin toss.
+
+3. THE PREDICTION, CHECKED AGAINST WHAT ACTUALLY HAPPENS
+   Every &S[0..n], with the answer from section 2 beside the outcome.
+   expression      boundary says      outcome   value
+   &S[0..0]                 true     returned   ""
+   &S[0..1]                 true     returned   "c"
+   &S[0..2]                 true     returned   "ca"
+   &S[0..3]                 true     returned   "caf"
+   &S[0..4]                false     PANICKED   -
+   &S[0..5]                 true     returned   "café"
+   is_char_boundary predicted every row: true
+   That is the whole relationship. The panic is not a mystery about UTF-8 —
+   it is is_char_boundary returning false at a moment when nobody asked it.
+
+4. AND ONE OTHER WAY TO PANIC, WHICH IS NOT THIS ONE
+   &S[0..99]  past the end    PANICKED
+   &S[4..3]   backwards       PANICKED
+   Same syntax, same panic machinery, different complaint — out of bounds and
+   start-after-end are ordinary slice errors that &[u8] has too. Only the char
+   boundary one is about the encoding, and only it survives a correct length.
+
+5. get() ASKS THE SAME QUESTION AND RETURNS AN ANSWER
+   S.get(0..3)    Some("caf")
+   S.get(0..4)    None
+   S.get(0..5)    Some("café")
+   S.get(0..99)   None
+   Option, not a panic — the same shape as checked_add. Every range that came
+   from you rather than from std should go through this, and the None case is
+   a real branch: it means the index was computed by someone counting
+   characters, or reading a byte budget out of a database column.
+
+6. WHERE A VALID INDEX COMES FROM
+   Indices that std produced are ALWAYS boundaries. These all are:
+     find('f')          Some(2)
+     char_indices()     [0, 1, 2, 3]
+     split('a') pieces  ["c", "fé"]
+   An index you computed carries no such guarantee, and the coin lands both
+   ways on the very same string:
+     half of "café"              index 2   boundary? true
+     half of the Polish string   index 13  boundary? false
+   Two halfway points, one safe and one not, and nothing in either expression
+   says which. 'the halfway point', 'the first 20 characters' and 'byte 4' are
+   the three sources of every panic of this kind.
+
+7. THE FIXED-WIDTH FIELD, DONE PROPERLY
+   "zażółć gęślą jaźń"   26 bytes, 17 chars
+   budget     bytes   chars   kept
+   4              4       3   "zaż"
+   5              4       3   "zaż"
+   6              6       4   "zażó"
+   10            10       6   "zażółć"
+   20            20      13   "zażółć gęślą "
+   99            26      17   "zażółć gęślą jaźń"
+   Never more than the budget, never a split character, and never a panic.
+   A budget of 5 keeps 4 bytes because byte 5 is inside 'ż' — so the field is
+   one byte short of full, which is the correct answer and not a rounding
+   error. Truncating at exactly N bytes instead writes a file that is no
+   longer text, and nothing downstream will tell you which record did it.

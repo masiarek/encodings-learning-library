@@ -554,7 +554,8 @@ PART FOUR -- ONE CHARACTER IN, THREE OUT, AND NOTHING RAISED
 - [Python text in practice](../../10_Best_Practices/python_text_in_practice/README.md) — the same rule as one line of a checklist
 - ["Handles Unicode" is four questions](../../10_Best_Practices/what_your_language_gives_you/README.md) — the same round trip scored against six languages, and the web's private-use-area version of it
 - [`String` is bytes that promise UTF-8](../../05_Rust/string_is_bytes_that_promise_utf8/README.md) — why the promise has no escape hatch
-- [Rust strings in practice](../../10_Best_Practices/rust_strings_in_practice/README.md) — `OsStr` and `Path` as an API, where this page uses them only as the contrast
+- [`OsStr`, `Path`, and WTF-8](../../05_Rust/osstr_path_and_wtf8/README.md) — `OsStr` and `Path` as an API, where this page uses them only as the contrast: the three doors out, and the Windows side where WTF-8 spells what `surrogatepass` spells
+- [Rust strings in practice](../../10_Best_Practices/rust_strings_in_practice/README.md) — the same rules as one line of a checklist
 - [Canonicalize, then check](../../12_Adversarial/canonicalize_then_check/README.md) — the same laundering, one transformation along
 - [PEP 383 ↗](https://peps.python.org/pep-0383/) — the specification, and short enough to read in full
 - [PEP 540 — UTF-8 Mode ↗](https://peps.python.org/pep-0540/) — why the C locale changes what `print()` does

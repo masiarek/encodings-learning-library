@@ -1,0 +1,74 @@
+1. FOUR NUMBERS FOR ONE CHARACTER, AND ONLY ONE OF THEM IS FOUR
+   code pt     as u32   size_of  len_utf8  len_utf16   glyph
+   U+41            65         4         1          1   A
+   U+E9           233         4         2          1   é
+   U+20AC        8364         4         3          1   €
+   U+1F600     128512         4         4          2   😀
+   size_of is a property of the TYPE and never moves. len_utf8 is a property
+   of the VALUE, and it is what the same character costs inside a String.
+
+2. SO THE SAME FOUR CHARACTERS HAVE TWO SIZES
+   [char; 4]   16 bytes   4 x 4, whatever is in it
+   String      10 bytes   1 + 2 + 3 + 4, because each one was encoded
+               41 C3 A9 E2 82 AC F0 9F 98 80
+               and that String is "Aé€😀"
+   A char is a fixed-width box. UTF-8 is a variable-width encoding. Putting a
+   char into a String encodes it; taking one out decodes it. Neither is free.
+
+3. THREE WALKS OVER ONE STRING
+   "café"   len() = 5 bytes
+   bytes()        63 61 66 C3 A9
+   chars()        c  a  f  é
+   char_indices() 0:c  1:a  2:f  3:é
+   Five bytes, four chars. char_indices() gives the BYTE offset of each char,
+   which is the only index a String will accept — and why the last one is 3,
+   not 4. Counting characters to build an index is the bug this prevents.
+
+4. THE ONE THING A char CANNOT HOLD
+   char::from_u32(0x00D7FF)   Some  — a scalar value
+   char::from_u32(0x00D800)   None  — not a scalar value
+   char::from_u32(0x00DFFF)   None  — not a scalar value
+   char::from_u32(0x00E000)   Some  — a scalar value
+   char::from_u32(0x10FFFF)   Some  — a scalar value
+   char::from_u32(0x110000)   None  — not a scalar value
+   The hole from D800 to DFFF is the surrogate range, which exists so UTF-16
+   can reach past U+FFFF. A char is a Unicode SCALAR VALUE, and that phrase
+   means exactly 'code point, minus those two thousand and forty-eight'.
+   char::MAX = '\u{10ffff}', so the widest value is 21 bits — which is why 4 bytes,
+   not 3: there is no 24-bit integer to be addressed on any machine here.
+
+5. AND THE HOLE PAYS FOR ITSELF
+   size_of::<char>()          4
+   size_of::<Option<char>>()  4   <- the None is stored INSIDE the gap
+   size_of::<u32>()           4
+   size_of::<Option<u32>>()   8   <- a u32 has no spare bit patterns
+   Every u32 from 0 to 0xFFFFFFFF is a valid u32, so Option needs a separate
+   byte to say which case it is (and then 3 more for alignment). A char has
+   over four billion invalid patterns, so None can be one of them, for free.
+   The restriction that makes char awkward is the same one that makes it cheap.
+
+6. WRITING ONE, AND READING IT BACK
+   '\u{1F600}'            is 😀, and 128512 == 128512
+   .escape_unicode()      \u{1f600}
+   'é'.escape_unicode()   \u{e9}
+   b'A'                   65   <- a byte literal: u8, not char, no Unicode at all
+   'A' as u32             65   <- and here the two agree, which is why ASCII hides this
+
+   And one cast that compiles and lies. `as u8` on a char TRUNCATES:
+     U+41     as u32 = 65     as u8 = 65  same value
+     U+E9     as u32 = 233    as u8 = 233 same value
+     U+20AC   as u32 = 8364   as u8 = 172 TRUNCATED
+     U+1F600  as u32 = 128512 as u8 = 0   TRUNCATED
+   Only `as u32` is lossless. u8 keeps the low eight bits and says nothing.
+
+7. NONE OF THESE COUNTS WHAT A PERSON CALLS A CHARACTER
+   written as        bytes     chars     utf-16  graphemes
+                     len()  .count()  len_utf16   (by eye)
+   "café"                5         4          4          4
+   "cafe\u{301}"         6         5          5          4
+   "\u{1F600}"           4         1          2          1
+   Rows 1 and 2 are the same word. One is written with a combining acute, and
+   chars() counts it as a character of its own — correctly, because it IS a
+   scalar value. What a cursor moves over is a GRAPHEME CLUSTER, and there is
+   no method for it in std: the tables move with every Unicode release, so the
+   unicode-segmentation crate carries them and the standard library does not.

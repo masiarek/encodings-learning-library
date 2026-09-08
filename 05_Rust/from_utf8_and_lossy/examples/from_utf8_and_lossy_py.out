@@ -1,0 +1,64 @@
+1. THE SAME SIX INPUTS, AND THE SAME OFFSET
+   case                  bytes                   start   end  end-start
+   valid                 63 61 66 c3 a9             ok     -          -
+   Latin-1 é             63 61 66 e9 20 61 75        3     4          1
+   cut mid-character     e0 b2                       0     2          2
+   bad continuation      e0 b2 28                    0     2          2
+   surrogate, as UTF-8   ed a0 80                    0     1          1
+   three stray bytes     80 80 80                    0     1          1
+   `start` is Rust's valid_up_to(), byte for byte, on every row. `end - start`
+   is Rust's error_len() on every row where Rust reports a number. Two languages,
+   two spellings, one measurement — because the measurement is a property of the
+   BYTES and not of whoever is reading them.
+
+2. EXCEPT ON THE ROW WHERE RUST HAS A THIRD ANSWER
+   case                  bytes                 valid prefix?   what that means
+   valid                 63 61 66 c3 a9                    -   already text
+   Latin-1 é             63 61 66 e9 20 61 75             no   invalid — nothing appended makes this text
+   cut mid-character     e0 b2                           yes   INCOMPLETE — more bytes could still fix it
+   bad continuation      e0 b2 28                         no   invalid — nothing appended makes this text
+   surrogate, as UTF-8   ed a0 80                         no   invalid — nothing appended makes this text
+   three stray bytes     80 80 80                         no   invalid — nothing appended makes this text
+   Rust puts that column in the return type: error_len() is None for the rows
+   marked yes and Some(n) for the rows marked no. Python's exception has no field
+   for it — `end` just runs to the end of the input — so the question has to be
+   asked of a different object, the incremental decoder, with final=False.
+
+3. WHICH IS THE BUG A CHUNKED READ MAKES
+   '\U0001F600'.encode() = f0 9f 98 80   — four bytes, one character
+   split     chunk 1      chunk 2      decode each      incremental
+   after 1   f0           9f 98 80     raises / raises  '😀'
+   after 2   f0 9f        98 80        raises / raises  '😀'
+   after 3   f0 9f 98     80           raises / raises  '😀'
+   BOTH halves raise, at every cut: one is a start byte with nothing after it,
+   the other is continuation bytes with nothing before them. That is what
+   `for chunk in f: chunk.decode()` meets at a read boundary. The last column is
+   an IncrementalDecoder holding the partial sequence until the rest arrives —
+   same bytes, and only one of the two columns is the file.
+
+4. THE REPLACEMENT COUNT, WHICH BOTH LANGUAGES GET FROM THE SAME RULE
+   case                  bytes                  U+FFFD   result
+   valid                 63 61 66 c3 a9              0   'café'
+   Latin-1 é             63 61 66 e9 20 61 75        1   'caf� au'
+   cut mid-character     e0 b2                       1   '�'
+   bad continuation      e0 b2 28                    1   '�('
+   surrogate, as UTF-8   ed a0 80                    3   '���'
+   three stray bytes     80 80 80                    3   '���'
+   Compare that column against the Rust program's: identical on all six. Both
+   follow the Unicode Standard's recommendation of one U+FFFD per maximal
+   subpart, which is a recommendation and not a requirement — so this is a
+   measurement of two implementations agreeing, not a guarantee that any two do.
+
+5. AND THE HANDLERS RUST DOES NOT SHIP
+   errors=strict             UnicodeDecodeError at byte 3
+   errors=replace            'caf� au'
+   errors=ignore             'caf au'
+   errors=backslashreplace   'caf\\xe9 au'
+   errors=surrogateescape    'caf\udce9 au'
+   (Those are reprs, so backslashreplace's single backslash is shown doubled and
+   surrogateescape's parked byte is shown as the escape \udce9 — printing that
+   string to a UTF-8 stream would raise — see 'Bytes that are not text'.)
+   Rust's std has the first two, under the names from_utf8 and from_utf8_lossy.
+   `ignore` and `backslashreplace` are a short loop over valid_up_to/error_len;
+   `surrogateescape` cannot be written at all, because the code points it parks
+   bytes in are the ones a Rust char is defined not to hold.

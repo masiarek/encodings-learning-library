@@ -1,0 +1,39 @@
+THE FOUR NUMBERS FOR '€'
+   size_of::<char>()   4   the TYPE's width. Never moves, for any value.
+   '€'.len_utf8()      3   what it costs inside a String
+   '€'.len_utf16()     1   what it costs in Java, JavaScript or ABAP
+   '€' as u32          8364   the code point itself, U+20AC
+
+AND THE FIFTH, WHICH IS THE FIRST AGAIN
+   size_of::<Option<char>>()   4
+   Not 5, and not 8. A char has more invalid bit patterns than valid ones —
+   everything above 0x10FFFF, and the surrogate block — so None is stored as
+   one of them. The tag needs no room of its own. Compare a type with no
+   spare patterns: size_of::<Option<u32>>() = 8, which is 4 for the value,
+   1 for the tag and 3 for alignment.
+
+THE STRING "€1"
+   len()             4   BYTES: 3 for the euro sign, 1 for the digit
+   chars().count()   2   scalar values
+   char_indices()    0:€  3:1
+   The second character starts at byte 3, not byte 1. Every index Rust will
+   accept is in the first column; every index a person counts is in the second.
+
+THE COLUMN THAT SAYS "2 CHARACTERS"
+   Almost always len(), the byte count — 4 here, so "€1" does not fit.
+   Oracle VARCHAR2(2) defaults to BYTE semantics and needs CHAR spelled out;
+   MySQL's utf8mb3 sizes in characters but stores three bytes each; a COBOL or
+   ABAP fixed field is bytes on disk whatever the program calls it. The rule
+   that survives all of them: a width with no unit is a byte count.
+
+char::from_u32(0xDC00)
+   None
+   0xDC00 is a LOW SURROGATE. Surrogates are the 2,048 code points UTF-16
+   reserves to encode everything above U+FFFF as a pair, so they never stand
+   for a character alone. A char is a Unicode scalar value, which is defined
+   as a code point that is not one of these — so the constructor cannot
+   return one, and returns None rather than a value you would have to check.
+   For comparison, the code point either side of the block:
+     0xD7FF  Some('\u{d7ff}')
+     0xDC00  None
+     0xE000  Some('\u{e000}')

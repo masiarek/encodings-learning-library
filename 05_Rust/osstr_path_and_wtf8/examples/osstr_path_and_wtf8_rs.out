@@ -1,0 +1,108 @@
+1. FOUR PAIRS, ONE SHAPE — OWNED, AND BORROWED
+   owned      borrowed     owned   borrow   what has been promised about the bytes
+   Vec<u8>    &[u8]           24       16   nothing at all
+   OsString   &OsStr          24       16   whatever the OS accepts as a name
+   PathBuf    &Path           24       16   the same, plus separators mean something
+   String     &str            24       16   valid UTF-8
+   The same two-type pattern four times over, and the same two sizes: an owned
+   one is a pointer, length and capacity; a borrowed one is a pointer and a
+   length. Only the last row has made a promise, and only it can be printed
+   without a decision. Take &Path in a signature the way you take &str.
+
+2. THREE DOORS OUT OF AN OsStr, AND ONLY ONE HANDS IT BACK
+   the name: 63 61 66 e9 2e 74 78 74   (8 bytes)
+   to_str()          None
+      -> Option<&str>. None means 'not UTF-8'. You have LOST the name unless
+         you still hold the OsStr — the None carries nothing.
+   to_string_lossy() "caf�.txt"
+      -> Cow<str>. Always succeeds. The e9 has become ef bf bd:
+         63 61 66 ef bf bd 2e 74 78 74
+         You have CORRUPTED the name. Open that and you get ENOENT.
+   into_string()     Err(OsString) — 8 bytes, identical to the input? true
+      -> Result<String, OsString>. The failure case RETURNS THE VALUE. That is
+         the door to use when you need a String and might not get one, because
+         it is the only one that leaves you able to carry on with the name.
+   Same three contracts as from_utf8 / from_utf8_lossy / the unsafe one, one
+   type along — check, replace, or (here) check and hand it back.
+
+3. THE Cow IS A DECISION, AND IT TELLS YOU WHICH ONE IT MADE
+   name                        Cow          what that means for you
+   70 6c 61 69 6e 2e 74 78 74  Borrowed     already UTF-8; the &str points at the same bytes
+   63 61 66 c3 a9 2e 74 78 74  Borrowed     already UTF-8; the &str points at the same bytes
+   63 61 66 e9 2e 74 78 74     Owned        a new String was built, and it is NOT this name
+   ff fe                       Owned        a new String was built, and it is NOT this name
+   So `matches!(c, Cow::Owned(_))` is 'this name cannot be represented', asked
+   without a second pass. Calling .to_string() or .into_owned() on the result
+   throws that answer away — which is why to_string_lossy() is a decision and
+   not a convenience: the convenient spelling is the one that loses the flag.
+
+4. Path IS THOSE BYTES WITH PATH METHODS ON THEM
+   path              2f 76 61 72 2f 6c 6f 67 2f 63 61 66 e9 2e 74 78 74
+   .parent()         Some("/var/log")
+   .file_name()      8 bytes
+   .file_stem()      63 61 66 e9
+   .extension()      Some("txt")   <- a &OsStr that happens to be ASCII
+   .is_absolute()    true
+   PathBuf::push + set_extension -> 2f 76 61 72 2f 6c 6f 67 2f 63 61 66 e9 2e 67 7a
+   Every one of those worked on a name no String can hold. Splitting, joining
+   and opening never look inside a component at all; only DISPLAYING needs
+   the name to be text, which is why display() is the method with the
+   disclaimer attached. Comparing is the one with a wrinkle — next section.
+
+5. AND EQUALITY TIDIES THE SEPARATORS AND NOTHING ELSE
+   Path::eq compares components(), not raw bytes, so a little SYNTAX is
+   normalized on the way — and only syntax:
+     "a/b"     == "a//b"      true
+     "a/b"     == "a/b/"      true
+     "a/b"     == "a/./b"     true
+     "a/b"     == "./a/b"     false
+     "a/c"     == "a/b/../c"  false
+     "a.txt"   == "A.TXT"     false
+   Repeated separators, a trailing one and an inner '.' all collapse; a
+   LEADING './' does not, and neither does '..' — because the thing before it
+   might be a symlink, so std refuses to guess. Case is untouched too, even
+   though the volume this ran on may not care.
+
+   And then each component is compared as BYTES, which is where it bites:
+     composed    11 bytes   c5 bc c3 b3 c5 82 77 2e 74 78 74
+     decomposed  13 bytes   7a cc 87 6f cc 81 c5 82 77 2e 74 78 74
+     identical on screen, and nfc == nfd is false
+   Nothing in std will tell you those are the same word. On macOS APFS they
+   are the SAME FILE — the filesystem is normalization-insensitive — while on
+   Linux they are two files. So a program that compares paths itself and a
+   program that opens them can reach opposite conclusions on one machine.
+   The rule that survives all of it: a Path comparison answers a question
+   about NAMES. If you meant to ask about files, ask the OS — canonicalize.
+
+6. as_encoded_bytes(), AND WHY IT IS NOT CALLED as_bytes()
+   as_encoded_bytes()  63 61 66 e9 2e 74 78 74
+   Portable — it exists on every platform, where as_bytes() is Unix-only. But
+   read its contract before you use the result for anything: the standard
+   library calls the encoding 'an unspecified, platform-specific,
+   self-synchronizing superset of UTF-8', and says any sub-slice that is not
+   valid UTF-8 should be treated as OPAQUE and 'only comparable within the same
+   Rust version built for the same target platform'.
+   So: fine for searching, splitting on ASCII, hashing in memory. Not a value
+   to write to a file, put in a database or send over a network — and that is
+   why from_encoded_bytes_unchecked is unsafe, and why the method's name says
+   'encoded' rather than pretending these are simply the bytes.
+
+7. WHAT THAT SUPERSET IS, ON THE PLATFORM THIS PROGRAM CANNOT RUN ON
+   A Windows filename is a sequence of UTF-16 code units, and NTFS does not
+   check that surrogates are paired — so a name may contain a LONE surrogate,
+   which no valid UTF-8 can represent. Rust stores those names as WTF-8.
+
+   WTF-8 is UTF-8's arithmetic with the surrogate ban lifted. Encoding U+D800
+   through the ordinary three-byte template, by hand:
+     U+D800  ->  ed a0 80
+     and UTF-8 refuses those same three bytes: from_utf8 is Ok? false
+   That is the whole of it — a real encoding with a real spelling, which every
+   UTF-8 decoder is required to reject. Python spells the same three bytes
+   errors='surrogatepass'. Rust never lets them into a String at all, and
+   keeps them in OsString instead, which is the reason the type exists.
+
+   The Windows-only API is a different shape for the same reason: there is no
+   as_bytes()/from_bytes() there, only encode_wide() and from_wide(), which
+   work in u16 code units — because on that platform the bytes were never the
+   thing the OS handed you. See the lesson for the facts that cannot be run
+   on the two machines CI has.
