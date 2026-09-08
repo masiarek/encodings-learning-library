@@ -45,12 +45,12 @@ So the guard is gone and the question is not. Two bytes have two readings, the b
 Measured 2026-09-07, and it is a **version** boundary rather than a platform one:
 
 ```text
-                              3.11.16   3.12.14   3.13.15   3.14.7
-int.from_bytes(b, 'big')        50089     50089     50089    50089
-int.from_bytes(b)               50089     50089     50089    50089
+                            3.10.21     3.11.16   3.12.14   3.13.15   3.14.7
+int.from_bytes(b, 'big')      50089       50089     50089     50089    50089
+int.from_bytes(b)         TypeError       50089     50089     50089    50089
 ```
 
-(The same call is a `TypeError` on 3.10 and every release before it. That half is from [the CPython changelog ↗](https://docs.python.org/3/library/stdtypes.html#int.from_bytes) — *"Changed in version 3.11: Added default argument values for `length` and `byteorder`"* — rather than from a run here.)
+The 3.10 cell is the whole history in one word, and its message names the thing that went missing: `from_bytes() missing required argument 'byteorder' (pos 2)`. That wording is CPython's and belongs in this fence rather than in an answer key, but the *class* is the point — a call that could not be made at all is now a call that quietly picks for you.
 
 ## The program
 
@@ -107,9 +107,9 @@ int.from_bytes(b)               50089     50089     50089    50089
 
 3. THE ARGUMENT THAT STOPPED BEING COMPULSORY
 ------------------------------------------------------------------------
-   For nine years byteorder had no default. You could not call
-   int.from_bytes without answering the question, which is the kind of
-   API that prevents a bug rather than documenting one.
+   From Python 3.2 to 3.10, byteorder had no default. You could not
+   call int.from_bytes without answering the question, which is the
+   kind of API that prevents a bug rather than documenting one.
 
    Python 3.11 gave it one, and the default is 'big':
 

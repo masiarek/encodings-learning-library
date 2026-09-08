@@ -47,9 +47,9 @@
 
 3. THE ARGUMENT THAT STOPPED BEING COMPULSORY
 ------------------------------------------------------------------------
-   For nine years byteorder had no default. You could not call
-   int.from_bytes without answering the question, which is the kind of
-   API that prevents a bug rather than documenting one.
+   From Python 3.2 to 3.10, byteorder had no default. You could not
+   call int.from_bytes without answering the question, which is the
+   kind of API that prevents a bug rather than documenting one.
 
    Python 3.11 gave it one, and the default is 'big':
 
