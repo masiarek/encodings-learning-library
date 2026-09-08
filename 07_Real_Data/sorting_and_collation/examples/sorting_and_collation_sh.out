@@ -1,0 +1,78 @@
+1. A COLLATION THAT IS NOT INSTALLED IS NOT AN ERROR
+------------------------------------------------------------------------
+
+$ LC_ALL=zz_ZZ.UTF-8 sort ./_names.txt 2>/dev/null; echo "exit=$?"
+Ant
+Zebra
+Łodz
+Żeromski
+exit=0
+
+  bytes written to stderr: 0
+  same output as LC_ALL=C: yes
+   Byte order, exit 0, and an empty stderr. This is the mirror of what
+   Python does with the same request: section 2 of the other example
+   shows locale.setlocale RAISING for a locale nobody has, and here the
+   shell tool takes it, says nothing, and sorts by bytes. One of those
+   two failures you can catch; the other reaches production as a list
+   that is merely wrong. A container is where you meet it, because a
+   stock image ships no human-language locales at all.
+
+2. sort ALREADY CARRIES A COLLATION, AND -f IS A TOY ONE
+------------------------------------------------------------------------
+   -f folds case, so 'bravo' and 'Bravo' become EQUAL to the comparison
+   without becoming equal as strings. Every real collation does that at
+   some level -- it is what ignoring case, or an accent, or a joiner
+   means. Here it gives us a tie we can hold still and look at.
+
+$ LC_ALL=C sort -f ./_case.txt | tr '\n' ' '; echo
+alpha Bravo bravo 
+
+3. THE TIE-BREAK sort DOES FOR YOU, AND THE FLAG THAT REMOVES IT
+------------------------------------------------------------------------
+   The same three lines, in two input orders:
+     A:  bravo Bravo alpha
+     B:  Bravo bravo alpha
+
+     default   A -> alpha Bravo bravo 
+     default   B -> alpha Bravo bravo 
+     with -s   A -> alpha bravo Bravo 
+     with -s   B -> alpha Bravo bravo 
+
+   The default gives ONE answer for both inputs. -s gives two, which is
+   backwards from how the flag reads: -s is --stable, and stability is
+   the promise that equal lines keep the order they ARRIVED in -- so it
+   is the route by which the input order reaches the output.
+   Without it, sort applies a LAST-RESORT COMPARISON: when the keys tie
+   it compares the whole lines bytewise. That is UTS #10 A.3.2's recipe
+   for a deterministic comparison, already wired into the tool, and -s
+   is the switch that takes it out.
+
+4. AND -u THROWS AWAY A LINE THAT IS NOT A DUPLICATE
+------------------------------------------------------------------------
+
+     -f -u     A -> alpha bravo 
+     -f -u     B -> alpha Bravo 
+
+   Three lines in, two out, both times -- and a different survivor each
+   time. -u means 'unique according to the comparison', not 'byte
+   identical', so a comparison that ignores case makes bravo and Bravo
+   one line and the input order picks which one lives. Under a real
+   collation the same flag merges rows differing by an accent, a soft
+   hyphen or a zero-width joiner nobody can see. SELECT DISTINCT is the
+   same statement in the other language.
+
+5. THE SAME THING ON A KEY FIELD, WHICH IS WHERE IT ACTUALLY HAPPENS
+------------------------------------------------------------------------
+
+     sort -k2,2       3 a/1 b/2 b/
+     sort -k2,2 -s    3 a/2 b/1 b/
+
+   Sorting records on one column is the everyday case, and no locale is
+   involved: the two rows whose column 2 is 'b' simply have no order of
+   their own. The default breaks the tie on the whole line and gets 1
+   before 2; -s keeps the file order and gets 2 before 1. Neither is
+   wrong, and only one of them is the same tomorrow if the file is
+   regenerated in a different order. Name a second key -- sort -k2,2
+   -k1,1 -- and the question does not arise, which is the shell's
+   spelling of ORDER BY name, id.

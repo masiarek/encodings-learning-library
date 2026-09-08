@@ -1,0 +1,40 @@
+WHICH LEVEL DECIDES
+   role           vs rule           L1     role < rule
+   rôle           vs roles          L1     rôle < roles
+   role           vs rôle           L2     role < rôle
+   role           vs Role           L3     role < Role
+   Davis          vs Da<U+200D>vis  none   Davis < Da<U+200D>vis
+
+   Row 2 is the one that catches people. An accent LOOKS like a level-2
+   difference, and it is -- but rôle and roles do not have the same base
+   letters, so L1 answers first and L2 is never consulted. A level is a
+   question asked only when every question above it came back equal.
+
+THE PAIR NO LEVEL DECIDES
+   'Davis' == 'Da<U+200D>vis'            -> False
+   sort_key equal                       -> True
+   U+200D ZERO WIDTH JOINER is a rendering request. A collation is
+   right to ignore it -- and two unequal strings now compare equal, so
+   their order is not decided by the comparison at all.
+
+   Same key, same two strings, two input orders:
+     sorted([a, b]) -> ['Davis', 'Da<U+200D>vis']
+     sorted([b, a]) -> ['Da<U+200D>vis', 'Davis']
+   Python's sorted() is stable, which is exactly why: stability keeps
+   equal elements in the order they arrived, so the arrival order is
+   what you are reading. Stability is a property of the sort algorithm;
+   it cannot make an order reproducible across two different inputs.
+
+THE ONE-LINE FIX, AND WHAT IT BUYS
+   key=lambda s: (sort_key(s), s)      -- UTS #10, Appendix A.3.2
+     sorted([a, b]) -> ['Davis', 'Da<U+200D>vis']
+     sorted([b, a]) -> ['Davis', 'Da<U+200D>vis']
+   One answer, whatever order the rows arrive in. The tiebreak is the
+   raw code points, which is the only ordering no locale tailors and no
+   library version changes -- so it is the half of the key that is the
+   same on every machine and in every year.
+   It buys reproducibility and nothing else: Davis now precedes
+   Da<U+200D>vis because of a character no font draws. UTS #10 spends
+   section A.3.1 arguing you usually do not want this, and it is right
+   -- unless something downstream is paginating, diffing or caching the
+   order, in which case reproducibility IS the requirement.

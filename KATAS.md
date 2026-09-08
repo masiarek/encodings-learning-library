@@ -110,3 +110,4 @@ That is deliberate, and the reason is that folders are URLs. A topic — the byt
 | K92 | [Four records, one lie — and the number the checksum hands back](08_Build_Your_Own/framing_a_format/README.md#practice) | [A record has to say what it is, how long it is, and whether it arrived](08_Build_Your_Own/framing_a_format/README.md) | 201 → 301 |
 | K93 | [Six questions about fourteen bytes, and the one with no answer](07_Real_Data/packing_a_record/README.md#practice) | [Packing a record](07_Real_Data/packing_a_record/README.md) | 201 → 301 |
 | K94 | [Six expressions, and the requirement each one is about](02_Characters/what_a_regex_matches/README.md#practice) | ["Supports Unicode" is a level, not a yes](02_Characters/what_a_regex_matches/README.md) | 301 |
+| K95 | [Four pairs, and the one no level can separate](07_Real_Data/sorting_and_collation/README.md#practice) | [Sorting and collation](07_Real_Data/sorting_and_collation/README.md) | 301 |

@@ -1,0 +1,106 @@
+1. THREE KEYS, COMPARED IN ORDER -- UTS #10 TABLE 2, REPRODUCED
+------------------------------------------------------------------------
+   L1  primary    base letters  role < roles < rule
+   L2  secondary  accents       role < rôle < roles
+   L3  tertiary   case          role < Role < rôle
+
+   And the key itself, for the four words those three rows are built
+   from. Read down the columns rather than across:
+     role   L1 'role'    L2 ('', '', '', '')                         L3 (0, 0, 0, 0)
+     roles  L1 'roles'   L2 ('', '', '', '', '')                     L3 (0, 0, 0, 0, 0)
+     rôle   L1 'role'    L2 ('', '<U+0302>', '', '')                 L3 (0, 0, 0, 0)
+     Role   L1 'role'    L2 ('', '', '', '')                         L3 (1, 0, 0, 0)
+
+   L1 is the word with its accents and its case taken away. L2 is where
+   the accents went. L3 is where the case went. Nothing was discarded
+   and nothing was added up -- the string was taken apart into three
+   answers, and a comparison consults them in that order.
+
+2. A LOWER LEVEL IS NOT A SMALLER VOTE. IT IS A LATER QUESTION
+------------------------------------------------------------------------
+   role   vs rule    decided at L1   (different base letters)
+   role   vs rôle    decided at L2   (same letters, one accent)
+   role   vs Role    decided at L3   (same letters, same accents, one capital)
+   rôle   vs roles   decided at L1   (an accent AND a base-letter difference)
+
+   The last row is the one to stare at. `rôle` carries an accent and
+   `roles` does not, and the accent never gets a vote: the base letters
+   already differ, so L1 answers and the comparison stops. Levels are
+   not weights in a sum -- each is a question asked only when every
+   question above it came back equal. That is why 'this locale cares
+   more about accents' is never the right description of a difference
+   between two locales; what differs is which level a character's
+   difference lands on.
+
+3. AND THE CASE WHERE ALL THREE SAY NOTHING
+------------------------------------------------------------------------
+   a = Davis
+   b = Da<U+200D>vis      the same name, plus one zero-width joiner
+   a == b                     False
+   sort_key(a) == sort_key(b) True
+   The joiner is a request about rendering, so a collation is right to
+   ignore it at every level -- and two strings that are not equal now
+   compare equal. That is not a defect. A collation exists in order to
+   ignore things: case at L1 and L2, accents at L1, a format character
+   everywhere. Ignoring anything means making ties on purpose.
+
+   So ask the same question twice, changing only the input order:
+     sorted([a, b], key=sort_key)  ->  ['Davis', 'Da<U+200D>vis']
+     sorted([b, a], key=sort_key)  ->  ['Da<U+200D>vis', 'Davis']
+
+   Same two strings, same key, two answers. Python's sorted() is STABLE,
+   which is exactly the mechanism: stability promises that equal
+   elements keep the order they arrived in, so the arrival order is
+   what you are reading back. Stability is a property of the sort
+   ALGORITHM and says nothing at all about the comparison -- which is
+   why it cannot rescue this. A list whose input order varies has no
+   fixed output order, however stable the sort that produced it.
+
+4. THE FIX, AND THE STANDARD'S OWN OBJECTION TO IT
+------------------------------------------------------------------------
+   UTS #10 A.3.2, in one line: when the collation says equal, fall
+   through to a comparison of the raw strings.
+     def det_key(s): return (sort_key(s), s)
+     sorted([a, b], key=det_key)  ->  ['Davis', 'Da<U+200D>vis']
+     sorted([b, a], key=det_key)  ->  ['Davis', 'Da<U+200D>vis']
+   One answer now, whatever order the rows arrive in. The tiebreak has
+   to be the raw code points and not a second collation, because code
+   point order is the one ordering no locale tailors, no library
+   version rewrites and no platform implements differently -- the only
+   part of this subject that is the same everywhere.
+
+   And the objection, which is the standard's rather than this page's.
+   A.3.1 is titled 'Avoid Deterministic Comparisons' and gives three
+   reasons: the sort key roughly doubles in size, which a database pays
+   for; it does not make a non-deterministic SORT deterministic,
+   because that was never a property of the comparison; and the order
+   it produces is decided by differences nobody can see. Above, Davis
+   now precedes Da<U+200D>vis because of a character no font draws.
+   That order is not MEANINGFUL. It is only the same every time --
+   which is the whole trade, and is worth making only when something
+   downstream depends on two runs agreeing.
+
+5. WHAT IT COSTS: A ROW ON TWO PAGES AND A ROW ON NONE
+------------------------------------------------------------------------
+   Six customers, one tie in the middle, three rows to a page.
+     page 1  (rows 0-2 of one query)   ['Adams', 'Baker', 'Davis']
+     page 2  (rows 3-5 of the next)    ['Davis', 'Evans', 'Foster']
+     on both pages                     ['Davis']
+     on neither page                   ['Da<U+200D>vis']
+
+   Nothing failed. Both queries were correct and both used the same
+   collation; the second one merely saw the two tied rows in the other
+   order, which is all a database has to do differently -- a changed
+   plan, an updated row, two workers finishing out of order. The
+   reader gets one customer twice and never sees the other.
+
+   The same shape reaches further than pagination: a nightly export
+   diffed against yesterday's shows moved lines nobody edited, a test
+   that sorts before asserting is green locally and red in CI, and
+   SELECT DISTINCT or sort -u drops a row that was not a duplicate.
+
+   And where there is a unique field to reach for, reach for it
+   instead. UTS #10 A.1.1 says so: appending the primary key, a row
+   id or a sequence number is deterministic AND meaningful, and costs
+   nothing in key size. It is why `ORDER BY name, id` is the form to
+   write. Use the code point tiebreak when there is no such field.
