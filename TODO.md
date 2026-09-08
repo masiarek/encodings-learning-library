@@ -2,7 +2,7 @@
 
 **Level:** reference
 
-**One line:** Fifty pages in the order they are worth writing, ranked against the four checkpoints this library was built around — because the topic map in [TOPICS.md](TOPICS.md) lists over 1,500 terms and a list that long is a way of not choosing.
+**One line:** Fifty-one pages in the order they are worth writing, ranked against the four checkpoints this library was built around — because the topic map in [TOPICS.md](TOPICS.md) lists over 1,500 terms and a list that long is a way of not choosing.
 
 ## The finding that decides the order
 
@@ -17,7 +17,7 @@
 
 **All four checkpoint pages are now written** — the last two, [UTF-8 by hand](03_Encodings/utf8_by_hand/README.md) and [`char` is four bytes](05_Rust/char_is_four_bytes/README.md), on 2026-09-07, a day that started with three of the four still outlined. The promise the library was built around is kept; what is left below is the work that grew around it ([ROADMAP.md](ROADMAP.md) explains each detour as it was taken).
 
-So the ranking is: **finish the promise, then the goal that has no chapter yet (real SAP data), then the remaining stubs, then the pages the topic map exposed.** 27 of the 50 name a page that already exists, and **5 of those are still stubs** (re-counted 2026-09-08, after chapter 7, the UTF-8 checkpoint and the whole of chapter 5 landed) — rows 4, 19, 20, 21 and 22 with their questions written down and their URLs minted; graduating one of those beats minting a new page almost every time.
+So the ranking is: **finish the promise, then the goal that has no chapter yet (real SAP data), then the remaining stubs, then the pages the topic map exposed.** 28 of the 51 name a page that already exists, and **5 of those are still stubs** (re-counted 2026-09-08, after chapter 7, the UTF-8 checkpoint and the whole of chapter 5 landed) — rows 4, 19, 20, 21 and 22 with their questions written down and their URLs minted; graduating one of those beats minting a new page almost every time.
 
 **Every hook below is a claim to verify, not a fact this library has checked.** That is the whole difference between this page and every other page here ([CONTRIBUTING.md](CONTRIBUTING.md)). Expect roughly one in three to come out differently once a program is pointed at it — which is the reason to point a program at it.
 
@@ -66,7 +66,7 @@ Cheap: the questions are already written, and each is one program away.
 | 21 | ~~[`file` guesses](06_Terminal/file_guesses/README.md)~~ | 06 | **Written 2026-09-07.** Five answer shapes, not four — `unknown-8bit` is the fifth — and the finding was elsewhere: `file` reads **64 KiB**, so 65534 bytes of padding before an `é` reports `utf-8`, 65535 reports `iso-8859-1` because the window ends mid-character, and 65536 reports `us-ascii` |
 | 22 | [Logical and visual order](02_Characters/logical_and_visual_order/README.md) | 02 | **A terminal screenshot is not evidence about a string.** [UAX #9 ↗](https://www.unicode.org/reports/tr9/), embedding levels, and the nine controls written only as escapes |
 
-## Tier 4 — the pages the topic map exposed (23–50)
+## Tier 4 — the pages the topic map exposed (23–51)
 
 New pages. Ordered by how often the problem shows up in Adam's three goals, not by how interesting the idea is.
 
@@ -100,6 +100,7 @@ New pages. Ordered by how often the problem shows up in Adam's three goals, not 
 | 48 | The container has no locales | 06 | musl ships essentially no locale data, so Alpine behaves differently from Debian on the same code. The container-era version of the BSD/GNU split this library already tracks |
 | 49 | ~~`OsStr`, `Path`, and WTF-8~~ | 05 | **Written 2026-09-07** as [`OsStr`, `Path`, and WTF-8](05_Rust/osstr_path_and_wtf8/README.md), on the narrowed scope. The best thing on it is a correction the program made to its own page: `Path::eq` compares **components**, not bytes, so `a//b == a/b` — drafted as a byte comparison, and the output disagreed in the same fence as the claim. The Windows half is a dated fence read off the std source, because no runner here is a Windows machine |
 | 50 | Why the model cannot count the letters | 09 | A tokenizer sees byte-level BPE tokens, not characters — and the same sentence costs several times more tokens in Polish than in English. This library's thesis ("it depends who is counting") arriving somewhere new |
+| 51 | ~~[UTF-7, and the seven-bit transport](03_Encodings/utf7_and_the_seven_bit_transport/README.md)~~ | 03 | **Written 2026-09-08**, and it was never on this list — which is the point of the row. The library had been *using* UTF-7 since 2026-09-06 as an attack payload on [Two readers, one byte string](12_Adversarial/parser_differentials/README.md) without ever explaining why the format exists, so the gap was invisible to a backlog organised by topic. The count came out sharper than a hook would have predicted: **2,961** byte strings decode to `<script>`, every one verified, against the **one** an encoder writes. Two things the page did not set out to find — Rust's std has no UTF-7 and no charset registry at all, and BSD `iconv` will not absorb a trailing `-`, so it cannot round-trip its own output |
 
 ---
 

@@ -147,6 +147,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "binary_to_text",
         "base32_alphabets",
         "the_encoding_model",
+        "utf7_and_the_seven_bit_transport",
     ],
     "04_Python": [
         "README.md",

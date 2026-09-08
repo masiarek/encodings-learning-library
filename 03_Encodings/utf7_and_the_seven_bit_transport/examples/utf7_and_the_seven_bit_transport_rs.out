@@ -1,0 +1,46 @@
+
+1. WHAT std HAS, AND WHAT IT DOES NOT
+------------------------------------------------------------------------
+   Rust's standard library converts between UTF-8 and Unicode's
+   own other forms, and offers no other character table at all:
+
+   std::str::from_utf8(&[63, 61, 66, c3, a9])
+     -> "café"
+   String::from_utf16(&[0063, 0061, 0066, 00e9])
+     -> "café"
+   std::str::from_utf7 / Encoding::UTF7 / anything charset-shaped
+     -> does not exist. Not deprecated, not feature-gated: absent.
+
+   That absence is the finding, and it is deliberate. std carries
+   the encoding forms Unicode defines and stops there; every legacy
+   table -- UTF-7, Shift-JIS, cp1252 -- lives in a crate. Nothing
+   in a Rust program can decide a byte string is UTF-7 by accident,
+   because nothing in a Rust program knows what UTF-7 is.
+
+2. SO HERE IS THE NARROW CASE, HAND-ROLLED IN std
+------------------------------------------------------------------------
+   caf+AOk-           -> "café"
+   +ADw-script+AD4-   -> "<script>"
+   <script>           -> "<script>"
+   +2D3eAA-           -> "😀"
+   1 +- 1             -> "1 + 1"
+
+   Line two is the whole security story in one row: sixteen bytes
+   of unremarkable ASCII, and a tag on the other side. Line three
+   is the same tag spelled directly, which is what an encoder
+   writes. Both are legal UTF-7 and they are not the same bytes.
+
+3. WHERE RUST AND PYTHON PART, AND WHY
+------------------------------------------------------------------------
+   "+2D0-" -> refused: unpaired surrogate U+D83D -- not a character, so not a `char`
+   char::from_u32(0xD83D) -> None
+
+   The Python block on this page accepts those same five bytes
+   and hands back a str holding one lone surrogate -- a string
+   that cannot then be encoded to UTF-8. Rust cannot reach that
+   state: `char` is a Unicode SCALAR value, the surrogate range
+   is a hole in it, and so the refusal happens at the decode
+   instead of two stages later. Same input, same specification,
+   two different places to find out -- which is a differential
+   between languages, inside a format built to be carried
+   between machines.

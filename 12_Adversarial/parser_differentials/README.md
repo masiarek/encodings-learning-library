@@ -219,6 +219,7 @@ THE DEFENCE
 
 ## See also
 
+- [UTF-7, and the seven-bit transport](../../03_Encodings/utf7_and_the_seven_bit_transport/README.md) — why the format in section 3 exists, what its `+…-` run actually carries, and the count behind "an encoder picks one, a decoder must accept both": 2,961 spellings of `<script>` against the one
 - [Overlong sequences](../../03_Encodings/overlong_sequences/README.md) — the same shape where both readers claim to be reading UTF-8
 - [Validation is a boundary](../../03_Encodings/validation_is_a_boundary/README.md) — what a decode check does buy you, stated precisely
 - [The check that ran too early](../canonicalize_then_check/README.md) — when the two readers are the same table in a different *order*

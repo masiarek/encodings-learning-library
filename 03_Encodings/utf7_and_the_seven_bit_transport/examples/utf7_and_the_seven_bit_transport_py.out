@@ -1,0 +1,104 @@
+
+1. THE CONSTRAINT, AND FOUR ANSWERS TO IT
+------------------------------------------------------------------------
+   SMTP and NNTP in the 1990s were SEVEN-BIT transports: a relay was
+   entitled to strip the high bit off every byte it carried. So a
+   payload with any byte above 0x7F could not be sent as itself.
+
+   the string             'café'
+   as UTF-8               63 61 66 c3 a9   highest byte 0xC3
+   ...which is exactly the byte the transport would not carry.
+
+   scheme              output                     what it does
+   base64              Y2Fmw6k=                   whole stream, unreadable, +33% always
+   quoted-printable    caf=C3=A9                  per byte, ASCII stays legible
+   MIME encoded-word   =?utf-8?b?Y2Fmw6k=?=       names its own charset -- alone in this table
+   UTF-7               caf+AOk-                   per character, ASCII stays legible, no charset named
+
+   Highest byte across all four outputs: 0x77. Every one is ASCII,
+   which was the whole requirement.
+   UTF-7 is the entry that keeps ASCII readable AND carries the rest of
+   Unicode without a second header naming a table. That is a genuine
+   advantage over the other three, and it is why the format existed.
+
+2. THE MECHANISM: + SHIFTS IN, - SHIFTS OUT, THE MIDDLE IS UTF-16
+------------------------------------------------------------------------
+   code point   UTF-16BE code units   base64      UTF-7        character
+   U+00E9       00 e9                 AOk         +AOk-        é
+   U+20AC       20 ac                 IKw         +IKw-        €
+   U+1F600      d8 3d de 00           2D3eAA      +2D3eAA-     😀
+
+   The second column is the finding. A UTF-7 run is Base64 of UTF-16
+   CODE UNITS -- not of code points, and not of UTF-8 bytes -- so an
+   emoji travels through a surrogate pair on its way into a mail body,
+   and its run is twice as long as the two BMP characters above it.
+   The '=' padding Base64 would add is stripped. A run ends at '-', or
+   at the first byte that is not in the Base64 alphabet, or at the end
+   of the input; a '-' that ends a run is absorbed and is not output.
+
+3. THE ASYMMETRY: THE DECODER ACCEPTS WHAT THE ENCODER NEVER WRITES
+------------------------------------------------------------------------
+   decode  b'+ADw-script+AD4-'  ->  '<script>'
+   encode  '<script>'           ->  b'<script>'   <- unchanged
+
+   Both are correct. RFC 2152 puts '<' and '>' in Set O, the OPTIONAL
+   direct characters: an encoder may pass them through or escape them,
+   and a decoder must accept either. Round-tripping a payload through
+   your own encoder therefore proves nothing about your decoder.
+
+   printable ASCII this encoder escapes:  + \ ~      (3 of 95)
+   Everything else, angle brackets included, is passed through. That is
+   one encoder's policy, not the format's rule.
+
+   Three spellings of one character:
+     b'<'       -> '<'
+     b'+ADw-'   -> '<'
+     b'+ADw'    -> '<'
+   Direct; shifted in and explicitly out; shifted in and ended by the
+   end of the input.
+
+   Now the whole string '<script>', enumerated under that rule:
+     byte strings constructed                 2961
+     of those, decoded back to the string     2961
+     rejected, or decoded to something else      0
+     spellings this encoder will ever write      1   (b'<script>')
+     shortest                                b'<script>'
+     longest, at 40 bytes                     b'+ADw-+AHM-+AGM-+AHI-+AGk-+AHA-+AHQ-+AD4-'
+
+   That ratio IS the security problem. A filter that searches bytes is
+   guarding one spelling out of thousands, and the attacker chooses
+   which one to send. Compare overlong UTF-8, where the same argument
+   ends the other way: one character, one legal spelling, and every
+   other candidate ill-formed and rejected on sight.
+
+4. WHAT THIS DECODER REFUSES, AND WHAT IT CARRIES
+------------------------------------------------------------------------
+   refused:
+     b'+ADx-'     -> UnicodeDecodeError   'ADx' carries '<' plus two padding bits that are not zero
+     b'+AGEA-'    -> UnicodeDecodeError   22 payload bits: one code unit and six bits of nothing
+
+   carried, and each of these is five printable ASCII bytes:
+     b'+AAA-'     -> '\x00'       a NUL, through a channel that takes printable ASCII only
+     b'+AB8-'     -> '\x1f'       U+001F, a C0 control
+     b'+2D0-'     -> '\ud83d'     a LONE SURROGATE -- half of the emoji above
+
+   and that last one, re-encoded to UTF-8:  UnicodeEncodeError -- a surrogate is not a scalar value
+   So a UTF-7 decode that SUCCEEDS can hand you a string your next
+   stage cannot write out at all -- the UTF-16 layer showing through.
+
+   The codec is not lax, though. RFC 2152 calls a run ill-formed when
+   the discarded bits are non-zero, and the two refusals above are
+   exactly that rule and the incomplete-run rule. The danger was never
+   a sloppy implementation; it is the format's own optional escape,
+   faithfully implemented. Which is why deprecating the format was the
+   fix, and hardening the decoder was not.
+
+5. AND THE CODEC IS STILL HERE
+------------------------------------------------------------------------
+   codecs.lookup('utf-7').name  ->  'utf-7'
+   It takes no flag to reach and prints no warning when used. .NET
+   marked UTF7Encoding obsolete and browsers stopped sniffing UTF-7,
+   but a decoder kept alive for compatibility is still a decoder
+   somebody's input can reach. Hence the rule this page ends on: name
+   the encoding at the boundary, so nothing downstream is left to
+   choose a second reading of the same bytes.

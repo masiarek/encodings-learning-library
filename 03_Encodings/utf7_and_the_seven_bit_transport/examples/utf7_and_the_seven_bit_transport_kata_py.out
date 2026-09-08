@@ -1,0 +1,58 @@
+
+1. WHICH OF THE FIVE DECODE TO THE TAG
+------------------------------------------------------------------------
+   YES  <script>                   -> '<script>'
+   YES  +ADw-script+AD4-           -> '<script>'
+   YES  +ADw-script+AD4            -> '<script>'
+   no   +ADx-script+AD4-           -> UnicodeDecodeError -- non-zero padding bits
+   YES  +ADwAcwBjAHIAaQBwAHQAPg-   -> '<script>'
+
+   Four of the five, and the four are not near-misses of each other:
+     1  direct, no shift sequence at all
+     2  each bracket in its own run, explicitly shifted out
+     3  the same, with the last run ended by the end of the input
+     5  every character of the tag inside ONE run
+   The one that fails is 4, and it fails for a reason that has nothing
+   to do with angle brackets: 'ADx' carries the same 16 payload bits as
+   'ADw' plus two padding bits that are not zero, and RFC 2152 calls
+   that ill-formed. A rule about arithmetic, not about characters.
+
+2. WHAT THE ENCODER PRODUCES
+------------------------------------------------------------------------
+   '<script>'.encode('utf-7')  ->  b'<script>'
+
+   One of the five, and it is the one with no shift sequence in it.
+   '<' and '>' are Set O in RFC 2152 -- OPTIONAL direct characters --
+   so passing them through is a legal choice this encoder makes and a
+   decoder is not allowed to make. That is the asymmetry: feeding your
+   own encoder's output back through your own filter tests one spelling
+   out of the family, and it is the spelling nobody attacks with.
+
+3. THE WIDTH QUESTION
+------------------------------------------------------------------------
+   code point   UTF-16BE          code units   UTF-7        width   char
+   U+00E9       00 e9             1            +AOk-        5 bytes  é
+   U+20AC       20 ac             1            +IKw-        5 bytes  €
+   U+1F600      d8 3d de 00       2            +2D3eAA-     8 bytes  😀
+
+   Five bytes for the two BMP characters and eight for the emoji, and
+   the arithmetic says why. A run carries UTF-16 code units: 16 bits
+   each, re-cut into 6-bit base64 symbols, so one unit needs ceil(16/6)
+   = 3 symbols and two units need ceil(32/6) = 6. Add the '+' and the
+   '-' and you get 5 and 8.
+
+   The trap in the question is the word 'character'. The emoji is one
+   character and one code point, and it is TWO code units -- so its run
+   is twice as long, exactly as it is in UTF-16 and for the same reason.
+   A 1997 mail-safe format inherits the surrogate pair whole.
+
+4. THE CHECK
+------------------------------------------------------------------------
+   Base64 of the UTF-16BE bytes, done by hand and compared:
+   b64(UTF-16BE) = AOk        codec said AOk        same   é
+   b64(UTF-16BE) = 2D3eAA     codec said 2D3eAA     same   😀
+
+   Nothing in a UTF-7 run is a UTF-7 invention. It is Base64, over
+   UTF-16, with the padding removed -- two encodings this library has
+   already taught, stacked. The only thing UTF-7 adds is the shift, and
+   the shift is the part that turned out to be dangerous.
