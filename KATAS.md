@@ -92,3 +92,6 @@ That is deliberate, and the reason is that folders are URLs. A topic — the byt
 | K74 | [Out of date, or wrong? -- and the three dates a page carries](13_Documentation/a_page_has_a_date/README.md#practice) | [A page has a date](13_Documentation/a_page_has_a_date/README.md) | 201 |
 | K75 | [The flag no page mentions, and the two platforms that disagree about it](13_Documentation/what_the_page_does_not_say/README.md#practice) | [What the page does not say](13_Documentation/what_the_page_does_not_say/README.md) | 201 |
 | K76 | [Five damaged fields, and the question that sorts them](07_Real_Data/mojibake_round_trip/README.md#practice) | [The mojibake round trip](07_Real_Data/mojibake_round_trip/README.md) | 201 |
+| K77 | [Three ways to make one string wider, and the four calls that move a number](04_Python/str_in_memory/README.md#practice) | [A `str` in memory](04_Python/str_in_memory/README.md) | 201 |
+| K78 | [One file, four readings, and the same script on three machines](04_Python/opening_a_file/README.md#practice) | [Opening a file](04_Python/opening_a_file/README.md) | 201 |
+| K79 | [Six bytes, and a format spec you have not been given](04_Python/bytes_hex_and_int/README.md#practice) | [Bytes, hex and int](04_Python/bytes_hex_and_int/README.md) | 201 |

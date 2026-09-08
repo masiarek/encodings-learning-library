@@ -1,0 +1,166 @@
+0. THIS PROGRAM'S OWN ENVIRONMENT IS RIGGED
+------------------------------------------------------------------------
+   The library runs every example with PYTHONUTF8=1 so that answer keys
+   do not depend on whose machine recorded them. For this page that is
+   a problem, because it disables the thing being demonstrated:
+
+     PYTHONUTF8 in this process:            1
+     sys.flags.utf8_mode here:              1
+
+   So nothing below asks THIS interpreter what open() would do. Each
+   answer comes from a child whose environment is printed with it.
+
+1. WHAT open() BETS ON
+------------------------------------------------------------------------
+     child env        utf8_mode  open()    print()     io.text_encoding
+     PYTHONUTF8=1     1          utf-8     utf-8       utf-8
+     PYTHONUTF8=0     0          ascii     ascii       locale
+     (unset)          1          utf-8     utf-8       utf-8
+
+   Three things in that table.
+
+   The middle row is the honest default: under a C locale with UTF-8
+   Mode off, open() decodes as ASCII -- so any byte over 127 ends the
+   program. That is what a container, a cron job and a systemd unit
+   look like unless somebody set a variable.
+
+   The bottom row turned UTF-8 Mode on WITHOUT being asked. PEP 540
+   reads a C locale as a machine describing its own configuration
+   rather than its data, and overrides it. The locale page works
+   through that; the point here is only that the default has to be
+   asked about rather than assumed.
+
+   The print() column is the same bet made on the way OUT, and it is
+   why a script that prints an e-acute happily in your terminal dies
+   under cron: cron does not set your locale. Nothing about the
+   program changed -- only who started it.
+
+   io.text_encoding(None) answers 'locale' rather than a name. That
+   string IS the encoding argument that means 'go and ask' -- it is
+   what open() uses when you pass nothing.
+
+2. ONE FILE, FOUR READINGS
+------------------------------------------------------------------------
+   A file holding the four characters c-a-f-e-acute, written UTF-8:
+
+     bytes on disk    63 61 66 c3 a9 0a
+
+   Read with an encoding named explicitly, four ways. Only the
+   first is right, and only the second says so:
+
+     encoding  result              code points
+     utf-8     caf\xe9             U+0063 U+0061 U+0066 U+00E9
+     ascii     UnicodeDecodeError  byte 3 is not ASCII
+     cp1252    caf\xc3\xa9         U+0063 U+0061 U+0066 U+00C3 U+00A9
+     latin-1   caf\xc3\xa9         U+0063 U+0061 U+0066 U+00C3 U+00A9
+
+   And the reading that refuses to bet at all:
+
+     'rb'      bytes               63 61 66 c3 a9 0a
+
+   The ASCII row is the safe failure: it stops. The cp1252 and
+   latin-1 rows are the dangerous ones -- five characters where the
+   file has four, no error, no exit status, and the corruption
+   travels onward into whatever you write next.
+
+3. THE FLIP PEP 686 CAUSES, AND WHY IT IS QUIET
+------------------------------------------------------------------------
+   PEP 686 makes UTF-8 Mode the default, so open()'s guess stops
+   depending on the machine. Most code this silently FIXES. The
+   case it silently breaks needs bytes that decode cleanly under
+   both the old default and the new one -- and there are two of
+   them right here:
+
+     bytes on disk    63 61 66 c3 a9 0a
+
+     read as                result              code points
+     cp1252 (a Windows box) caf\xc3\xa9         U+0063 U+0061 U+0066 U+00C3 U+00A9
+     utf-8 (after PEP 686)  caf\xe9             U+0063 U+0061 U+0066 U+00E9
+
+   No exception on either line. Same file, same call, two answers,
+   and the only thing that changed was a default. That pair --
+   C3 A9 read as two Latin-1 letters -- is the mojibake this
+   library keeps meeting; here it is arriving as an UPGRADE.
+
+   The other direction is louder and so matters less. A genuine
+   Windows-1252 file:
+
+     bytes on disk    63 61 66 e9 0a
+     read as cp1252         caf\xe9             U+0063 U+0061 U+0066 U+00E9
+     read as utf-8          UnicodeDecodeError  byte 3 cannot start a sequence
+
+   That one you find on the first run. It is the quiet row above
+   that reaches production.
+
+4. FINDING THESE CALLS IN CODE YOU ALREADY HAVE
+------------------------------------------------------------------------
+   PEP 597 added a warning for exactly this, and it is off by
+   default. Turn it on and every open() that did not say an
+   encoding reports itself:
+
+     python3 -X warn_default_encoding  (or PYTHONWARNDEFAULTENCODING=1)
+       warnings raised: 1
+       EncodingWarning from line 4
+
+     without the flag:
+       warnings raised: 0
+
+   One call warned and one did not, and the difference between them
+   is the whole lesson: the second one said encoding='utf-8'.
+
+   Only the warning's CLASS is printed above. Its wording is
+   CPython's and may be reworded in any release, which is not
+   something this library puts in an answer key.
+
+   If you WRITE functions that take an encoding argument, there is
+   a matching call for the other side of the boundary:
+
+     def load(path, encoding=None):
+         encoding = io.text_encoding(encoding)   # <- one line
+         return open(path, encoding=encoding).read()
+
+   io.text_encoding() returns 'locale' or 'utf-8' as appropriate
+   AND blames the caller's line rather than yours, so the warning
+   points at the code that has to change.
+
+5. TEXT MODE ALSO REWRITES YOUR LINE ENDINGS
+------------------------------------------------------------------------
+   Encoding is not the only thing open() decides. In text mode it
+   translates line endings on the way in, which is a second silent
+   difference between the file and the string:
+
+     bytes on disk               61 0d 0a 62 0a
+     open(..., encoding='utf-8') 'a\nb\n'
+     ... plus newline=''         'a\r\nb\n'
+     open(..., 'rb')             b'a\r\nb\n'
+
+   The default is usually what you want for reading prose and is
+   wrong for the csv module, which does its own line handling and
+   documents newline='' as required -- a quoted field is allowed to
+   contain a bare CR or LF, and translating it corrupts the record.
+
+6. AND open() DOES NOT NORMALISE
+------------------------------------------------------------------------
+   Decoding settles which characters the bytes name. It does not
+   settle which SPELLING of a character was written, and the
+   e-acute has two:
+
+     form     chars  bytes on disk          code points
+     NFC      4      63 61 66 c3 a9         U+0063 U+0061 U+0066 U+00E9
+     NFD      5      63 61 66 65 cc 81      U+0063 U+0061 U+0066 U+0065 U+0301
+
+     the two strings compare equal:           False
+     ...after unicodedata.normalize('NFC'):   True
+
+   Both files are valid UTF-8, both were read with the correct
+   encoding, both print the same word, and they are not the same
+   string. encoding= was never the question here -- which is worth
+   knowing before you spend an afternoon on it.
+
+7. THE RULE
+------------------------------------------------------------------------
+     open(path, encoding='utf-8')   says what it means, everywhere
+     open(path, 'rb')               refuses to guess; decide later
+     open(path)                     asks a machine you have not met
+
+   Pass encoding=, and nothing on this page can reach your program.

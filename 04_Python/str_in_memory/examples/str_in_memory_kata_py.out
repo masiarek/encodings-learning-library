@@ -1,0 +1,40 @@
+THREE WAYS TO MAKE ONE STRING WIDER
+   appended   stride   len +    buffer     grew by more than 1 byte
+   U+00E9     1        1        latin-1    True
+   U+017C     2        1        UCS-2      True
+   U+1F600    4        1        UCS-4      True
+
+   len() goes up by exactly one every time -- one character is one
+   character, whatever it costs. The BUFFER goes up by more than one
+   byte in all three rows, and for two different reasons: the e-acute
+   keeps the one-byte stride but forces the bigger object header,
+   while the other two change the stride for all eleven characters.
+
+WHICH CALLS CAN MOVE getsizeof ON AN UNCHANGED STRING
+   call                   on 100 x 'é'   on 100 x 'A'
+   s.encode('utf-8')      False          False
+   codecs.lookup(s)       True           False
+   sys.intern(s)          False          False
+   s.upper()              False          False
+
+   Only codecs.lookup() moves it, and only in the first column.
+
+   The reason is not that the other three are cheap. encode() and
+   upper() both build a NEW object and leave the original alone;
+   intern() returns a different reference to an equal string without
+   attaching anything. codecs.lookup() is the odd one out because it
+   takes its argument as a C string, and that conversion caches the
+   UTF-8 form on the str itself.
+
+THE PROPERTY THAT MAKES A STRING IMMUNE
+   all characters below U+0080:       True
+     its utf-8 form is its buffer:    True
+     so there is nothing to cache:    True
+
+   all characters below U+0100:       True
+     but its utf-8 form is longer:    True
+     so a cache is a second copy:     True
+
+   Being ASCII is the property -- not being narrow. A Latin-1 string
+   has the same one-byte stride and is NOT immune, because one byte
+   per character in the buffer is two bytes per character in UTF-8.

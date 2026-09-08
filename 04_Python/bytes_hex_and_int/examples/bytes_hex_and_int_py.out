@@ -1,0 +1,164 @@
+1. BYTES AND THEIR PICTURE
+------------------------------------------------------------------------
+   bytes.hex() and bytes.fromhex() are inverses, and neither one is a
+   number: they move between some bytes and a written-down picture of
+   the same bytes, digit for digit, in order.
+
+     EACUTE = 'e-acute'.encode('utf-8')       b'\xc3\xa9'
+     EACUTE.hex()                             'c3a9'
+     bytes.fromhex('c3a9') == EACUTE          True
+
+   The separator argument groups the picture without changing it, and
+   the SIGN of the group width is the direction: positive counts from
+   the RIGHT, negative from the left. On an odd number of bytes that
+   decides where the short group lands, which the grouping page works
+   through in full:
+
+     b.hex(' ')           00 01 e2 40 ff   one byte at a time
+     b.hex(' ', 2)        00 01e2 40ff     short group first
+     b.hex(' ', -2)       0001 e240 ff     short group last
+
+   Same five bytes every time. Only the spaces moved, and the spaces
+   are not in the data.
+
+2. BYTES AND A NUMBER
+------------------------------------------------------------------------
+   int.from_bytes() reads bytes as one integer, and the byte order is
+   the whole question. Two bytes, two readings:
+
+     int.from_bytes(EACUTE, 'big')            50089
+     int.from_bytes(EACUTE, 'little')         43459
+
+   Neither is right. They are answers to different questions, and the
+   bytes do not say which one you meant -- that is what a format spec
+   is for.
+
+   Going back the other way, the LENGTH is the other half of the same
+   point. One number, four widths:
+
+     (123456).to_bytes(3, 'big')              01 e2 40
+     (123456).to_bytes(4, 'big')              00 01 e2 40
+     (123456).to_bytes(8, 'big')              00 00 00 00 00 01 e2 40
+     (123456).to_bytes(2, 'big')              OverflowError
+
+   The leading zeros are not decoration. As a NUMBER 123456 has no
+   width; as a field in a file it has exactly the width the format
+   says, and the zeros are bytes that must be written.
+
+3. THE ARGUMENT THAT STOPPED BEING COMPULSORY
+------------------------------------------------------------------------
+   For nine years byteorder had no default. You could not call
+   int.from_bytes without answering the question, which is the kind of
+   API that prevents a bug rather than documenting one.
+
+   Python 3.11 gave it one, and the default is 'big':
+
+     int.from_bytes(EACUTE)                   50089
+     ...same as 'big':                        True
+     ...same as 'little':                     False
+     (255).to_bytes()                         ff
+
+   On Python 3.10 and earlier the first line is a TypeError. So the
+   guard is gone, the question is not, and it is now yours to
+   remember: write the byte order down even where the default would
+   have done, because the reader of your code cannot tell a deliberate
+   big-endian from a forgotten argument.
+
+4. NEGATIVE NUMBERS ARE ONE MORE ARGUMENT
+------------------------------------------------------------------------
+   signed=True is two's complement, spelled as a keyword:
+
+     (-1).to_bytes(4, 'big', signed=True)     ff ff ff ff
+     (-2).to_bytes(4, 'big', signed=True)     ff ff ff fe
+     (1).to_bytes(4, 'big', signed=True)      00 00 00 01
+
+   And the same four bytes read both ways -- which is why a format
+   spec has to say signed or unsigned, and why getting it wrong gives
+   you a number instead of an error:
+
+     int.from_bytes(ff, 'big')                4294967295
+     int.from_bytes(ff, 'big', signed=True)   -1
+
+     (-1).to_bytes(4, 'big')                  OverflowError
+     Unsigned refuses a negative, which is the one place the
+     conversion does check up on you.
+
+5. struct IS THE SAME FOUR WITH A TEMPLATE
+------------------------------------------------------------------------
+   The first character of a struct format is the byte order, and it is
+   the first thing to read in any format string you meet:
+
+     hex(value)                               0x1e240
+
+     format   packed bytes               meaning
+     <I       40 e2 01 00                little-endian, 4 bytes
+     >I       00 01 e2 40                big-endian, 4 bytes
+     <H       struct.error               the value does not fit
+     >Q       00 00 00 00 00 01 e2 40    big-endian, 8 bytes
+
+     struct.calcsize('<I')                    4
+     struct.calcsize('<HH')                   4
+     struct.unpack('>I', pack('>I', v))       True
+
+   Leave the byte-order character off and you get NATIVE order plus
+   native alignment padding, which is a different size on a different
+   machine. In a file format that is always a bug:
+
+     struct.calcsize('=HI')  (no padding)     6
+     struct.calcsize('HI')   (native, padded) 8
+     struct.calcsize('<HI')  (explicit)       6
+
+   The middle row is two bytes of padding you did not ask for and
+   cannot see. Which order 'native' means is sys.byteorder, and it is
+   a fact about the machine rather than about your data -- which is
+   why it is named here rather than printed: an answer key that
+   recorded it would be recording the runner.
+
+6. A REAL HEADER, BUILT AND THEN READ BACK
+------------------------------------------------------------------------
+   The first 16 bytes of a PNG. Everything below is computed here --
+   the length, the CRC -- so it is a real header rather than a quoted
+   one:
+
+     89 50 4e 47 0d 0a 1a 0a
+     00 00 00 0d 49 48 44 52
+
+   Field by field:
+
+     bytes          field                      value
+     89 50 4e 47..  PNG signature              8 bytes, fixed
+     00 00 00 0d    chunk length (>I)          13
+     49 48 44 52    chunk type (4 ASCII)       IHDR
+     00 00 00 01    width (>I)                 1
+     00 00 00 01    height (>I)                1
+     08             bit depth (B)              8
+     02             colour type (B)            2
+     90 77 53 de    CRC-32 of type+body        checks: True
+
+   PNG is big-endian throughout, which is why every length above is
+   '>I'. Read it as '<I' and the 13-byte header announces itself as
+   218103808 bytes:
+
+     struct.unpack('>I', png[8:12])           13
+     struct.unpack('<I', png[8:12])           218103808
+
+7. AND THE SIGNATURE IS AN ENCODING TEST
+------------------------------------------------------------------------
+   Those first eight bytes are not a magic number somebody liked. Six
+   of the eight are there to catch a file that was TRANSFORMED in
+   transit, and two of them are this library's subject exactly:
+
+     89       high bit set: dies if the path is 7-bit clean
+     50       P
+     4e       N
+     47       G
+     0d       CR: gone if LF was translated to CRLF
+     0a       LF: gone if CRLF was translated to LF
+     1a       DOS end-of-file, so TYPE stops here
+     0a       LF again, catching the reverse translation
+
+   A PNG that went through an FTP client in text mode arrives with its
+   CR/LF pair rewritten and fails on byte five, before any decoder has
+   to guess what went wrong. That is a file format defending itself
+   against the line-ending problem -- the same one that turns a CSV
+   into a column of blank rows.

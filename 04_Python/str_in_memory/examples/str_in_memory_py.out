@@ -1,0 +1,116 @@
+1. ONE TYPE, THREE BUFFERS
+------------------------------------------------------------------------
+   PEP 393 gives every str one of three storage widths, chosen when the
+   string is built and never mixed inside one string. The width is
+   measurable without knowing any byte total: build the same string one
+   character longer, and subtract.
+
+     code pt   bytes   buffer    escape
+     U+0041    1       ASCII     A
+     U+00E9    1       latin-1   \xe9
+     U+017C    2       UCS-2     \u017c
+     U+1F600   4       UCS-4     \U0001f600
+
+   Read the first two rows twice: both cost one byte per character. An
+   all-ASCII str is a smaller OBJECT than a Latin-1 one -- it needs no
+   separate UTF-8 pointer -- but that is a fixed header, paid once,
+   not a price per character.
+
+     one U+0080 makes an ASCII string bigger:       True
+     ...but the stride is the same either way:      True
+
+2. WHERE THE STEPS ARE
+------------------------------------------------------------------------
+   Check the stride either side of the two code points PEP 393 names,
+   and print only the boundaries where it actually changes.
+
+     U+00FF -> U+100    1 byte  -> 2 bytes per character
+     U+FFFF -> U+10000  2 bytes -> 4 bytes per character
+
+   Neither number is arbitrary. U+00FF is the last code point a single
+   byte can index, and U+FFFF the last one a 16-bit unit can hold -- so
+   these are the same two walls UTF-16 was built around, met from
+   inside a language that does not use UTF-16 at all.
+
+3. THE WIDEST CHARACTER SETS THE PRICE, NOT THE AVERAGE
+------------------------------------------------------------------------
+   A thousand ASCII characters, then that same thousand with ONE more
+   character on the end. The ratio is what the added character did to
+   the whole buffer:
+
+     appended                 stride    size against the ASCII string
+     one U+00E9               1         x1.02
+     one U+017C               2         x1.98
+     one U+1F600              4         x3.90
+
+   999 of those 1001 characters are still 'A'. In the last row they
+   are paying four bytes each because one character in the string is
+   not -- and no amount of ASCII around it brings the average back
+   down, because there is no average. There is one buffer.
+
+4. THE STEP DOES NOT MOVE WHEN THE STRING GETS LONGER
+------------------------------------------------------------------------
+   The same stride measured at three lengths. If the buffer were
+   amortised, rounded up, or allocated in blocks, these rows would
+   disagree with each other.
+
+     length       ASCII      UCS-2      UCS-4
+     10           1          2          4
+     1000         1          2          4
+     100000       1          2          4
+
+5. THE SAME STRING, MEASURED TWICE
+------------------------------------------------------------------------
+   A str can carry a cached UTF-8 copy of itself, filled the first time
+   a C function asks for the string as a const char *. codecs.lookup()
+   is one such function: to answer 'is there a codec with this name?'
+   it must first turn the name into a C string, and it is that
+   conversion -- not the answer, which here is always LookupError --
+   that leaves the cache behind.
+
+   str.encode('utf-8') does NOT fill it. encode() builds a new bytes
+   object and hands it to you; the str is never asked to keep one.
+
+     buffer    grew after   grew after       utf-8 form
+               .encode()    codecs.lookup()  IS the buffer
+     ASCII     False        False            True
+     latin-1   False        True             False
+     UCS-2     False        True             False
+     UCS-4     False        True             False
+
+   The ASCII row is the one that explains the other three. For an
+   all-ASCII str the UTF-8 form IS the buffer, byte for byte, so there
+   is nothing to cache and the number can never move. Every other kind
+   can grow later, without the string having changed at all.
+
+6. SO A NARROWER STRING CAN COST MORE THAN A WIDER ONE
+------------------------------------------------------------------------
+   100 of U+00E9 (one byte each) against 100 of U+017C (two bytes
+   each). Fresh, the wider one is bigger, as you would expect. Ask a C
+   function for the narrow one as a C string, and the order reverses:
+
+     fresh: U+00E9 x100 smaller than U+017C x100:   True
+     after codecs.lookup() on the narrow one:       False
+
+   Neither string changed. Neither is wrong. This is the whole reason
+   a number out of sys.getsizeof belongs in a diagnostic and never in
+   an assertion.
+
+7. NONE OF THIS IS A CORRECTNESS QUESTION
+------------------------------------------------------------------------
+   The three buffers are invisible from Python. Same operations, same
+   answers, whichever one you happened to get:
+
+     s = 'A' + U+00E9 + U+017C + U+1F600
+     len(s)                             4   (characters, not bytes)
+     s[3]                               '\U0001f600'
+     s[1:3]                             '\xe9\u017c'
+     s[::-1] == ''.join(reversed(s))    True
+     buffer of s                        UCS-4
+     len(s.encode('utf-8'))             9
+
+   len() and s[i] are O(1) here precisely BECAUSE the buffer has one
+   fixed stride: character i lives at offset i * stride, so there is
+   nothing to scan. That is the trade being made. Rust's String is
+   UTF-8 -- one representation, no upgrade, no quadrupling -- and pays
+   for it with byte indices and no O(1) nth character.

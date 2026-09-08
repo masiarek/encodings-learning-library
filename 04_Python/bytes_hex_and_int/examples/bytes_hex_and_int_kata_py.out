@@ -1,0 +1,51 @@
+SIX BYTES
+   the bytes                              00 00 00 0d 49 48
+   RAW.hex()                              '0000000d4948'
+   bytes.fromhex(RAW.hex()) == RAW        True
+
+   The round trip is exact because neither call is arithmetic.
+   fromhex() also skips ASCII spaces, so a dump pasted straight out
+   of xxd goes back in:
+   bytes.fromhex('00 00 00 0d') == HEAD   True
+
+THE FIRST FOUR AS A NUMBER
+   int.from_bytes(HEAD, 'big')            13
+   int.from_bytes(HEAD, 'little')         218103808
+
+   struct.unpack('>I', HEAD)[0]           13
+   struct.unpack('<I', HEAD)[0]           218103808
+   '>I' agrees with 'big':                True
+   the smaller answer is:                 >I / big
+
+   Big-endian reads the significant byte first, so three leading
+   zeros mean a small number. Little-endian reads them last, where
+   they are the TOP three bytes -- so the same four bytes become
+   thirteen or two hundred and eighteen million, and nothing about
+   the bytes prefers either reading.
+
+THE LAST TWO AS TEXT
+   TAIL                                   b'IH'
+   TAIL.decode('ascii')                   'IH'
+   ...and as a number, 'big':             18760
+
+   Both readings are available and only one is intended. These six
+   bytes are the start of a PNG's IHDR chunk: a big-endian length
+   followed by a four-byte ASCII type, of which we have two letters.
+   A length field and a name field, side by side, distinguishable
+   only by a spec.
+
+FOUR BYTES THAT ARE TWO NUMBERS
+   int.from_bytes(FF, 'big')              4294967295
+   int.from_bytes(FF, 'big', signed=True) -1
+   both round-trip to the same bytes:     True
+
+   A format spec has to state THREE things before four bytes are one
+   number: the width, the byte order, and whether it is signed.
+   Miss any one and the bytes still decode -- to a different value,
+   with no error and no clue. The signed case is the meanest of the
+   three, because the two answers agree for every value below 2^31
+   and diverge only once the top bit is set: a counter that has been
+   correct for years starts reporting -1 the day it crosses over.
+
+   2147483647 both ways agree:            True
+   2147483648 both ways agree:            False

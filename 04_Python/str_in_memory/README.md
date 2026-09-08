@@ -1,26 +1,290 @@
-# A str in memory
+# A `str` in memory
 
 **Level:** 201 · working knowledge
 
-> **Stub — an outline, not a lesson.** There is no runnable example behind this page yet, so nothing on it has been through [the check that backs every other claim in this library](../../CONTRIBUTING.md). The bullets below are the questions the finished page has to answer.
-
 **One line:** A CPython `str` is not stored as UTF-8. It is latin-1, UCS-2 or UCS-4, chosen per string by its **widest** character — so adding one emoji to a long ASCII string can quadruple what it costs.
 
-## What the finished page has to answer
+```python
+import sys
 
-- [PEP 393 ↗](https://peps.python.org/pep-0393/), the flexible string representation: three kinds, picked when the string is built, never mixed within one string
-- The consequence that surprises people: cost is set by the widest character, not the average. One `😀` in a million ASCII characters pays for a million four-byte slots.
-- Why `len()` and indexing are O(1) in Python and cannot be in Rust — the whole trade [`String` is bytes that promise UTF-8](../../05_Rust/string_is_bytes_that_promise_utf8/README.md) describes, seen from the other side
-- The UTF-8 cache hanging off a `str`, and why `sys.getsizeof` can go *down* when the character gets wider
-- What this does and does not mean for a program: it is a memory question, never a correctness one — `str` behaves identically whichever kind it is
-- The bridge to Rust: `String` is always UTF-8, one representation, and pays for it with byte indices
+def stride(ch):                                   # bytes per character, measured
+    return sys.getsizeof(ch * 101) - sys.getsizeof(ch * 100)
 
-## The example it will run
+stride("A")    # 1
+stride("ż")    # 2
+stride("😀")   # 4
+```
 
-**Careful here.** `sys.getsizeof` is CPython-specific, changes between versions, and differs by build — so the numbers may **not** go in an answer key, by the rule [the table has a version](../../02_Characters/the_table_has_a_version/README.md) sets out. Record the *shape* instead: that the size is a step function of the widest code point, that appending one astral character to an ASCII string raises the step, and that the step is unchanged by length. Put actual byte counts in a dated fence.
+Three numbers, and the third one is charged to every character in the string — not only to the emoji.
+
+## Three buffers, one type
+
+[PEP 393 ↗](https://peps.python.org/pep-0393/) (Martin von Löwis, Python 3.3) replaced a compile-time choice with a per-string one. Before it, CPython was built either "narrow" — UCS-2, two bytes per character, where `len('😀')` returned `2` — or "wide", UCS-4, four bytes per character for everything including ASCII. You picked your poison at build time and every string on the system paid it.
+
+Since 3.3 each string picks its own, when it is built, from the widest code point it contains:
+
+| widest code point | buffer | bytes per character |
+|---|---|---|
+| `U+0000`–`U+00FF` | latin-1 | 1 |
+| `U+0100`–`U+FFFF` | UCS-2 | 2 |
+| `U+10000`–`U+10FFFF` | UCS-4 | 4 |
+
+The two boundaries are not arbitrary and they are not new. `U+00FF` is the last code point a single byte can index; `U+FFFF` is the last one a 16-bit unit can hold. They are the same two walls [UTF-16 was built around](../../03_Encodings/utf16_and_surrogates/README.md) and the same two [Rust's `char`](../../05_Rust/char_is_four_bytes/README.md) declines to care about — met here from inside a language that uses neither UTF-16 nor UTF-8 for its own storage.
+
+There is a fourth case that is not a fourth width. An all-ASCII string still costs one byte per character, but its *object header* is smaller, because a string whose characters are all under `U+0080` **is** its own UTF-8 form and needs no separate pointer to one. That is a fixed saving, paid once per string, not a rate.
+
+## Never mixed within one string
+
+This is the part that surprises people, and it is the whole practical consequence: the buffer has one stride, so the widest character sets the price for **every** character.
+
+A thousand `A`s cost about a thousand bytes. Append one `😀` and all 1001 characters move into a four-byte buffer. The 999 `A`s that were perfectly happy in one byte each are now paying four, and nothing about them changed. There is no average, because there is no per-character decision — there is one buffer and one stride.
+
+That is the trade CPython chose deliberately. One stride means character `i` lives at offset `i * stride`, so `len()` and `s[i]` are O(1) with no scanning — which is exactly what [`String` is bytes that promise UTF-8](../../05_Rust/string_is_bytes_that_promise_utf8/README.md) cannot offer, because a UTF-8 buffer has no stride at all. Rust pays with byte indices and no O(1) nth character; Python pays here, in memory.
+
+## The program
+
+<!-- output:str_in_memory_py -->
+*Verified output of [`str_in_memory_py.py`](examples/str_in_memory_py.py) — regenerated by `tools/run_examples.py`, never hand-typed.*
+
+```text
+1. ONE TYPE, THREE BUFFERS
+------------------------------------------------------------------------
+   PEP 393 gives every str one of three storage widths, chosen when the
+   string is built and never mixed inside one string. The width is
+   measurable without knowing any byte total: build the same string one
+   character longer, and subtract.
+
+     code pt   bytes   buffer    escape
+     U+0041    1       ASCII     A
+     U+00E9    1       latin-1   \xe9
+     U+017C    2       UCS-2     \u017c
+     U+1F600   4       UCS-4     \U0001f600
+
+   Read the first two rows twice: both cost one byte per character. An
+   all-ASCII str is a smaller OBJECT than a Latin-1 one -- it needs no
+   separate UTF-8 pointer -- but that is a fixed header, paid once,
+   not a price per character.
+
+     one U+0080 makes an ASCII string bigger:       True
+     ...but the stride is the same either way:      True
+
+2. WHERE THE STEPS ARE
+------------------------------------------------------------------------
+   Check the stride either side of the two code points PEP 393 names,
+   and print only the boundaries where it actually changes.
+
+     U+00FF -> U+100    1 byte  -> 2 bytes per character
+     U+FFFF -> U+10000  2 bytes -> 4 bytes per character
+
+   Neither number is arbitrary. U+00FF is the last code point a single
+   byte can index, and U+FFFF the last one a 16-bit unit can hold -- so
+   these are the same two walls UTF-16 was built around, met from
+   inside a language that does not use UTF-16 at all.
+
+3. THE WIDEST CHARACTER SETS THE PRICE, NOT THE AVERAGE
+------------------------------------------------------------------------
+   A thousand ASCII characters, then that same thousand with ONE more
+   character on the end. The ratio is what the added character did to
+   the whole buffer:
+
+     appended                 stride    size against the ASCII string
+     one U+00E9               1         x1.02
+     one U+017C               2         x1.98
+     one U+1F600              4         x3.90
+
+   999 of those 1001 characters are still 'A'. In the last row they
+   are paying four bytes each because one character in the string is
+   not -- and no amount of ASCII around it brings the average back
+   down, because there is no average. There is one buffer.
+
+4. THE STEP DOES NOT MOVE WHEN THE STRING GETS LONGER
+------------------------------------------------------------------------
+   The same stride measured at three lengths. If the buffer were
+   amortised, rounded up, or allocated in blocks, these rows would
+   disagree with each other.
+
+     length       ASCII      UCS-2      UCS-4
+     10           1          2          4
+     1000         1          2          4
+     100000       1          2          4
+
+5. THE SAME STRING, MEASURED TWICE
+------------------------------------------------------------------------
+   A str can carry a cached UTF-8 copy of itself, filled the first time
+   a C function asks for the string as a const char *. codecs.lookup()
+   is one such function: to answer 'is there a codec with this name?'
+   it must first turn the name into a C string, and it is that
+   conversion -- not the answer, which here is always LookupError --
+   that leaves the cache behind.
+
+   str.encode('utf-8') does NOT fill it. encode() builds a new bytes
+   object and hands it to you; the str is never asked to keep one.
+
+     buffer    grew after   grew after       utf-8 form
+               .encode()    codecs.lookup()  IS the buffer
+     ASCII     False        False            True
+     latin-1   False        True             False
+     UCS-2     False        True             False
+     UCS-4     False        True             False
+
+   The ASCII row is the one that explains the other three. For an
+   all-ASCII str the UTF-8 form IS the buffer, byte for byte, so there
+   is nothing to cache and the number can never move. Every other kind
+   can grow later, without the string having changed at all.
+
+6. SO A NARROWER STRING CAN COST MORE THAN A WIDER ONE
+------------------------------------------------------------------------
+   100 of U+00E9 (one byte each) against 100 of U+017C (two bytes
+   each). Fresh, the wider one is bigger, as you would expect. Ask a C
+   function for the narrow one as a C string, and the order reverses:
+
+     fresh: U+00E9 x100 smaller than U+017C x100:   True
+     after codecs.lookup() on the narrow one:       False
+
+   Neither string changed. Neither is wrong. This is the whole reason
+   a number out of sys.getsizeof belongs in a diagnostic and never in
+   an assertion.
+
+7. NONE OF THIS IS A CORRECTNESS QUESTION
+------------------------------------------------------------------------
+   The three buffers are invisible from Python. Same operations, same
+   answers, whichever one you happened to get:
+
+     s = 'A' + U+00E9 + U+017C + U+1F600
+     len(s)                             4   (characters, not bytes)
+     s[3]                               '\U0001f600'
+     s[1:3]                             '\xe9\u017c'
+     s[::-1] == ''.join(reversed(s))    True
+     buffer of s                        UCS-4
+     len(s.encode('utf-8'))             9
+
+   len() and s[i] are O(1) here precisely BECAUSE the buffer has one
+   fixed stride: character i lives at offset i * stride, so there is
+   nothing to scan. That is the trade being made. Rust's String is
+   UTF-8 -- one representation, no upgrade, no quadrupling -- and pays
+   for it with byte indices and no O(1) nth character.
+```
+<!-- /output -->
+
+## The numbers, and why they are not in the answer key
+
+Everything the program prints is a *shape* — a stride, a ratio, a threshold, a `True`. Not one byte total appears, and that is a rule rather than a stylistic choice: `sys.getsizeof` is not part of the language, it reports a CPython implementation detail, and the two machines that run this library's CI are not pinned to the same Python. [The table has a version](../../02_Characters/the_table_has_a_version/README.md) sets out the general form of that rule; this is a page-sized instance of it.
+
+The totals are still worth seeing once. Measured 2026-09-07, on two builds:
+
+```text
+                            macOS 26, CPython 3.14.7     Debian, CPython 3.13.15
+sys.getsizeof('')                    41                           41
+sys.getsizeof('A')                   42                           42
+sys.getsizeof('A' * 1000)          1041                         1041
+sys.getsizeof('A' * 999 + 'é')     1057                         1057
+sys.getsizeof('A' * 999 + 'ż')     2058                         2058
+sys.getsizeof('A' * 999 + '😀')    4060                         4060
+```
+
+Note that the two columns agree — which is exactly what makes those numbers seductive, and is not evidence they will keep agreeing. The 41-byte header in particular has changed size several times across CPython releases, and nothing about your program will tell you when it changes again.
+
+## Measured twice, two answers
+
+A `str` can also carry a **cached UTF-8 copy of itself**, filled the first time a C function asks for the string as a `const char *` — through `PyArg_ParseTuple`'s `s` converter, which is [documented to cache it ↗](https://docs.python.org/3/c-api/arg.html#strings-and-buffers) on the object. `str.encode('utf-8')` does *not* fill it: `encode()` builds a fresh `bytes` and hands it over, and the string is never asked to keep one.
+
+So `sys.getsizeof` on an unchanged string can return one number now and a larger one after you have passed it to the wrong function — and a string of *narrower* characters can end up costing more than one of wider characters, purely because it acquired a cache and the other did not. Section 6 of the program shows that reversal.
+
+Which calls fill it is itself a version fact, and this page nearly recorded one. Measured 2026-09-07 across four builds:
+
+```text
+                        3.11.16   3.12.14   3.13.15   3.14.7
+codecs.lookup(s)          fills     fills     fills    fills
+sys.audit(s)                 no        no        no    fills
+s.encode('utf-8')            no        no        no       no
+```
+
+`sys.audit()` was the first demonstration written here, and it disagreed with itself between the Mac and the Linux container — which looked like a platform split and was a **version** split, confirmed by running 3.11, 3.12 and 3.14 on the same Linux. Same genre as the `file(1)` and `xxd -e` findings in [CONTRIBUTING](../../CONTRIBUTING.md). The program uses `codecs.lookup()`, which agrees on all four, and which is the better demonstration anyway: to answer *"is there a codec with this name?"* the name has to become a C string first, and it is that conversion — not the answer, which here is always `LookupError` — that leaves the cache behind.
+
+## What this is not
+
+It is a memory question and never a correctness one. All three buffers are invisible from Python: `len()`, indexing, slicing, comparison, `in`, iteration and `.encode()` give identical answers whichever one your string got. There is no operation that behaves differently, no bug that this causes, and nothing to code around. A string containing an emoji is not fragile; it is just bigger.
+
+Which means the practical advice is thin, and honestly so: if you are holding hundreds of megabytes of mostly-ASCII text and one record in a million has an emoji in it, the emoji is not the problem — the string being one object is. Split it, or hold it as `bytes` and decode per record. Everywhere else, this is a fact to recognise in a memory profile, not a thing to design around.
+
+## If you are coming from Python or ABAP
+
+**Python.** The measurement to trust is `sys.getsizeof`, and the thing to remember about it is that it is a *diagnostic*. It does not recurse into a container — `sys.getsizeof(["a" * 1000])` reports the list, not the string — so for a real total you want `tracemalloc` or a recursive walk. Two smaller notes: `sys.intern()` will deduplicate identical strings and is the right tool when the same key is built a million times, which is a much bigger win than any of this; and a *slice* of a UCS-4 string that happens to contain only ASCII gets its own buffer chosen fresh, so slicing an emoji out of a string really does shrink it. Nothing here justifies avoiding non-ASCII characters, and code that does so is solving a problem it does not have.
+
+**ABAP.** *(Not machine-checked — CI cannot run ABAP.)* There is no equivalent question, because there is no choice to make: ABAP's `string` and `c` fields are [the UCS-2 subset of UTF-16](../../09_History/why_utf16_stayed/README.md), two bytes per character, always. An `A` costs two bytes and so does a `日`; nothing upgrades because nothing was ever narrower. The bill lands somewhere else instead — a character above `U+FFFF` needs a surrogate pair, so `strlen` counts it as `2` and `+1(1)` will cut it in half, which is the failure Python's flexible representation exists to avoid. When you need the byte cost of something, that is what `xstring` and `cl_abap_codepage` are for: convert explicitly and measure the result, rather than reasoning from the character count.
+
+## Try it
+
+- Run `python3 -c "import sys; print(sys.getsizeof(open(__file__).read()))"` against the largest source file you have, then again after `.encode('utf-8')`. The two numbers answer different questions, and knowing which is which is most of the skill.
+- Take a real dataset — a CSV, a log, a JSON dump — read it as one string and print the stride from the program above. If it is `4`, find the character responsible: `max(s)` names it in one call.
+- `python3 -m tracemalloc` your way through a load of that data held two ways: one big `str`, and a list of per-record strings. The difference is the whole practical content of this page.
+- Print `sys.getsizeof(s)` for a string of yours, pass it to `codecs.lookup()` inside a `try`, and print it again. If the number moved, that string is not all-ASCII.
+
+## Practice
+
+**One `str`, three ways to make it wider.** Start from `"A" * 10`, and for each of `é`, `ż` and `😀` appended once, predict: the stride in bytes, whether `len()` changes by more than one, and whether the whole buffer's size changes by more than the character's own cost.
+
+Then say which of these four calls can make `sys.getsizeof` of an *unchanged* string go up — `s.encode('utf-8')`, `codecs.lookup(s)`, `sys.intern(s)`, `s.upper()` — and which single property of a string makes it immune to all four.
+
+<details markdown="1">
+<summary><strong>Answers</strong></summary>
+
+<!-- output:str_in_memory_kata_py -->
+*Verified output of [`str_in_memory_kata_py.py`](examples/str_in_memory_kata_py.py) — regenerated by `tools/run_examples.py`, never hand-typed.*
+
+```text
+THREE WAYS TO MAKE ONE STRING WIDER
+   appended   stride   len +    buffer     grew by more than 1 byte
+   U+00E9     1        1        latin-1    True
+   U+017C     2        1        UCS-2      True
+   U+1F600    4        1        UCS-4      True
+
+   len() goes up by exactly one every time -- one character is one
+   character, whatever it costs. The BUFFER goes up by more than one
+   byte in all three rows, and for two different reasons: the e-acute
+   keeps the one-byte stride but forces the bigger object header,
+   while the other two change the stride for all eleven characters.
+
+WHICH CALLS CAN MOVE getsizeof ON AN UNCHANGED STRING
+   call                   on 100 x 'é'   on 100 x 'A'
+   s.encode('utf-8')      False          False
+   codecs.lookup(s)       True           False
+   sys.intern(s)          False          False
+   s.upper()              False          False
+
+   Only codecs.lookup() moves it, and only in the first column.
+
+   The reason is not that the other three are cheap. encode() and
+   upper() both build a NEW object and leave the original alone;
+   intern() returns a different reference to an equal string without
+   attaching anything. codecs.lookup() is the odd one out because it
+   takes its argument as a C string, and that conversion caches the
+   UTF-8 form on the str itself.
+
+THE PROPERTY THAT MAKES A STRING IMMUNE
+   all characters below U+0080:       True
+     its utf-8 form is its buffer:    True
+     so there is nothing to cache:    True
+
+   all characters below U+0100:       True
+     but its utf-8 form is longer:    True
+     so a cache is a second copy:     True
+
+   Being ASCII is the property -- not being narrow. A Latin-1 string
+   has the same one-byte stride and is NOT immune, because one byte
+   per character in the buffer is two bytes per character in UTF-8.
+```
+<!-- /output -->
+
+</details>
 
 ## See also
 
 - [`str` vs `bytes`](../str_vs_bytes/README.md) — the type distinction this page is the inside of
-- [`String` is bytes that promise UTF-8](../../05_Rust/string_is_bytes_that_promise_utf8/README.md) — the other answer to the same problem
-- [The table has a version](../../02_Characters/the_table_has_a_version/README.md) — which facts on this page may be recorded
+- [Encode, decode and errors](../encode_decode_and_errors/README.md) — what `.encode()` builds, and why it does not touch the string it came from
+- [`String` is bytes that promise UTF-8](../../05_Rust/string_is_bytes_that_promise_utf8/README.md) — the other answer to the same problem, and the one that pays in indices
+- [`char` is four bytes](../../05_Rust/char_is_four_bytes/README.md) — Rust's fixed-width type, which is CPython's UCS-4 buffer with a name
+- [Why UTF-16 stayed](../../09_History/why_utf16_stayed/README.md) — the club Python left, and what leaving cost
+- [UTF-16 and surrogates](../../03_Encodings/utf16_and_surrogates/README.md) — where the `U+FFFF` wall comes from
+- [The table has a version](../../02_Characters/the_table_has_a_version/README.md) — which facts on this page may be recorded, and which may not
+- [PEP 393 ↗](https://peps.python.org/pep-0393/) — the specification, with the object layout drawn out

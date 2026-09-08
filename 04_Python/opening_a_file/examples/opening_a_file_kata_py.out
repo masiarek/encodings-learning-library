@@ -1,0 +1,42 @@
+ONE FILE, FOUR READINGS
+   bytes on disk   63 61 66 c3 a9 0a
+
+   encoding   result              chars  code points
+   utf-8      caf\xe9             4      U+0063 U+0061 U+0066 U+00E9
+   ascii      UnicodeDecodeError  -      byte 3 is over 127
+   cp1252     caf\xc3\xa9         5      U+0063 U+0061 U+0066 U+00C3 U+00A9
+   'rb'       bytes               6      63 61 66 c3 a9 0a
+
+   Only 'ascii' raises. utf-8 gives four characters, cp1252 gives
+   five, and the extra one is not an error -- C3 and A9 are both
+   perfectly good Windows-1252 letters. 'rb' gives six bytes and
+   no opinion, which is the only honest answer before you know
+   what wrote the file.
+
+THE SAME SCRIPT ON THREE MACHINES, WITH NO encoding= ANYWHERE
+
+   machine                default   result        how it fails
+   laptop, UTF-8 locale   utf-8     caf\xe9       it does not
+   container, C locale    ascii     raises        loudly, first run
+   Windows, cp1252        cp1252    caf\xc3\xa9   silently, forever
+
+   One file. One script. Three answers, and the exit status is 0 on
+   two of them.
+
+AND WHAT PEP 686 DOES TO EACH ROW
+
+   laptop      no change -- it was already UTF-8 Mode in all but name
+   container   FIXED, silently: the crash stops, and nobody learns
+               that the machine was misconfigured
+   Windows     CHANGED, silently: the same bytes now decode as UTF-8,
+               so the third row above turns into the first one.
+               Right answer, no announcement -- and for a file that
+               really was cp1252, the reverse: it starts raising.
+
+   The pattern is the point. A default that becomes correct is still
+   a default that changed, and the code that was relying on the old
+   one gets no warning at all. Both rows below the first are fixed
+   permanently by one keyword argument, today, on every Python.
+
+THE ONE LINE
+   open(path, encoding='utf-8')   and PEP 686 cannot reach you either.
