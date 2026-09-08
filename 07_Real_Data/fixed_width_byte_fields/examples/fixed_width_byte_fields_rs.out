@@ -1,0 +1,74 @@
+1. THE SAME ARITHMETIC, IN THE TYPE THAT ENFORCES IT
+----------------------------------------------------------------------
+   VALUE.len()            26 bytes      <- len() is BYTES on a &str
+   VALUE.chars().count()  17 characters  <- and this one is O(n)
+   'ż'.len_utf8()          2
+
+   A &str is UTF-8 by definition, so the byte length is the
+   field width and the character count is what the user typed.
+   Rust makes you pick which one you meant at every call site.
+
+2. WHICH WIDTHS ARE BOUNDARIES
+----------------------------------------------------------------------
+      1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
+      .  .  X  .  X  .  X  .  X  .  .  .  X  .  X  .  .  X  .  .  .  .  X  .  X  .
+   is_char_boundary says 9 of 26 widths cut inside a character:
+   [3, 5, 7, 9, 13, 15, 18, 23, 25]
+   The same map the Python run prints, from a different library.
+
+3. THE THREE WAYS TO ASK FOR A PREFIX
+----------------------------------------------------------------------
+   at width 13, which is not a boundary:
+
+   VALUE.get(..13)                None
+   &VALUE[..13]                   panicked: true
+   VALUE.floor_char_boundary(13)  12
+   floor_by_hand(raw, 13)         12
+
+   `get` returns None -- a value you can handle. The index
+   operator panics, because a &str that is not UTF-8 is a
+   contradiction rather than an error case, and there is no
+   value it could return. The two boundary functions agree,
+   which is the point of showing the hand-rolled one.
+
+4. WHAT `from_utf8` SAYS ABOUT A CUT SEQUENCE
+----------------------------------------------------------------------
+   the bytes            7a 61 c5 bc c3 b3 c5 82 c4 87 20 67 c4
+   Err(Utf8Error)
+     valid_up_to()      12
+     error_len()        None
+     the valid prefix   "zażółć g"
+
+   and for bytes that are wrong rather than cut short:
+     7a 61 c5 41 7a          valid_up_to() 2  error_len() Some(1)
+
+   error_len() is None for exactly one reason: the input ended
+   in the middle of a sequence that was otherwise fine. That is
+   the truncation signature, and it is a VALUE -- so a reader
+   can say 'this record was cut, ask for more bytes' and mean
+   something different by 'this record is corrupt'. Python
+   distinguishes the same two cases only in the text of
+   UnicodeDecodeError.reason; .start and .end are identical for
+   both, and the text is a diagnostic that may be reworded.
+
+5. THE LOSSY READER, AND WHAT IT COSTS
+----------------------------------------------------------------------
+   from_utf8_lossy      "zażółć g�"
+     characters           9
+     bytes if re-encoded  15
+     U+FFFD in it         1
+
+   One replacement character stands in for the one byte that
+   was left behind, and it costs three bytes to write. So the
+   repaired value is LONGER than the field it came out of --
+   which is how a lossy read of a fixed-width file overflows
+   the very column it is being loaded into.
+
+6. CUTTING BY CHARACTERS INSTEAD
+----------------------------------------------------------------------
+   char_indices() walk   "zażółć g"  (12 bytes)
+   floor_char_boundary   "zażółć g"  (12 bytes)
+
+   Same answer. Reach for floor_char_boundary when you have a
+   byte budget and the walk when you also need the count, the
+   offsets, or a rule about which characters may be dropped.
