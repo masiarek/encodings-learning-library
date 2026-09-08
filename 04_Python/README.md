@@ -2,7 +2,7 @@
 
 **Level:** 101 → 201 · for Python programmers
 
-Python draws the text/bytes line as a type boundary and refuses to cross it silently. These lessons are what you already know about `str` and `bytes`, reorganised around chapters 2 and 3, plus the places the boundary is easy to get wrong: `open()`, the `errors` policy, the bytes that are not text at all, normalization, and binary formats.
+Python draws the text/bytes line as a type boundary and refuses to cross it silently. These lessons are what you already know about `str` and `bytes`, reorganised around [chapter 2](../02_Characters/README.md) and [chapter 3](../03_Encodings/README.md), plus the places the boundary is easy to get wrong: `open()`, the `errors` policy, the bytes that are not text at all, normalization, and binary formats.
 
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|
