@@ -16,11 +16,14 @@ A [byte](../01_Bits_and_Bytes/a_byte_is_eight_bits/README.md) is a number. Text 
 | 8 | [The table has a version](the_table_has_a_version/README.md) | Whose copy of Unicode is your program actually reading, and what may you write down? | written, 2026-09-06 |
 | 9 | [Noncharacters and the private use areas](noncharacters_and_private_use/README.md) | Which code points are reserved forever, and why "reserved" is not "invalid"? | written, 2026-09-08 |
 | 10 | [Preparing a string](preparing_a_string/README.md) | Are these two strings the same name, and who decides which differences count? | written, 2026-09-06 |
-| 11 | [A code point is not a character](a_code_point_is_not_a_character/README.md) | Why does `len()` still not count what a person calls a character? | written, 2026-09-07 |
-| 12 | [Confusables and scripts](confusables_and_scripts/README.md) | Two strings, one picture, different code points — why does no normalization form merge them? | written, 2026-09-06 |
-| 13 | [Logical and visual order](logical_and_visual_order/README.md) | Why is the order you store not the order you see, and why is a screenshot not evidence? | stub |
-| 14 | [Unicode in identifiers](unicode_in_identifiers/README.md) | Why does `ﬁle = 2` define `file`, and why does Rust refuse to do that? | written, 2026-09-06 |
-| 15 | ["Supports Unicode" is a level, not a yes](what_a_regex_matches/README.md) | Your regex engine says it handles Unicode — which of UTS #18's fifteen requirements does it actually meet? | written, 2026-09-08 |
+| 11 | [PRECIS: stringprep, after stringprep](precis_after_stringprep/README.md) | What replaced stringprep, why a username and a password get different profiles, and what unpinning the table cost? | written, 2026-09-08 |
+| 12 | [A code point is not a character](a_code_point_is_not_a_character/README.md) | Why does `len()` still not count what a person calls a character? | written, 2026-09-07 |
+| 13 | [Case is not a per-character operation](case_is_not_per_character/README.md) | Why does `.upper()` change a string's length, depend on neighbours, and refuse to know your language? | written, 2026-09-08 |
+| 14 | [Where a line may break](where_a_line_may_break/README.md) | Japanese and Thai have no spaces — so where may a line break, and why is `textwrap` wrong for both? | written, 2026-09-08 |
+| 15 | [Confusables and scripts](confusables_and_scripts/README.md) | Two strings, one picture, different code points — why does no normalization form merge them? | written, 2026-09-06 |
+| 16 | [Logical and visual order](logical_and_visual_order/README.md) | Why is the order you store not the order you see, and why is a screenshot not evidence? | stub |
+| 17 | [Unicode in identifiers](unicode_in_identifiers/README.md) | Why does `ﬁle = 2` define `file`, and why does Rust refuse to do that? | written, 2026-09-06 |
+| 18 | ["Supports Unicode" is a level, not a yes](what_a_regex_matches/README.md) | Your regex engine says it handles Unicode — which of UTS #18's fifteen requirements does it actually meet? | written, 2026-09-08 |
 
 ## The through-line
 

@@ -42,7 +42,7 @@ The chapters the diagram above is about. Each one needs the one before it.
 | Chapter | What it settles | Written / stub |
 |---|---|---|
 | [01_Bits_and_Bytes](../01_Bits_and_Bytes/README.md) | A byte is 0..255 with no meaning of its own; hex is bits four at a time; a hex dump is three columns | 7 / 0 |
-| [02_Characters](../02_Characters/README.md) | A character is a number by agreement — 128, then 256 with everybody's own top half, then one numbering for all | 14 / 1 |
+| [02_Characters](../02_Characters/README.md) | A character is a number by agreement — 128, then 256 with everybody's own top half, then one numbering for all | 17 / 1 |
 | [03_Encodings](../03_Encodings/README.md) | How a code point becomes bytes: UTF-8 by hand, UTF-16, byte order, and mojibake as the wrong table | 12 / 0 |
 | [04_Python](../04_Python/README.md) | `str` vs `bytes`, the `errors` policies, `open()`, normalization, binary formats | 6 / 1 |
 | [05_Rust](../05_Rust/README.md) | `String` is bytes that promise UTF-8; `char` is a code point; the three `from_utf8`s; byte slicing | 5 / 0 |
@@ -56,7 +56,7 @@ These are off the diagram on purpose: none of them depends on the spine, and two
 
 | Chapter | What it settles | Written / stub |
 |---|---|---|
-| [09_History](../09_History/README.md) | Nobody designed the mess: every strange rule is a fossil — a sensible decision that outlived the constraint that made it sensible | 3 / 0 |
+| [09_History](../09_History/README.md) | Nobody designed the mess: every strange rule is a fossil — a sensible decision that outlived the constraint that made it sensible | 4 / 0 |
 | [10_Best_Practices](../10_Best_Practices/README.md) | What to actually do on Monday, and why the modern answer is short | 5 / 0 |
 | [11_Tools](../11_Tools/README.md) | `grep`, `find`, `sort`, `tr` — none of them is *about* encodings, and every one has already made an encoding decision for you without saying so | 20 / 0 |
 | [12_Adversarial](../12_Adversarial/README.md) | The shapes text bugs take when somebody chooses the bytes on purpose, each with the one-line rule that closes it | 5 / 0 |

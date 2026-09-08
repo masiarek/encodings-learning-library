@@ -1,0 +1,147 @@
+1. THE INVERSION
+------------------------------------------------------------------------
+   stringprep, 2002:  here are the tables of what is FORBIDDEN
+   PRECIS,     2015:  here is how to DERIVE what is allowed
+
+   The consequence is a maintenance one, and it is the whole reason
+   the framework was replaced. A list of the forbidden has to be
+   reissued every time Unicode grows; a derivation does not. RFC 3454
+   was obsoleted by 7564, obsoleted by 8264, in thirteen years.
+
+   PRECIS defines two string classes, and the difference is not
+   severity -- it is what the string is FOR:
+
+     IdentifierClass  letters and digits, and almost nothing else.
+                      NO spaces. For things that get compared.
+     FreeformClass    letters, digits, spaces, punctuation, symbols,
+                      emoji. For things a person composes.
+
+2. UsernameCaseMapped -- FOLD IT HARD
+------------------------------------------------------------------------
+   Five rules, and RFC 8264 fixes the order:
+     1 width mapping   2 additional mapping   3 case mapping
+     4 normalization   5 directionality
+
+   input                prepared         code points
+   'Straße'             'strasse'        0073 0074 0072 0061 0073 0073 0065
+   'STRASSE'            'strasse'        0073 0074 0072 0061 0073 0073 0065
+   'ａdmin'              'admin'          0061 0064 006D 0069 006E
+   'ADMIN'              'admin'          0061 0064 006D 0069 006E
+   'café'               'café'           0063 0061 0066 00E9
+   'café'              'café'           0063 0061 0066 00E9
+   'Ada Lovelace'       error: IdentifierClass: U+0020 is Zs
+   '🔑🔑🔑'                error: IdentifierClass: U+1F511 is So
+
+   Rows 1 and 2 land on the same prepared string, because casefold
+   turns sharp s into two esses. So `Straße` and `STRASSE` are ONE
+   username, and the second person to arrive is told the name is
+   taken. RFC 8265 knows this and accepts it: two names nobody can
+   tell apart must not both be registrable.
+
+   Rows 5 and 6 are the same word typed two ways -- one composed,
+   one with a combining acute. NFC reconciles them, which is rule 4
+   doing the only job it has.
+
+   Rows 7 and 8 are the CLASS, not the rules. A space is not a
+   letter or a digit and neither is a key emoji, so IdentifierClass
+   refuses both -- and a profile returns a string or an error, never
+   both. Note that nothing was silently dropped: PRECIS does not
+   sanitise a username, it declines to have one.
+
+3. OpaqueString -- TOUCH IT AS LITTLE AS POSSIBLE
+------------------------------------------------------------------------
+   input                      prepared                   code points
+   'paßwort'                  'paßwort'                  0070 0061 00DF 0077 006F 0072 0074
+   'PAßWORT'                  'PAßWORT'                  0050 0041 00DF 0057 004F 0052 0054
+   'correct horse battery staple' 'correct horse battery staple' (28 code points)
+   'my\xa0password'           'my password'              006D 0079 0020 0070 0061 0073 0073 0077 006F 0072 0064
+   'café'                    'café'                     0063 0061 0066 00E9
+   'ａdmin'                    'ａdmin'                    FF41 0064 006D 0069 006E
+   '🔑🔑🔑'                      '🔑🔑🔑'                      1F511 1F511 1F511
+   'pass\u200bword'           error: FreeformClass: U+200B is Cf
+
+   Four differences from the profile above, and every one of them is
+   a decision about what a password IS:
+
+     no case mapping   rows 1 and 2 stay two different passwords.
+                       Folding case would shrink the keyspace, and
+                       hand an attacker collisions for free.
+     spaces allowed    row 3 is a passphrase. FreeformClass exists
+                       so that four words can be a password.
+     spaces MAPPED     row 4 was typed with a NO-BREAK SPACE, and
+                       comes out with an ordinary one -- so a user
+                       whose keyboard or phone inserted U+00A0 can
+                       still log in tomorrow from a machine that
+                       inserts U+0020.
+     no width mapping  row 6's fullwidth `a` is NOT folded to `a`.
+                       The username profile folds it; the password
+                       profile keeps every bit the user typed.
+
+   Rows 7 and 8 are the class doing its job in both directions. A
+   password may be three key emoji, because FreeformClass admits
+   symbols -- and may NOT contain a ZERO WIDTH SPACE, because that
+   is a format character, and a password with an invisible character
+   in it is one the user can never retype. Section 5 is about how
+   close those two verdicts are to each other.
+
+   Row 5 shows the one rule both profiles share, and it is the one
+   with no free option. NFC is applied to passwords too -- because
+   the alternative is a password that works on the keyboard it was
+   set on and silently never works anywhere else.
+
+4. THE SAME STRING, THROUGH BOTH
+------------------------------------------------------------------------
+   input                            as a username            as a password
+   'Straße'                         'strasse'                'Straße'
+   'ａdmin'                          'admin'                  'ａdmin'
+   'correct horse battery staple'   error: IdentifierClass   'correct horse battery staple'
+   'café'                          'café'                   'café'
+   '🔑🔑🔑'                            error: IdentifierClass   '🔑🔑🔑'
+
+   One framework, one document, two answers per row. `Preparing a
+   string` made the case that preparation is a policy question; this
+   is that argument with the policies written out side by side.
+
+5. WHAT PRECIS TOOK BACK WHEN IT UNPINNED THE TABLE
+------------------------------------------------------------------------
+   stringprep froze Unicode 3.2 so a registered name could never
+   change meaning. The cost was that it can never accept a character
+   invented after 2002. PRECIS derives from the LIVE table instead,
+   so it grows -- and inherits the problem the freeze was there to
+   solve. A property PRECIS reads can move.
+
+   Here is one that did, and Python ships both tables to prove it:
+
+   U+200B ZERO WIDTH SPACE
+     general category in the frozen 2002 table:  'Zs'
+
+   `Zs` is the category PRECIS's Additional Mapping Rule means by
+   `space`. Read under a 2002 table, a ZERO WIDTH SPACE in a password
+   IS a space and gets MAPPED to U+0020. It has since been
+   reclassified as a format character, so a modern table puts it in
+   `Cf` and PRECIS DISALLOWS it instead -- which is the verdict the
+   last row of section 3 printed.
+
+   This program can prove the two endpoints and deliberately does not
+   name the version in between: the frozen table is shipped and so is
+   printable, and the release that moved the character is a fact this
+   program has no way to check.
+
+   Same character, same rule, same RFC: mapped on one machine and
+   refused on another, decided by nothing but which Unicode the
+   implementation was built against.
+
+   This program does not print what YOUR table says, because that
+   would be a fact about your machine rather than about text -- and
+   the frozen answer above is printable precisely because it is
+   frozen. Run it yourself:
+
+     python3 -c "import unicodedata as u; print(u.category('\u200b'))"
+
+   That is the honest shape of the trade, and neither side of it is
+   a mistake. stringprep bought determinism with a permanent freeze:
+   a name registered in 2003 means the same thing forever, and no
+   character invented since may ever be registered. PRECIS bought
+   growth with a version number -- your users can have the alphabet
+   they actually write in, and `is this string allowed` is now a
+   question about which Unicode your server was built against.

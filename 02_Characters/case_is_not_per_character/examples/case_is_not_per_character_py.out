@@ -1,0 +1,135 @@
+1. LENGTH: ONE CHARACTER IN, TWO CHARACTERS OUT
+------------------------------------------------------------------------
+   'ß'  LATIN SMALL LETTER SHARP S
+
+   operation              result     chars  bytes  code points
+   the character          'ß'            1      2  00DF
+   .upper()               'SS'           2      2  0053 0053
+   .casefold()            'ss'           2      2  0073 0073
+   .capitalize()          'Ss'           2      2  0053 0073
+   .title()               'Ss'           2      2  0053 0073
+
+   So a buffer sized for the input is too small for the output, and
+   `for c in s: out.append(c.upper())` is not a mistake a type system
+   catches -- it type-checks, and it is wrong for German.
+
+   And it does not come back:
+     'ß'.upper().lower() -> 'ss'   same as the input? False
+   Case mapping is not invertible. There was one sharp s and there
+   are now two esses, and nothing records which esses used to be one.
+
+2. POSITION: THE SAME CHARACTER, TWO LOWERCASE FORMS
+------------------------------------------------------------------------
+   Greek sigma is written differently at the end of a word:
+     U+03A3 GREEK CAPITAL LETTER SIGMA
+     U+03C3 GREEK SMALL LETTER SIGMA
+     U+03C2 GREEK SMALL LETTER FINAL SIGMA
+
+   One uppercase letter, so `.lower()` has to decide by looking around it.
+
+   input          lower()        final form?  why
+   'ΟΔΟΣ'         'οδος'         yes  U+03C2  at the end of a word
+   'ΟΔΟΣ Μ'       'οδος μ'       yes  U+03C2  before a space: still the end
+   'ΟΔΟΣ.'        'οδος.'        yes  U+03C2  before a full stop: still the end
+   'ΟΔΟΣΑ'        'οδοσα'        no   U+03C3  a letter follows, so NOT the end
+   'Σ'            'σ'            no   U+03C3  nothing precedes it, so not a final anything
+   'ΑΣ'           'ας'           yes  U+03C2  one letter is enough to make it final
+
+   Read row 4 against row 1. The sigma is the same character in the
+   same word; one letter after it changes what it lowercases to. No
+   per-character table can express that, because the answer is not a
+   property of the character.
+
+3. AND THE TWO OPERATIONS DISAGREE ON PURPOSE
+------------------------------------------------------------------------
+   'ΟΔΟΣ'     .lower()    -> 'οδος'     03BF 03B4 03BF 03C2
+   'ΟΔΟΣ'     .casefold() -> 'οδοσ'     03BF 03B4 03BF 03C3
+
+   .lower() gives the FINAL sigma; .casefold() gives the plain one.
+   That is not an inconsistency, it is the two jobs:
+
+     .lower()    is for text a person will READ -- keep the
+                 distinction Greek spelling makes
+     .casefold() is for text a program will COMPARE -- destroy every
+                 distinction that must not separate two equal strings
+
+   The proof that they are different questions:
+     'οδος' == 'οδοσ'                     -> False
+     'οδος'.casefold() == 'οδοσ'.casefold() -> True
+   Two spellings of one Greek word. Only one of the two questions
+   answers `the same word` -- and it is not the one called `lower`.
+
+   And a third function answers a third way. A regex told to ignore
+   case compares ONE character with ONE character, so the length axis
+   from section 1 is invisible to it:
+     re.fullmatch('ß', 'SS', re.IGNORECASE)   -> False
+     re.fullmatch('SS', 'ß', re.IGNORECASE)   -> False
+     'ß'.casefold() == 'SS'.casefold()        -> True
+   casefold() calls them equal and the matcher cannot, in either
+   direction: a comparison made one character at a time has no way
+   to say that one character equals two.
+
+4. LOCALE: THE ANSWER DEPENDS ON A LANGUAGE PYTHON NEVER ASKED FOR
+------------------------------------------------------------------------
+   Turkish has two i's, and they case in pairs that cross the
+   Latin ones:
+
+   char   code pt   name                                     upper()    lower()
+   'i'    U+0069    LATIN SMALL LETTER I                     'I'        'i'
+   'I'    U+0049    LATIN CAPITAL LETTER I                   'I'        'i'
+   'İ'    U+0130    LATIN CAPITAL LETTER I WITH DOT ABOVE    'İ'        'i̇'
+   'ı'    U+0131    LATIN SMALL LETTER DOTLESS I             'I'        'ı'
+
+   In Turkish, `i` uppercases to U+0130 (dotted) and `I` lowercases
+   to U+0131 (dotless). The table above does neither. Python's answer
+   is the language-neutral one, and it is wrong for Turkish text --
+   correctly wrong, because it was never told the text was Turkish.
+
+   That refusal is total, and it is the design. `str.upper()` reads
+   no environment variable, and setting one changes nothing:
+
+     LC_ALL=tr_TR.UTF-8 python3 -c "print('i'.upper())"   ->  'I'
+
+   The standard library HAS locale-sensitive text operations -- they
+   are in `locale`, and they are about sorting:
+     locale.strcoll, locale.strxfrm   <- collation, locale-sensitive
+     str.upper, str.lower              <- casing, locale-INDEPENDENT
+
+   So the language will sort your text the way your country does and
+   refuses to case it that way. The asymmetry is deliberate: a wrong
+   sort order is visible, and a wrong case fold silently merges two
+   identifiers or splits one.
+
+   The length trap is here too, in a mapping nobody expects:
+     'İ'.lower() -> 'i̇'   1 char in, 2 out   0069 0307
+   U+0307 is a COMBINING DOT ABOVE. Lowercasing grew the string, and
+   the second character is a mark that renders on top of the first.
+
+5. EVERY ANSWER ABOVE IS A BET, AND HERE IS THE SIZE OF IT
+------------------------------------------------------------------------
+   Every mapping on this page came from `str`, which reads whichever
+   Unicode table this interpreter was built with. So each one is a
+   fact about a machine, and this library's rule is that such facts
+   do not become answer keys.
+
+   The usual escape is the frozen table Python ships beside the live
+   one -- `unicodedata.ucd_3_2_0`, sealed at Unicode 3.2 in 2002. Ask
+   it for a normalization and the answer cannot vary by machine:
+     'café'   NFKC  frozen 'café'   live 'café'
+     'ﬁ'      NFKC  frozen 'fi'     live 'fi'
+
+   That escape is not available here, and the reason is the finding:
+     functions on the frozen table that concern case:  0
+
+   It carries name, category, combining class, decomposition,
+   normalize, bidirectional, east_asian_width and more -- and not one
+   case mapping among them. Case lives on `str`, and `str` has exactly
+   one table: the current one.
+
+   So this page records `ß`.upper() == 'SS', the two sigmas and the
+   four Turkish i's as keys knowing it cannot prove them stable from
+   inside Python. The bet is that these particular entries are load-
+   bearing in every text stack on earth and will not move. If one ever
+   does, this page's key goes red on the next run -- which is the
+   correct outcome, and the reason the bet is worth making out loud
+   rather than by saying nothing.

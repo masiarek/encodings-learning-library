@@ -1,0 +1,130 @@
+1. THE STRING, AND WHY `SPLIT ON WHITESPACE` HAS NOTHING TO WORK WITH
+------------------------------------------------------------------------
+   日本語は「スペース」を使いません。
+   17 characters, 51 bytes, and:
+     JA.split()      -> ['日本語は「スペース」を使いません。']
+     ' ' in JA       -> False
+
+   One 'word' as far as every whitespace-based tool is concerned.
+   It is an ordinary sentence: `Japanese does not use spaces.`
+
+2. WHAT textwrap DOES WITH IT
+------------------------------------------------------------------------
+   textwrap.wrap(text, 8):
+     1  |日本語は「スペー|
+     2  |ス」を使いません|
+     3  |。|
+
+   Look at the last line. It is a full stop, alone, at the start of
+   a line. In Japanese typesetting that is the first rule anyone
+   learns -- kinsoku shori, `forbidden-character handling` -- and it
+   is forbidden in every style guide, every word processor and every
+   browser. `textwrap` is not broken; it was asked a question about
+   spaces and answered it.
+
+3. THE SAME STRING, BROKEN BY RULE
+------------------------------------------------------------------------
+   Three rules, and the class of the two adjacent characters decides:
+
+     never break BEFORE  CL (closing bracket, 。 、)  EX (！？)  NS (ー, small kana)
+     never break AFTER   OP (opening bracket)
+     otherwise, between two ideographs, break freely
+
+   Every position in the sentence, and the verdict:
+
+   pos  left   right  classes    break?
+     1  日      本      ID-ID      yes
+     2  本      語      ID-ID      yes
+     3  語      は      ID-ID      yes
+     4  は      「      ID-OP      yes
+     5  「      ス      OP-ID      NO
+     6  ス      ペ      ID-ID      yes
+     7  ペ      ー      ID-NS      NO
+     8  ー      ス      NS-ID      yes
+     9  ス      」      ID-CL      NO
+    10  」      を      CL-ID      yes
+    11  を      使      ID-ID      yes
+    12  使      い      ID-ID      yes
+    13  い      ま      ID-ID      yes
+    14  ま      せ      ID-ID      yes
+    15  せ      ん      ID-ID      yes
+    16  ん      。      ID-CL      NO
+
+   wrap_by_rule(text, 8):
+     1  |日本語は「スペー|
+     2  |ス」を使いませ|
+     3  |ん。|
+
+   The full stop stayed with its sentence, and the closing bracket
+   stayed with the word it closes. Nothing here consulted a space,
+   a dictionary or a font -- only which of five classes each of two
+   neighbouring characters is in.
+
+4. AND NOW THAI, WHERE THE RULE DOES NOT EXIST
+------------------------------------------------------------------------
+   ภาษาไทย   -- 7 characters, 21 bytes, no space
+   It is two words: ภาษา (language) + ไทย (Thai). The only correct
+   break is between them, at position 4.
+
+   Every position, through the same machinery as section 3:
+
+   pos  left   right  classes    break?
+     1  ภ      า      ID-ID      yes
+     2  า      ษ      ID-ID      yes
+     3  ษ      า      ID-ID      yes
+     4  า      ไ      ID-ID      yes
+     5  ไ      ท      ID-ID      yes
+     6  ท      ย      ID-ID      yes
+
+   Six positions, six yeses. The rules cannot see the one answer that
+   matters, because in Thai the boundary is not a fact about two
+   adjacent characters -- it is a fact about the vocabulary. UAX #14
+   says so itself: it puts Thai in class SA, `Complex Context
+   Dependent`, and hands the problem to a lexical analyser.
+
+   textwrap on the same string, at four widths:
+     width 3  ->  ['ภาษ', 'าไท', 'ย']
+     width 4  ->  ['ภาษา', 'ไทย']
+     width 5  ->  ['ภาษาไ', 'ทย']
+     width 6  ->  ['ภาษาไท', 'ย']
+
+   Width 4 is CORRECT. It is also luck: it is the only width whose
+   greedy cut happens to land on the boundary, and the three either
+   side of it split a word down the middle. A wrapper that is right
+   at one width and wrong at the next is not a wrapper that knows
+   anything -- which is the most useful thing on this page, because
+   testing at one width would have shown a pass.
+
+5. WHAT THE STANDARD LIBRARY HAS, AND WHAT IT DOES NOT
+------------------------------------------------------------------------
+   properties `unicodedata` exposes that concern line breaking: 0
+
+   It has category, combining class, decomposition, bidirectional,
+   east_asian_width and normalize. It does not have Line_Break, so
+   there is nothing in the standard library to look a class up in --
+   which is why the table at the top of this file is a table at the
+   top of this file.
+
+   Two more things that were NOT done here, deliberately:
+
+     * Nothing measured a COLUMN. This program's `width` counts
+       characters, and a real wrapper counts columns or pixels --
+       every one of the CJK characters above is two columns wide.
+       Measuring that means reading east_asian_width, which is a
+       fact about the machine, and this page keeps such facts out
+       of its answer key.
+     * Nothing here is the whole of UAX #14. It defines dozens of
+       classes and thirty-odd numbered rules; this is four classes
+       and three rules, chosen to be exactly enough for one sentence.
+       It is a demonstration of the mechanism, not an implementation
+       of the annex.
+
+   And one place where even this small table took a side. The
+   prolonged sound mark ー and the small kana are class CJ,
+   `Conditional Japanese Starter`, which UAX #14 resolves to NS in
+   STRICT mode and to ID in NORMAL and LOOSE mode. The table above
+   picked strict. Under the loose reading, position 7 becomes a legal
+   break and this sentence wraps differently -- so `where may this
+   line break` does not have one answer even after you have the
+   annex, and CSS exposes the choice as `line-break: strict | normal
+   | loose` precisely because publishers disagree about it.

@@ -1,0 +1,136 @@
+1. WHAT THE TRAINING LEARNED, IN ORDER
+------------------------------------------------------------------------
+   corpus: 295 characters of English, 295 bytes
+   budget: 48 merges      learned: 48
+
+   The first twelve pairs it glued together:
+
+      256  't'        + 'h'        -> 'th'
+      257  'e'        + ' '        -> 'e '
+      258  ' '        + 'th'       -> ' th'
+      259  't'        + ' '        -> 't '
+      260  'a'        + 't '       -> 'at '
+      261  ' th'      + 'e '       -> ' the '
+      262  ' '        + 'a'        -> ' a'
+      263  'm'        + 'a'        -> 'ma'
+      264  'ma'       + 'l'        -> 'mal'
+      265  's'        + 'mal'      -> 'smal'
+      266  'smal'     + 'l'        -> 'small'
+      267  'small'    + ' '        -> 'small '
+
+   Nobody chose those. `small` is one token because that paragraph
+   keeps saying it, and `berry` becomes one for the same reason. A
+   different paragraph makes a different tokenizer, and there is no
+   standard anywhere in this section -- only counting.
+
+2. WHY THE MODEL CANNOT COUNT THE LETTERS
+------------------------------------------------------------------------
+   'strawberry'   10 characters, 10 bytes, 5 tokens
+
+   token         id   what the model receives
+   's'          115   an opaque integer
+   't'          116   an opaque integer
+   'ra'         297   an opaque integer
+   'w'          119   an opaque integer
+   'berry'      283   an opaque integer
+
+   the model sees:  [115, 116, 297, 119, 283]
+
+   Count the letter `r` in that list. You cannot, and neither can the
+   model, because the r's are INSIDE the tokens. Two of them live in
+   token 283 and one in another, and a token id is a position in a
+   lookup table, not a string. Nothing in the model's input says how
+   any token is spelled.
+
+   What is demonstrated here is the input, not the model: nothing
+   in that list of five integers carries a spelling. It follows that
+   a model answering `how many r's` correctly is drawing on something
+   other than what it was handed -- the spelling has to have been
+   learned as a fact ABOUT the token rather than read OFF it.
+
+3. THE SAME MEANING COSTS DIFFERENT AMOUNTS
+------------------------------------------------------------------------
+   Tokenized by the ENGLISH-trained merges above.
+
+                                    chars  bytes  tokens  bytes/token
+   'the cat sat in the warm house'     29     29       8   3.62   English
+   'żółw siedzi w ciepłym domu'        26     30      28   1.07   Polish
+
+   Two sentences of about the same length. One costs 8 tokens and the
+   other 28 -- three and a half times as much to say a comparable
+   thing. The Polish sentence is barely compressed at all: almost
+   every byte is still its own token, because none of its byte pairs
+   was common enough in an English paragraph to earn a merge.
+
+   That is the whole mechanism behind `the same text costs more in
+   Polish`. It is not about the language being harder, and only
+   partly about UTF-8 being wider. It is about whose text the merges
+   were learned from.
+
+4. AND THE BUDGET IS ZERO-SUM
+------------------------------------------------------------------------
+   The same 48 merges, learned from English + Polish instead:
+
+                                     English corpus   mixed corpus
+   'the cat sat in the warm house'                8             11
+   'żółw siedzi w ciepłym domu'                  28             15
+
+   The Polish sentence got much cheaper. The ENGLISH one got dearer.
+
+   That is not a flaw in the experiment, it is the point. A vocabulary
+   is a fixed budget, and a merge spent on a Polish byte pair is a
+   merge not spent on an English one. Every language in the corpus is
+   competing for the same slots, and the majority language wins them.
+
+   Which is why a real tokenizer, trained on text that is mostly
+   English, is cheap for English -- not by design, and not by
+   anybody's decision, but as arithmetic.
+
+5. A TOKEN IS BYTES, SO IT NEED NOT BE A CHARACTER
+------------------------------------------------------------------------
+   'żółw' through the English merges -> 7 tokens
+     c5       c5
+     bc       bc
+     c3       c3
+     b3       b3
+     c5       c5
+     82       82
+     77       'w'
+
+   'berry' through the English merges -> 1 token
+     6265727279 'berry'
+
+   Every token of the Polish word is a lone byte, and six of the seven
+   are HALF A CHARACTER -- the first or second byte of a two-byte
+   UTF-8 sequence, which no decoder will accept on its own. That is
+   why `show` above has to fall back to hex.
+
+   This is the same boundary problem as a chunked read cutting a
+   character in two, arriving in a new place. A byte-level tokenizer
+   can never fail on unfamiliar text -- there is always a token for
+   every byte -- and the price of never failing is that the pieces
+   it hands the model are not characters.
+
+6. WHAT THIS PROGRAM IS NOT
+------------------------------------------------------------------------
+   Everything above is real BPE and none of it is a real tokenizer.
+   The differences that matter:
+
+     scale       48 merges over one paragraph; a production vocabulary
+                 is 50,000 to 200,000 tokens over a corpus measured in
+                 terabytes. Every number here is smaller than a real
+                 one; the RATIOS are the transferable part.
+     pre-tokens  real implementations split on a regex FIRST, so that
+                 a merge can never cross a word boundary. This one has
+                 no such rule, which is why `the ` includes its space
+                 and why a merge could in principle span two words.
+     the mapping GPT-2 remaps the 256 bytes into printable code points
+                 before merging, so that a vocabulary file is text.
+                 That is cosmetics over the same algorithm.
+
+   And one thing this page deliberately does NOT contain: a token
+   count from a real model. There is no tokenizer library here, no
+   network, and no vocabulary file -- so a number attributed to a
+   named model would be a number nothing in this repository can
+   check, which is the one kind of claim this library does not make.
+   The mechanism is the claim, and the mechanism is on this page.

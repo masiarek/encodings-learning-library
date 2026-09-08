@@ -130,7 +130,10 @@ NAV_ORDER: dict[str, list[str]] = {
         "the_table_has_a_version",
         "noncharacters_and_private_use",
         "preparing_a_string",
+        "precis_after_stringprep",
         "a_code_point_is_not_a_character",
+        "case_is_not_per_character",
+        "where_a_line_may_break",
         "confusables_and_scripts",
         "logical_and_visual_order",
         "unicode_in_identifiers",
@@ -195,6 +198,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "from_telegraph_to_unicode",
         "why_utf8_won",
         "why_utf16_stayed",
+        "a_token_is_not_a_character",
     ],
     # The universal rules first, then the two languages, then the wire.
     "10_Best_Practices": [

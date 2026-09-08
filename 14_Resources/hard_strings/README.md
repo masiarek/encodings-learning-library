@@ -33,7 +33,7 @@ The assumptions, in the order the program below breaks them:
 | Normalizing the pieces normalizes the whole | it does not; `NFC(a) + NFC(b)` is not `NFC(a + b)` |
 | If it is in a `str` it can be written out | a lone surrogate is a legal `str` and no UTF-8 encoder will take it |
 
-Everything on this page is **measured**, not asserted — including the counts inside the prose the programs print, which are computed from the same tables they print, so a claim about "four rows" cannot drift away from the four rows above it. The mechanism behind any given row is somebody else's page: [Normalization](../../04_Python/normalization/README.md) for the four forms and why two spellings exist at all, [Confusables and scripts](../../02_Characters/confusables_and_scripts/README.md) for the two rows no form will ever merge, [Preparing a string](../../02_Characters/preparing_a_string/README.md) for what a name field should do about all of it.
+Everything on this page is **measured**, not asserted — including the counts inside the prose the programs print, which are computed from the same tables they print, so a claim about "four rows" cannot drift away from the four rows above it. The mechanism behind any given row is somebody else's page: [Normalization](../../04_Python/normalization/README.md) for the four forms and why two spellings exist at all, [Confusables and scripts](../../02_Characters/confusables_and_scripts/README.md) for the two rows no form will ever merge, [Case is not a per-character operation](../../02_Characters/case_is_not_per_character/README.md) for the two case rows, [Preparing a string](../../02_Characters/preparing_a_string/README.md) for what a name field should do about all of it.
 
 ## In Python
 
@@ -721,6 +721,8 @@ Four of the five are merged by something. One is merged by nothing, and it is no
 - [Normalization](../../04_Python/normalization/README.md) — why `é` has two spellings, what the four forms do, and the stability policy that makes a normalization result safe to write into an answer key
 - [Confusables and scripts](../../02_Characters/confusables_and_scripts/README.md) — the two rows in the table that no normalization form will ever merge, and the whole-string rule that catches them instead
 - [Preparing a string](../../02_Characters/preparing_a_string/README.md) — map, normalize, screen, shape-check: the four steps in the order the standards put them
+- [Case is not a per-character operation](../../02_Characters/case_is_not_per_character/README.md) — the mechanism behind the two case rows: why a fold can change a string's length, depend on its neighbours, and still not know the language
+- [PRECIS: stringprep, after stringprep](../../02_Characters/precis_after_stringprep/README.md) — what the successor standard does with the zero-width-space row, and why its verdict depends on which Unicode the implementation was built against
 - [Two people, one account](../../12_Adversarial/collisions_by_design/README.md) — what happens when the corpus reaches a system that hashes before it folds
 - [The check that ran too early](../../12_Adversarial/canonicalize_then_check/README.md) — the same strings as a security property, where the order of canonicalise and check is the whole bug
 - [A code point is not a character](../../02_Characters/a_code_point_is_not_a_character/README.md) — the other counting question, and the five rulers that disagree about one string

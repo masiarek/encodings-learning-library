@@ -1,0 +1,85 @@
+1. THE RETURN TYPE IS THE LESSON
+------------------------------------------------------------------------
+   fn to_uppercase(self) -> ToUppercase      // not -> char
+   fn to_lowercase(self) -> ToLowercase      // not -> char
+
+   Both are iterators of `char`. A function returning one `char`
+   would be unimplementable, and the reason is a single German
+   letter:
+
+   char    up yields   code points     low yields     code points
+   'ß'      2 "SS"     0053 0053         1 "ß"        00DF
+   'ﬃ'      3 "FFI"    0046 0046 0049    1 "ﬃ"        FB03
+   'İ'      1 "İ"      0130              2 "i\u{307}" 0069 0307
+   'A'      1 "A"      0041              1 "a"        0061
+
+   Sharp s yields two going up. The `ffi` ligature yields three,
+   which is the ceiling std documents. And U+0130 yields one going
+   up and TWO going down -- so neither direction is safe to assume,
+   and `.count()` is never a constant.
+
+2. THE SAME TEXT, TWO METHODS, TWO ANSWERS
+------------------------------------------------------------------------
+   input                            "ΟΔΟΣ"  039F 0394 039F 03A3
+   str::to_lowercase                "οδος"  03BF 03B4 03BF 03C2
+   chars().flat_map(to_lowercase)   "οδοσ"  03BF 03B4 03BF 03C3
+
+   equal?  false
+
+   The two expressions look like the same operation written two
+   ways, and the second is the one a reviewer would call the
+   explicit version. It ends in U+03C3 where the correct Greek
+   ends in U+03C2, GREEK SMALL LETTER FINAL SIGMA.
+
+   `char::to_lowercase` is not wrong. It is asked a question that
+   has no answer: a `char` is one code point with no left and no
+   right, and whether a sigma is final is a fact about its
+   neighbours. std says so in its own documentation and always
+   returns the non-final form.
+
+   And `str::to_lowercase` only gets it right by looking:
+     ΟΔΟΣ     -> οδος     03BF 03B4 03BF 03C2        sigma at the end of the word
+     ΟΔΟΣΑ    -> οδοσα    03BF 03B4 03BF 03C3 03B1   same sigma, one letter added after it
+
+3. THE PART std WILL NOT DO, AND SAYS SO
+------------------------------------------------------------------------
+   Turkish lowercases `I` to `ı` (dotless) and uppercases `i` to
+   `İ` (dotted). Rust gives the language-neutral answer:
+
+     'I'.to_lowercase()  ->  "i"
+     'i'.to_uppercase()  ->  "I"
+
+   ...and its own docs state that this holds across languages, on
+   purpose. There is no locale argument to pass, because `str` has
+   no notion of what language it is holding.
+
+   Nor is the ASCII shortcut a way out. It is a different function
+   with a different promise, and the promise is in the name:
+
+     text       ascii_upper  to_uppercase same?
+     "odos"     "ODOS"       "ODOS"       true
+     "straße"   "STRAßE"     "STRASSE"    false
+     "café"     "CAFé"       "CAFÉ"       false
+
+   Row 2 is the one to keep. `to_ascii_uppercase` produced
+   "STRAßE" -- a lowercase German letter standing in the middle
+   of five capitals -- and did not fail, did not warn, and returned
+   a perfectly good String. A function that silently declines to do
+   its job on some of your data is only safe because it said `ascii`
+   in its name, which is the entire argument for the name.
+
+4. WHAT THE STANDARD LIBRARY HANDS TO A CRATE
+------------------------------------------------------------------------
+   std does the case axis in full and the LANGUAGE axis not at all,
+   and it names the crate that does: `icu_casemap`, from Unicode.
+
+   It also suggests writing the sigma rule yourself, using two
+   `char` predicates -- `is_cased` and `is_case_ignorable`. On the
+   stable compiler this file is built with, both are unstable and
+   the code does not compile. The advice is real; the ingredients
+   are nightly-only. The dated note on the page has the versions.
+
+   So the split, in one line each:
+     length   std handles it, and the return type proves it
+     position std handles it on `str` and cannot on `char`
+     language std refuses, deliberately, and points at a crate
