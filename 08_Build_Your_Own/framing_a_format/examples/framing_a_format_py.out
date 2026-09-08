@@ -1,0 +1,165 @@
+1. THE RECORD, FIELD BY FIELD
+
+   payload   b'caf\xc3\xa9'   5 bytes: 63 61 66 c3 a9
+   record    :05010000636166C3A964
+
+   field          chars  value        what it is for
+   RECORD MARK       1  :            the ASCII colon, 0x3A -- where a record begins
+   RECLEN            2  05           5 data bytes follow the type; the maximum is FF
+   LOAD OFFSET       4  0100         0x0100 -- where the loader puts the first byte
+   RECTYP            2  00           00 = Data; the field that lets one file hold several shapes
+   DATA             10  636166C3A9   the payload, one pair of hex digits per byte
+   CHKSUM            2  64           two's complement of RECLEN..DATA
+
+   5 bytes of payload arrive as a 21-character record:
+   10 characters of payload in hex, 11 characters of frame.
+   The frame is a constant -- 11 characters however long the payload is.
+
+   And every character is printable ASCII. The two bytes of the é,
+   c3 a9, are not printable ASCII themselves; they travel as the
+   four characters 'C3A9'. That is the armour. The frame is the rest.
+
+2. THE CHECKSUM IS FOUR LINES
+
+   byte  field         running sum
+   05    RECLEN          5  0x05
+   01    LOAD OFFSET     6  0x06
+   00    LOAD OFFSET     6  0x06
+   00    RECTYP          6  0x06
+   63    DATA          105  0x69
+   61    DATA          202  0xCA
+   66    DATA           48  0x30
+   C3    DATA          243  0xF3
+   A9    DATA          156  0x9C
+
+   sum over RECLEN..DATA     668  ->  0x9C in eight bits
+   two's complement          100  ->  0x64   <- the CHKSUM field
+
+   And the property that makes a reader's job one line: the specification
+   says the sum from RECLEN to and including CHKSUM is zero, so a reader
+   never has to compute the complement at all -- it adds everything up
+   and compares against nothing.
+   sum(RECLEN..CHKSUM) & 0xFF = 0
+
+   Note what is NOT in the sum: the record mark. A colon corrupted into
+   a semicolon is not a checksum failure -- it is a record the reader
+   never finds. A frame's own delimiter is the part it cannot check.
+
+3. ONE CHARACTER CHANGED
+
+   good    :05010000636166C3A964   checksum ok
+
+   Now change one character. Not a byte of payload -- one ASCII digit,
+   which is the damage a text channel actually does.
+
+   change                record                 verdict
+   3->1 at 10 in DATA    :05010000616166C3A964  checksum FAILED
+   A->9 at 17 in DATA    :05010000636166C39964  checksum FAILED
+   4->5 at 20 in CHKSUM  :05010000636166C3A965  checksum FAILED
+   5->6 at 2 in RECLEN   :06010000636166C3A964  Malformed: RECLEN claims 6 data bytes, 5 present
+
+   Four characters changed, and the last one fails differently. A wrong
+   RECLEN never reaches the checksum: the reader is already looking for
+   a byte that is not there. A length field is a check too, and it is
+   the one that fires first.
+
+   What a failing checksum tells you: this record is wrong. What it does
+   not tell you: which character. One 8-bit sum has 256 values and this
+   record has 20 characters after the mark, so there is nothing in it
+   to locate anything with. Detection, not correction.
+
+4. NO SEPARATOR REQUIRED
+
+   Three records, concatenated with nothing at all between them --
+   no newline, no space, no length prefix on the file:
+
+   :020000040001F9:05010000636166C3A964:00000001FF
+
+   record  type  name                       offset  data
+        1    04  Extended Linear Address    0x0000  00 01
+        2    00  Data                       0x0100  63 61 66 c3 a9
+        3    01  End of File                0x0000  (none)
+
+   It parses, and that is the length field's real job. The mark says
+   where a record starts and RECLEN says where it ends, so the stream
+   is self-delimiting: a newline between records is a courtesy to `cat`
+   and to `grep`, not something the format needs.
+
+   The alternative -- a delimiter and no length -- is the arrangement
+   that breaks the moment the delimiter occurs in data, which is the
+   whole subject of in-band signalling. A length field is how a format
+   stops caring what its payload contains.
+
+5. A TYPE THE READER HAS NEVER SEEN
+
+   A file written by a newer tool: same three fields, and one record
+   whose type this reader has never heard of.
+
+   :05010000636166C3A964:04000006DEADBEEFBE:02020000C5BC7B:00000001FF
+
+   type 00  Data                     handled   63 61 66 c3 a9
+   type 06  unknown to this reader   SKIPPED   4 bytes, checksum verified anyway
+   type 00  Data                     handled   c5 bc
+   type 01  End of File              handled   (none)
+
+   recovered payload  63 61 66 c3 a9 c5 bc  = 'caféż'
+   skipped            1 record it could not interpret and did not need to
+
+   This is what a record type is FOR, and it only works because of the
+   length. A type alone tells a reader that it does not understand
+   something; a type plus a length tells it exactly how far to jump to
+   reach the next thing it does. One field is a diagnosis, two are a
+   recovery -- and an old reader that survives a new record is the whole
+   of what anybody means by an extensible format.
+
+6. WHAT THE FRAME DOES NOT CATCH
+
+   two bytes swapped        :0200000041427B -> :0200000042417B
+                            checksum still ok -- addition does not care about order
+
+   two errors that cancel   :0200000041427B -> :0200000040437B
+                            41 42 became 40 43: one down, one up, sum unchanged
+                            checksum still ok
+
+   a whole record deleted
+      before  :020000040001F9:05010000636166C3A964:00000001FF
+      after   :020000040001F9:00000001FF
+      every remaining record's checksum: all ok
+
+   Three failures the frame does not see, and they fall into two
+   kinds. The first two are inside a record and slip past because an
+   8-bit sum is a coarse check: it fails on any single wrong byte and
+   on nothing that leaves the total alone. The third is a different
+   thing entirely -- the damage is not inside any record, and a
+   per-record checksum has no scope to reach it. Nothing about the
+   FILE is checked by anything here, and the 1988 specification's six
+   record types include no count, no sequence number and no hash.
+   Knowing what a check does not cover is the second half of adding one.
+
+7. TRIBIT, FRAMED
+
+   tribit's own container   54 33 05 e1 d8 37 40
+      54 33   magic 'T3'    says what the file is
+      05      pad count     says how the last byte ends
+      e1..    payload       and that is the whole header
+
+   It has a magic number, which Intel HEX does not, and it is missing
+   all three of the fields this page is about. Wrap the same bytes:
+
+   :07000000543305E1D837403D:00000001FF
+
+   parsed back  type 00  7 bytes  checksum ok  54 33 05 e1 d8 37 40
+   round trip   identical to the tribit bytes
+
+   cost  7 bytes in, 36 characters out
+         14 are the payload in hex
+         11 are this record's frame
+         11 are the end-of-file record, :00000001FF, which is those
+         same characters in every Intel HEX file ever written
+
+   That is the trade, and it is worth writing down before choosing it:
+   2x for the armour, a fixed 11 characters per record for the frame.
+   In exchange, a file that survives a 7-bit channel, that cuts into
+   records without a delimiter, that a reader can skip through when it
+   meets something new, and that says NO when it has been damaged
+   instead of quietly handing back the wrong bytes.

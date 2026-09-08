@@ -111,6 +111,7 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [14_Resources](14_Resources/README.md) | written, 2026-09-07 — the resources chapter, not a chapter of the course |
 | [Anki: hexadecimal](14_Resources/anki/README.md) | written, 2026-09-07 — 22 cards over Python, Rust, C and bash, each snippet run by the deck's own `verify.py`; grew out of a seven-question kata of Adam's, one of whose answers it corrects |
 | [Tribit — the specification](08_Build_Your_Own/tribit/README.md) | written, 2026-09-05 — the Rust implementation is Adam's project |
+| [A record has to say what it is, how long it is, and whether it arrived](08_Build_Your_Own/framing_a_format/README.md) | written, 2026-09-08 — Python, Rust and shell; record type, length and checksum worked on Intel HEX against Intel's own 1988 specification, which turns out to define no line terminator at all — the mark and RECLEN make the stream self-delimiting, and a three-record file with nothing between the records parses |
 | [RESOURCES.md](RESOURCES.md) | written, 2026-09-05 — re-check the links when a page graduates and cites one |
 
 ## Written out of order, on purpose

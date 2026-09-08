@@ -104,6 +104,12 @@ New pages. Ordered by how often the problem shows up in Adam's three goals, not 
 
 ---
 
+## Landed off the list
+
+**2026-09-08: [A record has to say what it is, how long it is, and whether it arrived](08_Build_Your_Own/framing_a_format/README.md).** Not item 1–50, and not a stub graduating either — it came from a question Adam asked about a Wikipedia article ([Intel HEX ↗](https://en.wikipedia.org/wiki/Intel_HEX)) while working on the Tribit project, and the answer turned out to be a page: record type, length and checksum, which are the three fields Tribit's container does not have and which nothing else in this library covered. Chapter 8 went from one page to two, and its shape changed from *one project* to *a project, then the general thing the project is missing*.
+
+Worth recording as a pattern rather than as an entry, because it is not the first — [Anki: hexadecimal](14_Resources/anki/README.md) grew out of a kata of Adam's the day before, and the list predicted neither: **a question about a real format beats a row in a backlog**, because the question already knows why it is being asked. The fifty above are still the ranking for when nobody is asking anything.
+
 ## Not on this list, on purpose
 
 [TOPICS.md](TOPICS.md) marks three sections **adjacent**: streams and file descriptors (§3), parsers and grammars (§4.2), fonts and rendering (§6). They are real, they touch text, and the lesson belongs in a sibling library or nowhere yet. Two corners of them *are* core and have been pulled onto this list — items 40 and 41 — which is the point of marking the boundary rather than leaving it to drift.

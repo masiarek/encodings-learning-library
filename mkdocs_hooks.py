@@ -184,6 +184,7 @@ NAV_ORDER: dict[str, list[str]] = {
     "08_Build_Your_Own": [
         "README.md",
         "tribit",
+        "framing_a_format",
     ],
     # The story, in the order it happened.
     "09_History": [

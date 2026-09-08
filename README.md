@@ -41,7 +41,7 @@ That is the plan of the library. Chapter 1 is the bytes, chapter 2 is the charac
 | [05_Rust](05_Rust/README.md) | What is the promise a `String` makes, and which rules are that promise being kept? |
 | [06_Terminal](06_Terminal/README.md) | How do I see, make, and re-encode bytes with no language at all? |
 | [07_Real_Data](07_Real_Data/README.md) | The six shapes this takes when a file crosses an SAP interface |
-| [08_Build_Your_Own](08_Build_Your_Own/README.md) | A project: design a silly 3-bit text format with its own code points, then implement it in Rust against a reference that prints every expected result |
+| [08_Build_Your_Own](08_Build_Your_Own/README.md) | A project: design a silly 3-bit text format with its own code points, then implement it in Rust against a reference that prints every expected result — and then the record type, length and checksum it takes to make it a format somebody else can read |
 | [09_History](09_History/README.md) | Where all of this came from — six eras, six constraints, and why the one that won, won |
 | [10_Best_Practices](10_Best_Practices/README.md) | What to actually do on Monday, in nine lines and three pages |
 | [11_Tools](11_Tools/README.md) | `grep`, `sed`, `awk`, `cut`, `find`, `xargs`, `rg`, `tr`, `sort`, `uni` — the tools you already run over text, and the encoding decision each one makes for you |

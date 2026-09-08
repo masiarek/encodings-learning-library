@@ -1,0 +1,77 @@
+
+1. TWO FILES, ONE PAYLOAD
+------------------------------------------------------------------------
+
+   raw bytes        543305e1d83740
+   as Intel HEX
+       :07000000543305E1D837403D
+       :00000001FF
+
+   file(1) says     application/octet-stream
+   and              text/plain
+
+   That verdict is the whole point of the armour: the same payload,
+   and only one of the two files is something a text tool will open.
+
+2. ONLY ONE OF THEM SURVIVES A 7-BIT CHANNEL
+------------------------------------------------------------------------
+
+   payload.t3     is NOT ASCII   exit 1    a 7-bit channel mangles or drops it
+   payload.hex    is US-ASCII    exit 0    goes through a 7-bit channel intact
+
+   In 1988 that channel was paper tape and a CRT terminal. Today it is
+   a JSON string, a YAML block, a git diff, an email body and a copy
+   and paste. The channel changed; the reason for the armour did not.
+
+3. FIXED-WIDTH ASCII MEANS cut IS A RECORD PARSER
+------------------------------------------------------------------------
+
+   record marks   2
+   RECLEN  (2-3)  07 00 
+   OFFSET  (4-7)  0000 0000 
+   RECTYP  (8-9)  00 01 
+   CHKSUM  (last) 3D FF 
+
+   No parser, no library, no program -- four column ranges. The fields
+   are fixed width because they are counts of hex digits, so `cut`,
+   `grep` and `sed` read this format as well as anything written for
+   it. That is the second thing the armour buys, and it is the reason
+   a format nobody would design today is still easy to debug.
+
+   Find the end-of-file record with no tool that knows the format:
+       2::00000001FF
+
+4. THE DATA FIELD IS BASE16, SO xxd PUTS IT BACK
+------------------------------------------------------------------------
+
+   data field       543305E1D83740
+   xxd -r -p        543305e1d83740
+   cmp              identical to the original bytes
+
+   Intel HEX has no encoding of its own. The DATA field is plain
+   base16 -- the same rewriting `xxd -p` performs -- and everything
+   else in the record is the frame. Separating those two is the
+   point: an encoding turns values into bytes, a frame turns bytes
+   into something a stranger can read back.
+
+5. WHAT IT COST
+------------------------------------------------------------------------
+
+   payload bytes                  7
+   characters, newlines stripped  36
+   file size with newlines        38
+   growth                         514%
+
+   Two costs, and only one of them scales. The base16 is 2x forever.
+   The frame is a constant 11 characters a record, plus one 11-byte
+   end-of-file record per file -- so it dominates a seven-byte payload
+   and disappears into a long one:
+
+     7 data bytes ->   25 characters   frame is 44% of the record
+    16 data bytes ->   43 characters   frame is 25% of the record
+    32 data bytes ->   75 characters   frame is 14% of the record
+   255 data bytes ->  521 characters   frame is  2% of the record
+
+   255 is the largest RECLEN the 1988 specification allows. Real
+   toolchains emit 16 or 32, which buys a line that fits in an editor
+   at a frame cost of a quarter to a seventh.

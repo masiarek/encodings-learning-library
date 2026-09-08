@@ -1,0 +1,94 @@
+THE FOUR RECORDS
+
+   1  :020000040000FA
+   2  :03001000E282ACDD
+   3  :02002000C4BC5D
+   4  :00000001FF
+
+1. WHAT EACH ONE IS -- read RECTYP, characters 8 and 9
+
+   #  record              RECLEN  OFFSET   RECTYP  name
+   1  :020000040000FA     02      0x0000   04      Extended Linear Address
+   2  :03001000E282ACDD   03      0x0010   00      Data
+   3  :02002000C4BC5D     02      0x0020   00      Data
+   4  :00000001FF         00      0x0000   01      End of File
+
+   Two Data records between an address record and an end-of-file
+   record. RECTYP is the third field and it is always in the same two
+   columns, which is why `cut -c8-9` reads it straight out of the file.
+
+2. RECORD 2 -- how many bytes, and where
+
+   RECLEN  03    = 3 data bytes
+   OFFSET  0010  = 16 decimal, where the loader puts the first one
+   DATA    e2 82 ac  = '€' in UTF-8
+
+   RECLEN counts BYTES, not characters of the record -- three data
+   bytes are six hex characters. The frame is eleven characters, the
+   record mark included, and it does not change with the payload:
+   len(record) = 17 = 11 + 6
+
+3. WHICH ONE IS THE LIE
+
+   Add up every byte from RECLEN to CHKSUM. A good record sums to 0.
+
+   #  record              sum mod 256
+   1  :020000040000FA       0   ok
+   2  :03001000E282ACDD     0   ok
+   3  :02002000C4BC5D     255   FAILS -- got 255 = 0xFF
+   4  :00000001FF           0   ok
+
+   Record 3 is the lie. The reader gets 255 back, and in eight bits
+   255 is -1: the record's content is 1 less than whatever the
+   checksum was computed over. The number it hands you IS the damage.
+
+   stored          c4 bc
+   +1 on byte 0    c5 bc   = 'ż'
+
+   The character 5 in the file became a 4 -- one bit of one byte, the
+   damage a bad cable or a careless edit actually does -- and ż became
+   a byte that starts a UTF-8 sequence nothing finishes.
+
+   But the checksum never said WHICH byte. +1 on the other one satisfies
+   it exactly as well:
+   c4 bd sums to 0 as well -- and it is not the right answer.
+   Eight bits of check over the 14 characters after the mark can
+   detect, and have nothing left over to locate with.
+
+4. NOW DELETE RECORD 3 -- the question with no arithmetic in it
+
+   the file that is left:
+      :020000040000FA
+      :03001000E282ACDD
+      :00000001FF
+
+   every remaining checksum verifies: True
+
+   Nothing complains. The corrupt record is gone, and so is the only
+   thing in the file that objected to it -- what a reader now has is a
+   clean file missing two bytes of somebody's data, and it says so
+   nowhere. Deleting the damage repaired the file's self-report.
+
+   And it is not one blind spot, it is the whole class. Take the good
+   file -- records 1, 2 and 4 -- and damage it four different ways
+   without touching a single record's own bytes:
+
+   the original, undamaged     3 records   every checksum verifies: True
+   record 2 deleted            2 records   every checksum verifies: True
+   record 2 sent twice         4 records   every checksum verifies: True
+   records 1 and 2 swapped     3 records   every checksum verifies: True
+   cut off before end-of-file  2 records   every checksum verifies: True
+
+   Four kinds of damage and not one of them is visible, because none
+   of them is inside a record. That is the shape of the answer: a
+   checksum is scoped to a RECORD, so it can say a record is damaged
+   and can never say the FILE is. Catching these wants a different
+   field -- a count, a sequence number, or a hash over the whole
+   stream -- and which one you want is a decision to make at the
+   start, because a field added later is a field every existing
+   reader has never heard of.
+
+   Unless, of course, the format left itself somewhere to put one.
+   That is the record type, one field along: a reader that can skip a
+   record it does not recognise is a reader that survives the version
+   of the format nobody has written yet.

@@ -674,9 +674,11 @@ Two Rust-specific things you will meet, both on purpose. `text_to_codepoints` wa
 4. **The viewer** (`t3 dump file.t3 --bits3 --hex --chars`), then pipe the same file through `xxd -b` and `od -An -to1` and see what each tool can and cannot show you.
 5. **Version 2: make it self-synchronising.** Change the unit format so a first unit is distinguishable from a later one (UTF-8 spends its lead byte on this). Measure what it costs in section 7's table. That is the trade UTF-8 made, and now you have made it too.
 6. **Version 3: your own table.** Re-order Tribitset for Polish text instead of English, re-run section 7, and see the byte counts move. That is what a code page *is*.
+7. **Version 4: frame it.** The container above is a magic number and a pad count, which is enough for a file you wrote and will read yourself. Give it the three fields it takes to hand a `.t3` file to somebody else — a **record type**, a **length**, and a **checksum** — and notice on the way that every file you have already written stops parsing, which is the whole argument for doing it now. [A record has to say what it is, how long it is, and whether it arrived](../framing_a_format/README.md) works those three through a shipped format that has all of them, and section 7 of its Python program frames the `54 33 05 e1 d8 37 40` from section 4 above.
 
 ## See also
 
+- [A record has to say what it is, how long it is, and whether it arrived](../framing_a_format/README.md) — the next page in this chapter: the record type, length and checksum this container does not have, and what each one buys
 - [UTF-8 by hand](../../03_Encodings/utf8_by_hand/README.md) — the real one this imitates, with the lead-byte rule Tribit lacks
 - [Code pages](../../02_Characters/code_pages/README.md) — Tribitset is one; ESC is how they coexisted with Unicode
 - [Hex is a shorthand](../../01_Bits_and_Bytes/hex_is_a_shorthand/README.md) — why 4 bits per digit made hex easy and 3 will make this hard

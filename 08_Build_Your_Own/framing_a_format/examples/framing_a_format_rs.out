@@ -1,0 +1,64 @@
+1. THE WRAP HAS TO BE ASKED FOR
+
+   record        :05010000636166C3A964
+   RECLEN..DATA  05 01 00 00 63 61 66 c3 a9
+
+   fold with wrapping_add   156  0x9C
+   .wrapping_neg()          100  0x64   <- the CHKSUM field
+
+   The sum passes 255 at byte 6: 202 + 102 = 304.
+   u8::checked_add returns None there, and in a debug build the plain
+   `+` would have panicked. Python spells the same step `& 0xFF` and C
+   does it silently; Rust makes you write the word `wrapping`, which is
+   the only one of the three where the modulo is visible in the source.
+
+   And `wrapping_neg` is not an approximation of the two's complement --
+   it IS it, which is why the checksum is one expression:
+       body.iter().fold(0u8, |a, b| a.wrapping_add(*b)).wrapping_neg()
+
+2. AN ENUM WITH AN ARM FOR WHAT IT DOES NOT KNOW
+
+   :05010000636166C3A964:04000006DEADBEEFBE:02020000C5BC7B:00000001FF
+
+   Data                     at 0x0100  63 61 66 c3 a9
+   unknown to this reader   type 0x06, 4 bytes skipped -- the length said how far
+   Data                     at 0x0200  c5 bc
+   End of File              stop
+
+   recovered  63 61 66 c3 a9 c5 bc  = "caféż"
+
+   `Unknown(u8)` is the whole extensibility story in one arm. Without
+   it the enum would be a closed set and `from_byte` would have to
+   return an error for a record that is perfectly well formed and
+   simply newer than this program.
+
+3. THE REFUSALS ARE NAMED
+
+   one data character changed       BadChecksum { sum: 254 }
+   checksum character changed       BadChecksum { sum: 1 }
+   RECLEN claims one byte too many  Truncated { claims: 6, present: 5 }
+   a G where a hex digit goes       NotHexDigits { at: 11 }
+   no record mark at all            NoRecordMark { at: 0 }
+
+   Five wrong records, four named variants -- which is what lets a test
+   assert the reason rather than just the failure. And `BadChecksum`
+   carries the sum it got, which is not decoration: a correct record
+   sums to 0, so the number it hands back is the damage itself, mod 256.
+   Row 1 changed 0x63 to 0x61, two less, and the sum came back 254 = -2.
+   Row 2 changed 0x64 to 0x65, one more, and the sum came back 1.
+
+4. AN UNVERIFIED RECORD HAS NOWHERE TO LIVE
+
+   derived Debug   Record { kind: Data, offset: 256, data: [99, 97, 102, 195, 169] }
+   the same record  kind Data  offset 0x0100  data 63 61 66 c3 a9
+   -- Rust's derived Debug prints a Vec<u8> in decimal, which is the
+   least useful base for bytes. Say `{:02x}` yourself for anything
+   you intend to compare against a dump.
+
+   `parse_one` is the only thing that constructs a Record, and it
+   returns Err before it builds one. So there is no state in this
+   program where a Record exists and its checksum has not been
+   checked -- the question "did anyone verify this?" is answered by
+   the type rather than by reading the call sites. That is the same
+   move as `String` promising UTF-8, applied to a frame instead of
+   to an encoding.
