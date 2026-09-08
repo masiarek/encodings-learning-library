@@ -76,6 +76,9 @@ GATES: list[tuple[str, list[str]]] = [
     ("decomposed", [sys.executable, "tools/check_decomposed_literals.py"]),
     ("katas selftest", [sys.executable, "tools/check_katas.py", "--selftest"]),
     ("katas", [sys.executable, "tools/check_katas.py"]),
+    ("chapter status selftest",
+     [sys.executable, "tools/check_chapter_status.py", "--selftest"]),
+    ("chapter status", [sys.executable, "tools/check_chapter_status.py"]),
     # CI does `uv sync --group docs` first; `uv run --group docs` is the same
     # resolution in one step, and it is what makes this work in the temporary
     # directory --committed extracts into, where no .venv exists yet.

@@ -223,6 +223,10 @@ A **stub** is a lesson page with no example behind it yet: an H1, a `**Level:**`
 
 A stub must not have an `<!-- output: -->` block — there is nothing to fill it from. It graduates by gaining an `examples/` program and losing the notice; update its row in the chapter README and in [ROADMAP.md](ROADMAP.md) when it does.
 
+**That notice is the machine-readable half of the claim** — `python3 tools/check_chapter_status.py` reads it off every page and holds three indexes to it: the chapter's own `| # | Lesson | … | Status |` table, ROADMAP's status row, and the `Written / stub` counts on the [chapter map](00_Start_Here/README.md). So a page that quietly graduates fails the gate in three places rather than going stale in three places, and `--selftest` plays that exact scenario out — one stub loses its notice, nothing else is touched, and each of the three has to complain on its own.
+
+**The counts on the map are generated; run `--fix` rather than typing one.** Everything else the gate checks is a row you write, and it will not invent those. The distinction is the finding the gate came out of. On 2026-09-07 every hand-typed *count* in the library was wrong — all eight cells of the map (`3 / 0` for a chapter with seven written lessons), and ROADMAP's four *"the other three pages"* rows, two of which were four pages and one of which called a written lesson a stub — while every surface with **one row per page** was correct: 14 chapter tables, 76 ROADMAP rows, all of KATAS.md. A row goes stale only when you edit the thing it describes, and you are already there; a count goes stale when you edit something else entirely, which is every other day. So prefer a row, and where a count genuinely reads better — the map is a map, and eight numbers say something eight tables do not — generate it.
+
 ## Links
 
 - Link a folder by naming its `README.md` — `[label](some_folder/README.md)`, never `[label](some_folder/)`.
@@ -261,7 +265,7 @@ python3 tools/check_all.py --staged     # the tree your next commit would make
 python3 tools/check_all.py --committed  # the same, against what CI will check out
 ```
 
-That runs the six commands CI runs — `run_examples.py --check`, `check_link_style.py`, `check_decomposed_literals.py`, `check_katas.py`, `check_nav_chain.py` (the middle three with their `--selftest` first), and `uv run --group docs mkdocs build --strict` — and you can still run any of them alone. `--strict` fails on a broken internal link, which is the failure most likely to reach the published site unnoticed. The examples job also runs on macOS in CI; a shell example that passes here and fails there is a BSD/GNU difference, not a flake.
+That runs the seven commands CI runs — `run_examples.py --check`, `check_link_style.py`, `check_decomposed_literals.py`, `check_katas.py`, `check_chapter_status.py`, `check_nav_chain.py` (the middle four with their `--selftest` first), and `uv run --group docs mkdocs build --strict` — and you can still run any of them alone. `--strict` fails on a broken internal link, which is the failure most likely to reach the published site unnoticed. The examples job also runs on macOS in CI; a shell example that passes here and fails there is a BSD/GNU difference, not a flake.
 
 **Two reasons to use the runner rather than the six commands.**
 

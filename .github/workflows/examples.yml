@@ -53,3 +53,7 @@ jobs:
         run: |
           python3 tools/check_katas.py --selftest
           python3 tools/check_katas.py
+      - name: Check that the chapter map, the chapter tables and ROADMAP agree with the tree
+        run: |
+          python3 tools/check_chapter_status.py --selftest
+          python3 tools/check_chapter_status.py

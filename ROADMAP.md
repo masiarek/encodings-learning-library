@@ -20,6 +20,7 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [A character is a number](02_Characters/a_character_is_a_number/README.md) | written, 2026-09-05 |
 | [Rotation is not encryption](02_Characters/rotation_is_not_encryption/README.md) | written, 2026-09-07 — Python, Rust and shell; ROT13 as arithmetic on the ASCII layout, the keyspace printed in a column, `encodings/rot_13.py` that `str.encode` still refuses, and the two things that break when the rotation leaves ASCII |
 | [Control characters](02_Characters/control_characters/README.md) | written, 2026-09-05 — the first page with a *C view* (`examples/*.c`, compiled by the runner since the same day) |
+| [The NUL byte](02_Characters/the_nul_byte/README.md) | written, 2026-09-06 — Python, Rust, C and shell; one ordinary character that every UTF-8 validator accepts and almost nothing that carries text will carry, so the same zero byte is a terminator, a binary-file tripwire, the one separator a filename cannot forge, and a `ValueError` at four different doors |
 | [Code pages](02_Characters/code_pages/README.md) | written, 2026-09-05 — Python, Rust and shell; the agreement matrix is the original bit |
 | [Unicode code points](02_Characters/unicode_code_points/README.md) | written, 2026-09-05 — the neighbourhood map: read `U+XXXX` as a block plus a house number, and measure the whitespace runs instead of memorising them |
 | [Writing a code point](02_Characters/writing_a_code_point/README.md) | written, 2026-09-06 — all four languages; one number and five spellings, and the claim that the shape of an escape says what a language thinks a character IS (scalar value, code unit, or a name) |
@@ -42,19 +43,31 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [Normalization](04_Python/normalization/README.md) | written, 2026-09-06 — Python and Rust; chapter 4's first, and the one Unicode table lookup the stability policy lets an answer key hold |
 | [Bytes that are not text](04_Python/surrogateescape/README.md) | written, 2026-09-07 — Python and Rust; [PEP 383 ↗](https://peps.python.org/pep-0383/) mapped byte-by-byte and proved by exhaustion over all 65,536 two-byte strings, the `surrogatepass` confusion that changes a length with no error, and the JSON escape that writes an arbitrary byte into a filename |
 | [Encode, decode and errors](04_Python/encode_decode_and_errors/README.md) | written, 2026-09-07 — Python; the third checkpoint. The eight handlers in BOTH directions (two of them raise `TypeError` on decode), and the finding that decides which to use: every marker the lossy ones insert is a character the input could already have contained, so none of them can be undone *or detected* |
-| [04_Python](04_Python/README.md) — the other three pages | stubs (includes [A str in memory](04_Python/str_in_memory/README.md), added 2026-09-06 — [PEP 393 ↗](https://peps.python.org/pep-0393/), and why one emoji can quadruple a string) |
+| [`str` vs `bytes`](04_Python/str_vs_bytes/README.md) | stub — which is which, and why Python will not concatenate them |
+| [Opening a file](04_Python/opening_a_file/README.md) | stub — why `open(path)` is a bet, and what the portable call is |
+| [Bytes, hex and int](04_Python/bytes_hex_and_int/README.md) | stub — reading a binary format by hand with four conversions |
+| [A str in memory](04_Python/str_in_memory/README.md) | stub — added 2026-09-06; [PEP 393 ↗](https://peps.python.org/pep-0393/), why one emoji can quadruple a string, and why `len()` is still O(1) |
 | [`String` is bytes that promise UTF-8](05_Rust/string_is_bytes_that_promise_utf8/README.md) | written, 2026-09-05 — Rust, Python and shell; the one figure in the repo, and `valid_up_to()` matched against Python's `UnicodeDecodeError.start` |
-| [05_Rust](05_Rust/README.md) — the other three pages | stubs |
+| [`char` is four bytes](05_Rust/char_is_four_bytes/README.md) | stub — the fourth checkpoint; why `len()`, `chars().count()` and `size_of::<char>()` all disagree |
+| [From UTF-8, and lossy](05_Rust/from_utf8_and_lossy/README.md) | stub — what each of the three ways of turning bytes into a `String` promises |
+| [Slicing by byte](05_Rust/slicing_by_byte/README.md) | stub — why `&s[0..2]` can panic, and what to call instead |
 | [Inspecting a file](06_Terminal/inspecting_a_file/README.md) | written, 2026-09-05 — the named-character row is fiction in two dialects, and the `?` is the terminal's, not od's |
 | [The trailing newline](06_Terminal/trailing_newline/README.md) | written, 2026-09-06 — shell, Python and Rust; why a two-byte file reports zero lines, and the marker your shell draws that is not in the file |
 | [A character and its bytes on one line](06_Terminal/character_and_its_bytes/README.md) | written, 2026-09-06 — shell and Python; the one-liner, and the three separate newline decisions that let it fit on one row |
 | [Locale and `LC_CTYPE`](06_Terminal/locale_and_lc_ctype/README.md) | written, 2026-09-06 — the locale is six independent variables; `wc -c` and `wc -m` collapse to one answer under `C`, `LC_CTYPE` does not touch sort order, and Python has declined to obey any of it since 3.7 |
 | [File type is four questions](06_Terminal/file_type_is_four_questions/README.md) | written, 2026-09-07 — shell, Python and C; the four mechanisms that answer "what type is this", the anatomy of a magic rule, and `xdg-mime` against `file` on one unchanged file |
 | [The first two bytes](06_Terminal/the_first_two_bytes/README.md) | written, 2026-09-07 — shell and Python; the kernel compares offset 0 and decodes nothing, a BOM and a CR break a shebang two different ways, and the shell's rescue runs the broken file and exits `0` |
-| [06_Terminal](06_Terminal/README.md) — the other three pages | stubs |
+| [Terminal hyperlinks, and the URI that is not one](06_Terminal/terminal_hyperlinks/README.md) | written, 2026-09-06 — shell and Python; a clickable filename is an escape sequence wrapped around ordinary text, and the URI inside it percent-encodes a space and a `#` but not the accent — which the OSC 8 specification ripgrep's own manual links calls undefined |
+| [`printf` writes bytes](06_Terminal/printf_writes_bytes/README.md) | stub — putting exactly the bytes you mean in front of `xxd` |
+| [`iconv`](06_Terminal/iconv/README.md) | stub — re-encoding a file, and what its refusal means |
+| [`file` guesses](06_Terminal/file_guesses/README.md) | stub — why `file`'s answer is an inference, and when it is sure |
 | [A BOM in a CSV](07_Real_Data/bom_in_a_csv/README.md) | written, 2026-09-05 — Python and shell; the decision procedure, and the two platform fingerprints |
 | [CRLF vs LF](07_Real_Data/crlf_vs_lf/README.md) | written, 2026-09-07 — Python and shell; the byte that cannot appear in its own output, why the totals reconcile while the keys do not, and git reporting a tree clean when every line on disk differs from the blob |
-| [07_Real_Data](07_Real_Data/README.md) — the other five pages | stubs (includes [Sorting and collation](07_Real_Data/sorting_and_collation/README.md), added 2026-09-06 — three locales, three different alphabetical orders) |
+| [SAP code pages](07_Real_Data/sap_code_pages/README.md) | stub — 1100, 1160, 4110 and 4103, and reproducing an interface's mojibake outside SAP |
+| [Mojibake round trip](07_Real_Data/mojibake_round_trip/README.md) | stub — when damaged text can be repaired, and when the data is gone |
+| [Fixed-width byte fields](07_Real_Data/fixed_width_byte_fields/README.md) | stub — why a 10-byte field holds five Polish letters, and how to truncate without cutting one in half |
+| [Windows-1252 vs Latin-1](07_Real_Data/windows_1252_vs_latin1/README.md) | stub — why the text is almost right except for `€` and the quotes |
+| [Sorting and collation](07_Real_Data/sorting_and_collation/README.md) | stub — added 2026-09-06; three locales, three different alphabetical orders |
 | [From the telegraph to Unicode](09_History/from_telegraph_to_unicode/README.md) | written, 2026-09-05 |
 | [Why UTF-8 won](09_History/why_utf8_won/README.md) | written, 2026-09-05 |
 | [Why UTF-16 stayed](09_History/why_utf16_stayed/README.md) | written, 2026-09-07 |
@@ -65,6 +78,8 @@ What is written, what is a stub, and what is next — in the order the stubs wil
 | [Interfaces and storage](10_Best_Practices/interfaces_and_storage/README.md) | stub |
 | [`grep` on text that is not ASCII](11_Tools/grep/README.md) | written, 2026-09-06 — shell and Python; the silent skip, measured, and the binary notice's two streams |
 | [`ripgrep` — the Rust grep](11_Tools/ripgrep/README.md) | written, 2026-09-06 — no rg on either runner, so the session is dated and a Python example checks the rules |
+| [PCRE2 — the other regex engine](11_Tools/pcre2/README.md) | written, 2026-09-06 — shell and Python; the only engine already installed that can match a grapheme cluster, and the price is that a pattern the default engine would have rejected with a paragraph of advice now matches nothing and says nothing |
+| [`--pre` and `-z` — decompress, then decode](11_Tools/decompress_then_decode/README.md) | written, 2026-09-06 — shell; a stage *before* everything else, so a UTF-32 file is still unreadable through gzip and `--pre` is how you finally read it |
 | [`find`, and filenames that are bytes](11_Tools/find/README.md) | written, 2026-09-06 — shell and Python; `cat` opens what `find -name` cannot see |
 | [`xargs` splits on the wrong things](11_Tools/xargs/README.md) | written, 2026-09-06 — shell; one apostrophe breaks the pipeline, and `-s` is a byte budget so the encoding sets the batch count |
 | [`sed` matches patterns, not bytes](11_Tools/sed/README.md) | written, 2026-09-06 — shell; a sequence beats a byte set, and `-i` has no portable spelling |
