@@ -1,0 +1,36 @@
+
+1. ONE CHARACTER, FOUR SCHEMES
+------------------------------------------------------------------------
+
+   UTF-8      2 bytes   c3a9
+   UTF-16BE   2 bytes   00e9
+   UTF-16LE   2 bytes   e900
+   UTF-32BE   4 bytes   000000e9
+
+   The UTF-16 pair is the same 16-bit number, 00E9, written down twice
+   in opposite orders. Nothing about the character changed between
+   those two rows -- only the serialisation did, which is what makes
+   them two schemes of one encoding form.
+
+2. THE SAME BYTES, HANDED TO A TRANSFER ENCODING
+------------------------------------------------------------------------
+
+   UTF-8     w6k=
+   UTF-16BE  AOk=
+   UTF-16LE  6QA=
+   UTF-32BE  AAAA6Q==
+
+   One character, four base64 strings. base64 is a transform of the
+   bytes, so it inherits whatever the scheme decided and can say
+   nothing about it: "the field is base64" names the wrapper and
+   leaves the encoding unstated.
+
+3. THE SPELLING THIS SCRIPT WILL NOT RUN
+------------------------------------------------------------------------
+
+   `iconv -t UTF-16`, with no BE or LE, is the compound scheme: it
+   writes a byte order mark and then picks an order -- big-endian on
+   macOS, little-endian on GNU. The same command therefore writes two
+   different files on two machines, which is why every target above
+   names its order. Same fact as the Python file's section 4, one
+   tool along.

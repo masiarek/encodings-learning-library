@@ -145,6 +145,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "escaping_into_ascii",
         "binary_to_text",
         "base32_alphabets",
+        "the_encoding_model",
     ],
     "04_Python": [
         "README.md",

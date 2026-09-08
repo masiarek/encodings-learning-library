@@ -1,0 +1,125 @@
+Layer by layer, on one character and one word.
+Section 5 depends on the machine: this one is little-endian.
+
+1. ABSTRACT CHARACTER REPERTOIRE -- what counts as one character
+------------------------------------------------------------------------
+
+   The first decision is not a number. It is whether an accented letter
+   is a character in its own right, or a letter plus a mark that is also
+   a character. Unicode answered BOTH, which is why one word has two
+   spellings that no screen can tell apart:
+
+   NFC  4 code points   U+0063 U+0061 U+0066 U+00E9
+   NFD  5 code points   U+0063 U+0061 U+0066 U+0065 U+0301
+
+   Same word, same repertoire, two sequences. Everything below this line
+   is downstream of that choice: a layer cannot fix an ambiguity the
+   layer above it introduced, which is why normalization is its own
+   subject and not an encoding setting.
+
+
+2. CODED CHARACTER SET -- characters to numbers
+------------------------------------------------------------------------
+
+   U+0041   LATIN CAPITAL LETTER A              A
+   U+00E9   LATIN SMALL LETTER E WITH ACUTE     é
+   U+017C   LATIN SMALL LETTER Z WITH DOT ABOVE ż
+   U+1F600  GRINNING FACE                       😀
+
+   The numbers live in a codespace, and Unicode's is fixed forever at
+   U+0000..U+10FFFF -- 1,114,112 positions. 2,048 of them are surrogates,
+   which are code points that are permanently not characters, so the
+   set a character can be assigned to is 1,112,064 values wide.
+
+   Note what has NOT been decided yet: nothing here says how many bits
+   U+1F600 takes. It is a number. Numbers do not have widths.
+
+
+3. CHARACTER ENCODING FORM -- numbers to code units
+------------------------------------------------------------------------
+
+   One code point, three forms, three unit counts:
+
+   UTF-8   4 units of  8 bits   F0 9F 98 80
+   UTF-16  2 units of 16 bits   D83D DE00
+   UTF-32  1 unit  of 32 bits   0001F600
+
+   D83D DE00 is the surrogate PAIR, and it is a fact about the form,
+   not about any file: those are two 16-bit numbers, and a number has
+   no first byte. This is the layer Java's `char`, JavaScript's
+   `.length` and ABAP's string length all count.
+
+
+4. CHARACTER ENCODING SCHEME -- code units to bytes
+------------------------------------------------------------------------
+
+   The Unicode Standard has exactly seven. Here is 'A' under each:
+
+   scheme     form    kind      bytes                    n
+   utf-8      UTF-8   simple    41                       1
+   utf-16     UTF-16  compound  ff fe 41 00              4
+   utf-16be   UTF-16  simple    00 41                    2
+   utf-16le   UTF-16  simple    41 00                    2
+   utf-32     UTF-32  compound  ff fe 00 00 41 00 00 00  8
+   utf-32be   UTF-32  simple    00 00 00 41              4
+   utf-32le   UTF-32  simple    41 00 00 00              4
+
+   Sort that by the last column and the model falls out of it. The two
+   longer rows are exactly the two the standard calls COMPOUND, and the
+   extra bytes are the byte order mark -- so `utf-16` is not `utf-16le`
+   with a default, it is a different scheme that begins by writing down
+   which of the other two it is about to be.
+
+   Three names appear in both of the first two columns. UTR #17 says so
+   in as many words: used without qualification, UTF-8, UTF-16 and
+   UTF-32 are ambiguous between the form and the scheme.
+
+
+5. THE ONE PLACE THE AMBIGUITY IS NOT HARMLESS
+------------------------------------------------------------------------
+
+   Two bytes, 41 00, with no mark in front of them. They are
+   well formed under both orders, so nothing here is an error:
+
+   .decode('utf-16'  ) -> 'A'      U+0041   LATIN CAPITAL LETTER A
+   .decode('utf-16le') -> 'A'      U+0041   LATIN CAPITAL LETTER A
+   .decode('utf-16be') -> '䄀'      U+4100   CJK UNIFIED IDEOGRAPH-4100
+
+   The Unicode FAQ's rule for text tagged UTF-16 with no BOM is one
+   line: it should be interpreted as big-endian. Python's answer above
+   is the little-endian one, because CPython resolves an unmarked
+   stream to the machine's own order -- so this same program prints a
+   different character on a big-endian build, and neither reading is
+   detectable from the bytes.
+
+   That is not a bug to file. Practically all unmarked UTF-16 in the
+   wild came off a little-endian Windows box, so the native guess is
+   right more often than the standard's rule. It is worth knowing only
+   because you cannot see it happen.
+
+
+6. TRANSFER ENCODING SYNTAX -- and why it is outside the model
+------------------------------------------------------------------------
+
+   base64 of 'Hi', once per scheme:
+
+   utf-8     48 69          -> SGk=
+   utf-16le  48 00 69 00    -> SABpAA==
+   utf-16be  00 48 00 69    -> AEgAaQ==
+
+   One text, three payloads, three base64 strings. base64 never saw a
+   character; it transformed the bytes layer 4 handed it. That is why
+   UTR #17 keeps it OUTSIDE the four levels -- it works the same on a
+   PNG -- and why "we base64 the field" is not a complete statement
+   until the scheme is named.
+
+   And one that reaches back up the stack instead:
+
+   json.dumps('Hi')          ->  "Hi"
+   json.dumps('\U0001F600')  ->  "\ud83d\ude00"
+
+   Those escapes are not bytes and not code points: \ud83d\ude00
+   is the surrogate pair from section 3. JSON's escape syntax names
+   UTF-16 CODE UNITS, so a format whose bytes are UTF-8 spells one
+   character with two escapes borrowed from a form it does not use.
+

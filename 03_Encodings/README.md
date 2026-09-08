@@ -2,7 +2,7 @@
 
 **Level:** 101 → 201 · the chapter this library is built around
 
-A [code point](../02_Characters/unicode_code_points/README.md) is a number, and a file is [bytes](../01_Bits_and_Bytes/a_byte_is_eight_bits/README.md). An **encoding** is the rule for writing one as the other, there are several rules, and — the fact the last two lessons exist for — **the file does not record which rule was used**. This chapter is UTF-8 done by hand, then who checks that a file really follows it, then the sequences it may never contain, then the other rules you will meet, then what it looks like when a file is read under the wrong one — and last, the channels that will not carry bytes at all, where the text is encoded a second time to get through: once character by character, and once for the whole stream.
+A [code point](../02_Characters/unicode_code_points/README.md) is a number, and a file is [bytes](../01_Bits_and_Bytes/a_byte_is_eight_bits/README.md). An **encoding** is the rule for writing one as the other, there are several rules, and — the fact the last two lessons exist for — **the file does not record which rule was used**. This chapter is UTF-8 done by hand, then who checks that a file really follows it, then the sequences it may never contain, then the other rules you will meet, then what it looks like when a file is read under the wrong one — then the channels that will not carry bytes at all, where the text is encoded a second time to get through: once character by character, and once for the whole stream — and last, the four-layer model that names everything the chapter has been walking through, including the two layers `UTF-16` refers to at once.
 
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|
@@ -16,6 +16,7 @@ A [code point](../02_Characters/unicode_code_points/README.md) is a number, and 
 | 8 | [Escaping into ASCII](escaping_into_ascii/README.md) | Why is one emoji `\ud83d\ude00` in JSON, `%F0%9F%98%80` in a URL, and neither in an email header? | written, 2026-09-06 |
 | 9 | [Binary to text](binary_to_text/README.md) | How does a PNG get through a channel that carries only ASCII, and why is `base64` of a word not one answer? | written, 2026-09-06 |
 | 10 | [The alphabet is not the encoding](base32_alphabets/README.md) | A menu offers four kinds of Base32 and prints four different strings — are those four encodings, or one? | written, 2026-09-07 |
+| 11 | [An encoding is four layers](the_encoding_model/README.md) | `UTF-16` and `UTF-16LE` are not a name and its default — what are they? | written, 2026-09-08 |
 
 ## The through-line
 
