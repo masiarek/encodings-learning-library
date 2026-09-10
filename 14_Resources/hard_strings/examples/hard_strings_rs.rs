@@ -381,14 +381,16 @@ fn main() {
     println!("   std has no normalize() and no casefold(), and it is worth being");
     println!("   clear that this is a decision rather than an omission.");
     println!();
-    println!("   Normalization needs a copy of the Unicode tables, and those");
-    println!("   tables have a version -- the thing this library keeps out of");
-    println!("   answer keys for exactly the same reason. A std that shipped");
-    println!("   them would be promising to keep a data file in step with a");
-    println!("   language release, forever, for every program that links it.");
+    println!("   std does ship Unicode data: the tables behind a char's own");
+    println!("   properties and its case mappings, which is why is_whitespace()");
+    println!("   and to_lowercase() work on every script -- and those tables");
+    println!("   carry a version, the thing this library keeps out of answer");
+    println!("   keys. What std stops short of is the algorithms that look past");
+    println!("   one char, and the larger data they need: normalization,");
+    println!("   segmentation, locales.");
     println!();
-    println!("   What std does keep is what a char can answer about itself, plus");
-    println!("   the one context rule above. Everything past that is a crate:");
+    println!("   So the line is what a char can answer about itself, plus the");
+    println!("   one context rule above. Everything past that is a crate:");
     println!("   unicode-normalization for the four forms, caseless or icu for a");
     println!("   fold. The corpus does not get easier in Rust; it gets explicit.");
 }
