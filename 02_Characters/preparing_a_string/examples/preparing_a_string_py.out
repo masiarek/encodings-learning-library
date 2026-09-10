@@ -12,8 +12,13 @@
        from unicodedata import ucd_3_2_0 as unicodedata
        assert unicodedata.unidata_version == '3.2.0'
 
+   (A 2026 fix renames the alias unicodedata_320 and adds a second
+   assert -- on the LIVE table. Section 9 is why it needs one.)
+
    So this is the frozen table from `The table has a version`, with a
-   protocol built on top of it. Nothing below can vary by machine.
+   protocol built on top of it -- for every table but one: the case
+   fold reads the live table too. Everything printed below is the same
+   on every machine, before that fix and after it.
 
 2. FOUR STEPS, AND THE ORDER IS NORMATIVE
 ------------------------------------------------------------------------
@@ -60,14 +65,17 @@
 4. FOLDING THAT CHANGES THE LENGTH
 ------------------------------------------------------------------------
    U+00DF  ß  LATIN SMALL LETTER SHARP S             -> 'ss'  (2)
-   U+1E9E  ẞ  LATIN CAPITAL LETTER SHARP S           -> 'ss'  (2)
    U+0130  İ  LATIN CAPITAL LETTER I WITH DOT ABOVE  -> 'i̇'  (2)
    U+2126  Ω  OHM SIGN                               -> 'ω'  (1)
 
-   Sharp s folds to two characters, and the capital form folds to the
-   same two -- so a name gets LONGER during a step whose job was to
-   make it comparable. A profile must expect that; RFC 3454 says so in
-   as many words. U+0130 does it with a combining mark instead.
+   Sharp s folds to two characters -- so a name gets LONGER during a
+   step whose job was to make it comparable. A profile must expect
+   that; RFC 3454 says so in as many words. U+0130 does it with a
+   combining mark instead.
+
+   The capital, U+1E9E, is missing on purpose. It is younger than the
+   RFC, and what this module folds it to depends on which release of
+   Python you run -- section 9.
 
    B.2 is upper-to-lower, chosen because Internet protocols had a
    tradition of lowercase. The RFC built it by iterating to a fixed
@@ -167,3 +175,53 @@
    an implementation that obeys the pin refuses every character
    invented after 2002, permanently, including the one above that
    somebody writes their language in.
+
+9. THE ONE STEP THE PIN DID NOT REACH
+------------------------------------------------------------------------
+   U+1E9E LATIN CAPITAL LETTER SHARP S, asked of both tables this
+   module can reach:
+
+      the frozen 2002 table  in_table_a1('ẞ')  True   unassigned
+      the live table         'ẞ'.lower()       'ß'    a capital with a lowercase
+
+   Both are right about the table they read: the letter was added in
+   2008. The case fold has to side with one of them, and B.2 is built
+   on this function, unchanged in every Python 3:
+
+       def map_table_b3(code):
+           r = b3_exceptions.get(ord(code))
+           if r is not None: return r
+           return code.lower()
+
+   The dict is frozen into the module when it is generated; lower() is
+   the live table. Python's frozen table has no case mappings at all,
+   so the dict has to carry every row where the RFC's answer is not
+   today's -- and until 2026 it did not. It held only rows the RFC
+   writes down, the ones where RFC and lower() disagree, so a character
+   the RFC never mentions fell through to lower(), and U+1E9E folded
+   to 'ss': a fold for a letter the same module calls unassigned.
+   RFC 3454's own B.2 is a fixed list of 1,371 rows, and not one of
+   them is U+1E9E.
+
+   CPython fixed it in 2026 (gh-155292). The dict now also holds an
+   identity row for every character the RFC leaves alone that lower()
+   would change -- computed against the live table, which is why the
+   regenerated module asserts that table's version too -- and the same
+   call returns 'ẞ', the RFC's answer. Which one you get depends on
+   your interpreter's release, so this program prints neither. Ask
+   yours:
+
+     python3 -c "import stringprep; print(stringprep.map_table_b2('\u1e9e'))"
+
+   That is section 8's trap from the other side. A frozen table cannot
+   tell `not invented yet` from `never will be`; a module that asks a
+   frozen table one question and a live one the next gives both
+   answers at once, and nothing it returns says which table it came
+   from.
+
+   One answer above does come from the live table, and is printed on
+   purpose: 'ẞ'.lower(). U+1E9E has lowercased to U+00DF in every
+   Unicode that has it, from 5.1 in 2008, and Python 3.0 shipped 5.1,
+   so no Python 3 says anything else. Nothing in Unicode's stability
+   policy promises it: ẞ and ß are not a case pair, because ß
+   uppercases to 'SS'. So it is a bet, and this is it, made out loud.

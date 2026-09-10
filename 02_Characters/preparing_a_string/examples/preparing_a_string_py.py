@@ -6,8 +6,13 @@ question underneath it: "are these two strings the same name". Map, normalize,
 prohibit, check bidi -- four steps, in that order, and a profile either returns
 a string or returns an error, never both.
 
-Every table this program consults is frozen at Unicode 3.2, sealed in 2002, so
-every answer below is the same on every machine under every Python. That is the
+Every stringprep step this program runs reads the table frozen at Unicode 3.2,
+sealed in 2002 -- except one, and section 9 is about it. Python's frozen table
+has no case data, so the case fold (table B.2) also reads the LIVE table, and in
+every CPython release before a 2026 fix that leaked into its answers: U+1E9E
+folded to 'ss' while table A.1, in the same module, called it unassigned. So
+this program prints no fold of a character the RFC leaves alone, and every line
+below is the same on every machine, before that fix and after it. That is the
 whole reason the page may print them.
 
 Run:  python3 preparing_a_string_py.py
@@ -50,8 +55,10 @@ def prepare(s, *, fold=True, check_bidi=True):
         mapped.append(stringprep.map_table_b2(ch) if fold else ch)
     s = "".join(mapped)
 
-    # 2. NORMALIZE -- the profile chooses; nameprep chose NFKC.
-    s = unicodedata.normalize("NFKC", s)
+    # 2. NORMALIZE -- the profile chooses; nameprep chose NFKC. The RFC pins it
+    #    to Unicode 3.2 like everything else, so it is the frozen table's NFKC --
+    #    the one the stdlib's own nameprep calls -- not the live one.
+    s = unicodedata.ucd_3_2_0.normalize("NFKC", s)
 
     # 3. PROHIBIT -- any hit is an error, and an error means no string at all.
     for ch in s:
@@ -89,8 +96,13 @@ print()
 print("       from unicodedata import ucd_3_2_0 as unicodedata")
 print("       assert unicodedata.unidata_version == '3.2.0'")
 print()
+print("   (A 2026 fix renames the alias unicodedata_320 and adds a second")
+print("   assert -- on the LIVE table. Section 9 is why it needs one.)")
+print()
 print("   So this is the frozen table from `The table has a version`, with a")
-print("   protocol built on top of it. Nothing below can vary by machine.")
+print("   protocol built on top of it -- for every table but one: the case")
+print("   fold reads the live table too. Everything printed below is the same")
+print("   on every machine, before that fix and after it.")
 
 # ------------------------------------------------------------------ 2
 head(2, "FOUR STEPS, AND THE ORDER IS NORMATIVE")
@@ -144,14 +156,18 @@ print("   wrong one for text a human will read back. A profile is a choice.")
 
 # ------------------------------------------------------------------ 4
 head(4, "FOLDING THAT CHANGES THE LENGTH")
-for ch in ("ß", "ẞ", "İ", "Ω"):
+for ch in ("ß", "İ", "Ω"):
     folded = stringprep.map_table_b2(ch)
     print(f"   U+{ord(ch):04X}  {ch}  {unicodedata.name(ch):<38} -> {folded!r}  ({len(folded)})")
 print()
-print("   Sharp s folds to two characters, and the capital form folds to the")
-print("   same two -- so a name gets LONGER during a step whose job was to")
-print("   make it comparable. A profile must expect that; RFC 3454 says so in")
-print("   as many words. U+0130 does it with a combining mark instead.")
+print("   Sharp s folds to two characters -- so a name gets LONGER during a")
+print("   step whose job was to make it comparable. A profile must expect")
+print("   that; RFC 3454 says so in as many words. U+0130 does it with a")
+print("   combining mark instead.")
+print()
+print("   The capital, U+1E9E, is missing on purpose. It is younger than the")
+print("   RFC, and what this module folds it to depends on which release of")
+print("   Python you run -- section 9.")
 print()
 print("   B.2 is upper-to-lower, chosen because Internet protocols had a")
 print("   tradition of lowercase. The RFC built it by iterating to a fixed")
@@ -259,3 +275,57 @@ print("   can never change meaning because the standard grew -- and it means")
 print("   an implementation that obeys the pin refuses every character")
 print("   invented after 2002, permanently, including the one above that")
 print("   somebody writes their language in.")
+
+# ------------------------------------------------------------------ 9
+head(9, "THE ONE STEP THE PIN DID NOT REACH")
+capital = "\u1e9e"  # LATIN CAPITAL LETTER SHARP S, assigned in Unicode 5.1 (2008)
+print("   U+1E9E LATIN CAPITAL LETTER SHARP S, asked of both tables this")
+print("   module can reach:")
+print()
+for table, call, answer, meaning in (
+    ("the frozen 2002 table", "in_table_a1('\u1e9e')", str(stringprep.in_table_a1(capital)), "unassigned"),
+    ("the live table", "'\u1e9e'.lower()", repr(capital.lower()), "a capital with a lowercase"),
+):
+    print(f"      {table:<22} {call:<17} {answer:<6} {meaning}")
+print()
+print("   Both are right about the table they read: the letter was added in")
+print("   2008. The case fold has to side with one of them, and B.2 is built")
+print("   on this function, unchanged in every Python 3:")
+print()
+print("       def map_table_b3(code):")
+print("           r = b3_exceptions.get(ord(code))")
+print("           if r is not None: return r")
+print("           return code.lower()")
+print()
+print("   The dict is frozen into the module when it is generated; lower() is")
+print("   the live table. Python's frozen table has no case mappings at all,")
+print("   so the dict has to carry every row where the RFC's answer is not")
+print("   today's -- and until 2026 it did not. It held only rows the RFC")
+print("   writes down, the ones where RFC and lower() disagree, so a character")
+print("   the RFC never mentions fell through to lower(), and U+1E9E folded")
+print("   to 'ss': a fold for a letter the same module calls unassigned.")
+print("   RFC 3454's own B.2 is a fixed list of 1,371 rows, and not one of")
+print("   them is U+1E9E.")
+print()
+print("   CPython fixed it in 2026 (gh-155292). The dict now also holds an")
+print("   identity row for every character the RFC leaves alone that lower()")
+print("   would change -- computed against the live table, which is why the")
+print("   regenerated module asserts that table's version too -- and the same")
+print("   call returns '\u1e9e', the RFC's answer. Which one you get depends on")
+print("   your interpreter's release, so this program prints neither. Ask")
+print("   yours:")
+print()
+print("     python3 -c \"import stringprep; print(stringprep.map_table_b2('\\u1e9e'))\"")
+print()
+print("   That is section 8's trap from the other side. A frozen table cannot")
+print("   tell `not invented yet` from `never will be`; a module that asks a")
+print("   frozen table one question and a live one the next gives both")
+print("   answers at once, and nothing it returns says which table it came")
+print("   from.")
+print()
+print("   One answer above does come from the live table, and is printed on")
+print("   purpose: 'ẞ'.lower(). U+1E9E has lowercased to U+00DF in every")
+print("   Unicode that has it, from 5.1 in 2008, and Python 3.0 shipped 5.1,")
+print("   so no Python 3 says anything else. Nothing in Unicode's stability")
+print("   policy promises it: ẞ and ß are not a case pair, because ß")
+print("   uppercases to 'SS'. So it is a bet, and this is it, made out loud.")

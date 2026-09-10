@@ -228,7 +228,7 @@ Same character, same rule, same RFC, and the two implementations differ by nothi
 
 Neither framework made a mistake here. **stringprep bought determinism with a permanent freeze**: a name registered in 2003 means the same thing forever, and no character invented since may ever be registered — so somebody who writes their language in a code point assigned in 2010 cannot have a name. **PRECIS bought growth with a version number**: your users get the alphabet they actually write in, and *is this string allowed* becomes a question about your server's build.
 
-That loop is the whole history of this subject in two documents, and it is the same shape as the trade [Preparing a string](../preparing_a_string/README.md) found inside `in_table_a1`. There is no third option where the table is both frozen and current.
+That loop is the whole history of this subject in two documents, and it is the same shape as the trade [Preparing a string](../preparing_a_string/README.md) found inside `in_table_a1`. There is no third option where the table is both frozen and current. CPython's own `stringprep` was one by accident — frozen for `in_table_a1`, live for the case fold — and from 2008 until a 2026 fix it called `ẞ` unassigned and folded it to `ss` in the same module. [Preparing a string](../preparing_a_string/README.md#the-step-the-pin-did-not-reach) has the whole story, and it is this page's section 5 seen from inside a framework that was supposed to be immune.
 
 ## What this implementation is not
 
