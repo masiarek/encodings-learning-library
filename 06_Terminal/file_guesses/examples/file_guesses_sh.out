@@ -59,3 +59,20 @@
    iso-8859-1 for a file that is perfectly good UTF-8. At 65536 the
    character is outside the window entirely and the file reads as pure
    ASCII. The verdict is about a prefix, and the file is not the prefix.
+
+6. THE ONE BYTE ABOVE 127 THAT FILE CALLS us-ascii
+   nel.txt            us-ascii       57 61 69 74 85 20 77 68 61 74 0a
+   read as CP1252       -> 57 61 69 74 e2 80 a6 20 77 68 61 74 0a
+   read as ISO-8859-1   -> 57 61 69 74 c2 85 20 77 68 61 74 0a
+   read as CP850        -> 57 61 69 74 c3 a0 20 77 68 61 74 0a
+   read as US-ASCII     -> iconv refuses it
+   all 128 high bytes, each alone in 'a?b': 96 iso-8859-1, 31 unknown-8bit,
+   and us-ascii for: 85
+   Section 2 said us-ascii means every byte is under 128. This file has
+   an 85 in it and gets us-ascii anyway: file counts 85 — NEL, the C1
+   control that EBCDIC's newline turns into — as a plain text byte. The
+   file is not ASCII, iconv refuses it as ASCII, and three tables read
+   three different characters: an ellipsis, the control itself, and an
+   a with a grave accent. The sweep tried all 128 high bytes and 85 is
+   the only one. In Windows-1252 it is the ellipsis, so an otherwise
+   ASCII file with a single … in it gets exactly this answer.

@@ -90,3 +90,32 @@ echo "   with nothing after it, which is not valid UTF-8, and reports"
 echo "   iso-8859-1 for a file that is perfectly good UTF-8. At 65536 the"
 echo "   character is outside the window entirely and the file reads as pure"
 echo "   ASCII. The verdict is about a prefix, and the file is not the prefix."
+
+echo
+echo "6. THE ONE BYTE ABOVE 127 THAT FILE CALLS us-ascii"
+printf 'Wait\205 what\n' > nel.txt
+printf '   %-18s %-14s %s\n' nel.txt "$(enc nel.txt)" "$(hx < nel.txt)"
+for t in CP1252 ISO-8859-1 CP850; do
+  printf '   read as %-12s -> %s\n' "$t" "$(iconv -f "$t" -t UTF-8 < nel.txt | hx)"
+done
+if iconv -f US-ASCII -t UTF-8 < nel.txt > /dev/null 2>&1; then r=accepts; else r=refuses; fi
+printf '   read as %-12s -> iconv %s it\n' US-ASCII "$r"
+n_iso=0; n_unk=0; asc=""
+for i in $(seq 128 255); do
+  o=$(printf '%03o' "$i")
+  case $(printf "a\\${o}b\\n" | file -b --mime-encoding -) in
+    iso-8859-1)   n_iso=$((n_iso + 1)) ;;
+    unknown-8bit) n_unk=$((n_unk + 1)) ;;
+    us-ascii)     asc="$asc $(printf '%02x' "$i")" ;;
+  esac
+done
+echo "   all 128 high bytes, each alone in 'a?b': $n_iso iso-8859-1, $n_unk unknown-8bit,"
+echo "   and us-ascii for:$asc"
+echo "   Section 2 said us-ascii means every byte is under 128. This file has"
+echo "   an 85 in it and gets us-ascii anyway: file counts 85 — NEL, the C1"
+echo "   control that EBCDIC's newline turns into — as a plain text byte. The"
+echo "   file is not ASCII, iconv refuses it as ASCII, and three tables read"
+echo "   three different characters: an ellipsis, the control itself, and an"
+echo "   a with a grave accent. The sweep tried all 128 high bytes and 85 is"
+echo "   the only one. In Windows-1252 it is the ellipsis, so an otherwise"
+echo "   ASCII file with a single … in it gets exactly this answer."

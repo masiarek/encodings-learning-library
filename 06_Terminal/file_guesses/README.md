@@ -2,7 +2,7 @@
 
 **Level:** 101 · for anyone with a terminal
 
-**One line:** `file` reports what an encoding *looks like* in the first 64 KiB, not what it is — `utf-8` is an inference, `iso-8859-1` is a proof of a negative, `us-ascii` is a statement that no experiment could contradict, and a file that is UTF-8 from byte 65536 onward reports as ASCII.
+**One line:** `file` reports what an encoding *looks like* in the first 64 KiB, not what it is — `utf-8` is an inference, `iso-8859-1` is a proof of a negative, `us-ascii` is a statement that no experiment could contradict (bar one byte `file` waves through), and a file that is UTF-8 from byte 65536 onward reports as ASCII.
 
 The mechanism is next door. [File type is four questions](../file_type_is_four_questions/README.md) has the magic database, the three test classes and their fixed order, and the point where a signature `file` *knows* runs out and a heuristic it is *running* takes over. This page is the heuristic — the last stage, where there is nothing to look up because **an encoding leaves no signature**, and `file` has to reason from the bytes alone.
 
@@ -11,7 +11,7 @@ The mechanism is next door. [File type is four questions](../file_type_is_four_q
 A file does not record its encoding. There is no header, no field, no convention that a general-purpose tool could read — outside the handful of formats that carry one, and outside the [BOM](../../03_Encodings/byte_order_and_bom/README.md), which is a mark somebody chose to write and most files do not have. So `file` has exactly one input, the bytes, and it asks three questions of them in order:
 
 1. **Is there a mark?** A BOM is a fact in the file. This is the only branch that produces evidence rather than inference — and section 4 below finds two asterisks on it.
-2. **Are they all under 128?** Then say `us-ascii` and stop, because every 8-bit table agrees down there and no further question has an answer.
+2. **Are they all under 128?** Then say `us-ascii` and stop, because every 8-bit table agrees down there and no further question has an answer. One byte above 127 passes this test anyway, and section 6 finds it by trying all of them.
 3. **Do the high bytes form valid UTF-8?** If yes, `utf-8`. If no, the file has high bytes and is not UTF-8, which narrows it to *some* 8-bit table and no further — `iso-8859-1` if the bytes look like a plausible one, `unknown-8bit` if they do not.
 
 That is the whole ladder, and none of it is statistics. `file` does not count letter frequencies or compare against a language model; it validates, and falls through when validation fails.
@@ -83,16 +83,35 @@ That is the whole ladder, and none of it is statistics. `file` does not count le
    iso-8859-1 for a file that is perfectly good UTF-8. At 65536 the
    character is outside the window entirely and the file reads as pure
    ASCII. The verdict is about a prefix, and the file is not the prefix.
+
+6. THE ONE BYTE ABOVE 127 THAT FILE CALLS us-ascii
+   nel.txt            us-ascii       57 61 69 74 85 20 77 68 61 74 0a
+   read as CP1252       -> 57 61 69 74 e2 80 a6 20 77 68 61 74 0a
+   read as ISO-8859-1   -> 57 61 69 74 c2 85 20 77 68 61 74 0a
+   read as CP850        -> 57 61 69 74 c3 a0 20 77 68 61 74 0a
+   read as US-ASCII     -> iconv refuses it
+   all 128 high bytes, each alone in 'a?b': 96 iso-8859-1, 31 unknown-8bit,
+   and us-ascii for: 85
+   Section 2 said us-ascii means every byte is under 128. This file has
+   an 85 in it and gets us-ascii anyway: file counts 85 — NEL, the C1
+   control that EBCDIC's newline turns into — as a plain text byte. The
+   file is not ASCII, iconv refuses it as ASCII, and three tables read
+   three different characters: an ellipsis, the control itself, and an
+   a with a grave accent. The sweep tried all 128 high bytes and 85 is
+   the only one. In Windows-1252 it is the ellipsis, so an otherwise
+   ASCII file with a single … in it gets exactly this answer.
 ```
 <!-- /output -->
 
 **Section 1 has five answers where the stub for this page predicted four.** `unknown-8bit` is the fifth, and it is a *weaker* negative than `iso-8859-1`: not valid UTF-8, and not a plausible ISO-8859 file either. The byte that triggered it is `0x80` — the euro sign in Windows-1252 and an unassigned C1 control in Latin-1 — which is exactly the byte on which [cp1252 and Latin-1 differ](../../07_Real_Data/windows_1252_vs_latin1/README.md). So `unknown-8bit` is often not an exotic file at all; it is a perfectly ordinary Windows CSV.
 
-**Section 2 is why `us-ascii` is the strongest true answer, not the cautious one.** The same file decoded through five different tables produced five identical results, because all five agree below `0x80` by construction. There is no experiment that distinguishes them on that file. So `us-ascii` does not mean *"probably ASCII"*; it means *"every byte here is under 128, and therefore this file is simultaneously valid ASCII, Latin-1, Latin-2, CP1252 and CP850, with the same meaning under all of them."* The answer is complete. It is the *question* that has no more to give.
+**Section 2 is why `us-ascii` is the strongest true answer, not the cautious one.** The same file decoded through five different tables produced five identical results, because all five agree below `0x80` by construction. There is no experiment that distinguishes them on that file. So `us-ascii` does not mean *"probably ASCII"*; it means *"every byte here is under 128, and therefore this file is simultaneously valid ASCII, Latin-1, Latin-2, CP1252 and CP850, with the same meaning under all of them."* The answer is complete. It is the *question* that has no more to give. Section 6 is the one byte for which none of that is true.
 
 **Section 3 is the UTF-8-versus-Latin-1 decision in three lines.** `c3 a9` is a legal two-byte UTF-8 sequence, so it validates and `file` says `utf-8` — an inference, and a strong one, because random 8-bit text almost never accidentally forms valid UTF-8. `e9` alone cannot begin a UTF-8 sequence, so validation fails and `file` falls back to *high bytes, not UTF-8*. Neither branch involved a table of languages.
 
 **Section 5 is the finding, and it is the reason to distrust the answer on anything large.** `file` reads a bounded prefix — 64 KiB — and three files differing only in how much ASCII padding comes first got three different verdicts. The middle one is the sharp edge: at 65535 bytes of padding the window ends *between* the two bytes of an `é`, so `file` sees a `c3` with nothing after it, calls that invalid UTF-8, and reports **`iso-8859-1` for a file that is perfectly good UTF-8.** One byte of padding either way and the answer changes twice. Every verdict on this page is a verdict about a prefix, and on a log file or a database export the prefix is not the file.
+
+**Section 6 is where `us-ascii` stops being a proof, and it is `file` that breaks it.** A file whose only high byte is `85` comes back `us-ascii`, because `file` counts `85` — NEL, the C1 control that EBCDIC's newline becomes in Unicode — among the bytes of plain text; the default wording even reports `ASCII text, with LF, NEL line terminators`. The file is not ASCII: `iconv` refuses it as ASCII, and the three tables that accept it read three different characters, which is exactly the situation section 2 says `us-ascii` rules out. The sweep beside it asks about all 128 high bytes one at a time, and `85` is the only one that comes back `us-ascii`. It is not an exotic case. `85` is the ellipsis in Windows-1252, and Word's AutoCorrect turns three typed dots into one, so an otherwise-ASCII file exported from a Windows program with a single `…` in it is precisely the file that gets the wrong answer — identical on file-5.41 (macOS), 5.44 (Debian 12) and 5.45 (Ubuntu 24.04). [`strings`](../../11_Tools/strings/README.md) meets the same character from the other side: in UTF-8 it is three bytes, and one build of `strings` deals them across two lines.
 
 ## Ask for the MIME form, always
 
@@ -241,3 +260,4 @@ Say why all three get the same answer, which of them are actually ASCII, and wri
 - [Byte order and the BOM](../../03_Encodings/byte_order_and_bom/README.md) — the mark, and what it does and does not promise
 - [Windows-1252 vs Latin-1](../../07_Real_Data/windows_1252_vs_latin1/README.md) — the byte behind most `unknown-8bit` answers
 - [The table has a version](../../02_Characters/the_table_has_a_version/README.md) — the same failure one layer up: an out-of-date table answers `Cn` with no hedge either
+- [`strings` has a printable set, not an encoding](../../11_Tools/strings/README.md) — the third tool for poking at an unknown file, and what it counts as readable
