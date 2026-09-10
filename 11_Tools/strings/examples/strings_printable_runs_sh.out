@@ -1,0 +1,79 @@
+1. FOUR PRINTABLE BYTES IN A ROW, OR NOTHING
+
+$ strings < zoo.bin
+hello
+world
+   Two runs, two lines. The three bytes between them — 00 01 02 — are
+   not printed, not replaced and not mentioned: a byte outside the set
+   simply ends the run it interrupted. That is the whole algorithm.
+
+$ printf 'ab\000cde\000fghi\n' | strings
+fghi
+   Runs of two and three bytes vanish without a word, because the
+   default minimum is four. -n moves the minimum and changes nothing else:
+
+$ printf 'ab\000cde\000fghi\n' | strings -n 2
+ab
+cde
+fghi
+
+2. WHICH BYTES KEEP A RUN GOING
+   Each byte value in turn, between 'abcd' and 'efgh': one line back means
+   strings counted the byte as printable, two lines means it ended the run.
+   keeps the run going  20-7e               95 byte values
+   ends the run         00-08 0b-1f 7f-ff  159 byte values
+   Ninety-five bytes, and they are exactly printable ASCII: space through
+   tilde. Every byte from 80 to ff ends a run — and those are the only
+   bytes UTF-8 uses for anything that is not ASCII. Two values were left
+   out on purpose: newline, which ends a line everywhere, and tab, the one
+   byte these two builds disagree about. The page has that table.
+
+3. AN ACCENT ENDS A WORD
+
+$ printf 'caf\303\251 bar\n' | strings | cat -vet
+ bar$
+   café is c a f, then c3 a9. The run 'caf' is three bytes and is dropped;
+   c3 and a9 are outside the set; ' bar' is four bytes, so it survives —
+   with its leading space, which cat -vet makes visible. The word you were
+   looking for is exactly the part that is missing.
+
+$ printf 'caf\351 bar\n' | strings | cat -vet
+ bar$
+   The same words in Latin-1 are one byte shorter and get the same answer:
+   strings is not refusing UTF-8, it is refusing everything above 7e.
+
+$ printf '\305\274\303\263\305\202w\n' | strings | wc -c | tr -d ' '
+0
+   żółw: four letters in seven bytes, and nothing comes back. Three of the
+   letters take two bytes each, all six of those bytes are above 7e, and
+   the w left over is a run of one.
+
+4. UTF-16 IS INVISIBLE TO IT
+
+$ xxd u16.txt
+00000000: 4800 6500 6c00 6c00 6f00 2c00 2000 5700  H.e.l.l.o.,. .W.
+00000010: 6f00 7200 6c00 6400 2100 0a00            o.r.l.d.!...
+   Every ASCII letter in UTF-16LE is followed by a 00 byte, so no two
+   printable bytes are ever next to each other:
+
+$ strings < u16.txt | wc -c | tr -d ' '
+0
+   Twenty-eight bytes of readable text, and nothing. Decode first, and
+   strings has runs to find:
+
+$ iconv -f UTF-16LE -t UTF-8 u16.txt | strings
+Hello, World!
+
+5. WHAT IT THREW AWAY, AND HOW TO GET IT BACK
+
+$ strings -t d < zoo.bin | sed 's/^ *//'
+0 hello
+8 world
+   -t d puts each run's byte offset in front of it. (The sed removes a
+   padding difference: one build right-aligns the number and the other
+   does not.) The number is the part of each line that strings made up,
+   and it is the part xxd needs to show you what surrounded the run:
+
+$ xxd -s 5 -l 3 zoo.bin
+00000005: 0001 02                                  ...
+   The three bytes between the runs, which strings never mentioned.

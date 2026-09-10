@@ -44,15 +44,16 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 | 15 | [`hexdump` is a format engine wearing six presets](hexdump/README.md) | Why is my dump showing the bytes in the wrong order? | written |
 | 16 | [`xxd` is the dump you can put back](xxd/README.md) | Which column of a dump is the file, and how do I get the file back? | written |
 | 17 | [`od` reads types, not bytes](od/README.md) | Nothing else is installed. What are the two flags that make `od` honest? | written, 2026-09-07 |
-| 18 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
-| 19 | [Typing a character you cannot type](typing_a_character/README.md) | There is no `ż` on my keyboard — how do I produce one? | written, 2026-09-07 |
-| 20 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
+| 18 | [`strings` has a printable set, not an encoding](strings/README.md) | Why did `strings` print nothing for a file that is full of text? | written, 2026-09-10 |
+| 19 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
+| 20 | [Typing a character you cannot type](typing_a_character/README.md) | There is no `ż` on my keyboard — how do I produce one? | written, 2026-09-07 |
+| 21 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
 
 ## The whole toolkit, one row each
 
 If you came looking for *the list* — every command you are likely to run over text, and what each one quietly decided before it printed — this is it. Nothing here needs installing on macOS or Ubuntu.
 
-**A bold tool has a page in this chapter and its last column was measured.** A link that is *not* bold means the tool has no page of its own, so it goes to wherever this library does show it — a lesson in another chapter that runs it, or the page for the tool it is a flag of. And a name with **no link at all** has no page anywhere here: its last column links the *concept* instead, and names the question worth asking rather than a verdict, which is the honest state of the evidence. `rev` and `strings` are the two exceptions, [measured below](#two-of-the-unbolded-rows-measured). The three questions at the top of this page are how you settle one for yourself in about a minute.
+**A bold tool has a page in this chapter and its last column was measured.** A link that is *not* bold means the tool has no page of its own, so it goes to wherever this library does show it — a lesson in another chapter that runs it, or the page for the tool it is a flag of. And a name with **no link at all** has no page anywhere here: its last column links the *concept* instead, and names the question worth asking rather than a verdict, which is the honest state of the evidence. `rev` is the one exception, [measured below](#one-of-the-unbolded-rows-measured). The three questions at the top of this page are how you settle one for yourself in about a minute.
 
 ### The program running all of them
 
@@ -80,7 +81,7 @@ If you came looking for *the list* — every command you are likely to run over 
 | [`head`](../07_Real_Data/bom_in_a_csv/README.md), [`tail`](../06_Terminal/trailing_newline/README.md) | first or last part | `-n` counts **newlines** and `-c` counts **bytes**; neither decodes, so neither can fail — but `-c` will cut a character in half |
 | **[`paste`](look_paste_tee_split/README.md)**, `join`, `comm` | put files side by side, or match them up | delimiters and field boundaries are bytes — `-d` takes a **list** of them and reads it a byte at a time, so one multi-byte delimiter becomes two; [`join` and `comm`](tr_and_sort/README.md) additionally require both inputs sorted **in the same collation** as they compare, which is [a locale question](../07_Real_Data/sorting_and_collation/README.md) |
 | **[`split`, `csplit`](look_paste_tee_split/README.md)** | cut a file into pieces | `split -b` is bytes and will [land mid-character](../07_Real_Data/fixed_width_byte_fields/README.md), so a piece on its own is not text; `-l` is lines and will not |
-| `rev` | reverse each line | the **locale** decides whether it reverses characters or bytes — and reversing bytes takes a multi-byte character apart. [Measured below](#two-of-the-unbolded-rows-measured) |
+| `rev` | reverse each line | the **locale** decides whether it reverses characters or bytes — and reversing bytes takes a multi-byte character apart. [Measured below](#one-of-the-unbolded-rows-measured) |
 | `fold`, `fmt`, `expand`, `column`, `nl`, `pr` | wrap, align, number, paginate | every one of them has a notion of *width*, and width is the [character-vs-byte question](cut/README.md) wearing a different hat. Ask before trusting a column |
 
 ### Transform
@@ -110,7 +111,7 @@ If you came looking for *the list* — every command you are likely to run over 
 | **[`od`](od/README.md)** | dump, POSIX | the only one guaranteed present — and its interface is a **C type**, so its default is octal words at octal offsets, `-a` [invents names for bytes it cannot draw](../06_Terminal/inspecting_a_file/README.md), and [no two machines lay its columns out alike](od/README.md) |
 | [`file`](../06_Terminal/file_guesses/README.md) | guess what this is | reads the first bytes and guesses; `--mime-encoding` distinguishes valid UTF-8 from not, and little else |
 | [`cat -vet`](../06_Terminal/inspecting_a_file/README.md#why-plain-cat-is-not-a-way-to-look-at-a-file) | show the invisibles | ASCII-only respelling: `M-x` for a high byte, `$` for a newline, `^I` for a tab. `cat -A` [does not exist on macOS](../CONTRIBUTING.md) |
-| `strings` | pull the text out of a binary | **ASCII by default**, in runs of four or more — so a word containing an accent is split, and a short fragment is dropped entirely. [Measured below](#two-of-the-unbolded-rows-measured) |
+| **[`strings`](strings/README.md)** | pull the text out of a binary | **ASCII** by default, in runs of four or more — so an accent ends a word and a UTF-16 file prints nothing. On a Mac it reads a different part of the file than on Linux, and [a named file and a piped one get different answers](strings/README.md#the-mac-has-two-strings) |
 | [`hexyl`](worth_installing/README.md) | dump, in colour | colour by byte category, which is the one column no other dump has |
 | [Hex Fiend ↗](https://hexfiend.com/) | view and edit the bytes, in a window (macOS) | the one dump whose text column's encoding is a **menu** — Mac OS Roman, Latin-1, both UTF-16 orders, UTF-8 — rather than a decision made for you. [Described, not measured](../06_Terminal/binary_or_text/README.md#looking-at-the-bytes) |
 | [`uchardet`](worth_installing/README.md) | guess the *encoding* | a real detector where `file` only tells valid-UTF-8 from not — it narrows the field, it does not settle it |
@@ -124,9 +125,9 @@ If you came looking for *the list* — every command you are likely to run over 
 | [`find -exec`](find/README.md), **[`tee`](look_paste_tee_split/README.md)** | run per file, or fork a stream | both pass bytes through untouched — `tee` is this chapter's **control**, the one tool with no opinion at all; `find -exec … +` is the escape from most of [`xargs`'s problems](xargs/README.md) |
 | **[`rg --pre`, `rg -z`](decompress_then_decode/README.md)** | one stage before the decode | a container is not an encoding, and [`-z` is a list of binaries, not a capability](decompress_then_decode/README.md) |
 
-### Two of the unbolded rows, measured
+### One of the unbolded rows, measured
 
-The two above that would otherwise be pure assertion, since both surprised the author:
+The one above that would otherwise be pure assertion, since it surprised the author:
 
 ```text title="Measured 2026-09-06 — macOS 26.6, cafe.txt = 'café bar' in UTF-8, 10 bytes. Verbatim; not machine-checked, because no answer key can match both platforms."
 $ LC_ALL=C rev cafe.txt | hexdump -C
@@ -135,14 +136,11 @@ $ LC_ALL=C rev cafe.txt | hexdump -C
 $ LC_ALL=en_US.UTF-8 rev cafe.txt | hexdump -C
 00000000  72 61 62 20 c3 a9 66 61  63 0a                    |rab ..fac.|
 0000000a
-$ strings cafe.txt | hexdump -C
-00000000  20 62 61 72 0a                                    | bar.|
-00000005
 ```
 
-The first two runs differ in one byte pair: `a9 c3` against `c3 a9`. The C-locale line is no longer UTF-8 at all — the `é` was taken apart and put back the wrong way round — while the text column of both dumps says `rab ..fac.`, which is [exactly the column that cannot tell you](hexdump/README.md). `rev` is the counter-example to this chapter's own advice. Everywhere else, `LC_ALL=C` is the escape hatch — it turns a decoding tool into a byte tool and stops it failing on input it cannot read. For `rev` it is the *cause*: in the C locale there are no characters to reverse, only bytes, and a two-byte `é` comes back as two bytes in the wrong order. `LC_ALL=C` is right for **searching and matching**, where you want no interpretation. It is wrong for anything that **rearranges** what it read.
+The two runs differ in one byte pair: `a9 c3` against `c3 a9`. The C-locale line is no longer UTF-8 at all — the `é` was taken apart and put back the wrong way round — while the text column of both dumps says `rab ..fac.`, which is [exactly the column that cannot tell you](hexdump/README.md). `rev` is the counter-example to this chapter's own advice. Everywhere else, `LC_ALL=C` is the escape hatch — it turns a decoding tool into a byte tool and stops it failing on input it cannot read. For `rev` it is the *cause*: in the C locale there are no characters to reverse, only bytes, and a two-byte `é` comes back as two bytes in the wrong order. `LC_ALL=C` is right for **searching and matching**, where you want no interpretation. It is wrong for anything that **rearranges** what it read.
 
-`strings` is the other shape of the same problem: it is not wrong about the encoding, it never had one. Its default is runs of four or more printable ASCII bytes, so `café` becomes `caf` (three — dropped) plus a byte it will not print. `strings -e S` takes single-byte 8-bit encodings and `-e l` little-endian 16-bit, which is how you get the text out of a UTF-16 file it otherwise reports as empty.
+`strings` stood here too until it had [a page of its own](strings/README.md), which found that the `-e` flags this paragraph used to recommend are GNU-only — a Mac's `strings` rejects them — and that on a Mac `strings f` and `cat f | strings` are not the same command.
 
 ## What each of them does with a byte that is not text
 

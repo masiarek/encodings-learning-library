@@ -1,0 +1,72 @@
+1. THE WHOLE TOOL IS ONE REGULAR EXPRESSION
+   zoo = b'hello\x00\x01\x02world\n'
+   re.findall(rb'[\x20-\x7e]{4,}', zoo)  -> [b'hello', b'world']
+   Runs of four or more bytes from space to tilde; every other byte ends
+   a run and is thrown away. That is strings. The rest of this program is
+   about the one thing builds disagree on: which bytes count as printable.
+
+2. FOUR TABLES, ONE PER BUILD AND INPUT PATH
+   GNU strings            96 bytes   09 20-7e
+   Apple, file argument   96 bytes   0c 20-7e
+   Apple, stdin, C        95 bytes   20-7e
+   Apple, stdin, UTF-8   190 bytes   20-7e a0-ac ae-ff
+   Three are ASCII plus at most one control character. The fourth is what
+   Apple's strings uses when the file arrives on STDIN in a UTF-8 locale:
+   it also keeps every byte from a0 to ff except ad (the soft hyphen),
+   each judged as if it were a Latin-1 character on its own.
+
+3. FIVE INPUTS THROUGH FOUR TABLES
+   tab = b'abcd\tefgh\n'
+      GNU strings           [b'abcd\tefgh']
+      Apple, file argument  [b'abcd', b'efgh']
+      Apple, stdin, C       [b'abcd', b'efgh']
+      Apple, stdin, UTF-8   [b'abcd', b'efgh']
+   café, UTF-8 = b'caf\xc3\xa9 bar\n'
+      GNU strings           [b' bar']
+      Apple, file argument  [b' bar']
+      Apple, stdin, C       [b' bar']
+      Apple, stdin, UTF-8   [b'caf\xc3\xa9 bar']
+   café, Latin-1 = b'caf\xe9 bar\n'
+      GNU strings           [b' bar']
+      Apple, file argument  [b' bar']
+      Apple, stdin, C       [b' bar']
+      Apple, stdin, UTF-8   [b'caf\xe9 bar']
+   żółw, UTF-8 = b'\xc5\xbc\xc3\xb3\xc5\x82w\n'
+      GNU strings           []
+      Apple, file argument  []
+      Apple, stdin, C       []
+      Apple, stdin, UTF-8   [b'\xc5\xbc\xc3\xb3\xc5']
+   …, UTF-8 = b'Wait\xe2\x80\xa6 what\n'
+      GNU strings           [b'Wait', b' what']
+      Apple, file argument  [b'Wait', b' what']
+      Apple, stdin, C       [b'Wait', b' what']
+      Apple, stdin, UTF-8   [b'Wait\xe2', b'\xa6 what']
+   On these five inputs the first three tables differ only over the tab.
+   The fourth keeps café whole, cuts żółw after five bytes, and splits the
+   ellipsis in two.
+
+4. A RUN OF PRINTABLE BYTES IS NOT NECESSARILY TEXT
+   Every UTF-8 input above, through the fourth table, then decoded:
+   café, UTF-8  b'caf\xc3\xa9 bar'       valid UTF-8
+   żółw, UTF-8  b'\xc5\xbc\xc3\xb3\xc5'  NOT valid UTF-8 (UnicodeDecodeError)
+   …, UTF-8     b'Wait\xe2'              NOT valid UTF-8 (UnicodeDecodeError)
+   …, UTF-8     b'\xa6 what'             NOT valid UTF-8 (UnicodeDecodeError)
+   All three inputs were valid UTF-8. Two came out broken: the ł cut after
+   its first byte, and the ellipsis spread over two runs with its middle
+   byte gone. The one that came out whole was kept for the wrong reason —
+   c3 and a9 are Ã and © in Latin-1, and this table is Latin-1's.
+   A tool that never decodes cannot fail to decode; it can still hand you
+   bytes that no longer do.
+
+5. WHAT A STRINGS FOR UTF-8 WOULD HAVE TO DO
+   tab            'abcd' | 'efgh'
+   café, UTF-8    'café bar'
+   café, Latin-1  ' bar'
+   żółw, UTF-8    'żółw'
+   …, UTF-8       'Wait… what'
+   Decode, then count characters instead of bytes: a character counts
+   unless it is a control character or a byte that did not decode (which
+   surrogateescape keeps as a marker, so it still ends a run). Now żółw is
+   four characters and a run, the ellipsis stays in one piece, and the
+   Latin-1 file gets exactly the answer strings gave it. That decode step
+   is the part strings leaves to you.
