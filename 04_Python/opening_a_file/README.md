@@ -12,6 +12,16 @@ open("data.csv")                              # asks a machine you have not met
 
 Three calls, and only the third one's behaviour depends on who runs it.
 
+## Which library answers which question
+
+`open()` makes four decisions — `mode`, `buffering`, `encoding` and `newline` — and this page is about one of them. The Python library has a page with the same name, [Opening a file ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/opening_a_file/index.html), and the two split the subject down one line, settled on 2026-09-08: **this library owns the codec, that one owns the call.**
+
+**Here, the codec.** Which encoding the default resolves to, and on which machine; UTF-8 Mode and PEP 686; what a wrong bet looks like when it finally surfaces; and how to find every unnamed `open()` in a codebase before it does.
+
+**There, the call.** What each `mode` does, including the truncation that happens at `open()` before a byte is written; when your output actually leaves the process; why `tell()` in text mode returns a cookie rather than a position; how many lines a file has, which depends on who is counting; how to replace a file without a reader ever seeing half of it; and the same calls side by side in Rust, C and ABAP. Line endings come up on this page only as the second way a string can differ from its file.
+
+The two halves meet on stdout, and [A pipe is not a terminal](../../06_Terminal/pipe_is_not_a_terminal/README.md) is where this library measures the meeting: `print()` makes this page's bet on the way out, and on macOS and Linux a pipe changes *when* that output leaves, never *which encoding* it leaves in. The Python library's page measures the *when* half again, as part of `buffering`.
+
 ## What the bet is on
 
 `open()` in text mode has to turn bytes into a `str`, so it needs an encoding. Give it none and it asks the C library what the current locale's encoding is, and uses that.
@@ -254,11 +264,11 @@ The interesting half is what it silently breaks, and it needs bytes that decode 
 
 The louder direction — a genuine cp1252 file read as UTF-8 — raises on the first run and gets fixed that afternoon. It is the quiet one that reaches production, and the defence is the same as it has always been: name the encoding, and the default cannot reach you.
 
-## Two more things `open()` decides
+## Two things `encoding=` does not settle
 
-**Line endings.** Text mode translates them on the way in, so `\r\n` in the file arrives as `\n` in the string. That is usually what you want for prose and is wrong for the `csv` module, which does its own line handling and documents `newline=''` as required — a quoted CSV field is allowed to contain a bare CR or LF, and translating it corrupts the record. See [CRLF vs LF](../../07_Real_Data/crlf_vs_lf/README.md) and [A BOM in a CSV](../../07_Real_Data/bom_in_a_csv/README.md), where `encoding='utf-8-sig'` and `newline=''` belong in the same call.
+**Line endings.** Naming the encoding does not hand you the file's characters as written: text mode decodes and *then* translates, so the `\r\n` in the file arrives as `\n` in the string — section 5 of the program has the bytes. That is as much of `newline=` as this page needs. The rest of it is the call's half, measured in [the Python library's page ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/opening_a_file/index.html): the lone `\r` that universal newlines also rewrites, and how many lines one file has depending on who is counting. The bytes themselves are [CRLF vs LF](../../07_Real_Data/crlf_vs_lf/README.md), and [A BOM in a CSV](../../07_Real_Data/bom_in_a_csv/README.md) is where `encoding='utf-8-sig'` and `newline=''` belong in the same call.
 
-**Nothing about normalization.** Decoding settles which characters the bytes name; it does not settle which *spelling* was written. `é` has two — one code point (`U+00E9`) or two (`U+0065 U+0301`) — and both are valid UTF-8, both read back correctly, and the two strings are not equal. Section 6 of the program shows it. `encoding=` was never the question there, which is worth knowing before you spend an afternoon on it; [Normalization](../normalization/README.md) is.
+**Normalization.** Decoding settles which characters the bytes name; it does not settle which *spelling* was written. `é` has two — one code point (`U+00E9`) or two (`U+0065 U+0301`) — and both are valid UTF-8, both read back correctly, and the two strings are not equal. Section 6 of the program shows it. `encoding=` was never the question there, which is worth knowing before you spend an afternoon on it; [Normalization](../normalization/README.md) is.
 
 ## If you are coming from Python or ABAP
 
@@ -339,11 +349,13 @@ THE ONE LINE
 - [Normalization](../normalization/README.md) — the difference `encoding=` cannot fix
 - [`str` vs `bytes`](../str_vs_bytes/README.md) — what `'rb'` hands you instead
 - [Locale and `LC_CTYPE`](../../06_Terminal/locale_and_lc_ctype/README.md) — where the locale's encoding comes from, and what Python declines to take from it
+- [A pipe is not a terminal](../../06_Terminal/pipe_is_not_a_terminal/README.md) — this page's bet on the way out: a pipe changes `sys.stdout`'s buffering and not its encoding
 - [Mojibake](../../03_Encodings/mojibake/README.md) — the silent row of the table above, in full
 - [A BOM in a CSV](../../07_Real_Data/bom_in_a_csv/README.md) — `utf-8-sig` and `newline=''` in one call
 - [CRLF vs LF](../../07_Real_Data/crlf_vs_lf/README.md) — the translation text mode performs
 - [`find`, and filenames that are bytes](../../11_Tools/find/README.md) — why macOS reports a different filesystem encoding
 - [Interfaces and storage](../../10_Best_Practices/interfaces_and_storage/README.md) — decode at the boundary, and write the encoding into the contract
+- [Opening a file ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/opening_a_file/index.html) — the other half of this subject, in the Python library: `mode`, buffering, the `tell()` cookie, counting lines, and replacing a file safely
 - [PEP 540 — UTF-8 Mode ↗](https://peps.python.org/pep-0540/) — the switch, and why a C locale turns it on by itself
 - [PEP 597 — Add optional EncodingWarning ↗](https://peps.python.org/pep-0597/) — the warning and `io.text_encoding()`
 - [PEP 686 — Make UTF-8 mode default ↗](https://peps.python.org/pep-0686/) — the plan, and its own account of what it breaks
