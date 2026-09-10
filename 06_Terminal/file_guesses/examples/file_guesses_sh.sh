@@ -119,3 +119,36 @@ echo "   three different characters: an ellipsis, the control itself, and an"
 echo "   a with a grave accent. The sweep tried all 128 high bytes and 85 is"
 echo "   the only one. In Windows-1252 it is the ellipsis, so an otherwise"
 echo "   ASCII file with a single … in it gets exactly this answer."
+
+echo
+echo "7. TWENTY-FIVE BYTES MAKE A FILE binary, AND NUL IS ONLY ONE OF THEM"
+# a line of decimal byte values as hex ranges: "32 33 34 36" -> "20-22 24"
+ranges() {
+  awk 'function fmt(a, b) { return a == b ? sprintf("%02x", a) : sprintf("%02x-%02x", a, b) }
+       { for (i = 1; i <= NF; i++) {
+           v = $i + 0
+           if (have && v == last + 1) { last = v; continue }
+           if (have) out = out (out == "" ? "" : " ") fmt(first, last)
+           first = v; last = v; have = 1
+       } }
+       END { if (have) out = out (out == "" ? "" : " ") fmt(first, last); print out }'
+}
+bin=""; txt=""
+for i in $(seq 0 127); do
+  o=$(printf '%03o' "$i")
+  case $(printf "a\\${o}b\\n" | file -b --mime-encoding -) in
+    binary)   bin="$bin $i" ;;
+    us-ascii) txt="$txt $i" ;;
+  esac
+done
+set -- $bin; nb=$#
+set -- $txt; nt=$#
+printf '   %-10s %-22s %3d values\n' binary "$(echo $bin | ranges)" "$nb"
+printf '   %-10s %-22s %3d values\n' us-ascii "$(echo $txt | ranges)" "$nt"
+echo "   The 128 low bytes, each alone in 'a?b'. NUL is one byte in twenty-"
+echo "   five: the C0 control characters other than bell, backspace, tab, line"
+echo "   feed, vertical tab, form feed, carriage return and escape, plus DEL."
+echo "   So a single 01 with no NUL anywhere makes a file binary to file,"
+echo "   while utf16le_bom.txt in section 1 is full of NULs and is utf-16le."
+echo "   'Has a NUL' and 'is binary' are separate questions, and file does"
+echo "   not ask the first one at all."

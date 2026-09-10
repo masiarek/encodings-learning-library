@@ -76,3 +76,14 @@
    a with a grave accent. The sweep tried all 128 high bytes and 85 is
    the only one. In Windows-1252 it is the ellipsis, so an otherwise
    ASCII file with a single … in it gets exactly this answer.
+
+7. TWENTY-FIVE BYTES MAKE A FILE binary, AND NUL IS ONLY ONE OF THEM
+   binary     00-06 0e-1a 1c-1f 7f    25 values
+   us-ascii   07-0d 1b 20-7e         103 values
+   The 128 low bytes, each alone in 'a?b'. NUL is one byte in twenty-
+   five: the C0 control characters other than bell, backspace, tab, line
+   feed, vertical tab, form feed, carriage return and escape, plus DEL.
+   So a single 01 with no NUL anywhere makes a file binary to file,
+   while utf16le_bom.txt in section 1 is full of NULs and is utf-16le.
+   'Has a NUL' and 'is binary' are separate questions, and file does
+   not ask the first one at all.

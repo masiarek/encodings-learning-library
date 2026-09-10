@@ -100,6 +100,17 @@ That is the whole ladder, and none of it is statistics. `file` does not count le
    a with a grave accent. The sweep tried all 128 high bytes and 85 is
    the only one. In Windows-1252 it is the ellipsis, so an otherwise
    ASCII file with a single … in it gets exactly this answer.
+
+7. TWENTY-FIVE BYTES MAKE A FILE binary, AND NUL IS ONLY ONE OF THEM
+   binary     00-06 0e-1a 1c-1f 7f    25 values
+   us-ascii   07-0d 1b 20-7e         103 values
+   The 128 low bytes, each alone in 'a?b'. NUL is one byte in twenty-
+   five: the C0 control characters other than bell, backspace, tab, line
+   feed, vertical tab, form feed, carriage return and escape, plus DEL.
+   So a single 01 with no NUL anywhere makes a file binary to file,
+   while utf16le_bom.txt in section 1 is full of NULs and is utf-16le.
+   'Has a NUL' and 'is binary' are separate questions, and file does
+   not ask the first one at all.
 ```
 <!-- /output -->
 
@@ -112,6 +123,8 @@ That is the whole ladder, and none of it is statistics. `file` does not count le
 **Section 5 is the finding, and it is the reason to distrust the answer on anything large.** `file` reads a bounded prefix — 64 KiB — and three files differing only in how much ASCII padding comes first got three different verdicts. The middle one is the sharp edge: at 65535 bytes of padding the window ends *between* the two bytes of an `é`, so `file` sees a `c3` with nothing after it, calls that invalid UTF-8, and reports **`iso-8859-1` for a file that is perfectly good UTF-8.** One byte of padding either way and the answer changes twice. Every verdict on this page is a verdict about a prefix, and on a log file or a database export the prefix is not the file.
 
 **Section 6 is where `us-ascii` stops being a proof, and it is `file` that breaks it.** A file whose only high byte is `85` comes back `us-ascii`, because `file` counts `85` — NEL, the C1 control that EBCDIC's newline becomes in Unicode — among the bytes of plain text; the default wording even reports `ASCII text, with LF, NEL line terminators`. The file is not ASCII: `iconv` refuses it as ASCII, and the three tables that accept it read three different characters, which is exactly the situation section 2 says `us-ascii` rules out. The sweep beside it asks about all 128 high bytes one at a time, and `85` is the only one that comes back `us-ascii`. It is not an exotic case. `85` is the ellipsis in Windows-1252, and Word's AutoCorrect turns three typed dots into one, so an otherwise-ASCII file exported from a Windows program with a single `…` in it is precisely the file that gets the wrong answer — identical on file-5.41 (macOS), 5.44 (Debian 12) and 5.45 (Ubuntu 24.04). [`strings`](../../11_Tools/strings/README.md) meets the same character from the other side: in UTF-8 it is three bytes, and one build of `strings` deals them across two lines.
+
+**Section 7 is the verdict this page otherwise leaves alone: `binary`.** Twenty-five of the 128 low bytes make `file` give up — the C0 control characters other than bell, backspace, tab, line feed, vertical tab, form feed, carriage return and escape, plus `DEL` — and the NUL is only one of them. A single `01` with no NUL anywhere makes a file `binary`, while section 1's UTF-16 file is full of NULs and comes back `utf-16le`, because it carries a byte-order mark. So *has a NUL* is not what `file` means by binary, and the tools that test for a NUL instead — [Binary is a verdict, not a property](../binary_or_text/README.md) measures `git` and `grep` — disagree with `file` in both directions. Identical on file-5.41, 5.44 and 5.45.
 
 ## Ask for the MIME form, always
 
