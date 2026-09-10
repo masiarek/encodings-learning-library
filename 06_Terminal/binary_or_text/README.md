@@ -30,7 +30,7 @@ Every row was measured on the same three bytes. The shell and Python examples be
 
 Only the first row refuses these bytes, and it refuses them *as UTF-8* — a verdict about one encoding, not about the file. Every 8-bit table finds a character for each byte: Latin-1 maps all 256 byte values to characters, so under Latin-1 **no** file can fail to decode, which is precisely why Latin-1 can never tell you that a file is binary.
 
-The tools whose job is to *call* a file binary lean on one byte above all — `00`, the byte that [ends a string in C](../../02_Characters/the_nul_byte/README.md). It is `git`'s entire test and `grep`'s first one, and `file` gives up on it too. That is also why all three call a BOM-less UTF-16 file binary: in UTF-16 every ASCII letter carries a `00`.
+The tools whose job is to *call* a file binary lean on one byte above all — `00`, the byte that [ends a string in C](../../02_Characters/the_nul_byte/README.md). It is `git`'s entire test and `grep`'s first one, and `file` gives up on it too — though `file`'s list is longer: a lone `01`, with no NUL anywhere, is enough to make it answer `binary` where `git` and `grep` see text, and [`file` guesses](../file_guesses/README.md) has the whole list. That is also why all three call a BOM-less UTF-16 file binary: in UTF-16 every ASCII letter carries a `00`.
 
 **`grep` is the row that moves.** In a UTF-8 locale, a line that is not valid UTF-8 changes what both greps do, in opposite styles:
 
