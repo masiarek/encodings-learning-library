@@ -2,7 +2,7 @@
 
 **Level:** 101 → 201 · for anyone with a terminal
 
-[`xxd`](../11_Tools/xxd/README.md) and [`od`](../11_Tools/od/README.md) were taught in chapter 1 because nothing later works without them. This chapter is the rest of the toolbox: putting known bytes on a pipe, the last byte of a text file and everything that depends on it, reading a dump's *other* columns without being lied to, re-encoding a file, the locale that silently sets every tool's default, the tool that guesses, the bytes at offset 0 that decide whether a file runs at all, and the syscall that tells a program whether anyone is watching.
+[`xxd`](../11_Tools/xxd/README.md) and [`od`](../11_Tools/od/README.md) were taught in chapter 1 because nothing later works without them. This chapter is the rest of the toolbox: putting known bytes on a pipe, the last byte of a text file and everything that depends on it, reading a dump's *other* columns without being lied to, re-encoding a file, the locale that silently sets every tool's default, the tool that guesses, the bytes at offset 0 that decide whether a file runs at all, why *binary* is a reader's verdict and not something a file is, and the syscall that tells a program whether anyone is watching.
 
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|
@@ -15,5 +15,6 @@
 | 7 | [`file` guesses](file_guesses/README.md) | Why is `file`'s answer an inference, and when is it sure? | written |
 | 8 | [File type is four questions](file_type_is_four_questions/README.md) | Who decides what kind of file this is, and why do they disagree? | written |
 | 9 | [The first two bytes](the_first_two_bytes/README.md) | Why does my script say `/bin/sh` is missing when it is right there? | written |
-| 10 | [Terminal hyperlinks, and the URI that is not one](terminal_hyperlinks/README.md) | What is in a clickable filename, and what did it do to the accent? | written |
-| 11 | [A pipe is not a terminal](pipe_is_not_a_terminal/README.md) | Why did piping my program into `cat` change what it printed? | written |
+| 10 | [Binary is a verdict, not a property](binary_or_text/README.md) | I named it `.bin`, so why do `file` and `git` call it text? | written |
+| 11 | [Terminal hyperlinks, and the URI that is not one](terminal_hyperlinks/README.md) | What is in a clickable filename, and what did it do to the accent? | written |
+| 12 | [A pipe is not a terminal](pipe_is_not_a_terminal/README.md) | Why did piping my program into `cat` change what it printed? | written |

@@ -1,0 +1,24 @@
+1. FOUR FILES, TWELVE ANSWERS
+   file        bytes               valid UTF-8  NUL in first 8000  file(1)
+   coffee.txt  c0 ff ee            no           no                 iso-8859-1
+   notes.bin   63 61 66 c3 a9 0a   yes          no                 utf-8
+   legacy.txt  63 61 66 e9 0a      no           no                 iso-8859-1
+   data.txt    61 00 62 0a         yes          yes                binary
+
+2. RENAME ALL FOUR TO .dat, AND ASK AGAIN
+   file        bytes               valid UTF-8  NUL in first 8000  file(1)
+   coffee.dat  c0 ff ee            no           no                 iso-8859-1
+   notes.dat   63 61 66 c3 a9 0a   yes          no                 utf-8
+   legacy.dat  63 61 66 e9 0a      no           no                 iso-8859-1
+   data.dat    61 00 62 0a         yes          yes                binary
+   Not one of the twelve answers moved. Each reader opened the file and
+   looked at bytes, and none of them was ever told the file's name.
+
+3. THE TWO THAT SURPRISE
+   data is VALID UTF-8 - a NUL is the character U+0000 - and it is the
+   only one of the four that git's rule and file(1) call binary.
+   legacy is NOT valid UTF-8, and both of them call it text.
+   'Binary' and 'not UTF-8' are two different questions. A decoder asks
+   the second. git's rule asks the first, and for git the first is a
+   question about a single byte value, 00 - on all four files file(1)
+   gave the same verdict.

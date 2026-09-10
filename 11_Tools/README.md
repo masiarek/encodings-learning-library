@@ -112,6 +112,7 @@ If you came looking for *the list* — every command you are likely to run over 
 | [`cat -vet`](../06_Terminal/inspecting_a_file/README.md#why-plain-cat-is-not-a-way-to-look-at-a-file) | show the invisibles | ASCII-only respelling: `M-x` for a high byte, `$` for a newline, `^I` for a tab. `cat -A` [does not exist on macOS](../CONTRIBUTING.md) |
 | `strings` | pull the text out of a binary | **ASCII by default**, in runs of four or more — so a word containing an accent is split, and a short fragment is dropped entirely. [Measured below](#two-of-the-unbolded-rows-measured) |
 | [`hexyl`](worth_installing/README.md) | dump, in colour | colour by byte category, which is the one column no other dump has |
+| [Hex Fiend ↗](https://hexfiend.com/) | view and edit the bytes, in a window (macOS) | the one dump whose text column's encoding is a **menu** — Mac OS Roman, Latin-1, both UTF-16 orders, UTF-8 — rather than a decision made for you. [Described, not measured](../06_Terminal/binary_or_text/README.md#looking-at-the-bytes) |
 | [`uchardet`](worth_installing/README.md) | guess the *encoding* | a real detector where `file` only tells valid-UTF-8 from not — it narrows the field, it does not settle it |
 | **[`uni`](uni/README.md)** | name the character | the character's **name**, and search *by* name — the column no dump tool has |
 

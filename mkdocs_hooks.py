@@ -184,6 +184,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "file_guesses",
         "file_type_is_four_questions",
         "the_first_two_bytes",
+        "binary_or_text",
         "terminal_hyperlinks",
         "pipe_is_not_a_terminal",
     ],

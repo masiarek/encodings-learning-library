@@ -122,7 +122,7 @@ real.png   just      image/png          text/plain
 
 Rows one and three are the whole point. Same file, same instant, two "correct" answers, because `file` asked *what are these bytes* and the desktop asked *what did the user probably mean*. Row two shows the desktop does own a magic database — it just ranks the filename higher whenever there is one to rank.
 
-`xdg-mime` and shared-mime-info are Linux-side, which is why that table is a dated fence rather than a recorded example: there is nothing on macOS to run it against.
+`xdg-mime` and shared-mime-info are Linux-side, which is why that table is a dated fence rather than a recorded example: there is nothing on macOS to run it against. A Mac asks question four with different machinery — **Launch Services**, which maps the extension to a Uniform Type Identifier and, unlike shared-mime-info, never falls through to magic: a PNG with no extension opens in TextEdit, not Preview. That table is measured in [Binary is a verdict, not a property](../binary_or_text/README.md#what-the-name-changes-on-a-mac).
 
 ## In the terminal
 
@@ -317,7 +317,7 @@ magic.from_file(p)           # question three — python-magic, a real libmagic 
 3. Truncate a real PNG to zero bytes in place and run `file` before and after. The name never changed; the answering stage did.
 4. `file -k` on any file, and then `file -e soft` on the same one. The first shows every rule that matched, the second shows what is left when stage two is switched off.
 5. Write a two-line shell script with no `#!`, `chmod +x` it, and run it. It works. Now run it from a program that calls `execve` directly — the [C example](#in-c) does — and watch it fail with `ENOEXEC`. The difference between those two results is your shell, not the kernel.
-6. On a Linux desktop, `xdg-mime query filetype` the file from step 1 and compare with `file`. On a Mac there is nothing to compare — note which of the four questions your machine cannot even ask.
+6. On a Linux desktop, `xdg-mime query filetype` the file from step 1 and compare with `file`. On a Mac, ask `mdls -name kMDItemContentType notes.txt` instead: that is Launch Services' answer, taken from the name alone, so it agrees with `mimetypes` and not with `file`.
 
 ## Practice
 

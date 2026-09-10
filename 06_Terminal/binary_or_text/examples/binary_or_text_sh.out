@@ -1,0 +1,43 @@
+1. THE NAME IS NOT IN THE BYTES
+   output.bin  c0 ff ee   3 bytes
+   output.txt  c0 ff ee   3 bytes
+   output.dat  c0 ff ee   3 bytes
+   output      c0 ff ee   3 bytes
+   cmp finds no difference between any of them.
+   Four names, one set of bytes. A filename is kept in the directory,
+   not in the file, so nothing that reads the file can see it.
+
+2. file(1) READS THE BYTES - AND CALLS THEM TEXT
+   output.bin  text/plain  iso-8859-1
+   output.txt  text/plain  iso-8859-1
+   output.dat  text/plain  iso-8859-1
+   output      text/plain  iso-8859-1
+   The same answer four times, because the name is not an input to
+   file(1). And the answer is text: iso-8859-1 means 'high bytes, not
+   UTF-8, so some 8-bit table' - and in Latin-1, c0, ff and ee are
+   three ordinary letters.
+
+3. A READER THAT INSISTS ON UTF-8 SAYS NO
+   iconv -f UTF-8 -t UTF-8 < output.bin      exit 1
+   Non-zero: these bytes are not UTF-8. Of the readers in this script it
+   is the only one that objects, and its objection is about one
+   encoding, not about the file.
+
+4. THREE 8-BIT TABLES, THREE READINGS, NO REFUSALS
+   read as ISO-8859-1  Àÿî   written back out as UTF-8: c3 80 c3 bf c3 ae
+   read as CP1252      Àÿî   written back out as UTF-8: c3 80 c3 bf c3 ae
+   read as MACINTOSH   ¿ˇÓ   written back out as UTF-8: c2 bf cb 87 c3 93
+   Latin-1 and Windows-1252 agree on all three bytes, and Mac OS Roman
+   disagrees with them on every one. None of the three refused: each
+   found a character for every byte, so none of them can call a file
+   binary.
+
+5. THE BYTE THAT DOES MAKE A FILE BINARY, TO grep AND file(1)
+   output.bin  c0 ff ee     grep -I: text    valid UTF-8: no   file(1): iso-8859-1
+   nul.txt     61 00 62 0a  grep -I: binary  valid UTF-8: yes  file(1): binary
+   nul.txt is valid UTF-8 - a NUL is the character U+0000 - and it is
+   the one grep and file(1) call binary. output.bin is not UTF-8 at all,
+   and both of them call it text. 'Binary' and 'not UTF-8' are two
+   different questions: a decoder asks the second, and grep asks the
+   first - which, in the C locale this script runs in, is a question
+   about one byte value, 00.

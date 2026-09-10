@@ -1,0 +1,45 @@
+1. ONE SET OF BYTES, SIX READINGS
+   the bytes              c0 ff ee
+   utf-8, strict          UnicodeDecodeError at byte 0
+   utf-8, replace         3 of 3 characters are U+FFFD
+   latin-1                Àÿî   U+00C0 U+00FF U+00EE
+   cp1252                 Àÿî   U+00C0 U+00FF U+00EE
+   mac_roman              ¿ˇÓ   U+00BF U+02C7 U+00D3
+   git's rule             text - is there a NUL in the first 8000 bytes?
+   Strict UTF-8 refuses at the first byte. 'replace' keeps going and
+   keeps nothing. The three 8-bit tables each find three characters
+   and disagree about which. git's rule never decodes anything at all.
+   Latin-1 maps all 256 byte values to characters, so under Latin-1
+   no file can fail to decode - which is exactly why it cannot tell you
+   that a file is binary.
+
+2. WHY UTF-8 SAYS NO - A DIFFERENT REASON FOR EACH BYTE
+   byte  bits      leading 1s  verdict
+   c0    11000000  2           overlong - it could only spell U+0000..U+003F
+   ff    11111111  8           never valid - no sequence starts with more than four 1s
+   ee    11101110  3           truncated - needs 2 continuation bytes, the file ends
+   Three bytes, three different failures, and 'replace' puts one U+FFFD
+   in place of each - the three that section 1 counted. A random byte
+   string almost never gets past these rules, which is what makes 'not
+   UTF-8' such a strong hint. It is still a hint about one encoding.
+
+3. THE NAME IS A LABEL - THE MODE IS THE DECLARATION
+   written under 4 names with 'wb', read back with 'rb': all identical? True
+   open('output.txt', 'rb').read()          -> b'\xc0\xff\xee'
+   open('output.txt', encoding='utf-8')     -> UnicodeDecodeError
+   open('output.txt', encoding='latin-1')   -> 'Àÿî'
+   open(..., 'w').write(<bytes>)            -> TypeError
+   open(..., 'wb').write(<str>)             -> TypeError
+   The file is called output.txt and Python did not care: 'rb' handed
+   back bytes, utf-8 refused, latin-1 found three letters, and each
+   write failed on a TYPE, never on a name. Every line would read the
+   same for output.bin. The b in the mode is what makes a file binary
+   to Python; the extension is a note for the next person to read it.
+
+4. A .hex FILE IS USUALLY TEXT THAT DESCRIBES BYTES
+   :03000000C0FFEE50    count, address, type 00 (data), the data, checksum
+   :00000001FF          type 01: end of file
+   30 bytes, highest byte 0x46, valid UTF-8: True
+   That is Intel HEX, the format most .hex files hold. The same three
+   bytes of data, spelled as ASCII with an address and a checksum - so
+   every reader in section 1 would call this file text.
