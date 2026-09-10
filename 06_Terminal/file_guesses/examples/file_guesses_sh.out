@@ -66,8 +66,8 @@
    read as ISO-8859-1   -> 57 61 69 74 c2 85 20 77 68 61 74 0a
    read as CP850        -> 57 61 69 74 c3 a0 20 77 68 61 74 0a
    read as US-ASCII     -> iconv refuses it
-   all 128 high bytes, each alone in 'a?b': 96 iso-8859-1, 31 unknown-8bit,
-   and us-ascii for: 85
+   all 128 high bytes, each between an a and a b with a newline after:
+   96 iso-8859-1, 31 unknown-8bit, and us-ascii for: 85
    Section 2 said us-ascii means every byte is under 128. This file has
    an 85 in it and gets us-ascii anyway: file counts 85 — NEL, the C1
    control that EBCDIC's newline turns into — as a plain text byte. The
@@ -80,10 +80,16 @@
 7. TWENTY-FIVE BYTES MAKE A FILE binary, AND NUL IS ONLY ONE OF THEM
    binary     00-06 0e-1a 1c-1f 7f    25 values
    us-ascii   07-0d 1b 20-7e         103 values
-   The 128 low bytes, each alone in 'a?b'. NUL is one byte in twenty-
-   five: the C0 control characters other than bell, backspace, tab, line
-   feed, vertical tab, form feed, carriage return and escape, plus DEL.
-   So a single 01 with no NUL anywhere makes a file binary to file,
-   while utf16le_bom.txt in section 1 is full of NULs and is utf-16le.
-   'Has a NUL' and 'is binary' are separate questions, and file does
-   not ask the first one at all.
+   The 128 low bytes, each between an a and a b with a newline after.
+   NUL is one byte in twenty-five: the C0 control characters other than
+   bell, backspace, tab, line feed, vertical tab, form feed, carriage
+   return and escape, plus DEL. So a single 01 with no NUL anywhere
+   makes a file binary to file, while utf16le_bom.txt in section 1 is
+   full of NULs and is utf-16le. 'Has a NUL' and 'is binary' are
+   separate questions, and file does not ask the first one at all.
+   with the newline (above):  25 binary
+   without it:                21 binary, ebcdic for 05 15 16 7f
+   Before file gives up on a byte string it tries it as EBCDIC text,
+   and in 'a?b' with no newline these four pass that test; add the
+   newline and they are binary again. So twenty-five is a count for
+   this shape of file, and one byte nobody was asking about moves it.

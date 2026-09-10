@@ -109,8 +109,8 @@ for i in $(seq 128 255); do
     us-ascii)     asc="$asc $(printf '%02x' "$i")" ;;
   esac
 done
-echo "   all 128 high bytes, each alone in 'a?b': $n_iso iso-8859-1, $n_unk unknown-8bit,"
-echo "   and us-ascii for:$asc"
+echo "   all 128 high bytes, each between an a and a b with a newline after:"
+echo "   $n_iso iso-8859-1, $n_unk unknown-8bit, and us-ascii for:$asc"
 echo "   Section 2 said us-ascii means every byte is under 128. This file has"
 echo "   an 85 in it and gets us-ascii anyway: file counts 85 — NEL, the C1"
 echo "   control that EBCDIC's newline turns into — as a plain text byte. The"
@@ -145,10 +145,24 @@ set -- $bin; nb=$#
 set -- $txt; nt=$#
 printf '   %-10s %-22s %3d values\n' binary "$(echo $bin | ranges)" "$nb"
 printf '   %-10s %-22s %3d values\n' us-ascii "$(echo $txt | ranges)" "$nt"
-echo "   The 128 low bytes, each alone in 'a?b'. NUL is one byte in twenty-"
-echo "   five: the C0 control characters other than bell, backspace, tab, line"
-echo "   feed, vertical tab, form feed, carriage return and escape, plus DEL."
-echo "   So a single 01 with no NUL anywhere makes a file binary to file,"
-echo "   while utf16le_bom.txt in section 1 is full of NULs and is utf-16le."
-echo "   'Has a NUL' and 'is binary' are separate questions, and file does"
-echo "   not ask the first one at all."
+echo "   The 128 low bytes, each between an a and a b with a newline after."
+echo "   NUL is one byte in twenty-five: the C0 control characters other than"
+echo "   bell, backspace, tab, line feed, vertical tab, form feed, carriage"
+echo "   return and escape, plus DEL. So a single 01 with no NUL anywhere"
+echo "   makes a file binary to file, while utf16le_bom.txt in section 1 is"
+echo "   full of NULs and is utf-16le. 'Has a NUL' and 'is binary' are"
+echo "   separate questions, and file does not ask the first one at all."
+nb2=0; eb=""
+for i in $(seq 0 127); do
+  o=$(printf '%03o' "$i")
+  case $(printf "a\\${o}b" | file -b --mime-encoding -) in
+    binary) nb2=$((nb2 + 1)) ;;
+    ebcdic) eb="$eb $(printf '%02x' "$i")" ;;
+  esac
+done
+printf '   %-26s %2d binary\n' "with the newline (above):" "$nb"
+printf '   %-26s %2d binary, ebcdic for%s\n' "without it:" "$nb2" "$eb"
+echo "   Before file gives up on a byte string it tries it as EBCDIC text,"
+echo "   and in 'a?b' with no newline these four pass that test; add the"
+echo "   newline and they are binary again. So twenty-five is a count for"
+echo "   this shape of file, and one byte nobody was asking about moves it."
