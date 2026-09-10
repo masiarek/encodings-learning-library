@@ -9,7 +9,7 @@
 `grep` is a byte-matching program wearing a text interface. Three things happen between your pattern and its answer, and none of them is announced:
 
 1. **The [locale](../../06_Terminal/locale_and_lc_ctype/README.md) decides what a character is.** In the C locale `.` matches one byte; in a UTF-8 locale it matches one character. Same file, same pattern, different count.
-2. **A single [NUL byte](../../02_Characters/the_nul_byte/README.md) reclassifies the file as binary**, after which grep will not show you the matches it found. High bytes do not do this; one `00` does.
+2. **A single [NUL byte](../../02_Characters/the_nul_byte/README.md) reclassifies the file as binary**, after which grep will not show you the matches it found. High bytes that are valid UTF-8 do not do this; one `00` does — and so, for GNU grep in a UTF-8 locale, does a byte that is not valid UTF-8, [measured below](#1-on-invalid-utf-8-bsd-grep-drops-the-line).
 3. **The bytes are matched as bytes.** Your pattern is `caf`; a [UTF-16](../../03_Encodings/utf16_and_surrogates/README.md) file spells that `63 00 61 00 66 00`; there is no match and no error.
 
 The first is a nuisance. The second is visible. The third is the one that quietly loses data, and it has [a fourth sibling that is worse](#1-on-invalid-utf-8-bsd-grep-drops-the-line), at the bottom of this page.
@@ -171,6 +171,18 @@ $ LC_ALL=C           grep -an line invalid.txt      $ LC_ALL=en_US.UTF-8 grep -a
 ```
 
 Four runs, one file. Three of them find three lines. The fourth — **BSD grep in a UTF-8 locale** — finds two, and reports nothing at all about the third: no warning, no diagnostic, exit status 0. The line did not fail to match; it failed to be *considered*, because grep could not decode it into characters and moved on.
+
+**All four of those runs used `-a`, and the default is not the same picture.** Re-measured on 2026-09-10 on the same two builds and the same file, without `-a`, GNU grep in a UTF-8 locale *also* leaves line 2 out — but it counts it, and it tells you:
+
+```text title="Measured 2026-09-10 — macOS 26.6.2 (BSD grep 2.6.0-FreeBSD) and ubuntu:24.04 (GNU grep 3.11, en_US.UTF-8 generated; C.UTF-8 gave the same). Not machine-checked."
+LC_ALL=en_US.UTF-8     lines printed    on stderr                                 grep -c
+BSD  grep line         1 and 3          nothing                                   2
+BSD  grep -a line      1 and 3          nothing                                   2
+GNU  grep line         1 and 3          grep: invalid.txt: binary file matches    3
+GNU  grep -a line      1, 2 and 3       nothing                                   3
+```
+
+So the split is not that one grep hides the line — by default both do — but that GNU *found* it, withheld it as binary and said so, while BSD never counted it and says nothing, with or without `-a`. And what BSD loses depends on the pattern as well as the line: `grep bad`, whose match is line 2's first three characters, finds it, while `grep line`, `grep ' '` and `grep 'bad.*line'` do not. [Binary is a verdict, not a property](../../06_Terminal/binary_or_text/README.md) has the same file beside the other readers that call bytes binary.
 
 That is the worst failure shape in this whole library, and it is worth naming why: [`iconv` refuses](../../03_Encodings/validation_is_a_boundary/README.md) and [`file` guesses](../../06_Terminal/file_guesses/README.md), and both of those are answers you can act on. A silent skip is not an answer at all.
 

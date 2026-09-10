@@ -107,7 +107,7 @@ The other half is `echo`, which is not one command. It is a shell builtin with d
 
 ## The escape that names a code point is the one that moves
 
-macOS still ships **bash 3.2.57**, whose own `--version` line says *Copyright (C) 2007* — frozen there because bash 4 moved to the GPLv3, which Apple does not ship. Measured 2026-09-07: the escape is absent in 3.2.57 and present in 4.4.23 and 5.2.37. On a Mac, then, `printf` does what `printf` does with any escape it does not know — hands it back.
+macOS still ships **bash 3.2.57**, whose own `--version` line says *Copyright (C) 2007* — frozen there because bash 4 moved to the GPLv3, which Apple does not ship. Measured 2026-09-07: the escape is absent in 3.2.57 and present in 4.4.23 and 5.2.37. In macOS's `/bin/bash`, then, `printf` does what `printf` does with any escape it does not know — hands it back. Bash is not the only `printf` on a Mac, though, and the others [answer differently](#the-printf-you-get-depends-on-who-runs-it).
 
 ```text title="Measured 2026-09-07 — `printf '\u20ac' | od -An -tx1`, three configurations"
   configuration                  bytes written        as text     verdict
@@ -123,6 +123,23 @@ Three configurations, three answers, and only one of them is a euro sign. Note t
 ```bash
 python3 -c 'import sys; sys.stdout.buffer.write("€".encode("utf-8"))'
 ```
+
+## The `printf` you get depends on who runs it
+
+The table above is bash, and bash is not what most people type into on a Mac: Terminal has opened zsh by default since macOS Catalina, plenty of people run fish, and `printf` is a builtin in every one of them — so the shell decides which implementation you get. A `printf` reached through `env`, `xargs` or `find -exec` is not a builtin at all. It is `/usr/bin/printf`, and on macOS that is BSD's, which knows neither the hex escape nor the code-point ones and does not refuse them either: it drops the backslash and prints the rest.
+
+```text title="Measured 2026-09-10 — macOS 26.6.2 (every row but the last) and ubuntu:24.04 (the last). The bytes written; the exit status was 0 in every cell."
+                                 printf '\xc0'     printf '\u00e9'            printf '\U0001F40D'
+zsh 5.9, UTF-8 locale            c0                c3 a9                     f0 9f 90 8d
+zsh 5.9, LC_ALL=C                c0                nothing — stderr says "character not in range", both columns
+fish 4.3.2, any locale           c0                c3 a9                     f0 9f 90 8d
+bash 3.2.57 (/bin/bash, sh)      c0                the 6 bytes typed         the 10 bytes typed
+dash                             the 4 bytes typed the 6 bytes typed         the 10 bytes typed
+/usr/bin/printf, macOS (BSD)     x c 0             u 0 0 e 9                 U 0 0 0 1 F 4 0 D
+/usr/bin/printf, Ubuntu (GNU)    c0                c3 a9; \u00E9 under C      f0 9f 90 8d; typed, under C
+```
+
+Two rows deserve a second look. **zsh under `LC_ALL=C` writes nothing at all** for a code point it cannot encode — the complaint goes to stderr, the exit status is still 0, and a script that checks `$?` sees success and an empty file. And **BSD's `/usr/bin/printf` is the quiet one**: `xc0` is three perfectly printable bytes, so nothing downstream looks broken — the file just holds the wrong three bytes. Octal is the spelling that survives every row: `printf '\300'` wrote `c0` in all of them, builtin or binary. The split between the two `/usr/bin/printf`s is in [CONTRIBUTING's list](../../CONTRIBUTING.md).
 
 ## The NUL warning is a bash version, not a platform
 
