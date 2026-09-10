@@ -267,6 +267,8 @@ Sidebar reading order lives in `NAV_ORDER` in `mkdocs_hooks.py`, keyed by folder
 
 The same gate checks that `NAV_ORDER` and `LABEL_OVERRIDES` **name things that exist**, because a name the hook cannot match is a silent no-op: the page drops to the alphabetical tail and nothing is printed. That fires two ways. A rename left the entry behind — update it. Or the entry is simply **ahead of its page**, which in a shared checkout is the common one: `git add mkdocs_hooks.py` takes whatever a colleague has left in the file, including a row for a folder they have not committed yet. Commit the row and its folder together. Note that `mkdocs build --strict` passes in that state — a stale nav name is not a broken link — so this gate is the only thing that catches it.
 
+**A third rendering has numbers on it:** each chapter README's `| # | Lesson | … | Status |` table, which `tools/check_chapter_status.py` holds to `NAV_ORDER`'s order — on 2026-09-08 one listed two new 02_Characters lessons after `logical_and_visual_order` while `NAV_ORDER` put them straight after `a_code_point_is_not_a_character`, and all eleven gates passed until somebody read the two side by side.
+
 ## If someone else is working here too
 
 **Give each concurrent worker its own worktree.** Everything in the next two sections is a *mitigation* for sharing one; a worktree is the prevention, and it is one command:
