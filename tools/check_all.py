@@ -87,6 +87,25 @@ directory you stand in rather than from the repository root -- is to name a
 file created and deleted without ever being committed, or one whose deletion
 is already committed, and naming either is a no-op. So the refusal costs you
 nothing but a name that did nothing.
+
+And each path you name must land inside the repository, because until
+2026-09-10 one that did not could delete your work. A path is read from
+`repo / path` and written to `dest / path`, and pathlib's `/` returns an
+absolute right-hand side unchanged: for `--mine "$PWD/06_Terminal/my_lesson"`,
+which is what tab completion writes, both were the lesson itself. Mirroring a
+directory clears the destination before copying, so the run deleted the real
+lesson, uncommitted work and all, then crashed with nothing left to copy. A
+path climbing out with `..` escaped the same way, reading from beside the
+repository and writing beside the temporary tree.
+
+So every path is settled before anything is extracted, by where it lands:
+joined onto the root if relative, as it stands if absolute, resolved either
+way. Inside the repository it is used as a path from the root, which converts
+an absolute one. Converting is not a guess -- an absolute path names exactly
+one file -- and it lets the path tab completion writes simply work. Anywhere
+else refuses the run with exit 2, and so does the root itself: naming it
+claims your whole working tree, colleagues' edits included, which is the bare
+run and the opposite of what --mine is for.
 """
 
 from __future__ import annotations
@@ -209,20 +228,46 @@ def staged_tree(allow_skip: bool = False) -> int:
         return run_gates(pathlib.Path(tmp), f"the staged tree ({tree[:7]})", allow_skip)
 
 
+def repo_relative(repo: pathlib.Path, named: str) -> str | None:
+    """Where `named` lands, as a path from `repo`'s root -- or None unless strictly inside it.
+
+    `repo / named` is where it points, whichever kind it is: pathlib joins a
+    relative path onto the root and takes an absolute one as it stands -- the
+    behaviour behind the deletion, harmless here because the result is judged
+    before anything uses it. Both sides are resolved, `..` and symlinks with
+    them, because REPO is resolved and a path you type need not be: on macOS
+    /tmp is /private/tmp.
+    """
+    path, root = (repo / named).resolve(), repo.resolve()
+    if path == root or not path.is_relative_to(root):
+        return None
+    return str(path.relative_to(root))
+
+
 def assemble_mine(repo: pathlib.Path, paths: list[str],
-                  dest: pathlib.Path) -> tuple[list[str], list[str]]:
+                  dest: pathlib.Path) -> tuple[list[str], list[str], list[str]]:
     """Extract HEAD into `dest`, then overlay only `paths` from the working tree.
 
-    Returns (notes, unknown). The notes say what it did, one line per path, so
-    the run says out loud whose work is being gated. A named path that is gone
-    from the working tree is a DELETION and is removed from the tree -- deleting
-    a file is work too, and a mode that silently kept it would pass a commit
-    that CI then fails on.
+    Returns (notes, outside, unknown). The notes say what it did, one line per
+    path, so the run says out loud whose work is being gated. A named path
+    that is gone from the working tree is a DELETION and is removed from the
+    tree -- deleting a file is work too, and a mode that silently kept it would
+    pass a commit that CI then fails on.
+
+    `outside` is the named paths that do not land inside the repository, found
+    before anything is extracted; if there are any, nothing else is done. The
+    rest are used as repo_relative gives them, so an absolute path inside the
+    repository is converted, and the notes name what it became.
 
     `unknown` is the named paths that are in neither the working tree nor HEAD.
-    If there are any, nothing is overlaid and there are no notes: mine_tree
-    refuses that run, so there is no tree worth building.
+    If there are any, nothing is overlaid and there are no notes. mine_tree
+    refuses a run with either, so there is no tree worth building.
     """
+    rels = [repo_relative(repo, named) for named in paths]
+    outside = [named for named, rel in zip(paths, rels) if rel is None]
+    if outside:
+        return [], outside, []
+
     archive = subprocess.run(
         ["git", "archive", "HEAD"], cwd=repo, capture_output=True, check=True
     )
@@ -231,12 +276,12 @@ def assemble_mine(repo: pathlib.Path, paths: list[str],
     # Decided against HEAD as extracted, before anything is overlaid: once a
     # named directory is mirrored, a file deleted inside it is missing from both
     # sides, and would read as unknown when it is a deletion.
-    unknown = [rel for rel in paths if not (repo / rel).exists() and not (dest / rel).exists()]
+    unknown = [rel for rel in rels if not (repo / rel).exists() and not (dest / rel).exists()]
     if unknown:
-        return [], unknown
+        return [], [], unknown
 
     notes: list[str] = []
-    for rel in paths:
+    for rel in rels:
         src, dst = repo / rel, dest / rel
         if src.is_dir():
             # REPLACE, do not merge. copytree(dirs_exist_ok=True) unions your
@@ -265,30 +310,40 @@ def assemble_mine(repo: pathlib.Path, paths: list[str],
             # In HEAD, or it would be unknown, but gone from `dest` already: a
             # path named before it -- a directory above it, or itself -- took it.
             notes.append(f"already gone   {rel}  (deleted in your tree)")
-    return notes, []
+    return notes, [], []
+
+
+def refuse_mine(named: list[str], why: str, advice: list[str]) -> int:
+    """Name on stderr the paths that refused a --mine run, say why, and return exit 2."""
+    lines = [f"  REFUSED        {rel}  ({why})" for rel in named]
+    print("\n".join(lines + [""] + advice), file=sys.stderr)
+    return 2
 
 
 def mine_tree(paths: list[str], allow_skip: bool = False, repo: pathlib.Path = REPO) -> int:
     """Gate HEAD plus only the paths you name -- the honest check for uncommitted work.
 
-    A named path in neither your tree nor HEAD refuses the whole run, exit 2,
-    before any gate: the module docstring says why refusing is safe. `repo` is
-    there for the selftest, which points this at a scratch repository.
+    A named path that does not land inside the repository, or that is in
+    neither your tree nor HEAD, refuses the whole run, exit 2, before any gate:
+    the module docstring says why for each. `repo` is there for the selftest,
+    which points this at a scratch repository.
     """
     with tempfile.TemporaryDirectory() as tmp:
         dest = pathlib.Path(tmp)
-        notes, unknown = assemble_mine(repo, paths, dest)
+        notes, outside, unknown = assemble_mine(repo, paths, dest)
+        if outside:
+            return refuse_mine(outside, "not inside the repository", [
+                "--mine refused, and nothing was extracted: it takes paths inside the "
+                "repository and no others -- not its root either, which is your whole "
+                "working tree.",
+                f"Name them from the root, {repo}, or by an absolute path inside it."])
         if unknown:
-            lines = [f"  REFUSED        {rel}  (not in your tree and not in HEAD)"
-                     for rel in unknown]
-            lines += ["",
-                      "--mine refused, and no gate ran: a named path in neither place "
-                      "is probably a typo.",
-                      f"Paths are relative to the repository root, {repo}.",
-                      "If it is not a typo, drop it: naming it changes nothing in the tree "
-                      "that is gated."]
-            print("\n".join(lines), file=sys.stderr)
-            return 2
+            return refuse_mine(unknown, "not in your tree and not in HEAD", [
+                "--mine refused, and no gate ran: a named path in neither place "
+                "is probably a typo.",
+                f"Relative paths are from the repository root, {repo}.",
+                "If it is not a typo, drop it: naming it changes nothing in the tree "
+                "that is gated."])
         for note in notes:
             print(f"  {note}")
         print()
@@ -299,7 +354,7 @@ def mine_tree(paths: list[str], allow_skip: bool = False, repo: pathlib.Path = R
 
 
 def selftest_mine() -> int:
-    """Prove --mine gates your work and not a colleague's, and refuses a path that is nowhere.
+    """Prove --mine gates your work and not a colleague's, and refuses a path it must not take.
 
     The first checks are about the TREE it assembles, not about running the
     real gates: those need uv, mkdocs and this repo's own content, so a
@@ -310,12 +365,21 @@ def selftest_mine() -> int:
     The last are about the DECISION mine_tree makes, which no tree can show: a
     run that should be refused assembles a perfectly good one. So mine_tree
     itself runs on the same scratch repo, still without the real gates: GATES
-    is swapped for one stand-in that writes a marker file, so whether a gate
-    ran is observed rather than read off the output. First a CONTROL naming
-    real work, deletions included, which must run the stand-in and exit 0 --
-    what makes the marker's absence afterwards a finding rather than a
-    stand-in that never worked. Then the same paths plus one that is nowhere,
-    which must exit 2 with the stand-in never run.
+    is swapped for one stand-in that copies the tree it is handed, so whether
+    a gate ran, and what it saw, are observed rather than read off the output.
+    First a CONTROL naming real work, deletions included, which must run the
+    stand-in and exit 0 -- what makes the copy's absence afterwards a finding
+    rather than a stand-in that never worked. Then the same paths plus one
+    that is nowhere, which must exit 2 with the stand-in never run.
+
+    Then the paths themselves. lesson/, holding an untracked draft git could
+    never give back, is named by an absolute path through a symlink, as tab
+    completion writes it in a checkout reached through one: the stand-in must
+    see the draft, and lesson/ must still hold it afterwards -- until
+    2026-09-10 that path deleted it. Then the real work plus three paths that
+    do not land inside the repository, which must refuse the run and name
+    exactly those three. Every tree these runs build is made inside this
+    scratch directory, so were the deletion ever back, it would delete scratch.
     """
     global GATES
     print("selftest --mine: assembling HEAD + named paths in a scratch repo\n")
@@ -335,13 +399,15 @@ def selftest_mine() -> int:
         subprocess.run(["git", "add", "-A"], **q)
         subprocess.run(["git", "commit", "-qm", "base"], **q)
 
-        # Now: my edit, a colleague's edit, my deletion, and my untracked folder.
+        # Now: my edit, a colleague's edit, my deletion, my untracked folder, and
+        # an untracked draft inside lesson/, the kind of work git cannot give back.
         (repo / "mine.txt").write_text("MY EDIT\n")
         (repo / "theirs.txt").write_text("THEIR EDIT\n")
         (repo / "doomed.txt").unlink()
         (repo / "newdir").mkdir(); (repo / "newdir" / "n.txt").write_text("MY NEW FILE\n")
         (repo / "lesson" / "retired.txt").unlink()            # an example retired
         (repo / "lesson" / "keep.txt").write_text("MY EDIT\n")
+        (repo / "lesson" / "draft.txt").write_text("MY DRAFT\n")
         subprocess.run(["git", "add", "theirs.txt"], **q)   # their `git add`, which --staged would swallow
 
         assemble_mine(repo, ["mine.txt", "doomed.txt", "newdir", "lesson"], dest)
@@ -362,30 +428,72 @@ def selftest_mine() -> int:
         # refusal must not take for typos: doomed.txt, and lesson/retired.txt,
         # which is gone from the tree being built as well once `lesson` has
         # been mirrored into it.
-        marker = pathlib.Path(tmp) / "a-gate-ran"
+        seen = pathlib.Path(tmp) / "what-the-gate-saw"
         GATES = [("stand-in", [sys.executable, "-c",
-                               f"import pathlib; pathlib.Path({str(marker)!r}).touch()"])]
+                               f"import shutil; shutil.copytree('.', {str(seen)!r})"])]
         work = ["mine.txt", "doomed.txt", "newdir", "lesson", "lesson/retired.txt"]
         typo = "lesonn"  # `lesson`, mistyped
+        # lesson/ by an absolute path through a symlink, so that a conversion
+        # comparing unresolved paths refuses it here, as it would in a checkout
+        # reached through /tmp -- which on macOS is /private/tmp.
+        alias = pathlib.Path(tmp) / "alias"
+        alias.symlink_to(repo)
+        by_abs = str(alias / "lesson")
+        # Not inside the repository: a directory beside it, by absolute path and
+        # by climbing out to it, and the root itself, spelled with `..`.
+        elsewhere = pathlib.Path(tmp) / "elsewhere"
+        elsewhere.mkdir(); (elsewhere / "precious.txt").write_text("NOT IN THE REPO\n")
+        not_inside = [str(elsewhere), "../elsewhere", "lesson/.."]
+
+        def holds(path: pathlib.Path, text: str) -> bool:
+            return path.is_file() and path.read_text() == text
+
         runs = []
-        for title, named in [("control: real work, deletions included", work),
-                             (f"the same plus {typo!r}, which is nowhere", work + [typo])]:
-            marker.unlink(missing_ok=True)
-            out = io.StringIO()
-            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
-                code = mine_tree(named, repo=repo)
-            runs.append((code, marker.exists(), out.getvalue()))
-            print(f"  {title} (exit {code}):")
-            for line in out.getvalue().rstrip().split("\n"):
-                print(f"      {line}".rstrip())
-            print()
-        (c_code, c_ran, _), (t_code, t_ran, t_out) = runs
+        # From here on mine_tree makes its tree in this scratch directory, beside
+        # `repo`, so a path that escaped that tree would land in scratch too.
+        saved_tempdir, tempfile.tempdir = tempfile.tempdir, tmp
+        try:
+            for title, named in [
+                    ("control: real work, deletions included", work),
+                    (f"the same plus {typo!r}, which is nowhere", work + [typo]),
+                    ("lesson/, by an absolute path through a symlink", [by_abs]),
+                    ("the same work plus three paths not inside the repository",
+                     work + not_inside)]:
+                shutil.rmtree(seen, ignore_errors=True)
+                code, out = None, io.StringIO()
+                try:
+                    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+                        code = mine_tree(named, repo=repo)
+                except Exception as exc:  # reported beside the other runs, not instead of them
+                    print(f"raised {type(exc).__name__}: {exc}", file=out)
+                runs.append((code, seen.exists(), out.getvalue(),
+                             holds(seen / "lesson" / "draft.txt", "MY DRAFT\n")))
+                print(f"  {title} ({'raised' if code is None else f'exit {code}'}):")
+                for line in out.getvalue().rstrip().split("\n"):
+                    print(f"      {line}".rstrip())
+                print()
+        finally:
+            tempfile.tempdir = saved_tempdir
+        (c_code, c_ran, _, _), (t_code, t_ran, t_out, _), \
+            (a_code, _, _, a_saw), (o_code, o_ran, o_out, _) = runs
+        refused = [ln.split("REFUSED", 1)[1].strip().rsplit("  (", 1)[0]
+                   for ln in o_out.splitlines() if "REFUSED" in ln]
         checks += [
             ("the control ran its gate", c_ran),
             ("the control exits 0", c_code == 0),
             (f"{typo!r} is refused with exit 2", t_code == 2),
             (f"no gate ran for {typo!r}", not t_ran),
             (f"the refusal names {typo!r}", typo in t_out),
+            ("lesson/ by absolute path is gated, exit 0", a_code == 0),
+            ("its gate saw the untracked draft", a_saw),
+            ("paths not inside the repository are refused with exit 2", o_code == 2),
+            ("no gate ran for them", not o_ran),
+            ("the refusal names exactly those three", refused == not_inside),
+            ("lesson/ still holds my uncommitted work",
+             holds(repo / "lesson" / "draft.txt", "MY DRAFT\n")
+             and holds(repo / "lesson" / "keep.txt", "MY EDIT\n")),
+            ("the directory beside the repository is untouched",
+             holds(elsewhere / "precious.txt", "NOT IN THE REPO\n")),
         ]
     bad = [n for n, ok in checks if not ok]
     for name, ok in checks:
@@ -394,8 +502,8 @@ def selftest_mine() -> int:
     if bad:
         print(f"SELFTEST FAILED: {', '.join(bad)}")
         return 1
-    print("selftest passed: --mine gates your work and not a colleague's, "
-          "and refuses a path that is nowhere.")
+    print("selftest passed: --mine gates your work and not a colleague's, by an absolute "
+          "path too, and refuses a path that is nowhere or not inside the repository.")
     return 0
 
 
