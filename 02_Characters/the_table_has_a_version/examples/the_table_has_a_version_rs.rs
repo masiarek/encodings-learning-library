@@ -57,12 +57,13 @@ fn main() {
     println!();
     println!("   The first three have been settled since 2010 at the latest, and");
     println!("   General_Category is not a property Unicode changes lightly -- but");
-    println!("   note that it is NOT on the stability list, so `settled` here means");
-    println!("   observed, not promised. The fourth row is the promised one:");
-    println!("   U+FFFE is a PERMANENT noncharacter, guaranteed never to be assigned");
-    println!("   anything, so `false` there is not a reading of today's table but a");
-    println!("   statement about every future one. That is the kind of lookup that");
-    println!("   can safely go in a test.");
+    println!("   a letter's or a symbol's category is NOT on the stability list,");
+    println!("   which freezes only the control, private-use and surrogate");
+    println!("   categories, so `settled` here means observed, not promised. The");
+    println!("   fourth row is the promised one: U+FFFE is a PERMANENT noncharacter,");
+    println!("   guaranteed never to be assigned anything, so `false` there is not a");
+    println!("   reading of today's table but a statement about every future one.");
+    println!("   That is the kind of lookup that can safely go in a test.");
     println!();
 
     println!("4. AND THE ONE THIS PROGRAM REFUSES TO ANSWER");

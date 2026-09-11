@@ -37,12 +37,13 @@
 
    The first three have been settled since 2010 at the latest, and
    General_Category is not a property Unicode changes lightly -- but
-   note that it is NOT on the stability list, so `settled` here means
-   observed, not promised. The fourth row is the promised one:
-   U+FFFE is a PERMANENT noncharacter, guaranteed never to be assigned
-   anything, so `false` there is not a reading of today's table but a
-   statement about every future one. That is the kind of lookup that
-   can safely go in a test.
+   a letter's or a symbol's category is NOT on the stability list,
+   which freezes only the control, private-use and surrogate
+   categories, so `settled` here means observed, not promised. The
+   fourth row is the promised one: U+FFFE is a PERMANENT noncharacter,
+   guaranteed never to be assigned anything, so `false` there is not a
+   reading of today's table but a statement about every future one.
+   That is the kind of lookup that can safely go in a test.
 
 4. AND THE ONE THIS PROGRAM REFUSES TO ANSWER
 ------------------------------------------------------------------------

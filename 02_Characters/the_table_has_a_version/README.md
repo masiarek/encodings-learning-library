@@ -205,12 +205,13 @@ Section 3 is the load-bearing one. **Zero renames across the whole number line**
 
    The first three have been settled since 2010 at the latest, and
    General_Category is not a property Unicode changes lightly -- but
-   note that it is NOT on the stability list, so `settled` here means
-   observed, not promised. The fourth row is the promised one:
-   U+FFFE is a PERMANENT noncharacter, guaranteed never to be assigned
-   anything, so `false` there is not a reading of today's table but a
-   statement about every future one. That is the kind of lookup that
-   can safely go in a test.
+   a letter's or a symbol's category is NOT on the stability list,
+   which freezes only the control, private-use and surrogate
+   categories, so `settled` here means observed, not promised. The
+   fourth row is the promised one: U+FFFE is a PERMANENT noncharacter,
+   guaranteed never to be assigned anything, so `false` there is not a
+   reading of today's table but a statement about every future one.
+   That is the kind of lookup that can safely go in a test.
 
 4. AND THE ONE THIS PROGRAM REFUSES TO ANSWER
 ------------------------------------------------------------------------
@@ -272,7 +273,7 @@ Three groups, and the whole discipline is telling them apart.
 | **Guaranteed** | a name (`LATIN SMALL LETTER E WITH ACUTE`); a code point (`U+00E9`); `U+FFFE` is a noncharacter | yes — these are written into the stability policy |
 | **A lookup** | how many code points are assigned; whether `U+11DB0` is one; `is_alphabetic`, `is_uppercase`, `is_whitespace`; how many grapheme clusters a word has | no — put it in a sentence with a date on it |
 
-The middle row is doing more work than it looks. `is_alphabetic('é')` has been `true` since 1991 and will be `true` next year too, but *nothing promises that* — General_Category is not on the stability list. It is observed, not guaranteed, which is a different word and belongs in a different column.
+The middle row is doing more work than it looks. `is_alphabetic('é')` has been `true` since 1991 and will be `true` next year too, but *nothing promises that* — a letter's General_Category is not on the stability list. The property is, and anyone who reads the policy will find it there: the control, private-use and surrogate categories are frozen, so no code point will ever enter or leave `Cc`, `Co` or `Cs`, and the list of categories is closed to new ones. What the policy does not fix is which category a letter is in. That is observed, not guaranteed, which is a different word and belongs in a different column.
 
 This is the rule that already governs this repo, arrived at from the other direction. [Inspecting a file](../../06_Terminal/inspecting_a_file/README.md) found `od -a` naming bytes in two dialects and recorded `-tx1` instead; the same page's tool comparison sits in a dated, hand-labelled fence because no key could match both platforms. Neither `python3` nor `rustc` is pinned in this library's CI, and it runs on Ubuntu *and* macOS — so a key derived from a table lookup would break on one runner only, which is the failure no local check can see.
 
