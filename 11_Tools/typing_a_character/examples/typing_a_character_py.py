@@ -6,7 +6,7 @@ report -- and now you have to produce one. Nothing on your keyboard makes a
 `ż`. Four naming systems answer that, and they are not the same table:
 
   Unicode Name    LATIN SMALL LETTER Z WITH DOT ABOVE   the standard
-  X11 keysym      U017C                                 what a Compose file names
+  X11 keysym      zabovedot                             keysymdef.h's; a Compose file writes U017C
   Vim digraph     z.                                    Ctrl-K z .
   HTML entity     &zdot;                                a document, not a keyboard
 
@@ -30,7 +30,10 @@ def head(n, title):
     print("\n" + str(n) + ". " + title + "\n" + BAR)
 
 
-# Measured 2026-09-07. keysym and HTML columns from uni 2.9.0 (Unicode 17.0);
+# Measured 2026-09-07; keysym column corrected 2026-09-10. The keysym column is
+# X11's keysymdef.h itself: uni 2.9.0's %(keysym) looks the keysym NUMBER up as
+# though it were the code point, so it is blank for both Polish letters (see
+# 11_Tools/uni_help). The HTML column is from uni 2.9.0 (Unicode 17.0), and
 # the digraph column from Vim 9.1's own digraph_getlist(1), which is the
 # authority for it -- uni prints "A" for U+0041 where Vim's table has no
 # digraph for it at all. A "-" below means that system has no name for the
@@ -39,8 +42,8 @@ NAMED = [
     (0x0041, "A", "", "&#x41;"),
     (0x00E9, "eacute", "e'", "&eacute;"),
     (0x00A0, "nobreakspace", "NS", "&nbsp;"),
-    (0x0142, "", "l/", "&lstrok;"),
-    (0x017C, "", "z.", "&zdot;"),
+    (0x0142, "lstroke", "l/", "&lstrok;"),
+    (0x017C, "zabovedot", "z.", "&zdot;"),
     (0x20AC, "EuroSign", "=e", "&euro;"),
     (0x0CA0, "", "", "&#xca0;"),
 ]
@@ -113,11 +116,12 @@ for cp, keysym, digraph, html in NAMED:
     print("   U+" + format(cp, "04X").ljust(10) + name.ljust(37)
           + (keysym or "-").ljust(15) + (digraph or "-").ljust(9) + html)
 print()
-print("   Read down the two middle columns. The Polish letters have a Vim")
-print("   digraph and no keysym of their own; the Kannada letter has neither,")
-print("   which is what 'a script nobody here has a keyboard for' means in")
-print("   practice. Only the Name column is filled all the way down, and only")
-print("   the Name column is a standard rather than one project's table.")
+print("   Read down the two middle columns. The Polish letters have both:")
+print("   X11 named them in its Latin-2 set, and a Polish keyboard layout")
+print("   sends them. The Kannada letter has neither, which is what 'a script")
+print("   nobody here has a keyboard for' means in practice. Only the Name")
+print("   column is filled all the way down, and only the Name column is a")
+print("   standard rather than one project's table.")
 
 head(2, "A COMPOSE SEQUENCE IS A PATH, NOT A NAME")
 rows = parse(COMPOSE_LINES)
@@ -178,7 +182,9 @@ print("   That round trip is a promise, not an observation: a character's Name")
 print("   is frozen when the character is assigned and can never be changed,")
 print("   typos included. Neither the keysym table nor the digraph table")
 print("   promises anything of the sort. Vim has added digraphs over the")
-print("   years, and uni's copy of that table is already behind Vim's own.")
+print("   years, and uni's digraph column -- built from RFC 1345, the 1992")
+print("   list those digraphs began as -- has none of the additions except")
+print("   the euro sign.")
 
 head(5, "WHATEVER YOU TYPED, THE BYTES ARE THE ANSWER")
 composed = unicodedata.lookup("LATIN SMALL LETTER E WITH ACUTE")

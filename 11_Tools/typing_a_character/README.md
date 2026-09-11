@@ -17,11 +17,13 @@ Four systems answer that, and the useful thing to know before choosing one is th
 | system | names `ż` as | where the table lives | is it a standard? |
 |---|---|---|---|
 | **Unicode Name** | `LATIN SMALL LETTER Z WITH DOT ABOVE` | [the Unicode Character Database ↗](https://www.unicode.org/ucd/) | **yes**, and frozen forever |
-| **X11 keysym** | *(no keysym of its own — `U017C`)* | `keysymdef.h`, and a [Compose file ↗](https://www.x.org/releases/current/doc/man/man5/Compose.5.xhtml) | a convention, per implementation |
+| **X11 keysym** | `zabovedot` — though a Compose file writes the generic `U017C` | `keysymdef.h`, and a [Compose file ↗](https://www.x.org/releases/current/doc/man/man5/Compose.5.xhtml) | a convention, per implementation |
 | **Vim digraph** | `z.` → `Ctrl-K z .` | [Vim's own table ↗](https://vimhelp.org/digraph.txt.html) | one editor's table |
 | **HTML entity** | `&zdot;` | [the HTML5 spec ↗](https://html.spec.whatwg.org/multipage/named-characters.html) | yes, but for documents, not keyboards |
 
 Only the first is filled in for every character, and only the first carries a promise. That is the argument the whole page comes down to, and section 4 of the program is where it is demonstrated rather than asserted.
+
+The keysym column comes from `keysymdef.h` itself rather than from `uni`, whose `%(keysym)` column is blank for `ż` — because it [looks the table up by the wrong number](../uni_help/README.md#the-keysym-column-reads-the-wrong-number).
 
 ## The compose key: a path, not a name
 
@@ -68,7 +70,7 @@ Vim needs no window system, so this is the one that works over SSH, in a contain
 
 The 1,366 pairs cover **1,307 distinct code points**, because **59 characters have two digraphs each**: `¡` is both `!I` (the mnemonic form) and `~!` (the visual one), and Vim kept both rather than choose. One of those pairs is worth its own sentence: **`NU` and `LF` both give `U+000A`.** The digraph for NUL hands you a line feed, because Vim represents a NUL in a buffer as a newline — the same substitution [The NUL byte](../../02_Characters/the_nul_byte/README.md) documents from the other end.
 
-Two cautions. `digraph_get()` returns the *last character of the pair* when the pair is not in the table, so a wrong guess looks like a result rather than an error. And `uni`'s `%(digraph)` column is Vim's table, one copy behind: on eight code points — including `•`, `…` and `⟨` `⟩` — Vim has a digraph and `uni` prints nothing.
+Two cautions. `digraph_get()` returns the *last character of the pair* when the pair is not in the table, so a wrong guess looks like a result rather than an error. And `uni`'s `%(digraph)` column is not Vim's table at all: `uni` builds it from RFC 1345 — the 1992 list Vim's default digraphs are taken from — plus the euro sign, added by hand. So on eight code points — including `•`, `…` and `⟨` `⟩` — Vim has a digraph and `uni` prints nothing.
 
 ## The two tables barely overlap
 
@@ -143,16 +145,17 @@ One row or two is the whole diagnosis, and it takes a second. [Preparing a strin
    U+0041      LATIN CAPITAL LETTER A               A              -        &#x41;
    U+00E9      LATIN SMALL LETTER E WITH ACUTE      eacute         e'       &eacute;
    U+00A0      NO-BREAK SPACE                       nobreakspace   NS       &nbsp;
-   U+0142      LATIN SMALL LETTER L WITH STROKE     -              l/       &lstrok;
-   U+017C      LATIN SMALL LETTER Z WITH DOT ABOVE  -              z.       &zdot;
+   U+0142      LATIN SMALL LETTER L WITH STROKE     lstroke        l/       &lstrok;
+   U+017C      LATIN SMALL LETTER Z WITH DOT ABOVE  zabovedot      z.       &zdot;
    U+20AC      EURO SIGN                            EuroSign       =e       &euro;
    U+0CA0      KANNADA LETTER TTHA                  -              -        &#xca0;
 
-   Read down the two middle columns. The Polish letters have a Vim
-   digraph and no keysym of their own; the Kannada letter has neither,
-   which is what 'a script nobody here has a keyboard for' means in
-   practice. Only the Name column is filled all the way down, and only
-   the Name column is a standard rather than one project's table.
+   Read down the two middle columns. The Polish letters have both:
+   X11 named them in its Latin-2 set, and a Polish keyboard layout
+   sends them. The Kannada letter has neither, which is what 'a script
+   nobody here has a keyboard for' means in practice. Only the Name
+   column is filled all the way down, and only the Name column is a
+   standard rather than one project's table.
 
 2. A COMPOSE SEQUENCE IS A PATH, NOT A NAME
 ------------------------------------------------------------------------
@@ -237,7 +240,9 @@ One row or two is the whole diagnosis, and it takes a second. [Preparing a strin
    is frozen when the character is assigned and can never be changed,
    typos included. Neither the keysym table nor the digraph table
    promises anything of the sort. Vim has added digraphs over the
-   years, and uni's copy of that table is already behind Vim's own.
+   years, and uni's digraph column -- built from RFC 1345, the 1992
+   list those digraphs began as -- has none of the additions except
+   the euro sign.
 
 5. WHATEVER YOU TYPED, THE BYTES ARE THE ANSWER
 ------------------------------------------------------------------------

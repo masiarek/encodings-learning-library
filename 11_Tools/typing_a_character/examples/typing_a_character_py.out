@@ -5,16 +5,17 @@
    U+0041      LATIN CAPITAL LETTER A               A              -        &#x41;
    U+00E9      LATIN SMALL LETTER E WITH ACUTE      eacute         e'       &eacute;
    U+00A0      NO-BREAK SPACE                       nobreakspace   NS       &nbsp;
-   U+0142      LATIN SMALL LETTER L WITH STROKE     -              l/       &lstrok;
-   U+017C      LATIN SMALL LETTER Z WITH DOT ABOVE  -              z.       &zdot;
+   U+0142      LATIN SMALL LETTER L WITH STROKE     lstroke        l/       &lstrok;
+   U+017C      LATIN SMALL LETTER Z WITH DOT ABOVE  zabovedot      z.       &zdot;
    U+20AC      EURO SIGN                            EuroSign       =e       &euro;
    U+0CA0      KANNADA LETTER TTHA                  -              -        &#xca0;
 
-   Read down the two middle columns. The Polish letters have a Vim
-   digraph and no keysym of their own; the Kannada letter has neither,
-   which is what 'a script nobody here has a keyboard for' means in
-   practice. Only the Name column is filled all the way down, and only
-   the Name column is a standard rather than one project's table.
+   Read down the two middle columns. The Polish letters have both:
+   X11 named them in its Latin-2 set, and a Polish keyboard layout
+   sends them. The Kannada letter has neither, which is what 'a script
+   nobody here has a keyboard for' means in practice. Only the Name
+   column is filled all the way down, and only the Name column is a
+   standard rather than one project's table.
 
 2. A COMPOSE SEQUENCE IS A PATH, NOT A NAME
 ------------------------------------------------------------------------
@@ -99,7 +100,9 @@
    is frozen when the character is assigned and can never be changed,
    typos included. Neither the keysym table nor the digraph table
    promises anything of the sort. Vim has added digraphs over the
-   years, and uni's copy of that table is already behind Vim's own.
+   years, and uni's digraph column -- built from RFC 1345, the 1992
+   list those digraphs began as -- has none of the additions except
+   the euro sign.
 
 5. WHATEVER YOU TYPED, THE BYTES ARE THE ANSWER
 ------------------------------------------------------------------------
