@@ -143,7 +143,7 @@ git; Unicode 17.0 (September, 2025)
 
 That is a feature — the answers do not change when someone updates a library underneath you — and a thing to check before quoting a result. Your Python's `unicodedata` is pinned to a different revision, chosen by whoever built your Python, so for a character added in the last few years the two can disagree about whether it exists at all. For anything in this library's [cast](../../CAST.md) the question never arises; every one of them has had the same name since the 1990s.
 
-Homepage: [arp242/uni ↗](https://github.com/arp242/uni). MIT licensed.
+Homepage: [arp242/uni ↗](https://github.com/arp242/uni). MIT licensed. Every flag, command and column on its help screen is explained, keyword by keyword, in [`uni -h`, line by line](../uni_help/README.md).
 
 ## If you are coming from Python or ABAP
 
@@ -211,6 +211,7 @@ WHEN uni IS NOT INSTALLED
 
 ## See also
 
+- [`uni -h`, line by line](../uni_help/README.md) — the help screen verbatim, every keyword linked to the page that explains it, and five places the screen and the program disagree
 - [A character and its bytes on one line](../../06_Terminal/character_and_its_bytes/README.md) — the two columns you already have, without installing anything
 - [Unicode code points](../../02_Characters/unicode_code_points/README.md) — reading `U+XXXX` as an address rather than a number
 - [`find`, and filenames that are bytes](../find/README.md) — the problem `uni identify` diagnoses fastest

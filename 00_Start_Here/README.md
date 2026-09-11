@@ -58,7 +58,7 @@ These are off the diagram on purpose: none of them depends on the spine, and two
 |---|---|---|
 | [09_History](../09_History/README.md) | Nobody designed the mess: every strange rule is a fossil — a sensible decision that outlived the constraint that made it sensible | 4 / 0 |
 | [10_Best_Practices](../10_Best_Practices/README.md) | What to actually do on Monday, and why the modern answer is short | 5 / 0 |
-| [11_Tools](../11_Tools/README.md) | `grep`, `find`, `sort`, `tr` — none of them is *about* encodings, and every one has already made an encoding decision for you without saying so | 21 / 0 |
+| [11_Tools](../11_Tools/README.md) | `grep`, `find`, `sort`, `tr` — none of them is *about* encodings, and every one has already made an encoding decision for you without saying so | 22 / 0 |
 | [12_Adversarial](../12_Adversarial/README.md) | The shapes text bugs take when somebody chooses the bytes on purpose, each with the one-line rule that closes it | 5 / 0 |
 | [13_Documentation](../13_Documentation/README.md) | The primary material already on your machine under `/usr/share/man` — and the fact that it is documentation *of* your machine, with a date on it | 3 / 0 |
 | [14_Resources](../14_Resources/README.md) | Not a chapter of the course: the things you review, print, or come back to once the reading is done | 3 / 0 |

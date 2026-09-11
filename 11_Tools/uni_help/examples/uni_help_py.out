@@ -1,0 +1,80 @@
+1. THE COLUMNS A PENCIL CAN FILL IN
+------------------------------------------------------------------------
+   placeholder    U+2713, the help's    U+1F600, above U+FFFF
+   %(cpoint)      U+2713                U+1F600
+   %(hex)         2713                  1f600
+   %(dec)         10003                 128512
+   %(oct)         23423                 373000
+   %(bin)         10011100010011        11111011000000000
+   %(utf8)        e2 9c 93              f0 9f 98 80
+   %(utf16le)     13 27                 3d d8 00 de
+   %(utf16be)     27 13                 d8 3d de 00
+   %(xml)         &#x2713;              &#x1f600;
+   %(json)        \u2713                \ud83d\ude00
+   plane number   0                     1
+
+   Nothing above came out of a table. Every value is the one number
+   rewritten -- in another base, as UTF-8 or UTF-16 bytes, or as an
+   escape -- so no Unicode version and no machine can change it. The
+   last row is the plane's number, cp >> 16; the plane's NAME, which is
+   what %(plane) prints, has to come from a list of names.
+
+2. %(bin) IS A NUMERAL, AND A NUMERAL HAS NO BYTE ORDER
+------------------------------------------------------------------------
+   U+2713 in base 2              10011100010011
+   as two bytes, big-endian      00100111 00010011   27 13
+   as two bytes, little-endian   00010011 00100111   13 27
+
+   The first row is the ordinary numeral, most significant digit
+   first. Set beside the other two it is the big-endian bytes with the
+   leading zeros dropped, and nothing like the little-endian ones.
+   Byte order describes how a number's BYTES are laid out in memory or
+   on a wire; a numeral written on a screen has no bytes to order.
+
+3. ABOVE U+FFFF, JSON SPENDS TWO ESCAPES AND XML SPENDS ONE
+------------------------------------------------------------------------
+   0x1f600 - 0x10000             = 0xf600
+   0xd800 + (0xf600 >> 10)       = 0xd83d
+   0xdc00 + (0xf600 & 0x3ff)     = 0xde00
+   json.dumps(chr(0x1f600))      = "\ud83d\ude00"
+   the XML reference             = &#x1f600;
+
+   The XML reference names the code point, however many digits that
+   takes. JSON's \u escape names one UTF-16 code unit -- four hex
+   digits, no more -- so a character above U+FFFF is written as its
+   surrogate pair: two escapes, and still nothing but arithmetic.
+
+4. A BARE NUMBER IS HEX TO uni AND DECIMAL TO PYTHON
+------------------------------------------------------------------------
+   uni print 20     int('20', 16) = 32  U+0020  SPACE
+   uni print 0d20   int('20', 10) = 20  U+0014  (no Name: name() raises ValueError)
+
+   Python's int() reads decimal unless told otherwise; uni reads hex
+   unless told otherwise (0d decimal, 0o octal, 0b binary). U+0014 is
+   a control character, and controls have no Name -- DEVICE CONTROL
+   FOUR is one of its aliases, which lookup() accepts even though
+   name() never returns it:
+   unicodedata.lookup('DEVICE CONTROL FOUR') -> U+0014
+
+5. THE COLUMNS THAT NEED A TABLE, AND WHICH ONES PYTHON HAS
+------------------------------------------------------------------------
+   %(name)     unicodedata.name()               CHECK MARK
+   %(cat)      unicodedata.category()           So
+   %(width)    unicodedata.east_asian_width()   N
+   %(html)     html.entities.html5              &check;  &checkmark;
+   %(block)    unicodedata.block()              exists: False
+   %(script)   unicodedata.script()             exists: False
+   %(unicode)  unicodedata.age()                exists: False
+   %(aliases), %(refs)  NamesList.txt, which Python does not ship
+   %(keysym)            X11's keysymdef.h: not a Unicode table at all
+   %(digraph)           RFC 1345's mnemonics: not a Unicode table at all
+
+   EAST_ASIAN_WIDTH: THE TABLE'S LETTERS, AND WHAT EACH ONE MEANS
+   U+0041  Na  Narrow -- an East Asian narrow form           A
+   U+2713  N   Neutral -- never in an East Asian legacy set  ✓
+   U+00E9  A   Ambiguous                                     é
+   U+65E5  W   Wide                                          日
+
+   A is Na and CHECK MARK is N. The letters are hard to confuse; the
+   words Narrow and Neutral are not, which is why it is worth reading
+   the letter whenever a tool prints only the word.

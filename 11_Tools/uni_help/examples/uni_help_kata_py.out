@@ -1,0 +1,27 @@
+THE ROW, WITH A PENCIL
+   U+20AC 8364 20254 10000010101100 e2 82 ac 20 ac &#x20ac;
+
+   %(cpoint)   U+20AC           the number in hex, at least four digits
+   %(dec)      8364             2*4096 + 0*256 + 10*16 + 12*1
+   %(oct)      20254            the same number in base 8
+   %(bin)      10000010101100   0010 0000 1010 1100, leading zeros dropped
+   %(utf8)     e2 82 ac         1110 0010  10 000010  10 101100
+   %(utf16be)  20 ac            one 16-bit unit (it is below U+FFFF), high byte first
+   %(xml)      &#x20ac;         the hex again, between &#x and ;
+
+THE COLUMNS NO PENCIL FILLS IN
+   %(name)     EURO SIGN        Unicode's Name property -- unicodedata.name()
+   %(cat)      Sc               General_Category -- unicodedata.category()
+   %(html)     &euro;           WHATWG's named references -- html.entities.html5
+   %(keysym)   EuroSign         X11's keysymdef.h
+   %(digraph)  =e               RFC 1345 -- except that the RFC has no euro sign
+
+   Any two of these answer the question. Each is a row in somebody's
+   table, with an owner and an edition -- the first block has neither.
+
+A BARE NUMBER IS HEX TO uni
+   uni print 100     int('100', 16) = 256  U+0100  Ā  LATIN CAPITAL LETTER A WITH MACRON
+   uni print 0d100   int('100', 10) = 100  U+0064  d  LATIN SMALL LETTER D
+
+   The same three digits, two characters. The prefix is the only thing
+   that says which number you meant.

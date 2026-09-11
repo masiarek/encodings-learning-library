@@ -46,8 +46,9 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 | 17 | [`od` reads types, not bytes](od/README.md) | Nothing else is installed. What are the two flags that make `od` honest? | written, 2026-09-07 |
 | 18 | [`strings` has a printable set, not an encoding](strings/README.md) | Why did `strings` print nothing for a file that is full of text? | written, 2026-09-10 |
 | 19 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
-| 20 | [Typing a character you cannot type](typing_a_character/README.md) | There is no `ż` on my keyboard — how do I produce one? | written, 2026-09-07 |
-| 21 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
+| 20 | [`uni -h`, line by line](uni_help/README.md) | What does every word on `uni`'s help screen mean — and where does the program not do what it says? | written, 2026-09-10 |
+| 21 | [Typing a character you cannot type](typing_a_character/README.md) | There is no `ż` on my keyboard — how do I produce one? | written, 2026-09-07 |
+| 22 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
 
 ## The whole toolkit, one row each
 
@@ -176,7 +177,7 @@ Two things to take from it. **`grep` is the only one that says nothing and still
 
 ## A note on what is machine-checked here
 
-Every other chapter's claims are backed by a program CI runs on Ubuntu *and* macOS. Every page here keeps that contract for what it can, and three of them — [`ripgrep`](ripgrep/README.md), [`uni`](uni/README.md) and [the five worth installing](worth_installing/README.md) — are about tools neither operating system ships, so CI has none of them and no answer key can be recorded from the tool itself. Those pages put the tool's real output in a fence that is **labelled and dated with the two machines it was measured on**, and keep a machine-checked example beside it doing the same job in the standard library — so the claim is still tested, just not by the tool it is about.
+Every other chapter's claims are backed by a program CI runs on Ubuntu *and* macOS. Every page here keeps that contract for what it can, and four of them — [`ripgrep`](ripgrep/README.md), [`uni`](uni/README.md), [its help screen](uni_help/README.md) and [the five worth installing](worth_installing/README.md) — are about tools neither operating system ships, so CI has none of them and no answer key can be recorded from the tool itself. Those pages put the tool's real output in a fence that is **labelled and dated with the two machines it was measured on**, and keep a machine-checked example beside it doing the same job in the standard library — so the claim is still tested, just not by the tool it is about.
 
 ## See also
 
