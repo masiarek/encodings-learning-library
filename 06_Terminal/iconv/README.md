@@ -158,7 +158,7 @@ Everything above is byte-identical on macOS and Ubuntu. These are not, so they a
 
 ### `//TRANSLIT` is a per-implementation table
 
-```text title="Measured 2026-09-07 — `printf … | iconv -f UTF-8 -t ASCII//TRANSLIT`, under LC_ALL=C"
+```text title="Measured 2026-09-07 — printf … | iconv -f UTF-8 -t ASCII//TRANSLIT, under LC_ALL=C"
   character        macOS 26.6.2 (Apple iconv)   ubuntu:24.04 (glibc 2.39)
   é   c3 a9        27 65     'e                 3f        ?
   ż   c5 bc        7a        z                  3f        ?
@@ -175,7 +175,7 @@ Two of the six agree. The rest do not, and note *how* they disagree: macOS trans
 
 ### The refusal message describes the problem on only one of them
 
-```text title="Measured 2026-09-07 — stderr from `iconv -f UTF-8 -t UTF-8` on the bytes 61 e9 62"
+```text title="Measured 2026-09-07 — stderr from iconv -f UTF-8 -t UTF-8 on the bytes 61 e9 62"
   macOS 26.6.2     iconv: iconv(): Inappropriate ioctl for device
   ubuntu:24.04     iconv: illegal input sequence at position 1
 ```
@@ -194,7 +194,7 @@ iconv -f CP1250 -t UTF-8 /dev/null >/dev/null 2>&1 && echo "have it"
 
 And `-c`, which asks `iconv` to drop invalid input rather than stop, has a narrower split than it looks. Measured 2026-09-07 across nine inputs, the two agree everywhere except one shape: **when the byte following the skipped one is the last byte in the file, macOS discards it.**
 
-```text title="Measured 2026-09-07 — `iconv -c -f UTF-8 -t UTF-8`, bytes in and bytes out"
+```text title="Measured 2026-09-07 — iconv -c -f UTF-8 -t UTF-8, bytes in and bytes out"
   in                     macOS 26.6.2      ubuntu:24.04
   61 e9                  61                61            agree (nothing follows)
   61 e9 62               61                61 62         DIFFER — the 62 is gone

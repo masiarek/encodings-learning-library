@@ -30,7 +30,7 @@ ESC ] 8 ; <params> ; <URI>  ST      the text you can see      ESC ] 8 ; ; ST
 
 ## What goes into the URI
 
-```text title="Measured 2026-09-06 — same two machines, diffed, identical apart from the version line. `uritail` is a five-line script that pulls the URI out of rg's output and prints its last segment plus that segment's bytes."
+```text title="Measured 2026-09-06 — same two machines, diffed, identical apart from the version line. uritail is a five-line script that pulls the URI out of rg's output and prints its last segment plus that segment's bytes."
 $ ./uritail rg --color=always --hyperlink-format=default -H here 'with space.txt'
   with%20space.txt  bytes: 77 69 74 68 25 32 30 73 70 61 63 65 2e 74 78 74
 
@@ -89,7 +89,7 @@ The line is `café X here`. The word starts at **character 8** and **byte 9**, a
 
 Hyperlinks are **opt-in** — no format, no links — and then gated a second time by whether colour is on at all, because ripgrep treats `--color` as the proxy for *"may I emit ANSI escapes"*.
 
-```text title="Measured 2026-09-06 — same two machines, diffed, identical apart from the version line. The tty cases run under python's `pty.spawn`, which is the same command on both platforms."
+```text title="Measured 2026-09-06 — same two machines, diffed, identical apart from the version line. The tty cases run under python's pty.spawn, which is the same command on both platforms."
   TERM=xterm-256color    hyperlink
   + NO_COLOR=1           none
   TERM=dumb              none

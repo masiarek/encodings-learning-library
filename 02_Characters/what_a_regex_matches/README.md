@@ -317,7 +317,7 @@ The program below takes the Level 1 requirements one at a time and prints what `
 
 Neither macOS nor Ubuntu ships `rg`, so CI does not have it and **no answer key on this page comes from a tool**. What follows was run twice, on the two machines in the caption, and diffed — they are identical apart from the version line and one row, and that row is the interesting one.
 
-```text title="Measured 2026-09-08 — macOS 26.6.2 (rg 15.1.0 brew, PCRE2 10.45, python 3.14.7) and ubuntu:24.04 (rg 14.1.0 apt, PCRE2 10.42, python 3.12.3). Diffed: identical apart from the version line and the `rg -P \w+` row. Not machine-checked: CI has no rg."
+```text title="Measured 2026-09-08 — macOS 26.6.2 (rg 15.1.0 brew, PCRE2 10.45, python 3.14.7) and ubuntu:24.04 (rg 14.1.0 apt, PCRE2 10.42, python 3.12.3). Diffed: identical apart from the version line and the rg -P \w+ row. Not machine-checked: CI has no rg."
 -- RL1.2 properties
   rg     \p{Script=Greek}+               αβγ
   rg -P  \p{Greek}+                      αβγ

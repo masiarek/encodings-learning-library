@@ -144,7 +144,7 @@ The shell version runs three programs to put a character beside its bytes. Pytho
 
 So this one-liner answers *"how is it stored?"* and never *"what is it?"*. For the second question you need a table lookup, which is what [`unicodedata` in Python](../../02_Characters/unicode_code_points/README.md) does — and in the terminal, what `uni` does. It is the one tool worth installing purely for this chapter, because it prints every column at once:
 
-```text title="Measured 2026-09-06 — uni 2.9.0, `brew install uni`. Not machine-checked: CI has only the tools macOS and Ubuntu both ship, so no example on this page uses it."
+```text title="Measured 2026-09-06 — uni 2.9.0, brew install uni. Not machine-checked: CI has only the tools macOS and Ubuntu both ship, so no example on this page uses it."
 $ uni identify 'żé€'
              Dec    UTF8        HTML       Name
 'ż'  U+017C  380    c5 bc       &zdot;     LATIN SMALL LETTER Z WITH DOT ABOVE

@@ -109,7 +109,7 @@ The other half is `echo`, which is not one command. It is a shell builtin with d
 
 macOS still ships **bash 3.2.57**, whose own `--version` line says *Copyright (C) 2007* — frozen there because bash 4 moved to the GPLv3, which Apple does not ship. Measured 2026-09-07: the escape is absent in 3.2.57 and present in 4.4.23 and 5.2.37. In macOS's `/bin/bash`, then, `printf` does what `printf` does with any escape it does not know — hands it back. Bash is not the only `printf` on a Mac, though, and the others [answer differently](#the-printf-you-get-depends-on-who-runs-it).
 
-```text title="Measured 2026-09-07 — `printf '\u20ac' | od -An -tx1`, three configurations"
+```text title="Measured 2026-09-07 — printf '\u20ac' | od -An -tx1, three configurations"
   configuration                  bytes written        as text     verdict
   bash 5.2.21, LC_ALL=C.UTF-8    e2 82 ac             €           3 bytes, a euro sign
   bash 5.2.21, LC_ALL=C          5c 75 32 30 41 43    \u20AC      6 bytes, hex UPPERCASED
@@ -145,7 +145,7 @@ Two rows deserve a second look. **zsh under `LC_ALL=C` writes nothing at all** f
 
 The result in section 6 is the same everywhere; the *diagnostic* is not.
 
-```text title="Measured 2026-09-07 — `v=$(printf 'a\000b')`, stderr"
+```text title="Measured 2026-09-07 — v=$(printf 'a\000b'), stderr"
   bash 3.2.57  (macOS /bin/bash, and the bash:3.2 image)   nothing at all
   bash 4.4.23                                              warning: command substitution: ignored null byte in input
   bash 5.2.37                                              warning: command substitution: ignored null byte in input

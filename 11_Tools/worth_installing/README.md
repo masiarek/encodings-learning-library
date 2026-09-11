@@ -82,7 +82,7 @@ $ printf 'caf\303\251 1\342\202\254\n\000A' | xxd
 
 Compare the two text columns. `caf.. 1.....A` against `caf×× 1×┊××_⋄A`: where `xxd` draws one `.`, hexyl draws a glyph per category and paints it.
 
-```text title="Measured 2026-09-06 — hexyl 0.17.0, macOS 26.6, ANSI codes read off `hexyl f | cat -v` on the bytes 41 00 09 0a 1b 7f 20 c3 a9."
+```text title="Measured 2026-09-06 — hexyl 0.17.0, macOS 26.6, ANSI codes read off hexyl f | cat -v on the bytes 41 00 09 0a 1b 7f 20 c3 a9."
 byte          glyph   colour
 41  'A'       A       cyan      printable ASCII, drawn as itself
 00  NUL       ⋄       dim

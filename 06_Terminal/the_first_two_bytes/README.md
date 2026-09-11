@@ -48,7 +48,7 @@ Take one working script and make two copies, each damaged in a way nothing on a 
 
 `file(1)` is not fooled by any of this, which is the point. It calls three of the four shell scripts, and it even names the mark:
 
-```text title="Measured 2026-09-07 — macOS 26 (file-5.41) and ubuntu:24.04 (file-5.45). Not machine-checked: file's English wording is version-dependent (the word `executable` moved between 5.41 and 5.44), so only the MIME forms are safe to record."
+```text title="Measured 2026-09-07 — macOS 26 (file-5.41) and ubuntu:24.04 (file-5.45). Not machine-checked: file's English wording is version-dependent (the word executable moved between 5.41 and 5.44), so only the MIME forms are safe to record."
                  macOS, file-5.41                                  Ubuntu, file-5.45
 plain.sh   POSIX shell script text executable, ASCII text    POSIX shell script, ASCII text executable
 bom.sh     POSIX shell script text executable,               POSIX shell script, Unicode text,

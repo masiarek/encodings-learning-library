@@ -125,7 +125,7 @@ A B aa az b
 
 The stub this page replaces promised `tr` alongside `wc`. It is not in the run above, because the two platforms disagree about whether `tr` obeys the locale at all — so no single answer key could match both. Measured 2026-09-06, same file, same command:
 
-```text title="Measured 2026-09-06 — abridged; `printf 'caf\303\251\n' | tr '[:lower:]' '[:upper:]' | od -An -tx1`"
+```text title="Measured 2026-09-06 — abridged; printf 'caf\303\251\n' | tr '[:lower:]' '[:upper:]' | od -An -tx1"
                               macOS 26.6 (BSD tr)   ubuntu:24.04 (GNU tr, glibc 2.39)
   under LC_ALL=C              43 41 46 c3 a9 0a     43 41 46 c3 a9 0a
   under a UTF-8 locale        43 41 46 c3 89 0a     43 41 46 c3 a9 0a

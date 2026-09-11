@@ -82,7 +82,7 @@ The third rung, `-uuu`, adds binary files. It does not change the file list at a
 
 Binary detection is a NUL byte, and `rg` says so out loud rather than going quiet:
 
-```text title="Measured 2026-09-06 — macOS 26.6.2, rg 15.1.0. The file is `printf 'hello\000world hello\n'`. Not machine-checked: CI has no rg."
+```text title="Measured 2026-09-06 — macOS 26.6.2, rg 15.1.0. The file is printf 'hello\000world hello\n'. Not machine-checked: CI has no rg."
 $ rg hello withnul.bin
 binary file matches (found "\0" byte around offset 5)
 
