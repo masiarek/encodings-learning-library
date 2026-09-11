@@ -241,4 +241,5 @@ THE RULE
 - [`find`, and filenames that are bytes](../find/README.md) — the same NFC/NFD comparison, one level up
 - [`grep` on text that is not ASCII](../grep/README.md) — the locale question where there *is* a flag to escape it
 - [Fixed-width byte fields](../../07_Real_Data/fixed_width_byte_fields/README.md) — where `cut -b` stops being a nuisance and starts being a truncated record
+- [`translate` is a table, keyed by ordinal ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/translate_is_a_table/index.html) — Python's `tr`, and the one difference that matters: its table is keyed by **code point**, so `str.maketrans('ź', 'z')` is one key where `tr 'ź' 'z'` is a two-byte set that also eats the lead byte of `Ł`
 - [Locale and `LC_CTYPE`](../../06_Terminal/locale_and_lc_ctype/README.md) — the setting all of this hangs on

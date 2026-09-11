@@ -430,4 +430,5 @@ about symbols.
 - [Binary to text](../binary_to_text/README.md) — the width question, the padding, and why decode is many-to-one
 - [Escaping into ASCII](../escaping_into_ascii/README.md) — the other reason text gets encoded twice, and the one scheme of the four there that names its charset
 - [Hex is a shorthand](../../01_Bits_and_Bytes/hex_is_a_shorthand/README.md) — base16, where the pieces divide the byte evenly and none of this arises
+- [`translate` is a table, keyed by ordinal ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/translate_is_a_table/index.html) — the method the rename is built on: why the table is a `dict` of ordinals, and why one pass is what makes an alphabet swap exactly reversible
 - [`tr` and `sort` work a byte at a time](../../11_Tools/tr_and_sort/README.md) — the tool that performs the rename, and why the sort-order promise needs `LC_ALL=C`
