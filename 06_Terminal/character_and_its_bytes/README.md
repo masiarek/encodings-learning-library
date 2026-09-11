@@ -222,3 +222,4 @@ WHAT EACH HALF IS ACTUALLY DOING
 - [`printf` writes bytes](../printf_writes_bytes/README.md) — the rest of what `printf` can put on a pipe
 - [Inspecting a file](../inspecting_a_file/README.md) — the same tools when you want the whole file rather than one row
 - [Unicode code points](../../02_Characters/unicode_code_points/README.md) — the column this line does not give you
+- [`-c` is not the prompt, in the Python library ↗](https://masiarek.github.io/python-learning-library/02_Projects_and_Environments/dash_c_is_not_the_prompt/index.html#the-shell-reads-it-first) — the same bare `( )` is why `python3 -c chr(0x20AC)` never reaches Python in fish
