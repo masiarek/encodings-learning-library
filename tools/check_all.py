@@ -69,6 +69,24 @@ deletions and an addition belonging to ANOTHER session, and anything that
 overlaid everything dirty would have gated a colleague's in-flight work as
 yours and called it green. Being made to say what you are claiming is half the
 value of the mode.
+
+And each path you name must exist somewhere: in your tree, or in HEAD, where
+its absence from your tree makes it a deletion. Until 2026-09-10 a path in
+neither was noted SKIPPED and the run went on. `--mine 06_Terminal/my_lesonn`,
+for a lesson called `my_lesson`, gated HEAD plus nothing of yours and exited 0
+whenever HEAD was green. That is the skipped-gate hole one level up: every
+gate ran, but on a tree your work was not in, so the 0 was a verdict on your
+work that nobody had. So a path in neither place now refuses the run before
+any gate starts, naming the path, with exit 2 -- argparse's code for a usage
+error.
+
+Refusing is safe because such a path can change nothing in the tree being
+gated: your tree has nothing to copy in, and HEAD has nothing to remove. The
+only way to name one without a mistake -- a typo, or a path written from the
+directory you stand in rather than from the repository root -- is to name a
+file created and deleted without ever being committed, or one whose deletion
+is already committed, and naming either is a no-op. So the refusal costs you
+nothing but a name that did nothing.
 """
 
 from __future__ import annotations
@@ -191,18 +209,31 @@ def staged_tree(allow_skip: bool = False) -> int:
         return run_gates(pathlib.Path(tmp), f"the staged tree ({tree[:7]})", allow_skip)
 
 
-def assemble_mine(repo: pathlib.Path, paths: list[str], dest: pathlib.Path) -> list[str]:
+def assemble_mine(repo: pathlib.Path, paths: list[str],
+                  dest: pathlib.Path) -> tuple[list[str], list[str]]:
     """Extract HEAD into `dest`, then overlay only `paths` from the working tree.
 
-    Returns what it did, one line per path, so the run says out loud whose work
-    is being gated. A named path that is gone from the working tree is a
-    DELETION and is removed from the tree -- deleting a file is work too, and a
-    mode that silently kept it would pass a commit that CI then fails on.
+    Returns (notes, unknown). The notes say what it did, one line per path, so
+    the run says out loud whose work is being gated. A named path that is gone
+    from the working tree is a DELETION and is removed from the tree -- deleting
+    a file is work too, and a mode that silently kept it would pass a commit
+    that CI then fails on.
+
+    `unknown` is the named paths that are in neither the working tree nor HEAD.
+    If there are any, nothing is overlaid and there are no notes: mine_tree
+    refuses that run, so there is no tree worth building.
     """
     archive = subprocess.run(
         ["git", "archive", "HEAD"], cwd=repo, capture_output=True, check=True
     )
     subprocess.run(["tar", "-x", "-C", str(dest)], input=archive.stdout, check=True)
+
+    # Decided against HEAD as extracted, before anything is overlaid: once a
+    # named directory is mirrored, a file deleted inside it is missing from both
+    # sides, and would read as unknown when it is a deletion.
+    unknown = [rel for rel in paths if not (repo / rel).exists() and not (dest / rel).exists()]
+    if unknown:
+        return [], unknown
 
     notes: list[str] = []
     for rel in paths:
@@ -231,32 +262,63 @@ def assemble_mine(repo: pathlib.Path, paths: list[str], dest: pathlib.Path) -> l
             dst.unlink()
             notes.append(f"removed file   {rel}  (deleted in your tree)")
         else:
-            notes.append(f"SKIPPED        {rel}  (not in your tree and not in HEAD)")
-    return notes
+            # In HEAD, or it would be unknown, but gone from `dest` already: a
+            # path named before it -- a directory above it, or itself -- took it.
+            notes.append(f"already gone   {rel}  (deleted in your tree)")
+    return notes, []
 
 
-def mine_tree(paths: list[str], allow_skip: bool = False) -> int:
-    """Gate HEAD plus only the paths you name -- the honest check for uncommitted work."""
+def mine_tree(paths: list[str], allow_skip: bool = False, repo: pathlib.Path = REPO) -> int:
+    """Gate HEAD plus only the paths you name -- the honest check for uncommitted work.
+
+    A named path in neither your tree nor HEAD refuses the whole run, exit 2,
+    before any gate: the module docstring says why refusing is safe. `repo` is
+    there for the selftest, which points this at a scratch repository.
+    """
     with tempfile.TemporaryDirectory() as tmp:
         dest = pathlib.Path(tmp)
-        for note in assemble_mine(REPO, paths, dest):
+        notes, unknown = assemble_mine(repo, paths, dest)
+        if unknown:
+            lines = [f"  REFUSED        {rel}  (not in your tree and not in HEAD)"
+                     for rel in unknown]
+            lines += ["",
+                      "--mine refused, and no gate ran: a named path in neither place "
+                      "is probably a typo.",
+                      f"Paths are relative to the repository root, {repo}.",
+                      "If it is not a typo, drop it: naming it changes nothing in the tree "
+                      "that is gated."]
+            print("\n".join(lines), file=sys.stderr)
+            return 2
+        for note in notes:
             print(f"  {note}")
         print()
         head = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"], cwd=REPO, capture_output=True, text=True
+            ["git", "rev-parse", "--short", "HEAD"], cwd=repo, capture_output=True, text=True
         ).stdout.strip()
         return run_gates(dest, f"HEAD ({head}) plus {len(paths)} path(s) of yours", allow_skip)
 
 
 def selftest_mine() -> int:
-    """Prove --mine excludes a colleague's dirty file, which is what the others cannot do.
+    """Prove --mine gates your work and not a colleague's, and refuses a path that is nowhere.
 
-    The assertion is about the TREE it assembles, not about running the real
-    gates: those need uv, mkdocs and this repo's own content, so a
+    The first checks are about the TREE it assembles, not about running the
+    real gates: those need uv, mkdocs and this repo's own content, so a
     three-way fixture that ran them would be testing the gates rather than the
     mode. What can be wrong here is which bytes end up in the tree, so that is
     what is checked -- in a scratch repo, touching nothing shared.
+
+    The last are about the DECISION mine_tree makes, which no tree can show: a
+    run that should be refused assembles a perfectly good one. So mine_tree
+    itself runs on the same scratch repo, still without the real gates: GATES
+    is swapped for one stand-in that writes a marker file, so whether a gate
+    ran is observed rather than read off the output. First a CONTROL naming
+    real work, deletions included, which must run the stand-in and exit 0 --
+    what makes the marker's absence afterwards a finding rather than a
+    stand-in that never worked. Then the same paths plus one that is nowhere,
+    which must exit 2 with the stand-in never run.
     """
+    global GATES
+    print("selftest --mine: assembling HEAD + named paths in a scratch repo\n")
     with tempfile.TemporaryDirectory() as tmp:
         repo, dest = pathlib.Path(tmp) / "repo", pathlib.Path(tmp) / "out"
         repo.mkdir(); dest.mkdir()
@@ -295,7 +357,36 @@ def selftest_mine() -> int:
             ("my edit inside that dir survived",
              (dest / "lesson" / "keep.txt").read_text() == "MY EDIT\n"),
         ]
-    print("selftest --mine: assembling HEAD + named paths in a scratch repo\n")
+
+        # The decision. Every kind of work is named, including two deletions a
+        # refusal must not take for typos: doomed.txt, and lesson/retired.txt,
+        # which is gone from the tree being built as well once `lesson` has
+        # been mirrored into it.
+        marker = pathlib.Path(tmp) / "a-gate-ran"
+        GATES = [("stand-in", [sys.executable, "-c",
+                               f"import pathlib; pathlib.Path({str(marker)!r}).touch()"])]
+        work = ["mine.txt", "doomed.txt", "newdir", "lesson", "lesson/retired.txt"]
+        typo = "lesonn"  # `lesson`, mistyped
+        runs = []
+        for title, named in [("control: real work, deletions included", work),
+                             (f"the same plus {typo!r}, which is nowhere", work + [typo])]:
+            marker.unlink(missing_ok=True)
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+                code = mine_tree(named, repo=repo)
+            runs.append((code, marker.exists(), out.getvalue()))
+            print(f"  {title} (exit {code}):")
+            for line in out.getvalue().rstrip().split("\n"):
+                print(f"      {line}".rstrip())
+            print()
+        (c_code, c_ran, _), (t_code, t_ran, t_out) = runs
+        checks += [
+            ("the control ran its gate", c_ran),
+            ("the control exits 0", c_code == 0),
+            (f"{typo!r} is refused with exit 2", t_code == 2),
+            (f"no gate ran for {typo!r}", not t_ran),
+            (f"the refusal names {typo!r}", typo in t_out),
+        ]
     bad = [n for n, ok in checks if not ok]
     for name, ok in checks:
         print(f"  {'ok  ' if ok else 'FAIL'}  {name}")
@@ -303,7 +394,8 @@ def selftest_mine() -> int:
     if bad:
         print(f"SELFTEST FAILED: {', '.join(bad)}")
         return 1
-    print("selftest passed: --mine gates your work and not a colleague's.")
+    print("selftest passed: --mine gates your work and not a colleague's, "
+          "and refuses a path that is nowhere.")
     return 0
 
 
