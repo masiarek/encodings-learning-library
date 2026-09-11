@@ -126,7 +126,7 @@ One page per sitting, the same as reading them ([CONTRIBUTING.md](CONTRIBUTING.m
 
 ```bash
 python3 tools/run_examples.py --update --only <stem>_py   # then READ the key
-python3 tools/check_all.py                                # all four gates, CI's order
+python3 tools/check_all.py                                # every gate, CI's order
 ```
 
 Then update the row in the chapter README and in [ROADMAP.md](ROADMAP.md), and strike the line here. A stub graduates by gaining an `examples/` program and losing its notice — the URL never moves.

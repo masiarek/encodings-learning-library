@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run every gate CI runs, in CI's order, and report honestly.
 
-Why this exists rather than four commands in a row.
+Why this exists rather than the gates typed one after another.
 
 A gate is only useful if you notice it failed, and the usual way of running one
 by hand hides exactly that:
@@ -23,11 +23,25 @@ So: no pipes here. Each gate runs through subprocess, its status is kept, its
 output is shown only when it fails, and this script exits non-zero if any of
 them did.
 
+And a gate that did not RUN is not a gate that passed. A gate whose executable
+is not on PATH is skipped -- the last three start with `uv`, so a machine
+without it skips all three -- and until 2026-09-10 a skip was counted nowhere:
+the run printed SKIP, then `all 11 gates pass.` and exit 0, after running
+eight. That is the false green this script exists to prevent, and neither the
+status nor the summary gave a hint of it. So the summary now says how many
+gates RAN, names any that did not, and says `all N gates` only when all N did;
+and a skip exits 1, as a failure does. It has to be the status and not just the
+text, because the status is what a script -- or a hurried reader -- checks, and
+0 is a claim that every gate has a verdict. `--allow-skip` is the opt-out, for
+a machine that genuinely cannot run a gate: if nothing that ran failed it exits
+0, but the summary still says `8 of 11 gates ran`. Accepting a partial verdict
+should cost a flag, not happen to you.
+
     python3 tools/check_all.py              # the working tree
     python3 tools/check_all.py --staged     # the tree your next commit makes
     python3 tools/check_all.py --committed  # what CI will actually see
     python3 tools/check_all.py --mine A B   # HEAD, plus only the paths you name
-    python3 tools/check_all.py --selftest   # prove a failure is still reported
+    python3 tools/check_all.py --selftest   # prove a failure, or a skip, is reported
 
 --committed is the one worth knowing about. CI checks out the commit, not your
 directory, and the two differ in both directions: an untracked file makes your
@@ -60,6 +74,8 @@ value of the mode.
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import pathlib
 import shutil
 import subprocess
@@ -89,12 +105,17 @@ GATES: list[tuple[str, list[str]]] = [
 ]
 
 
-def run_gates(root: pathlib.Path, label: str) -> int:
+def run_gates(root: pathlib.Path, label: str, allow_skip: bool = False) -> int:
     print(f"gates on {label}: {root}\n")
     failed: list[str] = []
+    skipped: list[str] = []
+    missing: list[str] = []  # the executables behind the skips, for the advice line
     for name, cmd in GATES:
         if shutil.which(cmd[0]) is None:
             print(f"  SKIP  {name:<22} ({cmd[0]} not on PATH)")
+            skipped.append(name)
+            if cmd[0] not in missing:
+                missing.append(cmd[0])
             continue
         done = subprocess.run(cmd, cwd=root, capture_output=True, text=True)
         if done.returncode == 0:
@@ -109,14 +130,29 @@ def run_gates(root: pathlib.Path, label: str) -> int:
         for line in signal[-12:]:
             print(f"          {line}")
     print()
+    total, ran = len(GATES), len(GATES) - len(skipped)
+    if not failed and not skipped:
+        print(f"all {total} gates ran and passed.")
+        return 0
+    # From here on a gate failed or never ran, so the summary counts from what
+    # RAN and never says "all": a skip counted nowhere is how this line once
+    # read `all 11 gates pass.` after running eight.
+    summary = f"{ran} of {total} gates ran"
+    summary += f"; {len(failed)} failed: {', '.join(failed)}" if failed else " and passed"
+    if skipped:
+        summary += f"; {len(skipped)} skipped: {', '.join(skipped)}"
+    print(summary + ".")
     if failed:
-        print(f"{len(failed)} gate(s) failed: {', '.join(failed)}")
         return 1
-    print(f"all {len(GATES)} gates pass.")
-    return 0
+    if allow_skip:
+        print(f"--allow-skip: exit 0, but the {len(skipped)} skipped gate(s) have no verdict.")
+        return 0
+    print(f"NOT a pass: a gate that did not run has no verdict. Put {', '.join(missing)} "
+          "on PATH, or rerun with --allow-skip to accept a partial run.")
+    return 1
 
 
-def committed_tree() -> int:
+def committed_tree(allow_skip: bool = False) -> int:
     """Run the gates against `git archive HEAD`, which is what CI checks out."""
     with tempfile.TemporaryDirectory() as tmp:
         archive = subprocess.run(
@@ -126,10 +162,10 @@ def committed_tree() -> int:
         head = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"], cwd=REPO, capture_output=True, text=True
         ).stdout.strip()
-        return run_gates(pathlib.Path(tmp), f"the committed tree ({head})")
+        return run_gates(pathlib.Path(tmp), f"the committed tree ({head})", allow_skip)
 
 
-def staged_tree() -> int:
+def staged_tree(allow_skip: bool = False) -> int:
     """Run the gates against the tree your NEXT commit would produce.
 
     --committed archives HEAD, so it cannot see the index -- which means it is
@@ -152,7 +188,7 @@ def staged_tree() -> int:
             ["git", "archive", tree], cwd=REPO, capture_output=True, check=True
         )
         subprocess.run(["tar", "-x", "-C", tmp], input=archive.stdout, check=True)
-        return run_gates(pathlib.Path(tmp), f"the staged tree ({tree[:7]})")
+        return run_gates(pathlib.Path(tmp), f"the staged tree ({tree[:7]})", allow_skip)
 
 
 def assemble_mine(repo: pathlib.Path, paths: list[str], dest: pathlib.Path) -> list[str]:
@@ -199,7 +235,7 @@ def assemble_mine(repo: pathlib.Path, paths: list[str], dest: pathlib.Path) -> l
     return notes
 
 
-def mine_tree(paths: list[str]) -> int:
+def mine_tree(paths: list[str], allow_skip: bool = False) -> int:
     """Gate HEAD plus only the paths you name -- the honest check for uncommitted work."""
     with tempfile.TemporaryDirectory() as tmp:
         dest = pathlib.Path(tmp)
@@ -209,14 +245,14 @@ def mine_tree(paths: list[str]) -> int:
         head = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"], cwd=REPO, capture_output=True, text=True
         ).stdout.strip()
-        return run_gates(dest, f"HEAD ({head}) plus {len(paths)} path(s) of yours")
+        return run_gates(dest, f"HEAD ({head}) plus {len(paths)} path(s) of yours", allow_skip)
 
 
 def selftest_mine() -> int:
     """Prove --mine excludes a colleague's dirty file, which is what the others cannot do.
 
-    The assertion is about the TREE it assembles, not about running the five
-    real gates: those need uv, mkdocs and this repo's own content, so a
+    The assertion is about the TREE it assembles, not about running the real
+    gates: those need uv, mkdocs and this repo's own content, so a
     three-way fixture that ran them would be testing the gates rather than the
     mode. What can be wrong here is which bytes end up in the tree, so that is
     what is checked -- in a scratch repo, touching nothing shared.
@@ -271,8 +307,75 @@ def selftest_mine() -> int:
     return 0
 
 
+# An executable nothing installs, so the skip half of --selftest has a gate
+# that cannot run. Checked before use: were it ever on PATH, the skip case
+# would quietly become a second pass case, so the selftest refuses instead.
+NO_SUCH_TOOL = "check-all-selftest-no-such-tool"
+
+
+def selftest_skip() -> int:
+    """Prove a gate that never RAN is not reported as a pass.
+
+    The defect this replaced, found 2026-09-10: a gate whose executable was
+    missing printed SKIP, was counted nowhere, and the run still ended `all 11
+    gates pass.` with exit 0. So the runner is driven three times through the
+    same GATES swap the failure half uses -- one real gate plus one whose
+    executable does not exist, plain and then with --allow-skip -- and first a
+    CONTROL of two real gates. The control is the run that must say `all 2
+    gates`; that is what makes the phrase's absence from the other two a
+    finding rather than a typo in the expected string.
+    """
+    global GATES
+    if shutil.which(NO_SUCH_TOOL) is not None:
+        print(f"SELFTEST FAILED: {NO_SUCH_TOOL} is on PATH, so a missing tool cannot be staged.")
+        return 1
+    real = [sys.executable, "-c", "pass"]
+    cases = [
+        ("control: two real gates", [("real", real), ("also real", real)], False),
+        ("one gate's tool missing", [("real", real), ("missing tool", [NO_SUCH_TOOL])], False),
+        ("the same, with --allow-skip", [("real", real), ("missing tool", [NO_SUCH_TOOL])], True),
+    ]
+    print("selftest: a gate whose executable does not exist\n")
+    results = []
+    for title, gates, allow in cases:
+        GATES = gates
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = run_gates(REPO, "the working tree", allow_skip=allow)
+        results.append((code, out.getvalue()))
+        print(f"  {title} (exit {code}):")
+        for line in out.getvalue().rstrip().split("\n"):
+            print(f"      {line}".rstrip())
+        print()
+    (c_code, c_out), (s_code, s_out), (a_code, a_out) = results
+    claim = "all 2 gates"
+    checks = [
+        ("the control exits 0", c_code == 0),
+        (f"the control says '{claim}'", claim in c_out),
+        ("a skip exits non-zero", s_code != 0),
+        (f"a skip does not say '{claim}'", claim not in s_out),
+        ("a skip says '1 of 2 gates ran'", "1 of 2 gates ran" in s_out),
+        ("the skipped gate is named in the summary", "skipped: missing tool" in s_out),
+        ("--allow-skip exits 0", a_code == 0),
+        (f"--allow-skip still does not say '{claim}'", claim not in a_out),
+        ("--allow-skip still names the skipped gate", "skipped: missing tool" in a_out),
+    ]
+    bad = [n for n, ok in checks if not ok]
+    for name, ok in checks:
+        print(f"  {'ok  ' if ok else 'FAIL'}  {name}")
+    print()
+    if bad:
+        print(f"SELFTEST FAILED: {', '.join(bad)}")
+        return 1
+    print("selftest passed: a gate that never ran was not reported as a pass.\n")
+    return 0
+
+
 def selftest() -> int:
-    """A failing gate must be reported as failing. Proves this script still bites."""
+    """A gate that failed, or never ran, must not be reported as passing.
+
+    Proves this script still bites.
+    """
     global GATES
     GATES = [("deliberate failure", [sys.executable, "-c", "raise SystemExit(3)"])]
     print("selftest: running one gate that exits 3\n")
@@ -280,6 +383,8 @@ def selftest() -> int:
         print("SELFTEST FAILED: a failing gate was reported as passing.")
         return 1
     print("selftest passed: the failure was reported.\n")
+    if selftest_skip() != 0:
+        return 1
     return selftest_mine()
 
 
@@ -290,17 +395,20 @@ def main() -> int:
                         help="run against the tree your next commit would produce")
     parser.add_argument("--mine", nargs="+", metavar="PATH",
                         help="gate HEAD plus ONLY these paths of yours (uncommitted work)")
-    parser.add_argument("--selftest", action="store_true", help="prove a failure is reported")
+    parser.add_argument("--selftest", action="store_true",
+                        help="prove a failure, or a skip, is reported")
+    parser.add_argument("--allow-skip", action="store_true",
+                        help="exit 0 even if a gate could not run (the summary still counts it)")
     args = parser.parse_args()
     if args.selftest:
         return selftest()
     if args.mine:
-        return mine_tree(args.mine)
+        return mine_tree(args.mine, args.allow_skip)
     if args.committed:
-        return committed_tree()
+        return committed_tree(args.allow_skip)
     if args.staged:
-        return staged_tree()
-    return run_gates(REPO, "the working tree")
+        return staged_tree(args.allow_skip)
+    return run_gates(REPO, "the working tree", args.allow_skip)
 
 
 if __name__ == "__main__":
