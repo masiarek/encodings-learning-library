@@ -29,12 +29,19 @@ use_directory_urls: false
 # a link's #fragment against the ids of the page it points at, and by default
 # reports a miss at `info` -- which --strict does not count. Until 2026-09-10 a
 # planted `../preparing_a_string/README.md#no-such-heading` built green, its
-# verdict one INFO line in the log. At `warn` the same build fails. What it
-# cannot see is in CONTRIBUTING.md under Links: a build run with -v, a folder
-# link's fragment, and GitHub's ids, which are not always this site's.
+# verdict one INFO line in the log. At `warn` the same build fails.
+#
+# unrecognized_links has the same default one step earlier. A link to a folder
+# (`../preparing_a_string/`) names no file, so MkDocs leaves it as is, at
+# `info`, and never gets as far as its #fragment: until 2026-09-11 that link
+# built green with a #no-such-heading on the end or without one. At `warn`
+# both fail, which makes CONTRIBUTING's never-link-a-folder rule a gate. What
+# neither setting can see is in CONTRIBUTING.md under Links: a fragment in a
+# build run with -v, and GitHub's ids, which are not always this site's.
 validation:
   links:
     anchors: warn
+    unrecognized_links: warn
 
 # MkDocs maps README.md onto index.md, so the root README and index.md collide
 # ("Excluding README.md because it conflicts with index.md" — a --strict failure).
