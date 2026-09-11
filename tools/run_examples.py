@@ -77,7 +77,9 @@ BLOCK = re.compile(
     re.DOTALL,
 )
 
-SKIP_DIRS = {".git", ".claude", "site", ".venv", "__pycache__", ".github"}
+# target/ is Cargo's, made when an IDE builds from tools/write_cargo_toml.py's
+# manifest: thousands of files, and a target/debug/examples/ folder of its own.
+SKIP_DIRS = {".git", ".claude", "site", ".venv", "__pycache__", ".github", "target"}
 
 # A fenced code block, opened or closed. The pages that DOCUMENT this mechanism
 # (README.md, CONTRIBUTING.md) show the markers inside a fence — those are

@@ -12,6 +12,14 @@ __pycache__/
 # JetBrains IDEs (RustRover / PyCharm) — per-machine project config.
 .idea/
 
+# RustRover's Cargo manifest and what Cargo builds from it, written per machine
+# by tools/write_cargo_toml.py. The examples are compiled by bare rustc
+# (tools/run_examples.py), so none of this is the build.
+/Cargo.toml
+/Cargo.lock
+/.cargo
+/target
+
 # Anki deck scratch — verify.py writes each card's snippet out and compiles it.
 # Generated on every run, and `bin/` is a megabyte of Mach-O binaries that would
 # otherwise be copied straight into the published site.

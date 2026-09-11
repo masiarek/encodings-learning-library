@@ -140,6 +140,8 @@ python3 tools/run_examples.py --check    # write nothing, fail on drift (what CI
 
 There is a second block kind, `source:`, which pastes the program itself for pages where the code *is* the lesson.
 
+The Rust examples are compiled by bare `rustc`, so the repo has no `Cargo.toml` — and without one RustRover will neither fully analyse nor run a `.rs` file. `python3 tools/write_cargo_toml.py` writes a gitignored manifest for your machine that lists every `.rs` file as a binary; attach it once in RustRover.
+
 Conventions for anyone writing a page: [CONTRIBUTING.md](CONTRIBUTING.md). The characters and strings every page demonstrates with: [CAST.md](CAST.md). Terms: [GLOSSARY.md](GLOSSARY.md). The practice track, in the order worth attempting it: [KATAS.md](KATAS.md). Links, books, videos, tools and katas, each one checked: [RESOURCES.md](RESOURCES.md). What is planned and deliberately not written yet: [ROADMAP.md](ROADMAP.md).
 
 <!-- --8<-- [end:below-hero] -->

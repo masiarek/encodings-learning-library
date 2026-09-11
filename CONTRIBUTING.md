@@ -68,7 +68,7 @@ python3 tools/run_examples.py --check         # write nothing, fail on drift (CI
 
 **Python: stdlib only, and 3.14.** CI runs every example on Python 3.14 on both runners — `actions/setup-python` pins the minor version and lets patch releases float — so 3.14 is the version an answer key promises. A reader needs a 3.14 `python3` and nothing else; CI installs no package, which is what proves the stdlib-only half. Older interpreters are not a target: the `/usr/bin/python3` that Apple's Command Line Tools install is 3.9.6, and some examples use f-string syntax that 3.11 rejects.
 
-**Rust: bare `rustc --edition 2024`.** No Cargo, no crates. A lesson about something a crate does (`unicode-segmentation`, say) hand-rolls the narrow case in std and says plainly what the crate adds.
+**Rust: bare `rustc --edition 2024`.** No Cargo, no crates. A lesson about something a crate does (`unicode-segmentation`, say) hand-rolls the narrow case in std and says plainly what the crate adds. The repo carries no `Cargo.toml` for the same reason, so RustRover opens every example under *"Project not associated with a Cargo.toml file"*; `python3 tools/write_cargo_toml.py` writes a gitignored one for your machine that lists every `.rs` file in the checkout, scratch files included, as a binary. It is the IDE's view and never the build — an example still has to compile on its own under the runner's `rustc`.
 
 **C: `cc -std=c11 -Wall -Wextra`**, no libraries beyond libc, and only on a page where the C view sharpens the point — it is an aside, not a fourth track. `cc` is clang on macOS and gcc on Ubuntu; both compile in CI, so a warning from either is printed as a note and worth fixing.
 
