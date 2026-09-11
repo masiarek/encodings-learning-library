@@ -340,7 +340,7 @@ ONE FILE, FOUR READINGS
 
    Only 'ascii' raises. utf-8 gives four characters, cp1252 gives
    five, and the extra one is not an error -- C3 and A9 are both
-   perfectly good Windows-1252 letters. 'rb' gives six bytes and
+   perfectly good Windows-1252 characters. 'rb' gives six bytes and
    no opinion, which is the only honest answer before you know
    what wrote the file.
 
@@ -370,16 +370,16 @@ THE LOUD FAILURE IS STILL THERE -- SOMEBODY HAS TO ASK FOR IT
    unset, so PEP 538 coerces the missing locale to C.UTF-8 first.
    Only together do they put open() back on ASCII -- and the same
    two variables do it to the laptop. They cannot do it to the
-   Windows box: cp1252 has a letter for every byte in this file, so
+   Windows box: cp1252 has a character for every byte in this file, so
    there is nothing for it to refuse.
 
 AND WHAT PEP 686 DOES TO EACH ROW
 
-   laptop      no change -- it was already UTF-8 Mode in all but name
+   laptop      no change -- its locale already said UTF-8
    container   no change -- it has run in UTF-8 Mode since 3.7, and
                PEP 686 makes every other machine do what it already did
    Windows     CHANGED, silently: the same bytes now decode as UTF-8,
-               so the third row above turns into the first one.
+               so the Windows row turns into the laptop's.
                Right answer, no announcement -- and for a file that
                really was cp1252, the reverse: it starts raising.
 
@@ -388,8 +388,10 @@ AND WHAT PEP 686 DOES TO EACH ROW
 
    The pattern is the point. A default that becomes correct is still
    a default that changed, and the code that was relying on the old
-   one gets no warning at all. Every row above is settled for good
-   by one keyword argument, today, on every Python.
+   one hears nothing unless it asked: the only warning PEP 686 relies
+   on is PEP 597's EncodingWarning, and that is off by default. Every
+   row above is settled for good by one keyword argument, today, on
+   every Python.
 
 THE ONE LINE
    open(path, encoding='utf-8')   and PEP 686 cannot reach you either.

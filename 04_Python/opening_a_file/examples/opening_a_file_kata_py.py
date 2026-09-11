@@ -1,19 +1,24 @@
 #!/usr/bin/env python3
 """Answers for the opening-a-file kata.
 
-Same discipline as the lesson. The container rows are not typed in: each one
-is a CHILD interpreter started with exactly the environment named beside it --
-every LC_*, LANG and PYTHON* variable removed first, so the runner that started
-this program cannot reach it -- and asked what open() does with the file. That
-is all a container is, as far as this question goes: the same Python, started
-with a different environment. The laptop and Windows rows cannot be run from
-here, so they name the encoding those machines would pick and decode the bytes
+Same discipline as the lesson. The laptop and container rows are not typed
+in: each one is a CHILD interpreter started with exactly the environment
+named beside it -- every LC_*, LANG and PYTHON* variable removed first, so the
+runner that started this program cannot reach it -- and asked what open()
+does with the file. That is all a container is, as far as this question
+goes: the same Python, started with a different environment. A laptop is the
+same again under a UTF-8 locale, whichever one the machine has, since macOS
+and glibc do not install the same set. Only the Windows row cannot be run from
+here, so it names the encoding that machine would pick and decodes the bytes
 with it. No locale name is printed -- the C locale has two spellings -- and no
-exception's wording either, only its class.
+exception's wording either, only its class. Nor is the laptop child's
+utf8_mode: it is 0 on 3.14 and 1 on 3.15, where PEP 686 lands, while open()'s
+answer there stays utf-8 -- the flag would date the key.
 
 Run:  python3 opening_a_file_kata_py.py
 """
 
+import locale
 import os
 import subprocess
 import sys
@@ -41,14 +46,30 @@ def cps(s):
     return " ".join("U+%04X" % ord(c) for c in s)
 
 
-def container(path, **env):
-    """Run PROBE as a container would: no locale, no PYTHON* -- then `env`."""
+def child(path, **env):
+    """Run PROBE in a fresh interpreter: no locale, no PYTHON* -- then `env`."""
     e = {k: v for k, v in os.environ.items()
          if not (k.startswith(("LC_", "PYTHON")) or k in ("LANG", "LANGUAGE"))}
     e.update(env)
     out = subprocess.run([sys.executable, "-c", PROBE, path], env=e,
                          capture_output=True, text=True, check=True).stdout
     return out.split()          # [utf8_mode, encoding, what it read]
+
+
+def a_utf8_locale():
+    """A UTF-8 locale this machine has: candidates, because macOS and glibc
+    do not install the same set. The name never reaches the output."""
+    saved = locale.setlocale(locale.LC_CTYPE)
+    try:
+        for name in ("en_US.UTF-8", "C.UTF-8", "C.utf8"):
+            try:
+                locale.setlocale(locale.LC_CTYPE, name)
+                return name
+            except locale.Error:
+                pass
+    finally:
+        locale.setlocale(locale.LC_CTYPE, saved)
+    raise SystemExit("no UTF-8 locale here to play the laptop")
 
 
 print("ONE FILE, FOUR READINGS")
@@ -77,7 +98,7 @@ with tempfile.TemporaryDirectory() as tmp:
     print()
     print("   Only 'ascii' raises. utf-8 gives four characters, cp1252 gives")
     print("   five, and the extra one is not an error -- C3 and A9 are both")
-    print("   perfectly good Windows-1252 letters. 'rb' gives six bytes and")
+    print("   perfectly good Windows-1252 characters. 'rb' gives six bytes and")
     print("   no opinion, which is the only honest answer before you know")
     print("   what wrote the file.")
     print()
@@ -86,10 +107,10 @@ with tempfile.TemporaryDirectory() as tmp:
     print()
     print("   %-22s %-9s %-13s %s"
           % ("machine", "default", "result", "how it fails"))
-    for machine, default in (("laptop, UTF-8 locale", "utf-8"),):
-        shown = ascii(RAW.decode(default).rstrip("\n")).strip("'")
-        print("   %-22s %-9s %-13s %s" % (machine, default, shown, "it does not"))
-    _, default, shown = container(path)
+    _, default, shown = child(path, LC_ALL=a_utf8_locale())
+    print("   %-22s %-9s %-13s %s"
+          % ("laptop, UTF-8 locale", default, shown, "it does not"))
+    _, default, shown = child(path)
     print("   %-22s %-9s %-13s %s"
           % ("container, no locale", default, shown, "it does not -- rescued"))
     shown = ascii(RAW.decode("cp1252").rstrip("\n")).strip("'")
@@ -110,7 +131,7 @@ with tempfile.TemporaryDirectory() as tmp:
                        ("LC_ALL=C", {"LC_ALL": "C"}),
                        ("PYTHONUTF8=0", {"PYTHONUTF8": "0"}),
                        ("LC_ALL=C  PYTHONUTF8=0", {"LC_ALL": "C", "PYTHONUTF8": "0"})):
-        mode, default, shown = container(path, **env)
+        mode, default, shown = child(path, **env)
         print("     %-26s %-10s %-8s %s" % (label, mode, default, shown))
     print()
     print("   It takes both. LC_ALL=C on its own is a C locale, which PEP 540")
@@ -118,17 +139,17 @@ with tempfile.TemporaryDirectory() as tmp:
     print("   unset, so PEP 538 coerces the missing locale to C.UTF-8 first.")
     print("   Only together do they put open() back on ASCII -- and the same")
     print("   two variables do it to the laptop. They cannot do it to the")
-    print("   Windows box: cp1252 has a letter for every byte in this file, so")
+    print("   Windows box: cp1252 has a character for every byte in this file, so")
     print("   there is nothing for it to refuse.")
     print()
 
 print("AND WHAT PEP 686 DOES TO EACH ROW")
 print()
-print("   laptop      no change -- it was already UTF-8 Mode in all but name")
+print("   laptop      no change -- its locale already said UTF-8")
 print("   container   no change -- it has run in UTF-8 Mode since 3.7, and")
 print("               PEP 686 makes every other machine do what it already did")
 print("   Windows     CHANGED, silently: the same bytes now decode as UTF-8,")
-print("               so the third row above turns into the first one.")
+print("               so the Windows row turns into the laptop's.")
 print("               Right answer, no announcement -- and for a file that")
 print("               really was cp1252, the reverse: it starts raising.")
 print()
@@ -137,8 +158,10 @@ print("   PYTHONUTF8=0 is not a default -- it is somebody saying no.")
 print()
 print("   The pattern is the point. A default that becomes correct is still")
 print("   a default that changed, and the code that was relying on the old")
-print("   one gets no warning at all. Every row above is settled for good")
-print("   by one keyword argument, today, on every Python.")
+print("   one hears nothing unless it asked: the only warning PEP 686 relies")
+print("   on is PEP 597's EncodingWarning, and that is off by default. Every")
+print("   row above is settled for good by one keyword argument, today, on")
+print("   every Python.")
 print()
 
 print("THE ONE LINE")
