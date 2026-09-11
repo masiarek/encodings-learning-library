@@ -24,6 +24,7 @@ A [byte](../01_Bits_and_Bytes/a_byte_is_eight_bits/README.md) is a number. Text 
 | 16 | [Logical and visual order](logical_and_visual_order/README.md) | Why is the order you store not the order you see, and why is a screenshot not evidence? | stub |
 | 17 | [Unicode in identifiers](unicode_in_identifiers/README.md) | Why does `ﬁle = 2` define `file`, and why does Rust refuse to do that? | written, 2026-09-06 |
 | 18 | ["Supports Unicode" is a level, not a yes](what_a_regex_matches/README.md) | Your regex engine says it handles Unicode — which of UTS #18's fifteen requirements does it actually meet? | written, 2026-09-08 |
+| 19 | [`rune` is an `int32`](rune_is_an_int32/README.md) | Go and .NET both call one code point a rune — why will Go's hold `-1`, and why does its loop count a cut-off euro sign twice? | written, 2026-09-10 |
 
 ## The through-line
 

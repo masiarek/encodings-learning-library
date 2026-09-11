@@ -47,7 +47,7 @@ It also names, without ceremony, the thing that trips people writing their first
 
 ## Three more worth knowing by name
 
-**`mbrune(3)`** — the BSD **rune** API: `sgetrune`, `sputrune`, `mbrune`. This is the pre-standard ancestor of `wchar_t`, from Plan 9, and it is where Go got the word `rune` for the type Rust calls [`char` ↗](https://masiarek.github.io/rust-learning-library/14_Strings/meet_the_char/index.html). Still shipped, still five minutes to read, and it explains a naming choice that otherwise looks arbitrary.
+**`mbrune(3)`** — the 4.4BSD **rune** API, with `sgetrune` and `sputrune` on its sister page `rune(3)`. The page says two things worth knowing: the whole API is deprecated in favour of C99's wide characters, and three of its functions first appeared in Plan 9, as `utfrune`, `utfrrune` and `utfutf` — Plan 9 being where UTF-8 was born and where the word `rune` comes from. It is not an ancestor of `wchar_t`: macOS's headers declare `rune_t` *as* `wchar_t`. Go took the word for its own type and made it an `int32` that checks nothing, which is the subject of [`rune` is an `int32`](../../02_Characters/rune_is_an_int32/README.md). Still shipped, still five minutes to read, and it explains a naming choice that otherwise looks arbitrary.
 
 **`vis(3)`** — "visually encode characters". A single page containing **six** invertible escaping formats, selected by flag: `VIS_OCTAL`, `VIS_CSTYLE`, `VIS_HTTPSTYLE` (percent), `VIS_MIMESTYLE` (`=`), and two more. Its one-sentence invariant is the definition worth stealing: *a unique, invertible representation composed entirely of graphic characters.* That is the whole subject of [Escaping into ASCII](../../03_Encodings/escaping_into_ascii/README.md), written as a C API in 1996.
 

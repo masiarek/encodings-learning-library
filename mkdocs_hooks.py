@@ -147,6 +147,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "logical_and_visual_order",
         "unicode_in_identifiers",
         "what_a_regex_matches",
+        "rune_is_an_int32",
     ],
     # The number is settled; now how to write it as bytes.
     "03_Encodings": [

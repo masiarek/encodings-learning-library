@@ -1,0 +1,59 @@
+1. HOW MANY VALUES EACH LANGUAGE WILL CALL ONE CHARACTER
+   Go       a rune is an int32          4,294,967,296   every one of them
+   Python   chr() takes a code point        1,114,112   surrogates included
+   Rust     a char is a scalar value        1,112,064   surrogates refused
+
+   chr(-1)         ValueError
+   chr(0x41)       'A'        .encode('utf-8') -> 41
+   chr(0xD800)     '\ud800'   .encode('utf-8') -> UnicodeEncodeError
+   chr(0x110000)   ValueError
+   Python checks the RANGE at chr() and leaves the surrogates to .encode().
+   Rust checks both, at char::from_u32. A Go rune checks neither: it is an
+   int32, and 4,293,855,232 int32 values are not a scalar value --
+   the only kind of number UTF-8 can write. -1, 0xD800 and 0x110000 are three
+   of them, and nothing in the type records which.
+
+2. ONE U+FFFD PER MISTAKE, PER BYTE, OR PER RUN
+   bytes        mistakes at      per mistake  per byte  per run   what they are
+   c3           0-1                        1         1        1   é cut after 1 of its 2 bytes
+   e2 82        0-2                        1         2        1   € cut after 2 of its 3 bytes
+   f0 9f 98     0-3                        1         3        1   😀 cut after 3 of its 4 bytes
+   ed a0 80     0-1 1-2 2-3                3         3        1   U+D800 in the shape of UTF-8
+   f4 90 80 80  0-1 1-2 2-3 3-4            4         4        1   one past U+10FFFF, same shape
+
+   'mistakes at' is what Python's decoder reports: byte offsets, end excluded.
+   per mistake  is what Python writes -- counted, not computed.
+   per byte     is what Go's `for range` loop writes, and what
+                utf8.RuneCountInString counts as that many runes.
+   per run      is what Go's strings.ToValidUTF8 writes.
+   The last two are computed here from Python's own report; the page puts
+   them beside Go itself.
+
+   One decoder, one report, three policies. Per mistake and per byte agree
+   whenever every mistake is one byte long, and part only when one is
+   longer -- which happens when a character starts correctly and is cut
+   short. The first three rows are that one accident at three lengths.
+   Per run parts from both whenever mistakes touch, and rows 4 and 5 are
+   nothing but touching one-byte mistakes.
+
+3. EVERY INPUT OF ONE OR TWO BYTES
+   inputs                                          65,792
+   per mistake and per byte agree                  64,576
+   they differ                                      1,216
+   ...differing, with a mistake over one byte       1,216   every one
+   ...agreeing, with a mistake over one byte            0   none
+
+   Which ones? The program was never given the UTF-8 table. It read these
+   ranges off the inputs where the two counts parted:
+       lead E0     then A0-BF     32
+       lead E1-EC  then 80-BF    768
+       lead ED     then 80-9F     32
+       lead EE-EF  then 80-BF    128
+       lead F0     then 90-BF     48
+       lead F1-F3  then 80-BF    192
+       lead F4     then 80-8F     16
+   Every row is the first two bytes of a three- or four-byte character with
+   nothing after them. Note where ED and F4 stop: 9F and 8F. ED A0 would
+   begin a surrogate and F4 90 a number past U+10FFFF, so the decoder turns
+   the pair down at its second byte and reports the lead byte alone -- a
+   one-byte mistake, which is why the two counts agree there.

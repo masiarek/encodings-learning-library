@@ -1,0 +1,48 @@
+PART ONE -- FIVE FIELDS
+------------------------------------------------------------------------
+
+   the bytes that came back   U+FFFD  len()  Go runes   what it was
+   63 61 66 c3                     1      4         4   café, cut inside the é
+   35 20 e2 82                     1      3         4   5 €, cut inside the €
+   68 69 20 f0 9f 98               1      4         6   hi 😀, cut inside the 😀
+   c5 bc c3 b3 c5                  1      3         3   żółw, cut inside the ł
+   e6 97 a5 e6 9c                  1      2         3   日本, cut inside the 本
+
+   Every field holds exactly ONE mistake, so Python writes one U+FFFD each
+   time and len() counts it as one character. Go counts the same mistake as
+   one rune per byte it spans:
+
+      the mistake is 1 byte  long   Go's count is +0   café, cut inside the é
+      the mistake is 2 bytes long   Go's count is +1   5 €, cut inside the €
+      the mistake is 3 bytes long   Go's count is +2   hi 😀, cut inside the 😀
+      the mistake is 1 byte  long   Go's count is +0   żółw, cut inside the ł
+      the mistake is 2 bytes long   Go's count is +1   日本, cut inside the 本
+
+   So the two lengths agree on exactly the fields cut ONE byte into a
+   character -- café and żółw -- and everywhere else Go's is longer by the
+   bytes that were kept, minus one.
+
+PART TWO -- THE FRONT END AND THE BACK END
+------------------------------------------------------------------------
+
+   A Go front end refuses anything over 4 runes. A Python back end
+   stores whatever it is given, and would call it len() characters long.
+
+   refused by Go, yet 4 characters or fewer to Python:
+      6 runes to Go, 4 characters to Python   hi 😀, cut inside the 😀
+
+   1 of the 5 fields. Not an exotic input: many fixed-width fields cut
+   a value to their byte width rather than refuse it, and here that leaves
+   the two services disagreeing about whether the value is too long.
+   Neither has misread a byte -- they found the same mistake and counted it
+   by different rules. A limit that crosses a language has to say what it
+   counts, and whether it counts before or after the bytes are decoded.
+
+PART THREE -- THE RULE, FROM THE BYTES ALONE
+------------------------------------------------------------------------
+
+   Find where the field was cut. If the last character kept only its first
+   byte, the mistake is one byte long, and one byte is one marker under any
+   policy. If it kept two or more of its bytes, Go counts every one of them
+   and Python counts the mistake once: the difference is the bytes kept,
+   minus one. The bytes after the cut do not matter -- they are gone.

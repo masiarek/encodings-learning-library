@@ -1,0 +1,35 @@
+1. A RUNE IN RUST IS ONE LINE, AND IT CHECKS NOTHING
+   type Rune = i32;
+   TypeId::of::<Rune>() == TypeId::of::<i32>()   true
+   TypeId::of::<char>() == TypeId::of::<u32>()   false
+   The alias is gone before anything can ask about it: a Rune IS an i32,
+   the way Go's rune is an int32. A char is not a name for u32. It is a
+   type of its own, and the only way in is a constructor that can say no.
+
+        value    as a Rune   as a char
+           -1           -1   refused before char is asked: no u32 is negative
+         0x41           65   Some(U+0041)
+         0xE9          233   Some(U+00E9)
+       0xD800        55296   None
+     0x10FFFF      1114111   Some(U+10FFFF)
+     0x110000      1114112   None
+   All six are Runes, because every i32 is. Three of them are not a char,
+   and nothing in a Rune says which three.
+
+   size_of::<Option<Rune>>()   8   <- no value is off limits, so None needs a tag
+   size_of::<Option<char>>()   4   <- None is kept in a value no char may hold
+
+2. THE SAME FIVE MISTAKES, HANDED BACK AS SLICES
+   bytes        invalid chunks        lossy  per byte   what they are
+   c3           [c3]                      1         1   é cut after 1 of its 2 bytes
+   e2 82        [e2 82]                   1         2   € cut after 2 of its 3 bytes
+   f0 9f 98     [f0 9f 98]                1         3   😀 cut after 3 of its 4 bytes
+   ed a0 80     [ed] [a0] [80]            3         3   U+D800 in the shape of UTF-8
+   f4 90 80 80  [f4] [90] [80] [80]       4         4   one past U+10FFFF, same shape
+   utf8_chunks() walks the original bytes and hands each mistake back as a
+   slice of them. from_utf8_lossy writes one U+FFFD per slice, because each
+   slice is one maximal subpart -- the same count the Python example gets
+   from its own decoder. Add up the slice LENGTHS instead and you have what
+   Go's `for range` loop writes. A decoder has to know how long a mistake is
+   to carry on after it, so the per-byte count is never lost -- only rounded
+   down to one.
