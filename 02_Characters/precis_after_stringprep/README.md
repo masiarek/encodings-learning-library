@@ -25,7 +25,7 @@ A list of the forbidden has one structural problem: **Unicode keeps growing, and
 | what the document holds | tables of the **forbidden** | a derivation of the **allowed** |
 | the Unicode table | **frozen** at 3.2 | **live**, whichever your build has |
 | a character invented last year | permanently refused | admitted if its properties qualify |
-| two implementations | agree, always | may disagree — see below |
+| two implementations | agree by design — CPython's disagreed with the RFC until a [2026 fix](../preparing_a_string/README.md#the-step-the-pin-did-not-reach) | may disagree — see below |
 
 ## Two classes, because a username and a password are not the same kind of string
 
