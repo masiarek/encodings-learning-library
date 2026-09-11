@@ -37,8 +37,9 @@
 
    The middle row is the honest default: under a C locale with UTF-8
    Mode off, open() decodes as ASCII -- so any byte over 127 ends the
-   program. That is what a container, a cron job and a systemd unit
-   look like unless somebody set a variable.
+   program. Somebody has to switch the mode off to get it, though. A
+   container, a cron job or a systemd unit that sets nothing behaves
+   like the bottom row, not this one.
 
    The bottom row turned UTF-8 Mode on WITHOUT being asked. PEP 540
    reads a C locale as a machine describing its own configuration
@@ -46,10 +47,12 @@
    through that; the point here is only that the default has to be
    asked about rather than assumed.
 
-   The print() column is the same bet made on the way OUT, and it is
-   why a script that prints an e-acute happily in your terminal dies
-   under cron: cron does not set your locale. Nothing about the
-   program changed -- only who started it.
+   The print() column is the same bet made on the way OUT. A script
+   that prints an e-acute happily in your terminal raises
+   UnicodeEncodeError in the middle row and in neither of the others
+   -- so not under a bare cron job, whose empty environment gets the
+   bottom row's answer. Nothing about the program changes from row to
+   row; only the environment it was started in.
 
    io.text_encoding(None) answers 'locale' rather than a name. That
    string IS the encoding argument that means 'go and ask' -- it is

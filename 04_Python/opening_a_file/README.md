@@ -24,7 +24,7 @@ The two halves meet on stdout, and [A pipe is not a terminal](../../06_Terminal/
 
 ## What the bet is on
 
-`open()` in text mode has to turn bytes into a `str`, so it needs an encoding. Give it none and it asks the C library what the current locale's encoding is, and uses that.
+`open()` in text mode has to turn bytes into a `str`, so it needs an encoding. Give it none and it asks the C library what the current locale's encoding is, and uses that — unless UTF-8 Mode is on, in which case it uses UTF-8 and asks nobody.
 
 That is a question about the machine, not about the file. The file has no encoding recorded anywhere — [a file is bytes](../../01_Bits_and_Bytes/a_byte_is_eight_bits/README.md), and nothing in it says what they mean. So the same script, the same file, and two machines give you two different strings, and on a good day one of them raises.
 
@@ -33,10 +33,11 @@ The values you will actually meet:
 | where it runs | the locale's encoding | what `open(path)` does with UTF-8 bytes |
 |---|---|---|
 | your laptop, a UTF-8 locale | UTF-8 | reads correctly |
-| a container, cron, systemd, CI | ASCII (the C locale) | `UnicodeDecodeError` on the first non-ASCII byte |
+| a container, cron, systemd or CI with no locale set | ASCII (the C locale) | reads correctly, because Python 3.7+ overrides a C locale (PEPs 538 and 540) |
+| the same C locale, with UTF-8 Mode switched off (`LC_ALL=C`, `PYTHONUTF8=0`) | ASCII | `UnicodeDecodeError` on the first non-ASCII byte |
 | a colleague's Windows box | cp1252, or cp932, or… | reads *something*, raises nothing |
 
-The third row is the one that matters. The first two are a working program and a loud failure; the third is [mojibake](../../03_Encodings/mojibake/README.md) with a zero exit status, travelling onward into whatever you write next.
+The last row is the one that matters. The first three are a working program, a program that works only because Python overrode the machine, and a loud failure that somebody has to switch UTF-8 Mode off to reach; the fourth is [mojibake](../../03_Encodings/mojibake/README.md) with a zero exit status, travelling onward into whatever you write next.
 
 ## This page's own environment is rigged, and says so
 
@@ -91,8 +92,9 @@ So the program takes CONTRIBUTING's carve-out for a lesson whose subject *is* th
 
    The middle row is the honest default: under a C locale with UTF-8
    Mode off, open() decodes as ASCII -- so any byte over 127 ends the
-   program. That is what a container, a cron job and a systemd unit
-   look like unless somebody set a variable.
+   program. Somebody has to switch the mode off to get it, though. A
+   container, a cron job or a systemd unit that sets nothing behaves
+   like the bottom row, not this one.
 
    The bottom row turned UTF-8 Mode on WITHOUT being asked. PEP 540
    reads a C locale as a machine describing its own configuration
@@ -100,10 +102,12 @@ So the program takes CONTRIBUTING's carve-out for a lesson whose subject *is* th
    through that; the point here is only that the default has to be
    asked about rather than assumed.
 
-   The print() column is the same bet made on the way OUT, and it is
-   why a script that prints an e-acute happily in your terminal dies
-   under cron: cron does not set your locale. Nothing about the
-   program changed -- only who started it.
+   The print() column is the same bet made on the way OUT. A script
+   that prints an e-acute happily in your terminal raises
+   UnicodeEncodeError in the middle row and in neither of the others
+   -- so not under a bare cron job, whose empty environment gets the
+   bottom row's answer. Nothing about the program changes from row to
+   row; only the environment it was started in.
 
    io.text_encoding(None) answers 'locale' rather than a name. That
    string IS the encoding argument that means 'go and ask' -- it is
@@ -287,7 +291,7 @@ def load(path, encoding=None):
 
 ## What PEP 686 changes, and what it quietly does not
 
-[PEP 686 ↗](https://peps.python.org/pep-0686/) makes UTF-8 Mode the default, which removes the machine from the answer. Most code this silently **fixes**: the container that crashed and the Windows box that mangled will both start agreeing with the laptop.
+[PEP 686 ↗](https://peps.python.org/pep-0686/) makes UTF-8 Mode the default, which removes the machine from the answer. Most code this silently **fixes**: the Windows box that mangled, and a Unix machine on a legacy locale such as ISO-8859-1, will both start agreeing with the laptop. The container is not on that list, because it was there already — PEP 540 has given a C locale UTF-8 Mode since 3.7 — and a machine where somebody set `PYTHONUTF8=0` keeps the mode off after PEP 686 too.
 
 The interesting half is what it silently breaks, and it needs bytes that decode cleanly under *both* defaults — no exception either way, just a different answer. Section 3 of the program has the canonical pair: `C3 A9` is `é` in UTF-8 and `Ã©` in cp1252, and both are valid. A Windows program that was correctly reading a cp1252 file will, after the flip, read the same bytes as UTF-8 and get different characters, with nothing raised and nothing logged.
 
@@ -301,7 +305,7 @@ The louder direction — a genuine cp1252 file read as UTF-8 — raises on the f
 
 ## If you are coming from Python or ABAP
 
-**Python.** The rule is one line long — pass `encoding=` at every text boundary — and the boundaries are more numerous than `open()`: `subprocess.run(text=True)`, `pathlib.Path.read_text()`, `csv`, `configparser`, `json.load` on a file object, `tempfile` in text mode, and `sys.stdout` itself all make the same guess. Three habits worth the keystrokes. Use `errors=` deliberately rather than reaching for it in a panic — [Encode, decode and errors](../encode_decode_and_errors/README.md) has the eight of them, and `'ignore'` is never the answer. Prefer `'rb'` plus an explicit `.decode()` when you do not yet know what a file is, which is [the habit this whole library teaches](../../10_Best_Practices/interfaces_and_storage/README.md): look at the bytes, then decide. And for output, `print()` inherits `sys.stdout`'s encoding from the environment, so a script that prints an `é` on your terminal can raise under `cron` — `PYTHONIOENCODING=utf-8` in the unit file is the fix, and naming it beats discovering it.
+**Python.** The rule is one line long — pass `encoding=` at every text boundary — and the boundaries are more numerous than `open()`: `subprocess.run(text=True)`, `pathlib.Path.read_text()`, `csv`, `configparser`, `json.load` on a file object, `tempfile` in text mode, and `sys.stdout` itself all make the same guess. Three habits worth the keystrokes. Use `errors=` deliberately rather than reaching for it in a panic — [Encode, decode and errors](../encode_decode_and_errors/README.md) has the eight of them, and `'ignore'` is never the answer. Prefer `'rb'` plus an explicit `.decode()` when you do not yet know what a file is, which is [the habit this whole library teaches](../../10_Best_Practices/interfaces_and_storage/README.md): look at the bytes, then decide. And for output, `print()` inherits `sys.stdout`'s encoding from the environment, so a script that prints an `é` on your terminal can fail elsewhere in two ways: a C locale with UTF-8 Mode switched off raises `UnicodeEncodeError` on the `é`, and a legacy locale such as ISO-8859-1 writes the `é` without complaint — as one Latin-1 byte, which a UTF-8 reader then cannot decode — and raises only on a character it has no room for, such as an emoji. A bare `cron` job is neither: its empty environment gets UTF-8 Mode, like section 1's bottom row. `PYTHONIOENCODING=utf-8` in the job's environment fixes both, and naming it beats discovering it.
 
 **ABAP.** *(Not machine-checked — CI cannot run ABAP.)* ABAP made the argument compulsory where Python made it optional, and the comparison flatters ABAP. `OPEN DATASET` will not compile without a mode: `IN BINARY MODE` is Python's `'rb'`, and `IN TEXT MODE` *requires* an `ENCODING` addition. `ENCODING UTF-8` is `encoding='utf-8'` and is what you want; `ENCODING DEFAULT` is the bet — on a Unicode system it resolves to UTF-8, on a non-Unicode one to the system code page — and `ENCODING NON-UNICODE` asks for that code page explicitly. So the failure mode Python has does not exist here; what does exist is `ENCODING DEFAULT` written by habit in a program that will one day be read on a system configured differently, which is the same bug with a longer name. For in-memory conversion the pair is `cl_abap_conv_in_ce` / `cl_abap_conv_out_ce` (newer systems: `cl_abap_conv_codepage`), and any code-page number you find in a document is something to verify against the system that will run the job rather than to copy.
 
