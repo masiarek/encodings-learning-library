@@ -4,12 +4,13 @@
 
 **One line:** Material that is not a lesson: things you review, print, or come back to after the reading is done.
 
-The thirteen chapters before this one are the course. This one is what you use once a page has been read: spaced repetition, which is the only tool here that does anything about forgetting, and a corpus, which is what you point at your own code once you believe you have understood it.
+The thirteen chapters before this one are the course. This one is what you use once a page has been read: spaced repetition, which is the only tool here that does anything about forgetting, a corpus, which is what you point at your own code once you believe you have understood it, and a field guide to the words other people's examples are made of.
 
 | | What it is |
 |---|---|
 | [Anki: hexadecimal](anki/README.md) | 22 flashcards on hex, every snippet compiled and run in four languages first |
 | [The hard strings](hard_strings/README.md) | 19 test strings, one per behaviour, with a column per check saying which of them reaches each row |
+| [The typical words](typical_words/README.md) | the words *other people's* examples are made of — `café`, `naïve`, `Straße`, `文字化け`, `💩` — what each one is there to show, and which page here shows the same thing |
 
 ## Why a deck at all, when the pages are right there
 

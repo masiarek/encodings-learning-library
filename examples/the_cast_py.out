@@ -30,6 +30,8 @@
                                 its twin: identical on screen, unequal in memory
        4      7       4     4   'żółw'
                                 Polish: three of four letters cost two bytes
+       4      7       4     4   'Łódź'
+                                Polish again, for what żółw cannot show -- section 6
        3      9       3     6   '日本語'
                                 three chars, nine bytes, six columns
        5     18       8     6   '👨\u200d👩\u200d👧'
@@ -54,3 +56,25 @@
    'ß'.upper() -> 'SS': 1 char in, 2 out
    Case mapping is not one character in, one character out -- which is
    why a fixed-size buffer around .upper() is a bug waiting for German.
+
+6. WHAT 'Łódź' SHOWS THAT 'żółw' CANNOT
+   'żółw'   ISO-8859-2 BF F3 B3 77   Windows-1250 BF F3 B3 77   the same
+   'Łódź'   ISO-8859-2 A3 F3 64 BC   Windows-1250 A3 F3 64 9F   DIFFERENT
+   Both Polish tables can write both words, and only 'Łódź' shows
+   that they are two tables: its 'ź' is BC in one and 9F in the other.
+
+   Windows-1252 leaves 5 byte values empty: 81 8D 8F 90 9D
+   The cast members whose UTF-8 lands on one of them:
+      COMBINING ACUTE      U+0301  CC 81     COMBINING ACUTE ACCENT
+      'café' (NFD)        U+0301  CC 81     COMBINING ACUTE ACCENT
+      'Łódź'               U+0141  C5 81     LATIN CAPITAL LETTER L WITH STROKE
+      '👨\u200d👩\u200d👧'    U+200D  E2 80 8D  ZERO WIDTH JOINER
+   Two invisible characters, and one letter a reader can see. That
+   letter is why 'Łódź' is here: it shows a round trip that fails
+   without hiding the cause in a character nobody can see.
+
+   'Łódź' in NFD   0141 006F 0301 0064 007A 0301
+   marks dropped   'Łodz' -- the stroke is part of the letter, not a
+   mark on it, so no normalization form takes it off. 'żółw' has an 'ł'
+   too, but 'Łódź' starts with one, which is what a sort built on
+   stripping the marks trips over.

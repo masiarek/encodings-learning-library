@@ -2,7 +2,7 @@
 
 **Level:** reference · house convention
 
-**One line:** Nine characters, seven invisibles and six strings — the whole demonstration vocabulary of this library. Each one earns its place by a property no other member has, and a page reaching outside the list should be able to say which property it needed.
+**One line:** Nine characters, seven invisibles and seven strings — the whole demonstration vocabulary of this library. Each one earns its place by a property no other member has, and a page reaching outside the list should be able to say which property it needed.
 
 ## Why a fixed cast
 
@@ -59,12 +59,15 @@ Two more are named but never *used*, because they cannot be: `U+D800`, a lone su
 | 4 | 5 | 4 | 4 | `café` | the house string — one accent, so bytes and characters part company |
 | 5 | 6 | 5 | 4 | `café` | its decomposed twin: identical on screen, unequal in memory |
 | 4 | 7 | 4 | 4 | `żółw` | Polish: three of four letters cost two bytes |
+| 4 | 7 | 4 | 4 | `Łódź` | Polish again, for what `żółw` cannot show: its `ź` is `BC` in ISO-8859-2 and `9F` in Windows-1250, and its `Ł` is `C5 81` — a byte Windows-1252 leaves empty |
 | 3 | 9 | 3 | 6 | `日本語` | three characters, nine bytes, six columns |
 | 5 | 18 | 8 | 6 | `👨‍👩‍👧` | one family: three people, two joiners, one grapheme — and four different answers |
 
 **chars** counts code points; **UTF-16** counts 16-bit units, which is what Java, JavaScript and ABAP call a character — ABAP by way of [UCS-2](09_History/why_utf16_stayed/README.md), which reads a surrogate pair as two characters rather than as one; **cols** is the width a terminal gives it. No two of the four are the same question, which is why the family emoji is on the list.
 
 Longer Polish text, when a page needs a sentence rather than a word: **`zażółć gęślą jaźń`** — a pangram for the diacritics, and the string to reach for when demonstrating a code page that has to hold all nine of them.
+
+**`Łódź` joined the strings on 2026-09-10, under rule 1 below:** pages were already reaching past the cast for it, each for a reason `żółw` cannot supply. [Code pages](02_Characters/code_pages/README.md) needs a word the two Polish tables write differently, and every byte of `żółw` is the same in both. [The mojibake round trip](07_Real_Data/mojibake_round_trip/README.md) needs a letter whose UTF-8 lands on one of the five bytes Windows-1252 leaves empty, and `Ł` (`C5 81`) is the only letter in the cast that does — every other member that lands on one does it through an invisible character: `U+0301`, on its own and as the mark in the cast's second `café`, and the family's joiner. And [Sorting and collation](07_Real_Data/sorting_and_collation/README.md) needs a word whose *first* letter survives stripping the marks. Section 6 of the program below measures all three.
 
 ## The pair of bytes worth memorising
 
@@ -85,6 +88,8 @@ That is mojibake in three lines, and `Ã©` is the shape to recognise in the wil
 | code pages, and what a table cannot hold | `é` (in Latin-1), `ż` (not), `€` (1252 only) |
 | Windows-1252 against ISO-8859-1 | `€` at `0x80` |
 | mojibake | `é` — its UTF-8 bytes `C3 A9` read as Latin-1, which prints `Ã©` |
+| a mojibake repair that cannot round-trip | `Łódź` — `Ł` is `C5 81`, and `81` is one of the five bytes Windows-1252 leaves empty |
+| ISO-8859-2 against Windows-1250 | `Łódź` — its `ź` is `BC` in one and `9F` in the other, where every byte of `żółw` agrees |
 | UTF-16, surrogates, and the BMP | `😀` |
 | normalization | `café` against `café` — composed `U+00E9` against `e` + `U+0301`, identical on screen |
 | grapheme clusters | `👨‍👩‍👧` |
@@ -96,7 +101,7 @@ That is mojibake in three lines, and `Ã©` is the shape to recognise in the wil
 | decode failure | `U+FFFD` |
 | escape syntax, and text you cannot type | `ಠ` |
 | terminal width | `日本語` |
-| Polish text and diacritics | `żółw`, `zażółć gęślą jaźń` |
+| Polish text and diacritics | `żółw`, `Łódź`, `zażółć gęślą jaźń` |
 
 ## Rules
 
@@ -159,6 +164,7 @@ STRINGS = [
     ("café", "the house string -- one accent, so bytes and chars part"),
     ("café", "its twin: identical on screen, unequal in memory"),
     ("żółw", "Polish: three of four letters cost two bytes"),
+    ("Łódź", "Polish again, for what żółw cannot show -- section 6"),
     ("日本語", "three chars, nine bytes, six columns"),
     ("👨‍👩‍👧", "one family: three people, two joiners, one grapheme"),
 ]
@@ -237,6 +243,47 @@ def main() -> None:
     print(f"   {beta!r}.upper() -> {beta.upper()!r}: {len(beta)} char in, {len(beta.upper())} out")
     print("   Case mapping is not one character in, one character out -- which is")
     print("   why a fixed-size buffer around .upper() is a bug waiting for German.")
+    print()
+
+    print("6. WHAT 'Łódź' SHOWS THAT 'żółw' CANNOT")
+    for word in ("żółw", "Łódź"):
+        latin2 = word.encode("iso-8859-2").hex(" ").upper()
+        win1250 = word.encode("cp1250").hex(" ").upper()
+        verdict = "the same" if latin2 == win1250 else "DIFFERENT"
+        print(f"   {word!r:<7}  ISO-8859-2 {latin2}   Windows-1250 {win1250}   {verdict}")
+    print("   Both Polish tables can write both words, and only 'Łódź' shows")
+    print("   that they are two tables: its 'ź' is BC in one and 9F in the other.")
+    print()
+    empty = []
+    for b in range(0x80, 0x100):
+        try:
+            bytes([b]).decode("cp1252")
+        except UnicodeDecodeError:
+            empty.append(b)
+    print(f"   Windows-1252 leaves {len(empty)} byte values empty: "
+          + " ".join(f"{b:02X}" for b in empty))
+    print("   The cast members whose UTF-8 lands on one of them:")
+    members = [(repr(ch), ch) for ch, _ in CORE + [SPECIALIST]]
+    members += [(name, ch) for ch, name, _ in INVISIBLE]
+    for s, _ in STRINGS:
+        label = repr(s) if unicodedata.is_normalized("NFC", s) else repr(s) + " (NFD)"
+        members.append((label, s))
+    for label, s in members:
+        for c in dict.fromkeys(s):
+            utf8 = c.encode()
+            if any(b in empty for b in utf8):
+                print(f"      {label:<20} U+{ord(c):04X}  {utf8.hex(' ').upper():<9} {unicodedata.name(c)}")
+    print("   Two invisible characters, and one letter a reader can see. That")
+    print("   letter is why 'Łódź' is here: it shows a round trip that fails")
+    print("   without hiding the cause in a character nobody can see.")
+    print()
+    nfd = unicodedata.normalize("NFD", "Łódź")
+    bare = "".join(c for c in nfd if not unicodedata.combining(c))
+    print(f"   'Łódź' in NFD   {' '.join(f'{ord(c):04X}' for c in nfd)}")
+    print(f"   marks dropped   {bare!r} -- the stroke is part of the letter, not a")
+    print("   mark on it, so no normalization form takes it off. 'żółw' has an 'ł'")
+    print("   too, but 'Łódź' starts with one, which is what a sort built on")
+    print("   stripping the marks trips over.")
 
 
 if __name__ == "__main__":
@@ -280,6 +327,8 @@ if __name__ == "__main__":
                                 its twin: identical on screen, unequal in memory
        4      7       4     4   'żółw'
                                 Polish: three of four letters cost two bytes
+       4      7       4     4   'Łódź'
+                                Polish again, for what żółw cannot show -- section 6
        3      9       3     6   '日本語'
                                 three chars, nine bytes, six columns
        5     18       8     6   '👨\u200d👩\u200d👧'
@@ -304,6 +353,28 @@ if __name__ == "__main__":
    'ß'.upper() -> 'SS': 1 char in, 2 out
    Case mapping is not one character in, one character out -- which is
    why a fixed-size buffer around .upper() is a bug waiting for German.
+
+6. WHAT 'Łódź' SHOWS THAT 'żółw' CANNOT
+   'żółw'   ISO-8859-2 BF F3 B3 77   Windows-1250 BF F3 B3 77   the same
+   'Łódź'   ISO-8859-2 A3 F3 64 BC   Windows-1250 A3 F3 64 9F   DIFFERENT
+   Both Polish tables can write both words, and only 'Łódź' shows
+   that they are two tables: its 'ź' is BC in one and 9F in the other.
+
+   Windows-1252 leaves 5 byte values empty: 81 8D 8F 90 9D
+   The cast members whose UTF-8 lands on one of them:
+      COMBINING ACUTE      U+0301  CC 81     COMBINING ACUTE ACCENT
+      'café' (NFD)        U+0301  CC 81     COMBINING ACUTE ACCENT
+      'Łódź'               U+0141  C5 81     LATIN CAPITAL LETTER L WITH STROKE
+      '👨\u200d👩\u200d👧'    U+200D  E2 80 8D  ZERO WIDTH JOINER
+   Two invisible characters, and one letter a reader can see. That
+   letter is why 'Łódź' is here: it shows a round trip that fails
+   without hiding the cause in a character nobody can see.
+
+   'Łódź' in NFD   0141 006F 0301 0064 007A 0301
+   marks dropped   'Łodz' -- the stroke is part of the letter, not a
+   mark on it, so no normalization form takes it off. 'żółw' has an 'ł'
+   too, but 'Łódź' starts with one, which is what a sort built on
+   stripping the marks trips over.
 ```
 <!-- /output -->
 

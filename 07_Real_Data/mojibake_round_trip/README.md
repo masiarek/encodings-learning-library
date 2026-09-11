@@ -29,7 +29,7 @@ So the round trip fails on exactly the rows a European master-data table is full
 - **A strict reader refuses.** Python's `cp1252` codec raises `UnicodeDecodeError` on the hole, naming the byte and the offset. This is the *good* outcome — the reader is telling you the label is wrong before anything is written down.
 - **A lenient reader does not.** Most readers outside Python map the five holes to the C1 controls rather than refusing, so the byte survives into the string and the text looks repairable. It is not: Python's `cp1252` *encoder* has no entry to write those characters back to, so the re-encode fails and the guard hands you your input back unchanged.
 
-This page uses `Ł` because it is the sharpest available case and **no member of the [cast](../../CAST.md) has the property** — the cast's `é` (`C3 A9`), `ż` (`C5 BC`), `ß` (`C3 9F`) and `€` (`E2 82 AC`) all avoid the five holes, so none of them can show a round trip that fails.
+This page uses `Ł` because it is the sharpest available case, and it is the reason `Łódź` is in the [cast](../../CAST.md): **`Ł` is the one letter there whose UTF-8 lands on a hole.** The cast's `é` (`C3 A9`), `ż` (`C5 BC`), `ß` (`C3 9F`) and `€` (`E2 82 AC`) all avoid the five, so none of them can show a round trip that fails. Two *invisible* characters in the cast do land on one — `U+0301` is `CC 81`, and the family's zero-width joiner is `E2 80 8D` — so a `café` spelled with a separate `U+0301` cannot make the trip either, and nothing on the screen says why.
 
 ## The two losses that look alike and blame different people
 

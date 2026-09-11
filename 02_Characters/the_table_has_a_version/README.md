@@ -241,6 +241,27 @@ The mechanism differs in a way worth holding on to. Python reads its table at ru
 
 Which is the sharper failure, because it is invisible in the diff. Nothing in the source changed; the toolchain did.
 
+## The rules have a version too
+
+Everything above is about the character data. The algorithms that read it carry a version as well, and the first one most people meet is the question with the most obvious-looking answer: how many characters is this word?
+
+```text title="Measured on one Mac, macOS 26.6.2, 2026-09-10 — not machine-checked: a grapheme cluster count, and every tool below brings its own rules"
+                                              namaste   hindi
+   node v20.20.2, ICU 78.3      Unicode 17.0        3       2
+   Swift 6.3.3                                      3       2
+   perl v5.42.0 (/usr/local)    Unicode 16.0        3       2
+   perl v5.34.1 (/usr/bin)      Unicode 13.0        4       3
+   ruby 2.6.10  (/usr/bin)      Unicode 12.1        4       3
+   rg 15.1.0 -P, PCRE2 10.45                        4       3
+
+   namaste   नमस्ते   U+0928 U+092E U+0938 U+094D U+0924 U+0947
+   hindi     हिन्दी   U+0939 U+093F U+0928 U+094D U+0926 U+0940
+```
+
+Six code points each, two answers each, one machine — three tools on each side. And the line does not run between old software and new: the old answer comes from **both interpreters macOS itself installs in `/usr/bin`**, and from ripgrep's PCRE2, which nobody would call old. What decides the column is one rule, `GB9c`, which [UAX #29 ↗](https://www.unicode.org/reports/tr29/) gained for Unicode 15.1 — revision 43 of the annex has it and revision 41 does not. It keeps consonant, virama and the next consonant together as one cluster — the `स्त` in the middle of namaste — where the earlier rules broke after the virama. [A code point is not a character](../a_code_point_is_not_a_character/README.md#and-the-rules-themselves-have-a-version) measures the same rule with four other segmenters, on the conjunct `क्ष`.
+
+So a grapheme count is a lookup in exactly the sense of the table below, against two versioned things at once — the character properties, and the rules that read them — and it belongs in a sentence with a date on it, which is where this one is.
+
 ## So what do you actually record?
 
 Three groups, and the whole discipline is telling them apart.
@@ -249,7 +270,7 @@ Three groups, and the whole discipline is telling them apart.
 |---|---|---|
 | **Arithmetic** | `0x110000 − 2048 = 1,112,064`; `char::MAX`; the surrogate hole | yes, under every version ever published |
 | **Guaranteed** | a name (`LATIN SMALL LETTER E WITH ACUTE`); a code point (`U+00E9`); `U+FFFE` is a noncharacter | yes — these are written into the stability policy |
-| **A lookup** | how many code points are assigned; whether `U+11DB0` is one; `is_alphabetic`, `is_uppercase`, `is_whitespace` | no — put it in a sentence with a date on it |
+| **A lookup** | how many code points are assigned; whether `U+11DB0` is one; `is_alphabetic`, `is_uppercase`, `is_whitespace`; how many grapheme clusters a word has | no — put it in a sentence with a date on it |
 
 The middle row is doing more work than it looks. `is_alphabetic('é')` has been `true` since 1991 and will be `true` next year too, but *nothing promises that* — General_Category is not on the stability list. It is observed, not guaranteed, which is a different word and belongs in a different column.
 
@@ -269,6 +290,7 @@ The one measured survivor is worth knowing: [Unicode code points](../unicode_cod
 - `python3 -c "import unicodedata as u; print(u.name(chr(0x11DB0), 'not in your table'))"` — the character this page's Rust program deliberately refuses to answer for. Then ask `rustc` the same thing, and see whether your two agree.
 - Find a test in your own work that asserts on a character property rather than a character name, and decide which of the three rows of the table above it belongs in.
 - Ask the frozen table something modern: `unicodedata.ucd_3_2_0.name('😀', 'nope')`. Then ask why a 2002 table is still shipped in 2026.
+- Count the grapheme clusters in `नमस्ते` with the Perl your Mac shipped with, `/usr/bin/perl -CSA -Mutf8 -e 'my @g = "नमस्ते" =~ /\X/g; print scalar(@g), "\n"'`, then with any newer Perl you have. Same six code points, same regex; see whether the two agree.
 
 ## Practice
 

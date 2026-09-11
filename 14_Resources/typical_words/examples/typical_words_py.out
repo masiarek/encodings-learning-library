@@ -1,0 +1,155 @@
+1. THE WORDS, AND FOUR RULERS THAT NEED NO TABLE
+------------------------------------------------------------------------
+   chars  NFD  UTF-8  UTF-16      word
+   -- accented Latin
+       4    5      5       4  *   café
+       5    6      6       5      naïve
+       6    8      8       6      résumé
+      20   25     27      20      Iñtërnâtiônàlizætiøn
+   -- Central Europe
+       4    6      7       4  *   żółw
+       4    6      7       4  *   Łódź
+      17   25     26      17  *   zażółć gęślą jaźń
+      22   31     31      22      Árvíztűrő tükörfúrógép
+      38   53     53      38      Příliš žluťoučký kůň úpěl ďábelské ódy
+   -- case and normalization
+       6    6      7       6      Straße
+       8    9      9       8      İstanbul
+       8    8     16       8      ΟΔΥΣΣΕΥΣ
+       8   10     10       8      Ångström
+       6    8      8       6      Nguyễn
+       3    8      9       3      한국어
+   -- other scripts
+       6    6     12       6      Привет
+       8    9     16       8      Ελληνικά
+       3    3      9       3  *   日本語
+       4    4     12       4      文字化け
+       6    6     18       6      नमस्ते
+   -- above U+FFFF
+       1    1      4       2  *   😀
+       1    1      4       2      💩
+       1    1      4       2      𝄞
+       5    5     17       7      🤦🏼‍♂️
+       5    5     18       8  *   👨‍👩‍👧
+
+   'chars' counts code points as typed; 'NFD' counts them again with
+   every accent taken off as a mark of its own; 'UTF-8' is bytes;
+   'UTF-16' is the units Java, JavaScript and ABAP call characters.
+   A star marks a member of this library's own cast, in CAST.md.
+
+2. WHICH LEGACY TABLE CAN HOLD EACH WORD
+------------------------------------------------------------------------
+   8859-1   1252 8859-2   1250   1254   1253 KOI8-R   1251   SJIS EUC-KR   word
+      yes    yes    yes    yes    yes      .      .      .      .      .   café
+      yes    yes      .      .    yes      .      .      .      .      .   naïve
+      yes    yes    yes    yes    yes      .      .      .      .      .   résumé
+      yes    yes      .      .    yes      .      .      .      .      .   Iñtërnâtiônàlizætiøn
+        .      .    yes    yes      .      .      .      .      .      .   żółw
+        .      .    yes    yes      .      .      .      .      .      .   Łódź
+        .      .    yes    yes      .      .      .      .      .      .   zażółć gęślą jaźń
+        .      .    yes    yes      .      .      .      .      .      .   Árvíztűrő tükörfúrógép
+        .      .    yes    yes      .      .      .      .      .      .   Příliš žluťoučký kůň úpěl ďábelské ódy
+      yes    yes    yes    yes    yes      .      .      .      .    yes   Straße
+        .      .      .      .    yes      .      .      .      .      .   İstanbul
+        .      .      .      .      .    yes      .      .    yes    yes   ΟΔΥΣΣΕΥΣ
+      yes    yes      .      .    yes      .      .      .      .      .   Ångström
+        .      .      .      .      .      .      .      .      .      .   Nguyễn
+        .      .      .      .      .      .      .      .      .    yes   한국어
+        .      .      .      .      .      .    yes    yes    yes    yes   Привет
+        .      .      .      .      .    yes      .      .      .      .   Ελληνικά
+        .      .      .      .      .      .      .      .    yes    yes   日本語
+        .      .      .      .      .      .      .      .    yes    yes   文字化け
+        .      .      .      .      .      .      .      .      .      .   नमस्ते
+        .      .      .      .      .      .      .      .      .      .   😀
+        .      .      .      .      .      .      .      .      .      .   💩
+        .      .      .      .      .      .      .      .      .      .   𝄞
+        .      .      .      .      .      .      .      .      .      .   🤦🏼‍♂️
+        .      .      .      .      .      .      .      .      .      .   👨‍👩‍👧
+
+   7 of the words fit none of the ten:
+      Nguyễn  नमस्ते  😀  💩  𝄞  🤦🏼‍♂️  👨‍👩‍👧
+
+   Nor does a table built for Devanagari turn up anywhere else. Of every
+   codec named in Python's alias table, these can write 'नमस्ते' at all:
+      gb18030  utf_16  utf_16_be  utf_16_le  utf_32  utf_32_be  utf_32_le  utf_7  utf_8
+   The UTFs, and GB18030 -- the Chinese national standard, which maps
+   the whole of Unicode rather than one script.
+
+   Vietnamese has a Windows table of its own, 1258, and it does not
+   fill the gap so much as move it -- 'Nguyễn' fits in neither
+   normal form:
+      NFC      004E 0067 0075 0079 1EC5 006E            refuses U+1EC5
+      NFD      004E 0067 0075 0079 0065 0302 0303 006E  refuses U+0302
+      neither  004E 0067 0075 0079 00EA 0303 006E       4E 67 75 79 EA DE 6E
+   1258 carries the five Vietnamese tone marks as combining characters
+   and the vowel shapes as precomposed letters, so it wants the
+   e-circumflex composed and the tilde written after it -- a spelling
+   that no normalization form produces.
+
+3. THE MOJIBAKE EACH ONE IS FAMOUS FOR
+------------------------------------------------------------------------
+   written as  read as     the word, and what the reader gets
+   utf-8       cp1252      'café'         -> 'cafÃ©'
+   latin-1     utf-8       'café'         -> 'caf�'
+   utf-8       cp1252      'don’t'        -> 'donâ€™t'
+   utf-8       cp1250      'żółw'         -> 'ĹĽĂłĹ‚w'
+   cp1250      iso8859_2   'Łódź'         -> 'Łód\x9f'
+   iso8859_2   cp1250      'Łódź'         -> 'ŁódĽ'
+   iso8859_2   latin-1     'Árvíztűrő'    -> 'Árvíztûrõ'
+   koi8_r      cp1251      'Привет'       -> 'рТЙЧЕФ'
+   cp1251      koi8_r      'Привет'       -> 'оПХБЕР'
+   utf-8       shift_jis   '文字化け'         -> '譁�蟄怜喧縺�'
+   utf-8       cp1252      'café'         -> 'cafÃƒÂ©'   (misread twice)
+
+   'Привет' in KOI8-R           F0 D2 C9 D7 C5 D4
+   every top bit cleared        70 52 49 57 45 54   'pRIWET'
+   Clear the eighth bit of every byte and KOI8-R text is still
+   readable: Latin letters, with the case turned over.
+
+4. ABOVE U+FFFF: ONE CHARACTER, TWO UTF-16 UNITS
+------------------------------------------------------------------------
+   U+1F600   UTF-8 F0 9F 98 80   UTF-16 D83D DE00   GRINNING FACE
+   U+1F4A9   UTF-8 F0 9F 92 A9   UTF-16 D83D DCA9   PILE OF POO
+   U+1D11E   UTF-8 F0 9D 84 9E   UTF-16 D834 DD1E   MUSICAL SYMBOL G CLEF
+
+   the facepalm: 5 code points, 17 UTF-8 bytes, 7 UTF-16 units, one emoji to a reader
+      U+1F926  FACE PALM
+      U+1F3FC  EMOJI MODIFIER FITZPATRICK TYPE-3
+      U+200D   ZERO WIDTH JOINER
+      U+2642   MALE SIGN
+      U+FE0F   VARIATION SELECTOR-16
+   the family: 5 code points, 18 UTF-8 bytes, 8 UTF-16 units, one emoji to a reader
+      U+1F468  MAN
+      U+200D   ZERO WIDTH JOINER
+      U+1F469  WOMAN
+      U+200D   ZERO WIDTH JOINER
+      U+1F467  GIRL
+
+5. WHOLE SENTENCES: DOES THE PANGRAM COVER THE ALPHABET?
+------------------------------------------------------------------------
+   of the letters the language adds to ASCII (for Russian, of all 33)
+   Polish      9 of 9   missing none   zażółć gęślą jaźń
+   Polish      9 of 9   missing none   Pchnąć w tę łódź jeża lub ośm skrzyń fig
+   Czech      15 of 15  missing none   Příliš žluťoučký kůň úpěl ďábelské ódy
+   Hungarian   9 of 9   missing none   Árvíztűrő tükörfúrógép
+   German      3 of 4   missing ß      Zwölf Boxkämpfer jagten Eva quer über den Sylter Deich
+   Turkish     6 of 6   missing none   Pijamalı hasta, yağız şoföre çabucak güvendi.
+   Russian    33 of 33  missing none   Съешь же ещё этих мягких французских булок да выпей чаю
+
+6. STRIP THE MARKS: THE FOLK WAY TO ASCII
+------------------------------------------------------------------------
+   ASCII        cafe
+   ASCII        naive
+   ASCII        Nguyen
+   ASCII        Prilis zlutoucky kun upel dabelske ody
+   ASCII        Arvizturo tukorfurogep
+   keeps ß      Straße
+   keeps ł      zołw
+   keeps Ł      Łodz
+   keeps æ ø    Internationalizætiøn
+
+   Decompose, drop the combining marks, keep the rest. It works on
+   every letter whose accent Unicode writes as a separate mark, and
+   on nothing else: ß, ł, æ and ø have no decomposition at all, so
+   they come through untouched -- and so does every search, sort or
+   username check built on this recipe.

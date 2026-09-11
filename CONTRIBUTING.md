@@ -239,7 +239,7 @@ It reads prose only. Fenced blocks **and inline code spans** are stripped first,
 
 ## The cast
 
-**Demonstrate with a character from [CAST.md](CAST.md).** Nine characters, seven invisibles and six strings, each earning its place by a property no other member has — `é` for mojibake, `ż` for what a Latin-1 table cannot hold, `€` for Windows-1252, `😀` for the BMP boundary, `ß` for case mapping that changes length, `café` against `café` for normalization.
+**Demonstrate with a character from [CAST.md](CAST.md).** Nine characters, seven invisibles and seven strings, each earning its place by a property no other member has — `é` for mojibake, `ż` for what a Latin-1 table cannot hold, `€` for Windows-1252, `😀` for the BMP boundary, `ß` for case mapping that changes length, `Łódź` for where the two Polish code pages part company, `café` against `café` for normalization.
 
 The reason is compounding rather than tidiness: a reader who has already met `é` knows it is `C3 A9`, one byte in Latin-1, and `Ã©` when the two are confused, so your page can spend its words on its own subject. When the measurement was taken, 90 of the library's 156 distinct non-ASCII characters appeared once or twice in the whole repo — that tail is what the cast replaces.
 

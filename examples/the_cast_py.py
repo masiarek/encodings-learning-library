@@ -38,6 +38,7 @@ STRINGS = [
     ("café", "the house string -- one accent, so bytes and chars part"),
     ("café", "its twin: identical on screen, unequal in memory"),
     ("żółw", "Polish: three of four letters cost two bytes"),
+    ("Łódź", "Polish again, for what żółw cannot show -- section 6"),
     ("日本語", "three chars, nine bytes, six columns"),
     ("👨‍👩‍👧", "one family: three people, two joiners, one grapheme"),
 ]
@@ -116,6 +117,47 @@ def main() -> None:
     print(f"   {beta!r}.upper() -> {beta.upper()!r}: {len(beta)} char in, {len(beta.upper())} out")
     print("   Case mapping is not one character in, one character out -- which is")
     print("   why a fixed-size buffer around .upper() is a bug waiting for German.")
+    print()
+
+    print("6. WHAT 'Łódź' SHOWS THAT 'żółw' CANNOT")
+    for word in ("żółw", "Łódź"):
+        latin2 = word.encode("iso-8859-2").hex(" ").upper()
+        win1250 = word.encode("cp1250").hex(" ").upper()
+        verdict = "the same" if latin2 == win1250 else "DIFFERENT"
+        print(f"   {word!r:<7}  ISO-8859-2 {latin2}   Windows-1250 {win1250}   {verdict}")
+    print("   Both Polish tables can write both words, and only 'Łódź' shows")
+    print("   that they are two tables: its 'ź' is BC in one and 9F in the other.")
+    print()
+    empty = []
+    for b in range(0x80, 0x100):
+        try:
+            bytes([b]).decode("cp1252")
+        except UnicodeDecodeError:
+            empty.append(b)
+    print(f"   Windows-1252 leaves {len(empty)} byte values empty: "
+          + " ".join(f"{b:02X}" for b in empty))
+    print("   The cast members whose UTF-8 lands on one of them:")
+    members = [(repr(ch), ch) for ch, _ in CORE + [SPECIALIST]]
+    members += [(name, ch) for ch, name, _ in INVISIBLE]
+    for s, _ in STRINGS:
+        label = repr(s) if unicodedata.is_normalized("NFC", s) else repr(s) + " (NFD)"
+        members.append((label, s))
+    for label, s in members:
+        for c in dict.fromkeys(s):
+            utf8 = c.encode()
+            if any(b in empty for b in utf8):
+                print(f"      {label:<20} U+{ord(c):04X}  {utf8.hex(' ').upper():<9} {unicodedata.name(c)}")
+    print("   Two invisible characters, and one letter a reader can see. That")
+    print("   letter is why 'Łódź' is here: it shows a round trip that fails")
+    print("   without hiding the cause in a character nobody can see.")
+    print()
+    nfd = unicodedata.normalize("NFD", "Łódź")
+    bare = "".join(c for c in nfd if not unicodedata.combining(c))
+    print(f"   'Łódź' in NFD   {' '.join(f'{ord(c):04X}' for c in nfd)}")
+    print(f"   marks dropped   {bare!r} -- the stroke is part of the letter, not a")
+    print("   mark on it, so no normalization form takes it off. 'żółw' has an 'ł'")
+    print("   too, but 'Łódź' starts with one, which is what a sort built on")
+    print("   stripping the marks trips over.")
 
 
 if __name__ == "__main__":
