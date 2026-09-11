@@ -287,9 +287,18 @@ A text editor is the wrong tool for a file whose verdict you do not know, becaus
 xxd output.bin      # 00000000: c0ff ee   ...
 ```
 
-— or a hex editor. The usual free one on a Mac is **[Hex Fiend ↗](https://hexfiend.com/)** (`brew install --cask hex-fiend`; BSD-2-Clause, by Peter Ammon). It edits in place — inserting and deleting, not only overwriting — opens files far larger than memory, compares two files, and has a data inspector that reads the selected bytes as integers or floats in either byte order. For this library the interesting part is its right-hand column: that column's encoding is a **menu** — ASCII, Mac OS Roman, Latin-1, Latin-2 and both UTF-16 byte orders by default, and others, UTF-8 among them, through *Choose String Encoding…* — where `xxd`'s is fixed at ASCII. It is the one dump in which the question this page is about is a setting you can change and watch.
+— or a hex editor. The usual free one on a Mac is **[Hex Fiend ↗](https://hexfiend.com/)**: `brew install --cask hex-fiend`, which also puts a `hexf` command on your path, so `hexf output.bin` opens the file in it. It is BSD-2-Clause, created by Peter Ammon and maintained today by Kevin Wojniak, whose Developer ID signs the releases. It edits in place — inserting and deleting, not only overwriting — opens files far larger than memory, and compares two files. Here is `output.bin` in it:
 
-*Not measured here: Hex Fiend is a GUI, and it was not installed on the machine this page was measured on. The features are from its [README ↗](https://github.com/HexFiend/HexFiend#readme); the encoding menu is read from its source, `app/sources/Encodings.swift`.*
+<img src="img/hexfiend_c0ffee.png" width="430" alt="Hex Fiend 2.18.1 showing output.bin. The offset column reads 0, the hex column C0FFEE and the text column three dots. At the bottom the data inspector's type menu is open, listing Signed Int, Unsigned Int, Floats, UTF-8, SLEB128, ULEB128 and Binary, beside a field reading le, dec and the note select some data; the status bar reads 0 out of 3 bytes.">
+
+Read it the way [Reading a hex dump](../../01_Bits_and_Bytes/reading_a_hex_dump/README.md) reads `xxd`: column by column, asking which ones are the file.
+
+- **`0`** is the offset of the row — the tool's bookkeeping, not the file.
+- **`C0FFEE`** is the file: its three bytes in hex, with no table involved.
+- **`...`** is the tool's guess. The text column starts out in **Western (ASCII)**, and `c0`, `ff` and `ee` are all above `7f`, so each is drawn as a dot — the answer `xxd` gives too. Unlike `xxd`'s, this guess is a setting: the **Text Encoding** menu offers Central European (ISO Latin 2), Unicode (UTF-16BE), Unicode (UTF-16LE), Western (ASCII), Western (ISO Latin 1) and Western (Mac OS Roman), plus *Customize…*, which opens a searchable list of macOS's own encodings — Unicode (UTF-8) among them — to add to that menu. Switch to Mac OS Roman and the same three bytes read `¿ˇÓ` — [TextEdit's mojibake](#what-textedit-shows-you), produced on purpose. The hex column does not move.
+- **The bottom row is the data inspector**, which reads whatever bytes you *select* as a value. The open menu is its list of readings: Signed Int, Unsigned Int, Floats, UTF-8, SLEB128, ULEB128 and Binary. `le, dec` means little-endian, shown in decimal, and *(select some data)* is there because nothing is selected yet — which is also what the status bar's **0 out of 3 bytes** says. SLEB128 and ULEB128 are the variable-length integers DWARF and WebAssembly use: each byte's top bit means *another byte follows*, where UTF-8 announces the whole length in its lead byte instead. By LEB128's rule `c0 ff ee` is unfinished too, since all three bytes have their top bit set.
+
+*Measured 2026-09-10 with Hex Fiend 2.18.1 on macOS 26.6.2: the screenshot, the Text Encoding menu's entries, UTF-8 in the Customize… list, and the Mac OS Roman reading. The editing, huge-file and compare features are from its [README ↗](https://github.com/HexFiend/HexFiend#readme).*
 
 ## If you are coming from Python or ABAP
 
