@@ -40,9 +40,11 @@ The third row is the one that matters. The first two are a working program and a
 
 ## This page's own environment is rigged, and says so
 
-Every example in this library runs under a [fixed environment](../../CONTRIBUTING.md) — `LC_ALL=C`, `LANG=C`, `PYTHONUTF8=1` — so an answer key does not depend on whose machine recorded it. For this page that last variable is a problem: `PYTHONUTF8=1` **is** UTF-8 Mode, and UTF-8 Mode is precisely what stops `open()`'s default from being the locale's. A naive example here would demonstrate the opposite of its own thesis and record a passing answer key while doing it.
+Every example in this library runs under a [fixed environment](../../CONTRIBUTING.md) — `LC_ALL=C`, `LANG=C`, `PYTHONUTF8=1` — so an answer key does not depend on whose machine recorded it. For this page that environment is a problem: it leaves the interpreter in UTF-8 Mode, and UTF-8 Mode is precisely what stops `open()`'s default from being the locale's. A naive example here would demonstrate the opposite of its own thesis and record a passing answer key while doing it.
 
-So the program takes CONTRIBUTING's carve-out for a lesson whose subject *is* the environment: it sets its own, in view, and every answer about a default comes from a **child interpreter** whose variables are printed beside the result. Nothing below asks the running process what `open()` would do.
+The variable named after the mode is not what turns it on. The runner starts Python with `-I`, which implies `-E`, and `-E` ignores every `PYTHON*` variable — `PYTHONUTF8=1` included. UTF-8 Mode is on because `LC_ALL=C` is a C locale, and [PEP 540 ↗](https://peps.python.org/pep-0540/) switches the mode on by itself under one. Section 0 of the program shows both halves: a child started the runner's way and told `PYTHONUTF8=0` comes up in UTF-8 Mode anyway. The Python library's page reads the same two flags side by side, in [The environment this page runs in ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/opening_a_file/index.html#the-environment-this-page-runs-in-and-why-it-matters-here-more-than-elsewhere).
+
+So the program takes CONTRIBUTING's carve-out for a lesson whose subject *is* the environment: it sets its own, in view, and every answer about a default comes from a **child interpreter** whose variables are printed beside the result — started without `-I`, so that it hears them, and without the runner's `PYTHONUTF8=1`, which a child that hears its variables would obey. Nothing below asks the running process what `open()` would do.
 
 ## The program
 
@@ -52,15 +54,31 @@ So the program takes CONTRIBUTING's carve-out for a lesson whose subject *is* th
 ```text
 0. THIS PROGRAM'S OWN ENVIRONMENT IS RIGGED
 ------------------------------------------------------------------------
-   The library runs every example with PYTHONUTF8=1 so that answer keys
-   do not depend on whose machine recorded them. For this page that is
-   a problem, because it disables the thing being demonstrated:
+   The library runs every example under LC_ALL=C and LANG=C so that
+   answer keys do not depend on whose machine recorded them. For this
+   page that is a problem, because it leaves this interpreter in UTF-8
+   Mode -- the switch that stops open() asking the locale at all:
 
-     PYTHONUTF8 in this process:            1
-     sys.flags.utf8_mode here:              1
+     sys.flags.utf8_mode:                   1
+
+   The runner also sets PYTHONUTF8=1, and that is NOT why:
+
+     PYTHONUTF8 in os.environ:              1
+     sys.flags.isolated (-I):               1
+     sys.flags.ignore_environment (-E):     1
+
+   The runner starts Python with -I, which implies -E, and -E ignores
+   every PYTHON* variable -- this one included. UTF-8 Mode is on for
+   the reason section 1's bottom row shows: the locale is C, and
+   PEP 540 turns a C locale into UTF-8 Mode by itself. Two children,
+   both under LC_ALL=C and both told PYTHONUTF8=0, settle which:
+
+     python3 -I   utf8_mode 1   the variable is ignored
+     python3      utf8_mode 0   without -I, it is obeyed
 
    So nothing below asks THIS interpreter what open() would do. Each
-   answer comes from a child whose environment is printed with it.
+   answer comes from a child whose environment is printed with it, and
+   none of those children gets -I: they have to hear their variables.
 
 1. WHAT open() BETS ON
 ------------------------------------------------------------------------
@@ -221,18 +239,29 @@ So the program takes CONTRIBUTING's carve-out for a lesson whose subject *is* th
 
 ## Two things that could not go in the answer key
 
-Both are facts about the machine rather than about Python, and both were caught by running the program on macOS and in a Debian container before recording anything. Measured 2026-09-07:
+Both are facts about the machine rather than about Python, and both were caught by running the program on macOS and in a Debian container before recording anything. UTF-8 Mode changes what each one looks like, so each machine is measured twice — with the mode off, as in the middle row of section 1, and with `LC_ALL=C` alone, which switches it on:
 
-```text
-                                     macOS 26, CPython 3.14.7   Debian, CPython 3.13.15
-locale.getpreferredencoding(False)   'US-ASCII'                 'ANSI_X3.4-1968'
-codecs.lookup(that).name             'ascii'                    'ascii'
-sys.getfilesystemencoding()          'utf-8'                    'ascii'
+```text title="Measured 2026-09-10 under LC_ALL=C, the Debian column in python:3.13-slim under Docker — not machine-checked: the two columns disagree"
+                                      macOS 26.6.2     Debian 13.6
+                                      CPython 3.14.7   CPython 3.13.15
+UTF-8 Mode off (PYTHONUTF8=0)
+  open(path).encoding                 'US-ASCII'       'ANSI_X3.4-1968'
+  locale.getpreferredencoding(False)  'US-ASCII'       'ANSI_X3.4-1968'
+  locale.getencoding()                'US-ASCII'       'ANSI_X3.4-1968'
+  codecs.lookup(any of them).name     'ascii'          'ascii'
+  sys.getfilesystemencoding()         'utf-8'          'ascii'
+UTF-8 Mode on (PYTHONUTF8 unset; PEP 540)
+  open(path).encoding                 'utf-8'          'utf-8'
+  locale.getpreferredencoding(False)  'utf-8'          'utf-8'
+  locale.getencoding()                'US-ASCII'       'ANSI_X3.4-1968'
+  sys.getfilesystemencoding()         'utf-8'          'utf-8'
 ```
 
-The **first row** is why the program never prints the locale's encoding by name: the C locale has two spellings and the runner picks one. `codecs.lookup().name` canonicalises both, which is the recordable form and the one to use in your own code — comparing `enc == 'utf-8'` is a bug waiting for a machine that spells it `UTF8`.
+**Two functions that look alike answer different questions.** `locale.getpreferredencoding(False)` answers the one `open()` asks — *what do I use when nobody said?* — so it moves with UTF-8 Mode, and `open()` moves with it. `locale.getencoding()` asks the locale and nothing else, and is the only line that reads the same in both halves. [Locale and `LC_CTYPE`](../../06_Terminal/locale_and_lc_ctype/README.md) meets the same pair from the locale's side.
 
-The **second** is sharper, and is the reason `sys.getfilesystemencoding()` is not in the table the program prints. macOS answers `utf-8` under a C locale where glibc answers `ascii`, because the Mac's filesystem *requires* valid UTF-8 filenames and CPython hardcodes it accordingly — the Python-side face of the same fact [`find`, and filenames that are bytes](../../11_Tools/find/README.md) measures from the shell, where APFS refuses a non-UTF-8 name with `Errno 92` and Linux accepts any bytes but `NUL` and `/`.
+**The spelling** is why the program never prints the locale's encoding by name: the C locale has two, one per C library, and `getencoding()` shows the machine's with the mode on or off. `codecs.lookup().name` canonicalises both, which is the recordable form and the one to use in your own code — comparing `enc == 'utf-8'` is a bug waiting for a machine that spells it `UTF8`.
+
+**The filesystem encoding** is sharper, and is the reason `sys.getfilesystemencoding()` is not in the table the program prints. With UTF-8 Mode off, macOS answers `utf-8` where glibc answers `ascii`, because the Mac's filesystem *requires* valid UTF-8 filenames and CPython hardcodes it accordingly — the Python-side face of the same fact [`find`, and filenames that are bytes](../../11_Tools/find/README.md) measures from the shell, where APFS refuses a non-UTF-8 name with `Errno 92` and Linux accepts any bytes but `NUL` and `/`. With the mode on, both say `utf-8`: Python stops disagreeing, and the filesystems underneath disagree exactly as much as before.
 
 ## Finding these calls in code you already have
 
@@ -278,7 +307,7 @@ The louder direction — a genuine cp1252 file read as UTF-8 — raises on the f
 
 ## Try it
 
-- `python3 -c "import locale, codecs; print(codecs.lookup(locale.getpreferredencoding(False)).name)"` on your laptop, then the same line inside `docker run --rm python:3-slim`. Two machines, two answers, and neither of them consulted a file.
+- `python3 -c "import locale, codecs; print(codecs.lookup(locale.getpreferredencoding(False)).name)"` on your laptop, then the same line in a container with a C locale and UTF-8 Mode off: `docker run --rm -e LC_ALL=C -e PYTHONUTF8=0 python:3-slim python3 -c "import locale, codecs; print(codecs.lookup(locale.getpreferredencoding(False)).name)"`. On a Mac or a Linux laptop the first says `utf-8`; the container says `ascii`. Two machines, two answers, and neither of them consulted a file. Both `-e` flags are needed: without `PYTHONUTF8=0` the C locale switches UTF-8 Mode on by itself, and without `LC_ALL=C` the image — which sets no locale at all — has its missing locale coerced to `C.UTF-8` ([PEP 538 ↗](https://peps.python.org/pep-0538/)). Either way the container says `utf-8` too.
 - Run your own project under `python3 -X warn_default_encoding -m pytest` (or however it starts) and count the warnings. Every one is a call that behaves differently on somebody else's machine.
 - Take the worst CSV you have, `head -c 3 file.csv | xxd`, and decide from the bytes whether it needs `utf-8-sig`. Then open it with `encoding='utf-8'` and `newline=''` and see whether the first column's name still has something invisible in front of it.
 - `git grep -n "open(" | grep -v encoding=` in a repo you maintain. The interesting hits are the ones reading data somebody else produced.

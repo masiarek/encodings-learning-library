@@ -1,14 +1,30 @@
 0. THIS PROGRAM'S OWN ENVIRONMENT IS RIGGED
 ------------------------------------------------------------------------
-   The library runs every example with PYTHONUTF8=1 so that answer keys
-   do not depend on whose machine recorded them. For this page that is
-   a problem, because it disables the thing being demonstrated:
+   The library runs every example under LC_ALL=C and LANG=C so that
+   answer keys do not depend on whose machine recorded them. For this
+   page that is a problem, because it leaves this interpreter in UTF-8
+   Mode -- the switch that stops open() asking the locale at all:
 
-     PYTHONUTF8 in this process:            1
-     sys.flags.utf8_mode here:              1
+     sys.flags.utf8_mode:                   1
+
+   The runner also sets PYTHONUTF8=1, and that is NOT why:
+
+     PYTHONUTF8 in os.environ:              1
+     sys.flags.isolated (-I):               1
+     sys.flags.ignore_environment (-E):     1
+
+   The runner starts Python with -I, which implies -E, and -E ignores
+   every PYTHON* variable -- this one included. UTF-8 Mode is on for
+   the reason section 1's bottom row shows: the locale is C, and
+   PEP 540 turns a C locale into UTF-8 Mode by itself. Two children,
+   both under LC_ALL=C and both told PYTHONUTF8=0, settle which:
+
+     python3 -I   utf8_mode 1   the variable is ignored
+     python3      utf8_mode 0   without -I, it is obeyed
 
    So nothing below asks THIS interpreter what open() would do. Each
-   answer comes from a child whose environment is printed with it.
+   answer comes from a child whose environment is printed with it, and
+   none of those children gets -I: they have to hear their variables.
 
 1. WHAT open() BETS ON
 ------------------------------------------------------------------------

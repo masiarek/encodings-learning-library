@@ -5,10 +5,14 @@ THE ENVIRONMENT IS THE SUBJECT, so this program sets its own rather than
 reading the one it was started in. Every answer about a default comes from a
 CHILD interpreter whose variables are set on the line above it and printed
 beside the result. That is not decoration: this library runs every example
-under a fixed environment that includes PYTHONUTF8=1, which is precisely the
-switch that stops open()'s default from being the locale's. Asked about
+under LC_ALL=C, and a C locale switches on UTF-8 Mode (PEP 540), which is
+precisely what stops open()'s default from being the locale's. Asked about
 itself, this program would report the opposite of what the page claims -- and
 would record a passing answer key while doing it.
+
+The runner sets PYTHONUTF8=1 as well, and that is NOT what switches the mode
+on: it starts Python with -I, which implies -E, and -E ignores every PYTHON*
+variable. Section 0 prints both halves of that.
 
 Nothing below prints the locale's encoding by NAME. The C locale is called
 'US-ASCII' on macOS and 'ANSI_X3.4-1968' on glibc, so the name is a fact about
@@ -36,9 +40,12 @@ def child(code, args=(), **env):
     """Run `code` in a fresh interpreter whose environment we state exactly.
 
     Every PYTHON* variable is dropped first, so the harness that started THIS
-    process cannot reach the child; LC_ALL/LANG are pinned to C so the answer
-    does not depend on the machine either. No -I, because isolated mode implies
-    -E and -E would ignore the very variables this lesson is about."""
+    process cannot reach the child -- a child started without -I would obey
+    the runner's PYTHONUTF8=1, which this process is ignoring. LC_ALL/LANG are
+    pinned to C so the answer does not depend on the machine either. No -I
+    unless a caller passes it, because isolated mode implies -E and -E would
+    ignore the very variables this lesson is about; section 0 passes it once,
+    to show exactly that."""
     e = {k: v for k, v in os.environ.items() if not k.startswith("PYTHON")}
     e.update({"LC_ALL": "C", "LANG": "C"})
     e.update(env)
@@ -58,16 +65,36 @@ def hexs(b):
 
 print("0. THIS PROGRAM'S OWN ENVIRONMENT IS RIGGED")
 print(RULE)
-print("   The library runs every example with PYTHONUTF8=1 so that answer keys")
-print("   do not depend on whose machine recorded them. For this page that is")
-print("   a problem, because it disables the thing being demonstrated:")
+print("   The library runs every example under LC_ALL=C and LANG=C so that")
+print("   answer keys do not depend on whose machine recorded them. For this")
+print("   page that is a problem, because it leaves this interpreter in UTF-8")
+print("   Mode -- the switch that stops open() asking the locale at all:")
 print()
-print("     %-38s %s" % ("PYTHONUTF8 in this process:",
+print("     %-38s %s" % ("sys.flags.utf8_mode:", sys.flags.utf8_mode))
+print()
+print("   The runner also sets PYTHONUTF8=1, and that is NOT why:")
+print()
+print("     %-38s %s" % ("PYTHONUTF8 in os.environ:",
                          os.environ.get("PYTHONUTF8", "(unset)")))
-print("     %-38s %s" % ("sys.flags.utf8_mode here:", sys.flags.utf8_mode))
+print("     %-38s %s" % ("sys.flags.isolated (-I):", sys.flags.isolated))
+print("     %-38s %s" % ("sys.flags.ignore_environment (-E):",
+                         sys.flags.ignore_environment))
+print()
+print("   The runner starts Python with -I, which implies -E, and -E ignores")
+print("   every PYTHON* variable -- this one included. UTF-8 Mode is on for")
+print("   the reason section 1's bottom row shows: the locale is C, and")
+print("   PEP 540 turns a C locale into UTF-8 Mode by itself. Two children,")
+print("   both under LC_ALL=C and both told PYTHONUTF8=0, settle which:")
+print()
+mode_probe = "import sys; print(sys.flags.utf8_mode)"
+for label, args, note in (("python3 -I", ("-I",), "the variable is ignored"),
+                          ("python3", (), "without -I, it is obeyed")):
+    print("     %-12s utf8_mode %s   %s"
+          % (label, child(mode_probe, args=args, PYTHONUTF8="0"), note))
 print()
 print("   So nothing below asks THIS interpreter what open() would do. Each")
-print("   answer comes from a child whose environment is printed with it.")
+print("   answer comes from a child whose environment is printed with it, and")
+print("   none of those children gets -I: they have to hear their variables.")
 print()
 
 print("1. WHAT open() BETS ON")
