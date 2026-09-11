@@ -177,7 +177,7 @@ $ echo $(( 16#FF ))  $(( 2#11111111 ))  $(( 8#377 ))  255
 ```
 <!-- /output -->
 
-## MSB and LSB — the abbreviation does not say which
+## MSB and LSB: the abbreviation does not say which
 
 A base converter will usually label the two halves of `0x21` twice, in two different vocabularies: once as **High Nibble: 2 | Low Nibble: 1**, and once as **MSB: 0010 | LSB: 0001**. The first pair is unambiguous. The second is three different things sharing two abbreviations:
 
