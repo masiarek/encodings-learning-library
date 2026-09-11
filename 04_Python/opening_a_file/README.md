@@ -320,7 +320,7 @@ The louder direction — a genuine cp1252 file read as UTF-8 — raises on the f
 
 **One file, and a default you cannot see.** A file holds the six bytes `63 61 66 c3 a9 0a`. Predict, for each of `encoding='utf-8'`, `'ascii'`, `'cp1252'` and `mode='rb'`: what comes back, how many characters it has, and which of the four raises.
 
-Then answer the harder one. The script runs on a laptop with a UTF-8 locale, in a container with none, and on a Windows machine — with **no** `encoding=` anywhere. Say which of the three gets the right answer, which fails loudly, which fails silently, and what changes on each of the three after PEP 686.
+Then answer the harder one. The script runs on a laptop with a UTF-8 locale, in a container with no locale set at all, and on a Windows machine — with **no** `encoding=` anywhere. Say which of the three get the right answer and which fails silently, and whether any of them fails loudly. If none does, say what somebody would have to set to get the `UnicodeDecodeError` back, and on which of the three machines that would work. Last, what changes on each of the three after PEP 686?
 
 <details markdown="1">
 <summary><strong>Answers</strong></summary>
@@ -348,26 +348,48 @@ THE SAME SCRIPT ON THREE MACHINES, WITH NO encoding= ANYWHERE
 
    machine                default   result        how it fails
    laptop, UTF-8 locale   utf-8     caf\xe9       it does not
-   container, C locale    ascii     raises        loudly, first run
+   container, no locale   utf-8     caf\xe9       it does not -- rescued
    Windows, cp1252        cp1252    caf\xc3\xa9   silently, forever
 
-   One file. One script. Three answers, and the exit status is 0 on
-   two of them.
+   Two right answers and one wrong one, and the exit status is 0 on
+   all three: nothing here fails loudly. The container's row was not
+   typed in. It is the first line of the table below -- a real child,
+   started with no locale at all, the way a container's entrypoint or
+   a cron job starts one -- and it is right by rescue, not by design.
+
+THE LOUD FAILURE IS STILL THERE -- SOMEBODY HAS TO ASK FOR IT
+
+     child env                  utf8_mode  open()   result
+     (no locale)                1          utf-8    caf\xe9
+     LC_ALL=C                   1          utf-8    caf\xe9
+     PYTHONUTF8=0               0          utf-8    caf\xe9
+     LC_ALL=C  PYTHONUTF8=0     0          ascii    UnicodeDecodeError
+
+   It takes both. LC_ALL=C on its own is a C locale, which PEP 540
+   turns into UTF-8 Mode. PYTHONUTF8=0 on its own leaves LC_ALL
+   unset, so PEP 538 coerces the missing locale to C.UTF-8 first.
+   Only together do they put open() back on ASCII -- and the same
+   two variables do it to the laptop. They cannot do it to the
+   Windows box: cp1252 has a letter for every byte in this file, so
+   there is nothing for it to refuse.
 
 AND WHAT PEP 686 DOES TO EACH ROW
 
    laptop      no change -- it was already UTF-8 Mode in all but name
-   container   FIXED, silently: the crash stops, and nobody learns
-               that the machine was misconfigured
+   container   no change -- it has run in UTF-8 Mode since 3.7, and
+               PEP 686 makes every other machine do what it already did
    Windows     CHANGED, silently: the same bytes now decode as UTF-8,
                so the third row above turns into the first one.
                Right answer, no announcement -- and for a file that
                really was cp1252, the reverse: it starts raising.
 
+   And the loud row stays loud. PEP 686 changes a default, and
+   PYTHONUTF8=0 is not a default -- it is somebody saying no.
+
    The pattern is the point. A default that becomes correct is still
    a default that changed, and the code that was relying on the old
-   one gets no warning at all. Both rows below the first are fixed
-   permanently by one keyword argument, today, on every Python.
+   one gets no warning at all. Every row above is settled for good
+   by one keyword argument, today, on every Python.
 
 THE ONE LINE
    open(path, encoding='utf-8')   and PEP 686 cannot reach you either.
