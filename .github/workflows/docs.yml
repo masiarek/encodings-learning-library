@@ -30,6 +30,8 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+          # The Python the examples job pins (UV_PYTHON); uv finds or downloads it.
+          python-version: '3.14'
       - run: uv sync --group docs
       # The sidebar reading order and the page-footer prev/next arrows are
       # computed at different times and drifted apart unnoticed for 13

@@ -168,7 +168,7 @@ That is the trade CPython chose deliberately. One stride means character `i` liv
 
 ## The numbers, and why they are not in the answer key
 
-Everything the program prints is a *shape* — a stride, a ratio, a threshold, a `True`. Not one byte total appears, and that is a rule rather than a stylistic choice: `sys.getsizeof` is not part of the language, it reports a CPython implementation detail, and the two machines that run this library's CI are not pinned to the same Python. [The table has a version](../../02_Characters/the_table_has_a_version/README.md) sets out the general form of that rule; this is a page-sized instance of it.
+Everything the program prints is a *shape* — a stride, a ratio, a threshold, a `True`. Not one byte total appears, and that is a rule rather than a stylistic choice: `sys.getsizeof` is not part of the language, it reports a CPython implementation detail, and CI pins Python only to a minor version (3.14, which will move) while a reader's Python need not match it at all. [The table has a version](../../02_Characters/the_table_has_a_version/README.md) sets out the general form of that rule; this is a page-sized instance of it.
 
 The totals are still worth seeing once. Measured 2026-09-07, on two builds:
 

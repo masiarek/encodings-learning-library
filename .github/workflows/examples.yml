@@ -2,7 +2,7 @@
 # every lesson page's generated output block must match that run.
 #
 # This library has five kinds of example, and this job runs all of them:
-#   examples/*.py   stdlib-only Python, run with the python3 on the runner
+#   examples/*.py   stdlib-only Python 3.14, the same minor version on both runners
 #   examples/*.rs   compiled with bare rustc (no cargo, no crates)
 #   examples/*.sh   bash, using xxd / od / hexdump / cat / file / iconv / printf / strings
 #   examples/*.c    compiled with cc (clang on macOS, gcc on Ubuntu), no libraries
@@ -30,11 +30,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      # One Python on both runners: 3.14, the version the answer keys promise
+      # (CONTRIBUTING.md, "The programs"). The minor version is pinned and patch
+      # releases float. Before this step each runner used its own python3, which
+      # on 2026-09-11 was 3.12.3 on Ubuntu and 3.14.7 on macOS.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
       - uses: actions/setup-go@v7
         with:
-          # Unpinned on purpose, like python3 and rustc: a Go example's key has to
-          # hold on whatever Go is current, so it may only record behaviour the
-          # Go 1 compatibility promise covers. There is no go.sum, so no cache.
+          # Unpinned on purpose, like rustc: a Go example's key has to hold on
+          # whatever Go is current, so it may only record behaviour the Go 1
+          # compatibility promise covers. There is no go.sum, so no cache.
           go-version: stable
           cache: false
       - name: Make sure xxd, hexdump, file and strings are present (separate packages on Ubuntu)

@@ -26,7 +26,7 @@ Each row of the example's ladder splits exactly one more ruler off the others. `
 
 The fifth ruler is the interesting one, and it forced a choice about what may be written down.
 
-This library's hard rule is that **nothing read out of the Unicode table may become an answer key**. Neither `python3` nor `rustc` is pinned here and both upgrade on their own schedule — on the machine this page was written, they were a full release apart, which [the table has a version](../the_table_has_a_version/README.md) is entirely about. A character's *name* is safe, because Unicode promises never to change one. A width class is not on that list.
+This library's hard rule is that **nothing read out of the Unicode table may become an answer key**. `rustc` is not pinned here, and `python3` is pinned only to a minor version whose table changes the day the pin moves — on the machine this page was written, the two answered from Unicode versions a full release apart, which [the table has a version](../the_table_has_a_version/README.md) is entirely about. A character's *name* is safe, because Unicode promises never to change one. A width class is not on that list.
 
 So the example programs read the Unicode table exactly **once**, for `unicodedata.name()` in section 3, and get their other four numbers from arithmetic: UTF-8 spends one, two, three or four bytes on ranges the standard froze; UTF-16 spends one unit inside the BMP and a pair above it; a code point's number never moves; and the grapheme count comes from rules written out in the source. Those four are facts about the string, so they are recorded as an answer key and CI checks them on both platforms.
 

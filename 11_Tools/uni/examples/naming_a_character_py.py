@@ -8,8 +8,8 @@ the page and the answer for a machine you cannot install anything on.
 
 Only long-established characters appear here on purpose. A name or a property
 that changed in a recent Unicode revision would make this program's output
-depend on which Python built the runner — the one kind of drift no local run
-can see. Everything below has had the same name since the 1990s.
+depend on which Python runs it — a reader's, or CI's the day its 3.14 pin
+moves. Everything below has had the same name since the 1990s.
 """
 
 import unicodedata

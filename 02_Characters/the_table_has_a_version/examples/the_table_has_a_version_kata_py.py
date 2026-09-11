@@ -1,10 +1,11 @@
 """Answer key: five claims, and which of them survive without a version stamp.
 
 This key deliberately prints NO version number and queries no recently-added
-character. It cannot: it is checked against two operating systems and whatever
-Python each runner ships, so anything version-dependent would make the answer
-key a fact about the runner rather than about Unicode. That constraint is the
-lesson -- the same reason a bug report needs the stamp.
+character. It cannot: CI pins Python only to a minor version, which will move,
+and a reader runs whatever Python they have, so anything version-dependent
+would make the answer key a fact about the interpreter rather than about
+Unicode. That constraint is the lesson -- the same reason a bug report needs
+the stamp.
 """
 import unicodedata as ud
 

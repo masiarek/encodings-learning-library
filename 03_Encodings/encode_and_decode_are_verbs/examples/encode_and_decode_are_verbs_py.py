@@ -24,7 +24,7 @@ def outcome(data, table):
 
     The class name, the reason and the offset are stable across CPython
     versions; the full str(e) is not, and an answer key must not depend on
-    which python3 the runner happened to ship.
+    which CPython release recorded it.
     """
     try:
         return repr(data.decode(table))
