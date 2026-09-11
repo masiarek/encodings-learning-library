@@ -110,7 +110,7 @@ Python ships the frozen table as well as the live one, and that is a gift, becau
    the frozen 2002 table, asked about four very different code points:
 
    code point  category  name          what it actually is
-   U+1F600     Cn        ValueError    GRINNING FACE, real since 2010
+   U+1F600     Cn        ValueError    GRINNING FACE, real since 2012
    U+1E9E      Cn        ValueError    CAPITAL SHARP S, real since 2008
    U+0378      Cn        ValueError    genuinely unassigned, still is
    U+FFFE      Cn        ValueError    a noncharacter -- never will be
@@ -203,7 +203,7 @@ Section 3 is the load-bearing one. **Zero renames across the whole number line**
    U+1F600     false       false      4          😀
    U+FFFE      false       false      3          ￾
 
-   The first three have been settled since 2010 at the latest, and
+   The first three have been settled since 2012 at the latest, and
    General_Category is not a property Unicode changes lightly -- but
    a letter's or a symbol's category is NOT on the stability list,
    which freezes only the control, private-use and surrogate

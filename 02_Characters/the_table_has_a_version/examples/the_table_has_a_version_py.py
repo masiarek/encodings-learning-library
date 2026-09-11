@@ -67,7 +67,7 @@ print("   the frozen 2002 table, asked about four very different code points:")
 print()
 print("   code point  category  name          what it actually is")
 for cp, truth in (
-    (0x1F600, "GRINNING FACE, real since 2010"),
+    (0x1F600, "GRINNING FACE, real since 2012"),
     (0x1E9E, "CAPITAL SHARP S, real since 2008"),
     (0x0378, "genuinely unassigned, still is"),
     (0xFFFE, "a noncharacter -- never will be"),

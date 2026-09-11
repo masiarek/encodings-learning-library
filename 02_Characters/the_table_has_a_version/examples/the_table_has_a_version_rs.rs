@@ -55,7 +55,7 @@ fn main() {
         );
     }
     println!();
-    println!("   The first three have been settled since 2010 at the latest, and");
+    println!("   The first three have been settled since 2012 at the latest, and");
     println!("   General_Category is not a property Unicode changes lightly -- but");
     println!("   a letter's or a symbol's category is NOT on the stability list,");
     println!("   which freezes only the control, private-use and surrogate");

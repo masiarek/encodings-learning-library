@@ -256,7 +256,7 @@ print("       def in_table_a1(code):")
 print("           if unicodedata.category(code) != 'Cn': return False")
 print()
 for ch, what in (
-    ("\U0001f600", "GRINNING FACE, assigned 2010"),
+    ("\U0001f600", "GRINNING FACE, assigned 2012"),
     ("ẞ", "CAPITAL SHARP S, assigned 2008"),
     ("\U00011db0", "TOLONG SIKI LETTER I, assigned 2025"),
     ("͸", "genuinely unassigned, still is"),

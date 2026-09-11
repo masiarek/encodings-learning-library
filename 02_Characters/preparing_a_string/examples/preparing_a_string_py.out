@@ -158,7 +158,7 @@
        def in_table_a1(code):
            if unicodedata.category(code) != 'Cn': return False
 
-   U+1F600  in_table_a1 -> True   GRINNING FACE, assigned 2010
+   U+1F600  in_table_a1 -> True   GRINNING FACE, assigned 2012
    U+1E9E  in_table_a1 -> True   CAPITAL SHARP S, assigned 2008
    U+11DB0  in_table_a1 -> True   TOLONG SIKI LETTER I, assigned 2025
    U+0378  in_table_a1 -> True   genuinely unassigned, still is

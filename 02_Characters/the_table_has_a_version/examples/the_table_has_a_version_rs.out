@@ -35,7 +35,7 @@
    U+1F600     false       false      4          😀
    U+FFFE      false       false      3          ￾
 
-   The first three have been settled since 2010 at the latest, and
+   The first three have been settled since 2012 at the latest, and
    General_Category is not a property Unicode changes lightly -- but
    a letter's or a symbol's category is NOT on the stability list,
    which freezes only the control, private-use and surrogate

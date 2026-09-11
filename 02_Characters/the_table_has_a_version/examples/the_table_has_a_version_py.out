@@ -40,7 +40,7 @@
    the frozen 2002 table, asked about four very different code points:
 
    code point  category  name          what it actually is
-   U+1F600     Cn        ValueError    GRINNING FACE, real since 2010
+   U+1F600     Cn        ValueError    GRINNING FACE, real since 2012
    U+1E9E      Cn        ValueError    CAPITAL SHARP S, real since 2008
    U+0378      Cn        ValueError    genuinely unassigned, still is
    U+FFFE      Cn        ValueError    a noncharacter -- never will be
