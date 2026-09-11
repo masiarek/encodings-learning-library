@@ -122,3 +122,40 @@ print(f"   In UTF-32 every character is one unit — len(s) == {len(s)} matches 
 print("   count exactly, and there is no pair to split. It costs four bytes for")
 print("   an 'A' and carries a byte order, which is why it is a fine in-memory")
 print("   representation and almost never a file.")
+
+# ------------------------------------------------------------------ 6
+head(6, "ASKING HALF A CHARACTER A QUESTION")
+# Unicode 3.2's table, sealed in 2002 and shipped inside unicodedata, answers
+# the same on every machine, and Deseret has been in Unicode since 3.1. The
+# cast has no letter above U+FFFF (😀 is a symbol), so three Deseret letters.
+from unicodedata import ucd_3_2_0 as frozen
+
+word = "".join(chr(cp) for cp in (0x10400, 0x10401, 0x10428))
+raw = word.encode("utf_16_be")
+units = [int.from_bytes(raw[i:i + 2], "big") for i in range(0, len(raw), 2)]
+
+
+def is_letter(ch):
+    return frozen.category(ch).startswith("L")
+
+
+print("   Three Deseret letters, asked about one CODE UNIT at a time -- which is")
+print("   what a loop over a C#, Java or JavaScript string hands you:")
+print()
+for unit in units:
+    ch = chr(unit)
+    print(f"     {'unit ' + format(unit, '04X'):<10} category {frozen.category(ch)}   letter? {is_letter(ch)}")
+print()
+print("   The same word, asked about one CODE POINT at a time:")
+print()
+for ch in word:
+    print(f"     {'U+%05X' % ord(ch):<10} category {frozen.category(ch)}   letter? {is_letter(ch)}   {frozen.name(ch)}")
+print()
+print(f"   letters found, unit by unit           {sum(is_letter(chr(unit)) for unit in units)}")
+print(f"   letters found, code point by point    {sum(is_letter(ch) for ch in word)}")
+print()
+print("   Each half of a pair is a code point too, and its category is Cs,")
+print("   surrogate -- not a letter. So every answer the unit loop gets is true")
+print("   of the unit it was shown, and the total is still wrong: no letters")
+print("   in a word made of nothing else. Python has no code unit to ask, which")
+print("   is why this program had to build them.")

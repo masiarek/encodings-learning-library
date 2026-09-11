@@ -49,6 +49,20 @@ So the last code point is `U+10FFFF`, and `sys.maxunicode` agrees. **That ceilin
 
 For the history of how four platforms ended up here and could not leave, see [Why UTF-16 stayed](../../09_History/why_utf16_stayed/README.md). This page is the mechanism; that one is the dates.
 
+## Asking half a character a question
+
+Counting is not the only thing a UTF-16 language does one unit at a time. The `char` of C# and Java is a code unit, and so is each piece of a JavaScript `split('')`, and the functions that classify a character will take one — so a loop that asks *is this a letter?* of every `char` is asking it of each **half** of a surrogate pair. A half is a code point too, with a General_Category of its own, `Cs`, and `Cs` is not a letter. Every answer the loop gets is true of the unit it was shown, and the total is still wrong. Here it is asked of three Deseret letters, `𐐀𐐁𐐨`:
+
+| measured by hand on 2026-09-11 | one unit at a time | one code point at a time |
+|---|---|---|
+| .NET 5.0.5 | `s.Count(char.IsLetter)` → **0** | `s.EnumerateRunes().Count(Rune.IsLetter)` → 3 |
+| Java 25.0.4.1 | `s.chars().filter(Character::isLetter).count()` → **0** | `s.codePoints().filter(Character::isLetter).count()` → 3 |
+| Node v20.20.2 | `s.split('').filter(c => /\p{L}/u.test(c)).length` → **0** | `[...s].filter(c => /\p{L}/u.test(c)).length` → 3 |
+
+Deseret is here because the lesson needs a *letter* above `U+FFFF` and [the cast](../../CAST.md) has none — `😀` is a symbol. Microsoft's documentation for [`System.Text.Rune` ↗](https://learn.microsoft.com/en-us/dotnet/api/system.text.rune) makes the same point with Osage, and its numbers hold: over `𐓏𐓘𐓻𐓘𐓻𐓟 𐒻𐓟`, `char.IsLetter` finds none of the 8 letters and `Rune.IsLetter` finds all 8. Casing breaks the same way. `char.ToUpperInvariant`, Java's `Character.toUpperCase(char)` and a per-unit `toUpperCase()` in JavaScript all hand `𐐨` back unchanged, while each language's whole-string method returns `𐐀` — the per-character loop that [Case is not a per-character operation](../../02_Characters/case_is_not_per_character/README.md) warns about, one level further down, where the "character" is half a letter.
+
+There are two repairs, and each of these languages has both. Ask about the **code point** — `Rune`, Java's `int` overloads over `codePoints()`, JavaScript's `[...s]` — or ask about a **position in the string**, which lets the function read the whole pair: .NET's `char.IsLetter(s, i)` answers `True` at a high half and `False` at a low one, and so finds 3. Python cannot make the mistake, because a `str` has no code unit to hand you, and Rust cannot even ask the question: `char::from_u32` refuses every surrogate (section 4 of the Rust program), so there is no `char` to call `is_alphabetic` on. Section 6 of the Python program builds the units itself, asks Unicode 3.2's frozen table about each one, and gets `Cs` six times.
+
 ## In Python
 
 <!-- output:utf16_and_surrogates_py -->
@@ -130,6 +144,33 @@ For the history of how four platforms ended up here and could not leave, see [Wh
    count exactly, and there is no pair to split. It costs four bytes for
    an 'A' and carries a byte order, which is why it is a fine in-memory
    representation and almost never a file.
+
+6. ASKING HALF A CHARACTER A QUESTION
+------------------------------------------------------------------------
+   Three Deseret letters, asked about one CODE UNIT at a time -- which is
+   what a loop over a C#, Java or JavaScript string hands you:
+
+     unit D801  category Cs   letter? False
+     unit DC00  category Cs   letter? False
+     unit D801  category Cs   letter? False
+     unit DC01  category Cs   letter? False
+     unit D801  category Cs   letter? False
+     unit DC28  category Cs   letter? False
+
+   The same word, asked about one CODE POINT at a time:
+
+     U+10400    category Lu   letter? True   DESERET CAPITAL LETTER LONG I
+     U+10401    category Lu   letter? True   DESERET CAPITAL LETTER LONG E
+     U+10428    category Ll   letter? True   DESERET SMALL LETTER LONG I
+
+   letters found, unit by unit           0
+   letters found, code point by point    3
+
+   Each half of a pair is a code point too, and its category is Cs,
+   surrogate -- not a letter. So every answer the unit loop gets is true
+   of the unit it was shown, and the total is still wrong: no letters
+   in a word made of nothing else. Python has no code unit to ask, which
+   is why this program had to build them.
 ```
 <!-- /output -->
 
