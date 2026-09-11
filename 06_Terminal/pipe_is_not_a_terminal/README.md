@@ -103,6 +103,8 @@ The folklore is not baseless, though — it is Windows, where a console gets a `
 
 That is the shape of the classic report: *"it works when I run it, and the log is empty when cron runs it."* Both halves are true and neither is a bug.
 
+The Python library runs the same experiment as part of `open()`'s `buffering` argument, in [section 4 of its Opening a file ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/opening_a_file/index.html#what-the-run-shows): the same inversion against a real pty, then the same question asked of a file you opened yourself — including why `buffering=0` is refused in text mode.
+
 **How much output can be in flight is a fact about your interpreter, not about your program**, which is why no number for it appears in the run above:
 
 ```text title="Measured 2026-09-07 — io.DEFAULT_BUFFER_SIZE, python:N-slim images and macOS"
@@ -326,5 +328,6 @@ python3 show.py | cat
 - [Locale and `LC_CTYPE`](../locale_and_lc_ctype/README.md) — the setting that really does decide `sys.stdout`'s encoding, in full
 - [The trailing newline](../trailing_newline/README.md) — the byte a line-buffered stream flushes on
 - [Opening a file](../../04_Python/opening_a_file/README.md) — the same locale default, on the other end of the program
+- [Opening a file, in the Python library ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/opening_a_file/index.html#what-the-run-shows) — section 4 there is section 3 here, run against a real pty, plus `buffering=` on a file you opened yourself
 - [The byte that means something to somebody else](../../12_Adversarial/in_band_signals/README.md) — colour escapes as an in-band signal, and what else rides that channel
 - [`printf` writes bytes](../printf_writes_bytes/README.md) — putting exact bytes on the pipe this page is about
