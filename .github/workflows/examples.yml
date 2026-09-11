@@ -75,3 +75,7 @@ jobs:
         run: |
           python3 tools/check_chapter_status.py --selftest
           python3 tools/check_chapter_status.py
+      - name: Check that every link to a heading names it by one id on GitHub and on the site
+        run: |
+          python3 tools/check_fragments.py --selftest
+          python3 tools/check_fragments.py

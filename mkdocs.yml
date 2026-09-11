@@ -38,6 +38,7 @@ use_directory_urls: false
 # both fail, which makes CONTRIBUTING's never-link-a-folder rule a gate. What
 # neither setting can see is in CONTRIBUTING.md under Links: a fragment in a
 # build run with -v, and GitHub's ids, which are not always this site's.
+# tools/check_fragments.py covers both for a link written in Markdown.
 validation:
   links:
     anchors: warn

@@ -34,7 +34,7 @@ and a skip exits 1, as a failure does. It has to be the status and not just the
 text, because the status is what a script -- or a hurried reader -- checks, and
 0 is a claim that every gate has a verdict. `--allow-skip` is the opt-out, for
 a machine that genuinely cannot run a gate: if nothing that ran failed it exits
-0, but the summary still says `8 of 11 gates ran`. Accepting a partial verdict
+0, but the summary still says `10 of 13 gates ran`. Accepting a partial verdict
 should cost a flag, not happen to you.
 
     python3 tools/check_all.py              # the working tree
@@ -132,6 +132,8 @@ GATES: list[tuple[str, list[str]]] = [
     ("chapter status selftest",
      [sys.executable, "tools/check_chapter_status.py", "--selftest"]),
     ("chapter status", [sys.executable, "tools/check_chapter_status.py"]),
+    ("fragments selftest", [sys.executable, "tools/check_fragments.py", "--selftest"]),
+    ("fragments", [sys.executable, "tools/check_fragments.py"]),
     # CI does `uv sync --group docs` first; `uv run --group docs` is the same
     # resolution in one step, and it is what makes this work in the temporary
     # directory --committed extracts into, where no .venv exists yet.
