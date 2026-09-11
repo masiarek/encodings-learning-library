@@ -25,6 +25,17 @@ site_dir: site
 # directory URLs would shift every page one level deeper and break them.
 use_directory_urls: false
 
+# A link to a heading that does not exist is a broken link. MkDocs 1.6 checks
+# a link's #fragment against the ids of the page it points at, and by default
+# reports a miss at `info` -- which --strict does not count. Until 2026-09-10 a
+# planted `../preparing_a_string/README.md#no-such-heading` built green, its
+# verdict one INFO line in the log. At `warn` the same build fails. What it
+# cannot see is in CONTRIBUTING.md under Links: a build run with -v, a folder
+# link's fragment, and GitHub's ids, which are not always this site's.
+validation:
+  links:
+    anchors: warn
+
 # MkDocs maps README.md onto index.md, so the root README and index.md collide
 # ("Excluding README.md because it conflicts with index.md" — a --strict failure).
 # Excluding it is right rather than a workaround: its content already IS the
