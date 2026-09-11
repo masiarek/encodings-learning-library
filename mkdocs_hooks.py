@@ -27,14 +27,16 @@ One structural note that is easy to get wrong: the top-level object MkDocs hands
 nothing at all — the build still succeeds, and the sidebar is simply never
 touched.
 
-One check rides along at the bottom of the file, unrelated to the sidebar:
-every TAB inside a fence has to reach the page's HTML. The comment block above
-`on_page_content` says why.
+Two checks ride along at the bottom of the file, unrelated to the sidebar:
+every TAB inside a fence has to reach the page's HTML, and no fence title may
+hold a backtick, which GitHub cannot parse. Each has a comment block of its own
+saying why.
 """
 
 from __future__ import annotations
 
 import logging
+import pathlib
 import re
 
 # A child of the "mkdocs" logger, so `mkdocs build --strict` counts its warnings.
@@ -456,3 +458,138 @@ def on_page_content(html, page, config, files):
             got,
         )
     return html
+
+
+# ---------------------------------------------------------------------------
+# Backticks in a fence title. CommonMark forbids a backtick in the info string
+# of a BACKTICK fence, so on github.com a line like
+#
+#     ```text title="Real output — `cargo test`"
+#
+# is not a fence at all. Measured 2026-09-10 with `gh api markdown`: the opener
+# renders as the start of a paragraph, and the block's closing ``` opens a new
+# code block that runs to the next bare fence line. That swallowed the lesson's
+# next paragraph after 21 of 24 such fences, and on the Rust library's
+# 15_First_Programs/rustc_without_cargo everything to the end of the page.
+# pymdownx.superfences accepts the form, so neither the site nor `--strict`
+# ever showed it. The 24 came out on 2026-09-10, 13 here and 11 in the Rust
+# library ("Drop the backticks from fence titles, which GitHub cannot parse");
+# this check is what stops the 25th.
+#
+# Fences are tracked the CommonMark way: one closes on the first later line of
+# its own character, at least as long, with nothing after it but whitespace.
+# So the bad form shown INSIDE a longer or a ~~~ fence, which is how a page
+# about the rule has to show it, is content and passes. A ~~~ fence may hold a
+# backtick in its info string, and passes; so does a four-backtick ````rust
+# fence, which a line grep for a backtick after the fence cannot tell from the
+# real thing. Leading indentation and `>` are skipped, because GitHub reads a
+# fence in a list item or a blockquote by the same rule. And a line that only
+# starts with a code span, ```` ``` ```` say, is a paragraph on both surfaces
+# -- superfences cannot read it as a fence header either -- so it passes too.
+#
+# README.md is excluded from the build, because index.md inlines it through
+# pymdownx.snippets, yet it is the first page github.com shows. So a file a
+# page inlines is scanned as well, whole, and named by its own path.
+# ---------------------------------------------------------------------------
+
+FENCE_LINE = re.compile(r"(?P<fence>`{3,}|~{3,})(?P<info>.*)")
+# A `--8<-- "path"` line, as pymdownx.snippets reads one. A `:section` or
+# `:start:end` suffix picks part of the file; the whole file is scanned.
+SNIPPET = re.compile(r"""[ \t]*-+8<-+[ \t]+(["'])(?P<path>.+?)\1""")
+BACKTICK_TITLE = (
+    "Fence title holds a backtick: %s. GitHub does not read a ``` line whose "
+    "info string contains one as a fence, so the block's closing ``` "
+    "swallows what follows. Name the code bare, or open the fence with ~~~."
+)
+
+# The check's own cases, run on every build rather than behind a flag nobody
+# passes: a scan that stops catching its own example fails the build instead
+# of passing everything quietly.
+BACKTICK_TITLE_CASES = [
+    ("the title it exists for", '```text title="a `b` c"\nx\n```', [1]),
+    ("the same title on a ~~~ fence", '~~~text title="a `b` c"\nx\n~~~', []),
+    ("a bare four-backtick fence", "````rust\nfn f() {}\n````", []),
+    ("the title shown inside a longer fence",
+     '````markdown\n```text title="a `b` c"\nx\n```\n````', []),
+    ("the title shown inside a ~~~ fence",
+     '~~~markdown\n```text title="a `b` c"\nx\n```\n~~~', []),
+    ("the title behind a blockquote's >",
+     '> ```text title="a `b` c"\n> x\n> ```', [1]),
+    ("the title indented in a list item",
+     '1. Step\n\n    ```text title="a `b` c"\n    x\n    ```', [3]),
+    ("a line starting with a code span, then the title",
+     '```` ``` ```` opens a fence.\n\n```text title="a `b` c"\nx\n```', [3]),
+    ("a fence only a bare line closes, then the title",
+     '```\n```rust\n```\n```text title="a `b` c"\nx\n```', [4]),
+]
+
+
+def _backtick_titles(markdown: str) -> list[int]:
+    """Line numbers of top-level ``` openers whose info string holds a backtick."""
+    # superfences' own header pattern, which decides whether the site opens a
+    # fence on that line. Imported here, not at the top, so that importing this
+    # file still needs nothing beyond the standard library.
+    from pymdownx.superfences import RE_NESTED_FENCE_START
+
+    hits: list[int] = []
+    fence = None
+    for n, line in enumerate(markdown.split("\n"), 1):
+        body = line.lstrip(" \t>")
+        if fence is None:
+            m = FENCE_LINE.match(body)
+            if not m:
+                continue
+            if m["fence"][0] == "`" and "`" in m["info"]:
+                header = RE_NESTED_FENCE_START.match(body)
+                if header is None or header["unrecognized"]:
+                    continue  # not a fence on the site either: a code span
+                hits.append(n)
+            fence = m["fence"]
+        elif re.fullmatch(rf"{fence[0]}{{{len(fence)},}}[ \t]*", body):
+            fence = None
+    return hits
+
+
+def _lines_above(page, markdown: str) -> int:
+    """Lines MkDocs took off the top of the file before handing the rest over
+    as `markdown` -- front matter, and the blank lines after it."""
+    try:
+        source = page.file.content_string
+    except (OSError, ValueError):
+        return 0
+    if not markdown or not source.endswith(markdown):
+        return 0
+    return source[: len(source) - len(markdown)].count("\n")
+
+
+def on_pre_build(config):
+    """Warn if the fence-title scan has stopped passing its own cases."""
+    for label, text, want in BACKTICK_TITLE_CASES:
+        got = _backtick_titles(text)
+        if got != want:
+            log.warning(
+                "The fence-title check is broken: on %s it reports lines %s, "
+                "expected %s.",
+                label,
+                got,
+                want,
+            )
+
+
+def on_page_markdown(markdown, page, config, files):
+    """Warn once per fence title holding a backtick, here or in what it inlines."""
+    src = page.file.src_uri
+    skipped = _lines_above(page, markdown)
+    for n in _backtick_titles(markdown):
+        log.warning(BACKTICK_TITLE, f"{src}:{n + skipped}")
+    inlined = {
+        m["path"].split(":", 1)[0]
+        for m in map(SNIPPET.fullmatch, markdown.split("\n"))
+        if m
+    }
+    for rel in sorted(inlined):
+        path = pathlib.Path(config["docs_dir"], rel)
+        if path.is_file():
+            for n in _backtick_titles(path.read_text(encoding="utf-8-sig")):
+                log.warning(BACKTICK_TITLE, f"{rel}:{n}, inlined into {src}")
+    return markdown

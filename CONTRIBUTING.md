@@ -191,6 +191,8 @@ format(65, '08b')   # '01000001'
 
 **Never open a page with code that does not run.** The first block on a page is the one that gets pasted. Lead with the working thing; put a refusal or an error further down, as a comment inside a valid snippet or as a `text` fence nobody can paste into a program by accident.
 
+**A fence title never holds a backtick** — name code bare, as every title here has since the 2026-09-10 fix, because GitHub does not read a `` ``` `` line whose info string contains one as a fence (its closing `` ``` `` then opens a block that swallows what follows) and `mkdocs build --strict` fails on it; a `~~~` fence is the fallback if a title truly needs a backtick, since every fence-parsing tool in this repo accepts `~~~`.
+
 ## Bridges
 
 Every lesson has a section **If you are coming from Python or ABAP**. Those are the two languages this library's reader already thinks in, and a bridge to a language you already speak is the fastest teaching on the page — take the words it needs. Say what transfers *and* what the new language enforces that the old one left to habit; a bridge that hides a real difference costs more than it saves.
