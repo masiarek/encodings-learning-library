@@ -86,6 +86,10 @@ One lesson per sitting. The chapters are short on purpose.
 
 C is the language where a string *is* the bytes: `char` is one byte, `strlen` counts bytes up to the first NUL, and `"café"` is five bytes plus a terminator with nothing in the language that knows about characters. That is the truth Python hides behind `str` and Rust enforces with `&str` versus `&[u8]`, so one look at it in C makes both of the others click. It is not a fourth track here — the pointer arithmetic and `wchar_t` would cost more than they teach — but a short *The C view* section sits on the lessons where it sharpens the point, compiled and checked like every other example. One is on [Control characters](../02_Characters/control_characters/README.md), where `strlen` stops at a NUL that Python and Rust carry happily. The one to read first is on [UTF-8 by hand](../03_Encodings/utf8_by_hand/README.md): with no character type and no library to call, the encoder there *is* the pencil method, and it is ten lines.
 
+## Where Go fits
+
+Go is here because some of what this library teaches is a fact about Go: its `rune`, the word for one code point in every Go string loop, is an `int32` that checks nothing, and its decoder counts a broken byte differently from Python's. Like C, it is an aside rather than a track — compiled and checked like every other example, on the pages where Go itself is the subject. The first is [`rune` is an `int32`](../02_Characters/rune_is_an_int32/README.md).
+
 ## When you want more than the lessons
 
 [RESOURCES.md](../RESOURCES.md) is the outside reading: the one Stack Overflow answer everybody links, the two articles every programmer is told to read, the books, four videos, the tools that let you look a character up, and the katas that ask you to write the real UTF-8 encoder. Every link on it was checked the day it was added.

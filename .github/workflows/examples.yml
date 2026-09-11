@@ -1,11 +1,13 @@
 # Every example must run and print exactly what its recorded .out file says — and
 # every lesson page's generated output block must match that run.
 #
-# This library has three kinds of example, and this job runs all of them:
+# This library has five kinds of example, and this job runs all of them:
 #   examples/*.py   stdlib-only Python, run with the python3 on the runner
 #   examples/*.rs   compiled with bare rustc (no cargo, no crates)
 #   examples/*.sh   bash, using xxd / od / hexdump / cat / file / iconv / printf / strings
 #   examples/*.c    compiled with cc (clang on macOS, gcc on Ubuntu), no libraries
+#   examples/*.go   built one file at a time with go build, stdlib only, by the
+#                   current stable Go, which setup-go installs below
 #
 # It runs on BOTH Ubuntu and macOS on purpose. The shell examples call BSD tools
 # on a Mac and GNU tools on Linux, and an answer key that only matches one of
@@ -28,6 +30,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v7
+        with:
+          # Unpinned on purpose, like python3 and rustc: a Go example's key has to
+          # hold on whatever Go is current, so it may only record behaviour the
+          # Go 1 compatibility promise covers. There is no go.sum, so no cache.
+          go-version: stable
+          cache: false
       - name: Make sure xxd, hexdump, file and strings are present (separate packages on Ubuntu)
         if: runner.os == 'Linux'
         run: |
@@ -39,6 +48,7 @@ jobs:
         run: |
           python3 --version
           rustc --version
+          go version
           cc --version | head -1
           bash --version | head -1
           xxd -v 2>&1 | head -1

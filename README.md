@@ -104,6 +104,8 @@ The code is the illustration, never the subject. Each is here for what it shows 
 
 A few lessons add a short **C view** — `examples/*.c`, compiled and checked like the rest — where seeing the bytes with no abstraction at all is the fastest explanation; NUL is the first.
 
+A **Go view** joined it on 2026-09-11, on the same terms — `examples/*.go`, built alone with `go build` and checked like the rest — for the pages where what Go itself does is the subject; [`rune` is an `int32`](02_Characters/rune_is_an_int32/README.md) is the first.
+
 Every lesson also carries an *If you are coming from Python or ABAP* section, because those are the two languages a reader of this library already thinks in. The ABAP half is prose — CI cannot run ABAP — and says so on every page.
 
 ## How the library works
