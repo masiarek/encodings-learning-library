@@ -302,7 +302,7 @@ The one measured survivor is worth knowing: [Unicode code points](../unicode_cod
 4. `unicodedata.name(chr(0x1FA00))` raises
 5. This string `.isprintable()`
 
-Sort them into *stable* and *needs a version*, and say what makes the difference. Then the question underneath: **whose** version is it — and how many different Unicode tables are on the machine you are reading this on?
+Sort them into *guaranteed* and *needs a version*, and say what makes the difference. Then the question underneath: **whose** version is it — and how many different Unicode tables are on the machine you are reading this on?
 
 <details markdown="1">
 <summary><strong>Answers</strong></summary>
@@ -312,15 +312,31 @@ Sort them into *stable* and *needs a version*, and say what makes the difference
 
 ```text
 CLAIMS THAT NEED NO VERSION
-   ud.name('A')           LATIN CAPITAL LETTER A       assigned in 1991 and never touched
-   ud.category('A')       Lu                           a letter, uppercase -- settled
-   'ß'.upper()            SS                           a case mapping fixed long ago
-   len('😀'.encode())      4                            UTF-8's rules, not the table's
+   ud.name('A')           LATIN CAPITAL LETTER A       guaranteed: the stability policy
+   len('😀'.encode())      4                            arithmetic: UTF-8's rules, not the table's
 
-   Assignment is a one-way door: once a code point has a name and a
-   category, the consortium does not reassign it. So a claim about a
-   character that already existed when your Python was built is a claim
-   about Unicode, and it will read the same in five years.
+   Assignment is a one-way door: once a code point is assigned, its
+   name never changes and the code point is never reused. That is
+   written into Unicode's stability policy, and it is why claim 1
+   needs no stamp. The byte count needs none for another reason:
+   UTF-8 encodes the number without asking the table what it means.
+
+CLAIMS THAT ARE OBSERVED, NOT GUARANTEED
+   ud.category('A')       Lu                           observed: never promised
+   'ß'.upper()            SS                           observed: a row in SpecialCasing.txt
+
+   Claim 2 is the trap. It looks as settled as claim 1, and it is not
+   the same kind of claim: the policy pins a name, but not the Lu on
+   'A' and not the SS in 'ß'. Both kinds of answer have moved for
+   characters that were already assigned. ZERO WIDTH SPACE was a
+   space (Zs) in the 2002 table and is a format character (Cf) in a
+   modern one. U+019B and U+0264, in Unicode since 1993, had no
+   capital until Unicode 16.0 gave each one -- so what upper() returns
+   for them changed thirty-one years after they were encoded.
+
+   Nobody expects 'A' or 'ß' to move. That is a forecast, not a
+   promise, so claim 2 sorts with 3, 4 and 5: the version stamp is
+   what keeps a bug report true on the day a forecast fails.
 
 CLAIMS THAT DO NOT SURVIVE WITHOUT ONE
    unicodedata.unidata_version            the whole question -- and it is a property of the LIBRARY, not the machine
