@@ -489,7 +489,7 @@ case "Na": width = "WidthNeutral";   break
 case "W":  width = "WidthWide";      break
 ```
 
-`%(cells)` survives it, since both kinds take one column. What breaks is anything that reads the word: grep `uni print all` for *narrow* and you get tens of thousands of Neutral characters and not one of the 111 that are Narrow.
+`%(cells)` survives it, since both kinds take one column. What breaks is anything that reads the word: grep `uni print all` for *narrow* and you get tens of thousands of Neutral characters and not one of the 111 that are Narrow. Reported upstream as [arp242/uni#61 ↗](https://github.com/arp242/uni/issues/61).
 
 ### The keysym column reads the wrong number
 
@@ -508,7 +508,7 @@ $ grep -E 'XK_(eacute|Aogonek|zabovedot|checkmark) ' keysymdef.h
 #define XK_checkmark                     0x0af3  /* U+2713 CHECK MARK */
 ```
 
-`ż` and `✓` come back blank although X11 names both, and characters with no keysym at all get somebody else's: `ơ` U+01A1 is given `Aogonek` — which is `Ą`'s — because `XK_Aogonek` happens to be `0x01a1`. Across the whole header, 1,660 code points have a keysym. `uni` names all 192 whose keysym number equals the code point — Latin-1 and the euro, six of them by another name for the same number, such as the deprecated `quoteright` for the apostrophe — and none of the other 1,468 correctly: 1,334 blank and 134 wrong. The parser keeps the third field of each `#define` and never reads the comment ([source ↗](https://github.com/arp242/uni/blob/e242227ab4b90fb7db775f0d15aeb5b30245e1cc/unidata/gen/codepoints.awk#L65-L70)):
+`ż` and `✓` come back blank although X11 names both, and characters with no keysym at all get somebody else's: `ơ` U+01A1 is given `Aogonek` — which is `Ą`'s — because `XK_Aogonek` happens to be `0x01a1`. Across the whole header, 1,633 code points have a one-to-one keysym (27 more appear only in parentheses, the header's mark for a mapping that is not one-to-one). `uni` names all 192 whose keysym number equals the code point — Latin-1 and the euro, six of them by another name for the same number, such as the deprecated `quoteright` for the apostrophe — and none of the other 1,441 correctly: 1,307 blank and 134 wrong. The parser keeps the third field of each `#define` and never reads the comment ([source ↗](https://github.com/arp242/uni/blob/e242227ab4b90fb7db775f0d15aeb5b30245e1cc/unidata/gen/codepoints.awk#L65-L70)):
 
 ```text title="unidata/gen/codepoints.awk, lines 65–70, at commit e242227 — indentation trimmed"
 while (getline line <".cache/keysymdef.h" > 0) {
@@ -519,7 +519,7 @@ while (getline line <".cache/keysymdef.h" > 0) {
 }
 ```
 
-A blank in that column is therefore not evidence of anything. X11's Polish keyboard layout sends `zabovedot` and `lstroke` (`symbols/pl` in xkb-data 2.41), so both Polish letters have keys of their own; it is `uni`'s column that does not know them.
+A blank in that column is therefore not evidence of anything. X11's Polish keyboard layout sends `zabovedot` and `lstroke` (`symbols/pl` in xkb-data 2.41), so both Polish letters have keys of their own; it is `uni`'s column that does not know them. Reported upstream as [arp242/uni#62 ↗](https://github.com/arp242/uni/issues/62).
 
 ### A numeral has no byte order
 
