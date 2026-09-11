@@ -31,7 +31,7 @@ Bytes do not carry their encoding. There is no header, no marker, no reliable si
 
 Detection libraries (`chardet`, `charset-normalizer`, `file --mime-encoding`) are statistics. They are right most of the time, which is worse than being wrong all of the time, because the failures are rare enough to reach production. Use one to *investigate* a mystery file, never as the encoding in a pipeline.
 
-The corollary is about your own defaults: `open(path)` with no `encoding=` uses whatever the machine's locale says, so the same script reads correctly on your Mac and silently wrongly on a Windows box. Name the encoding even when it is already the default — see [Python text in practice](../python_text_in_practice/README.md).
+The corollary is about your own defaults: `open(path)` with no `encoding=` uses whatever the machine's locale says, unless UTF-8 Mode is on — section 2 of the program below shows the two answers side by side — so the same script reads correctly on your Mac and silently wrongly on a Windows box. Name the encoding even when it is already the default — see [Python text in practice](../python_text_in_practice/README.md).
 
 ## `errors=` is a policy, not an escape hatch
 
@@ -88,15 +88,24 @@ Python is the shortest place to show all five, because it draws the text/bytes l
 
 2. THE ENCODING IS NOT A GUESS — IT COMES FROM THE PROTOCOL
 ------------------------------------------------------------------------
-   sys.flags.utf8_mode        = 1
-   locale.getencoding() is UTF-8? False
-   (The NAME is not printed on purpose: this run is pinned to LC_ALL=C,
-   where macOS calls it 'US-ASCII' and Linux calls it 'ANSI_X3.4-1968'.
-   Even the name of the fallback encoding is machine-dependent.)
+   sys.flags.utf8_mode                = 1
+   locale.getencoding()               = ascii   <- what the locale says
+   locale.getpreferredencoding(False) = utf-8   <- open()'s default
+   io.TextIOWrapper(buf).encoding     = utf-8   <- open()'s own choice
+   (The last line builds the object open() returns, over bytes in
+   memory. Names are canonical, from codecs.lookup(): under LC_ALL=C
+   macOS calls the locale's encoding 'US-ASCII' and Linux calls it
+   'ANSI_X3.4-1968' — even the fallback's NAME is machine-dependent.)
 
-   That fallback is what open() uses when you do not pass encoding=.
-   On a Windows box it is 'cp1252' — which is how the same script reads
-   a file correctly here and silently wrongly there.
+   open() with no encoding= follows getpreferredencoding(False), not
+   getencoding(): UTF-8 while UTF-8 Mode is on, the locale's encoding
+   when it is off. This page's recorded run has the mode on without
+   anyone asking: the run is pinned to LC_ALL=C, and PEP 540 switches
+   UTF-8 Mode on under a C locale, which is why the locale and open()
+   disagree there. With the mode off, a C locale gets you ASCII, which
+   raises on the first byte over 127, and a western Windows box gets
+   you 'cp1252' — which is how the same script reads a file correctly
+   on one machine and silently wrongly on another.
 
    So: open(path, encoding='utf-8'), always, even when it is the default.
    Python 3.15 makes UTF-8 the default (PEP 686) and the argument STILL

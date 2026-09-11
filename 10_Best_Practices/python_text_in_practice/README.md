@@ -25,7 +25,7 @@ open(path, "rb")                        # when it is not text at all
 
 ## Two interpreter switches worth knowing
 
-**`-X utf8` / `PYTHONUTF8=1`** ([PEP 540 ↗](https://peps.python.org/pep-0540/)) tells Python to ignore the locale and use UTF-8 for everything. [PEP 686 ↗](https://peps.python.org/pep-0686/) is Final and makes that the **default in Python 3.15** — the single biggest change to this subject in fifteen years, and the end of the "works on my machine" encoding bug.
+**`-X utf8` / `PYTHONUTF8=1`** ([PEP 540 ↗](https://peps.python.org/pep-0540/)) tells Python to stop asking the locale wherever it picks an encoding for you — `open()`, the standard streams, filenames. Under a C or POSIX locale nobody has to ask: PEP 540 switches the mode on by itself there, and that is why the program below reports it on. This library records every example under `LC_ALL=C`, and the runner starts Python with `-I`, which ignores every `PYTHON*` variable — so the `PYTHONUTF8=1` it also sets plays no part. [Opening a file](../../04_Python/opening_a_file/README.md#this-pages-own-environment-is-rigged-and-says-so) settles that with two child interpreters. [PEP 686 ↗](https://peps.python.org/pep-0686/) is Final and makes the mode the **default in Python 3.15** — the single biggest change to this subject in fifteen years, and the end of the "works on my machine" encoding bug.
 
 **`-X warn_default_encoding`** ([PEP 597 ↗](https://peps.python.org/pep-0597/), since 3.10) turns every `open()` that did not name an encoding into an `EncodingWarning` with the line number. Run your test suite under it once and you have audited a whole codebase in one pass. This is the highest-value five minutes on this page.
 
@@ -95,11 +95,20 @@ And on the way out: `json.dumps(data, ensure_ascii=False)`. The default escapes 
 
 3. TWO SWITCHES THAT TURN THE WHOLE CLASS OF BUG INTO A WARNING
 ------------------------------------------------------------------------
-   sys.flags.utf8_mode        = 1   (PYTHONUTF8=1 / -X utf8)
-   sys.flags.warn_default_encoding = 0   (-X warn_default_encoding)
-   UTF-8 mode (PEP 540) makes Python ignore the machine's locale and use
-   UTF-8 everywhere; PEP 686 makes that the DEFAULT in Python 3.15, which
-   is the single biggest change to this subject in fifteen years.
+   sys.flags.utf8_mode             = 1
+       set by -X utf8 or PYTHONUTF8; with neither, a C or POSIX locale
+       switches it on by itself (PEP 540)
+   sys.flags.warn_default_encoding = 0
+       set by -X warn_default_encoding or PYTHONWARNDEFAULTENCODING=1
+   In this page's recorded run the first flag is 1 because of the
+   locale: the library records every example under LC_ALL=C, and runs
+   it with python3 -I, which ignores every PYTHON* variable — so the
+   PYTHONUTF8=1 the runner also sets is ignored with the rest.
+
+   UTF-8 mode stops Python asking the locale wherever it picks an
+   encoding for you — open(), the standard streams, filenames — and
+   PEP 686 makes it the DEFAULT in Python 3.15, which is the single
+   biggest change to this subject in fifteen years.
 
    The second flag is the one to run your test suite under today:
    -X warn_default_encoding turns every open() that did not name an
@@ -184,10 +193,11 @@ For the filename habit, round-trip `b"caf\xe9.txt"` through `os.fsdecode`/`os.fs
 ```text
 1. PASS encoding= TO EVERY open(), EVEN WHEN IT IS THE DEFAULT
    locale.getpreferredencoding(False) is the default on your machine,
-   and it is NOT necessarily utf-8: it is cp1252 on a western Windows
-   box and the locale's charset elsewhere. This machine's answer is
-   deliberately not printed -- it would make this key a fact about the
-   runner, which is the whole problem the habit prevents.
+   and it is NOT necessarily utf-8: unless UTF-8 Mode is on, it is
+   cp1252 on a western Windows box and the locale's charset elsewhere.
+   This machine's answer is deliberately not printed -- it would make
+   this key a fact about the runner, which is the whole problem the
+   habit prevents.
    forbidden:  open('data.csv')
    correct:    open('data.csv', encoding='utf-8')
    Same file, same code, different result on a colleague's laptop -- and

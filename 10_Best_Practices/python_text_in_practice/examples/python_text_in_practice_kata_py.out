@@ -1,9 +1,10 @@
 1. PASS encoding= TO EVERY open(), EVEN WHEN IT IS THE DEFAULT
    locale.getpreferredencoding(False) is the default on your machine,
-   and it is NOT necessarily utf-8: it is cp1252 on a western Windows
-   box and the locale's charset elsewhere. This machine's answer is
-   deliberately not printed -- it would make this key a fact about the
-   runner, which is the whole problem the habit prevents.
+   and it is NOT necessarily utf-8: unless UTF-8 Mode is on, it is
+   cp1252 on a western Windows box and the locale's charset elsewhere.
+   This machine's answer is deliberately not printed -- it would make
+   this key a fact about the runner, which is the whole problem the
+   habit prevents.
    forbidden:  open('data.csv')
    correct:    open('data.csv', encoding='utf-8')
    Same file, same code, different result on a colleague's laptop -- and

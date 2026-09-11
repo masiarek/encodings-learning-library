@@ -23,7 +23,13 @@ bare stem with no path and no extension. The convention is a language suffix:
 `hex_is_a_shorthand_py`, `hex_is_a_shorthand_rs`, `hex_is_a_shorthand_sh`.
 
 Every example runs under one fixed environment — `LC_ALL=C`, `LANG=C`,
-`PYTHONUTF8=1` — so the answer key does not depend on whoever ran it. A lesson
+`PYTHONUTF8=1`, `PYTHONIOENCODING=utf-8` — so the answer key does not depend on
+whoever ran it. For a Python example the locale is the part doing the work: it
+runs as `python3 -I`, and `-I` ignores every `PYTHON*` variable, so its own
+interpreter obeys neither of the other two. It is in UTF-8 Mode all the same,
+because `LC_ALL=C` is a C locale and PEP 540 switches the mode on under one.
+The two variables do reach a shell example that calls `python3`, and any child
+interpreter that inherits the environment and is started without `-I`. A lesson
 whose subject is the locale sets its own inside the script, on purpose and in
 view. Output is captured as bytes and decoded as UTF-8; a byte that is not
 valid UTF-8 is written into the key as `\\xNN`, which is deterministic, and is

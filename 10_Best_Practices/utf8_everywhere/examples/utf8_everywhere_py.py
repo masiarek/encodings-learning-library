@@ -8,6 +8,8 @@ draws the text/bytes line as a type you can print.
 Run:  python3 utf8_everywhere_py.py
 """
 
+import codecs
+import io
 import json
 import locale
 import sys
@@ -35,16 +37,41 @@ print("   ever have is a program that let bytes leak into the filling.")
 
 # ------------------------------------------------------------------ 2
 head(2, "THE ENCODING IS NOT A GUESS — IT COMES FROM THE PROTOCOL")
-enc = locale.getencoding()
-print(f"   sys.flags.utf8_mode        = {sys.flags.utf8_mode}")
-print(f"   locale.getencoding() is UTF-8? {enc.lower().replace('-', '') in ('utf8', 'utf8mb4')}")
-print("   (The NAME is not printed on purpose: this run is pinned to LC_ALL=C,")
-print("   where macOS calls it 'US-ASCII' and Linux calls it 'ANSI_X3.4-1968'.")
-print("   Even the name of the fallback encoding is machine-dependent.)")
+
+
+def canonical(name):
+    """codecs.lookup()'s spelling. The C locale's encoding is 'US-ASCII' on
+    macOS and 'ANSI_X3.4-1968' on glibc, and both of those are 'ascii'."""
+    return codecs.lookup(name).name
+
+
+# A TextIOWrapper given no encoding= is the object open() builds in text mode,
+# and it makes open()'s choice — over bytes in memory, so no file is touched.
+choices = [
+    ("sys.flags.utf8_mode", sys.flags.utf8_mode, ""),
+    ("locale.getencoding()", canonical(locale.getencoding()),
+     "<- what the locale says"),
+    ("locale.getpreferredencoding(False)",
+     canonical(locale.getpreferredencoding(False)), "<- open()'s default"),
+    ("io.TextIOWrapper(buf).encoding",
+     canonical(io.TextIOWrapper(io.BytesIO()).encoding), "<- open()'s own choice"),
+]
+for label, value, note in choices:
+    print(f"   {label:34} = {value!s:6}  {note}".rstrip())
+print("   (The last line builds the object open() returns, over bytes in")
+print("   memory. Names are canonical, from codecs.lookup(): under LC_ALL=C")
+print("   macOS calls the locale's encoding 'US-ASCII' and Linux calls it")
+print("   'ANSI_X3.4-1968' — even the fallback's NAME is machine-dependent.)")
 print()
-print("   That fallback is what open() uses when you do not pass encoding=.")
-print("   On a Windows box it is 'cp1252' — which is how the same script reads")
-print("   a file correctly here and silently wrongly there.")
+print("   open() with no encoding= follows getpreferredencoding(False), not")
+print("   getencoding(): UTF-8 while UTF-8 Mode is on, the locale's encoding")
+print("   when it is off. This page's recorded run has the mode on without")
+print("   anyone asking: the run is pinned to LC_ALL=C, and PEP 540 switches")
+print("   UTF-8 Mode on under a C locale, which is why the locale and open()")
+print("   disagree there. With the mode off, a C locale gets you ASCII, which")
+print("   raises on the first byte over 127, and a western Windows box gets")
+print("   you 'cp1252' — which is how the same script reads a file correctly")
+print("   on one machine and silently wrongly on another.")
 print()
 print("   So: open(path, encoding='utf-8'), always, even when it is the default.")
 print("   Python 3.15 makes UTF-8 the default (PEP 686) and the argument STILL")
