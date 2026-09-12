@@ -1,0 +1,69 @@
+1. THE SHELL CAN BE TOLD, AND IT HAS TWO SPELLINGS FOR SAYING SO
+   base#digits -- you name the base in front of a #, in any base from 2 to 64
+   $(( 2#11111111 ))  = 255
+   $(( 8#377 ))       = 255
+   $(( 10#255 ))      = 255
+   $(( 16#FF ))       = 255
+   and the C prefixes it inherits -- both of them, because there is no 0b here
+   $(( 0377 ))        = 255
+   $(( 0xFF ))        = 255
+   $(( 255 ))         = 255
+   $(( 0b11111111 )) is an error: bash took 0x and the leading zero from C
+   and stopped there, which is the set C11 itself had. Binary is 2#11111111.
+   Seven spellings, one number. The four with a # say the base out loud. The
+   three below them do not: 0377 is octal because of one character you can
+   miss, and 255 is decimal because nothing said otherwise.
+
+2. SO WHAT IS 010? ONE SHELL, TWO BUILTINS, TWO ANSWERS
+   [ 010 -eq 10 ]       true    [[ 010 -eq 10 ]]     false
+   [ 010 -eq 8 ]        false   [[ 010 -eq 8 ]]      true
+   test(1) reads its operands in base 10. [[ ]] puts them through $(( )),
+   where a leading zero is octal. Both are builtins of the same shell, both
+   are spelled -eq, and they disagree about the characters between them.
+
+$ printf '%d\n' 010 0x41 255   # printf takes the C prefixes: 8, 65, 255
+8
+65
+255
+
+$ printf '%s\n' 010 9 | sort -n | tr '\n' ' ' | sed 's/ $//'   # sort -n: base 10, so 9 is first
+9 010
+   And $(( 09 )) is an ERROR -- "value too great for base" -- because the
+   leading zero already said octal and 9 is not an octal digit. That is the
+   rule speaking up, which it does only when the digits happen to give it away.
+
+3. THE OFFSET YOU TYPE IS NOT IN THE BASE THE DUMP PRINTS
+
+$ xxd -g 4 off.bin
+00000000: 30313233 34353637 38396162 63646566  0123456789abcdef
+00000010: 6768696a                             ghij
+   The offset column is HEX. The second row begins at 00000010, which is 16.
+
+   you type     xxd -s       od -j
+   10           61626364     abcd
+   010          38396162     89ab
+   0x10         6768696a     ghij
+   Row 1 is the everyday mistake: you read 00000010 off the dump, typed
+   -s 10, and landed six bytes early. Row 2 is the one nobody expects --
+   both tools read a leading zero as octal, so 010 seeks to 8, not to 10.
+   Row 3 is the spelling that says what it means, and both tools take it.
+
+   head -c is a LENGTH rather than a seek, and reads the same three again:
+   head -c 10     10 bytes
+   head -c 010    10 bytes
+   head -c 0x10   refused
+   Ten, ten, and a refusal: this one is base 10 and takes no prefix at all.
+
+4. ONE FIELD WITH NO SPELLING, AND ONE WITH NO CHOICE
+   chmod 755      -rwxr-xr-x
+   chmod 0755     -rwxr-xr-x
+   chmod 888      refused
+   chmod's mode is octal always. The leading zero changes nothing, there is
+   no way to hand it a decimal 755, and the refusal of 888 is the tell: an
+   8 cannot be an octal digit, so the field never had another reading.
+
+$ printf 'A' | od | tidy   # and od's own default OUTPUT base is octal, two bytes at a time
+0000000 000101
+0000001
+   000101 is one byte: 0101 octal, 0x41, 'A'. The oldest byte tool on the
+   machine answers in base 8 until you ask it for something else.

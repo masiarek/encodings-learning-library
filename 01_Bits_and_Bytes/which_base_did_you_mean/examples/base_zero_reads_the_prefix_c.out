@@ -1,0 +1,30 @@
+1. ONE ARGUMENT, AND IT IS THE WHOLE CONVENTION
+   input    base          value  consumed   left over
+   010      0                 8         3   (nothing)
+   0x10     0                16         4   (nothing)
+   10       0                10         2   (nothing)
+   09       0                 0         1   9
+   0        0                 0         1   (nothing)
+
+   010      10               10         3   (nothing)
+   0x10     10                0         1   x10
+   10       10               10         2   (nothing)
+   09       10                9         2   (nothing)
+   0        10                0         1   (nothing)
+
+2. READ THE TWO BLOCKS AGAINST EACH OTHER
+   010   is 8 under base 0 and 10 under base 10. Same digits, same
+         function, one argument apart -- and no error either way.
+   09    is where base 0 gives up: the leading zero said octal, 9 is
+         not an octal digit, so it returns 0 and leaves "9" behind.
+   0x10  is where base 10 gives up, the same way round: it reads the
+         0, stops at the x, and returns 0 with "x10" left over.
+
+3. AND BOTH GIVE-UPS RETURN 0, WHICH IS ALSO A CORRECT ANSWER
+   The last row is a real "0", parsed in full. Nothing in the return
+   value separates it from the two failures above -- only `consumed`
+   does, and a caller that ignores the endptr cannot tell them apart.
+   That is the same claim the rest of this library keeps making about
+   text: the value is not the whole result, and the base is not in the
+   digits. Here it is one int argument, chosen by whoever wrote the
+   tool, in a call you never see.

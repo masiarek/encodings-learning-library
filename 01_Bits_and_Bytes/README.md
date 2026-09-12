@@ -2,7 +2,7 @@
 
 **Level:** 101 · for anyone starting from zero
 
-Eight lessons, and after them a hex dump is readable — and you know which parts of it are the file, which are the tool, and which of two things a run of hex digits is. Each answers a question the one before it raises.
+Nine lessons, and after them a hex dump is readable — and you know which parts of it are the file, which are the tool, which of two things a run of hex digits is, which end of a wide value comes first, and how to type a number back into a tool that never says which base it reads. Each answers a question the one before it raises.
 
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|
@@ -14,6 +14,7 @@ Eight lessons, and after them a hex dump is readable — and you know which part
 | 6 | [Hex: a number, or a picture of bytes](hex_number_or_bytes/README.md) | `0041` — is that 65, or two bytes? And why do four languages disagree about what a hex digit is? | written, 2026-09-07 |
 | 7 | [Arithmetic has its own width](arithmetic_has_its_own_width/README.md) | The byte holds 0..255 — so why is `255 << 2` equal to 1020 in three of these four languages? | written, 2026-09-07 |
 | 8 | [The bytes do not say which end](which_end_comes_first/README.md) | A value too big for one byte needs several — so which of them is the big one, and why do six dump commands give three different answers? | written, 2026-09-12 |
+| 9 | [Which base did you mean?](which_base_did_you_mean/README.md) | I have the value — how do I tell a tool which base I typed it in, and what does it assume when I do not? | written, 2026-09-12 |
 
 ## The through-line
 
@@ -21,4 +22,4 @@ Eight lessons, and after them a hex dump is readable — and you know which part
 
 ## A note on the code
 
-Every lesson here has a Python, a Rust, and a shell example of the same idea. They are illustrations. Python shows the idea in the fewest lines; the shell shows it on the actual bytes of an actual pipe; Rust shows it with the width and the reading written into the type, so the compiler holds the line the other two leave to you.
+Most lessons here have a Python, a Rust and a shell example of the same idea, and several add a C aside where C is where the behaviour came from. They are illustrations. Python shows the idea in the fewest lines; the shell shows it on the actual bytes of an actual pipe; Rust shows it with the width and the reading written into the type, so the compiler holds the line the other two leave to you; C shows the rule the other three are reacting to. A lesson takes only the ones that show something the others cannot, so two of them are shorter than that: [Reading a hex dump](reading_a_hex_dump/README.md) needs no Rust, and [Which base did you mean?](which_base_did_you_mean/README.md) makes its point in the shell and in one argument to `strtol`.

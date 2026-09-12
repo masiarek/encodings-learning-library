@@ -129,6 +129,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "hex_number_or_bytes",
         "arithmetic_has_its_own_width",
         "which_end_comes_first",
+        "which_base_did_you_mean",
     ],
     # A character is a number by agreement; the agreements got bigger.
     "02_Characters": [

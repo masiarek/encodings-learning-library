@@ -1,0 +1,43 @@
+1. THREE SPELLINGS IN $(( ))
+   $(( 0x10 ))      = 16
+   $(( 010 ))       = 8
+   $(( 10#010 ))    = 10
+   Sixteen, eight, ten. The first says its base, the second says it in a
+   character you can miss, and the third says the base that needs saying
+   precisely because it is the one everybody assumes.
+
+2. SEEKING TO THE ROW LABELLED 00000020
+   00000000: 30313233 34353637 38396162 63646566  0123456789abcdef
+   00000010: 30313233 34353637 38394142 43444546  0123456789ABCDEF
+   00000020: 2e2e2e2e 2e2e2e2e 2e2e2e2e 2e2e2e2e  ................
+   The third row's label is 00000020, and that is hex, so it is byte 32.
+   xxd -s 0x20    2e2e2e2e
+   xxd -s 32      2e2e2e2e
+   xxd -s 20      34353637
+   xxd -s 020     30313233
+   The first two are the same place. -s 20 is decimal twenty, twelve bytes
+   early; -s 020 is octal sixteen, which lands on the row above. Three
+   spellings of "twenty-ish", three different bytes, and no complaint from
+   any of them. Type the 0x and the question does not arise.
+
+3. THE SAME TEST, TWO BUILTINS
+   [ 010 -eq 8 ]        false
+   [[ 010 -eq 8 ]]      true
+   [[ ]] evaluates its operands arithmetically, so 010 is octal eight and the
+   test passes. [ ] reads them in base 10, so 010 is ten and it fails.
+
+4. FOUR CHARACTERS, TWO FLAGS
+   xxd -s 010       38396162   (seeks to byte 8)
+   head -c 010      0123456789   (reads ten bytes)
+   One of them called strtol with base 0 and the other with base 10. Nothing
+   on either man page's synopsis line tells you which, and both are ordinary
+   choices for a tool to make.
+
+5. THE NUMBER YOU HAVE MEMORISED IS OCTAL
+   chmod 644 means octal    0644 = 420 decimal
+   so decimal 644 would be  01204 octal
+   and chmod 644 gives      -rw-r--r--
+   rw-r--r-- is 420 as a decimal number. Nobody writes it that way, because
+   chmod's field has exactly one base and no syntax for saying so -- which is
+   the cleanest case on the page: an invisible default nobody trips over,
+   because it never varies and the tool refuses the digits 8 and 9.
