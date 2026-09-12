@@ -328,7 +328,7 @@ s << 32  (shift == int width) = -5
 - **There is no shift operator, and `SHIFT` is a false friend.** ABAP's `SHIFT` moves *characters in a string*. Bit work happens on the byte types — `x` and `xstring` — through `BIT-AND`, `BIT-OR`, `BIT-XOR`, `BIT-NOT`, `GET BIT` and `SET BIT`. So the expression this whole page is about cannot be written at all; you reach for the byte type first, which is arguably the right instinct.
 - **Integer division rounds, and every language on this page truncates or floors.** With an integer target, `/` rounds to nearest — `5 / 2` is 3, where C, Rust and bash give 2 and Python's `//` gives 2. `DIV` and `MOD` are the integer pair. This is the single most transferable trap in the list: a ported formula that looked right in ABAP is off by one in three other languages, and nothing warns.
 
-There is no unsigned integer type in ABAP at all, which is why the arithmetic-vs-logical shift question in the table above has no ABAP column.
+ABAP does have an unsigned integer type, and it is easy to miss. `b` is a one-byte integer that runs from 0 to 255, and SAP lists it [as an internal type ↗](https://help.sap.com/doc/abapdocu_750_index_htm/7.50/en-US/abenbuiltin_types_numeric.htm): no ABAP statement can name it, in the source or at runtime, and a type or field of your own is `b` when it is defined by reference to an ABAP Dictionary data element whose type is `INT1`. The arithmetic-vs-logical shift question in the table above still has no ABAP column, but the second bullet is the reason, not a missing type: with no shift operator there is nothing to ask it of.
 
 ## Try it
 
