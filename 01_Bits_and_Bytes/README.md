@@ -2,7 +2,7 @@
 
 **Level:** 101 · for anyone starting from zero
 
-Seven lessons, and after them a hex dump is readable — and you know which parts of it are the file, which are the tool, and which of two things a run of hex digits is. Each answers a question the one before it raises.
+Eight lessons, and after them a hex dump is readable — and you know which parts of it are the file, which are the tool, and which of two things a run of hex digits is. Each answers a question the one before it raises.
 
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|
@@ -13,6 +13,7 @@ Seven lessons, and after them a hex dump is readable — and you know which part
 | 5 | [Grouping is a choice](grouping_is_a_choice/README.md) | The dump put spaces every two bytes — who decided that, and what does a different width claim about the file? | written |
 | 6 | [Hex: a number, or a picture of bytes](hex_number_or_bytes/README.md) | `0041` — is that 65, or two bytes? And why do four languages disagree about what a hex digit is? | written, 2026-09-07 |
 | 7 | [Arithmetic has its own width](arithmetic_has_its_own_width/README.md) | The byte holds 0..255 — so why is `255 << 2` equal to 1020 in three of these four languages? | written, 2026-09-07 |
+| 8 | [The bytes do not say which end](which_end_comes_first/README.md) | A value too big for one byte needs several — so which of them is the big one, and why do six dump commands give three different answers? | written, 2026-09-12 |
 
 ## The through-line
 

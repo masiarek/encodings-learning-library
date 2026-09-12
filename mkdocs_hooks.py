@@ -63,6 +63,7 @@ FIXUPS = {
 # here rather than in a rename. Like NAV_ORDER, an entry naming a folder that no
 # longer exists is a silent no-op.
 LABEL_OVERRIDES: dict[str, str] = {
+    "which_end_comes_first": "The bytes do not say which end",
     "utf8_by_hand": "UTF-8 by hand",
     "look_paste_tee_split": "look, paste, tee and split",
     "utf16_and_surrogates": "UTF-16 and surrogates",
@@ -127,6 +128,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "grouping_is_a_choice",
         "hex_number_or_bytes",
         "arithmetic_has_its_own_width",
+        "which_end_comes_first",
     ],
     # A character is a number by agreement; the agreements got bigger.
     "02_Characters": [

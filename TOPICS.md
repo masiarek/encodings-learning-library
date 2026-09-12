@@ -221,7 +221,7 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 **Missing — add:**
 
 - ~~**`0b`, `0o`, `_` separators**~~ — both halves are written. The *parsing* side is on [Hex: a number, or a picture of bytes](01_Bits_and_Bytes/hex_number_or_bytes/README.md): `4_1` is 65 to Python, an error to Rust, and **4** to C's `strtol` with the rest left over. The *literal* side — what a compiler accepts in source — is [Writing the literal](01_Bits_and_Bytes/hex_is_a_shorthand/README.md#writing-the-literal), where the sting is the base that has no prefix: `0755` is **493 in C, 755 in Rust, and a syntax error in Python 3**.
-- ~~**Endianness is visible in a hex editor and nowhere else**~~ — half-answered on the same page: a number has no byte order and a byte string does, so the question comes into existence at the conversion. The hex-editor half still belongs to §2.5.
+- ~~**Endianness is visible in a hex editor and nowhere else**~~ — the first half was answered on the same page (a number has no byte order and a byte string does, so the question comes into existence at the conversion); the hex-editor half went to §2.5 and was written there on 2026-09-12 as [The bytes do not say which end](01_Bits_and_Bytes/which_end_comes_first/README.md). The item's own claim turns out to be the thing to correct: a hex editor is where the setting is **labelled** — 010 Editor prints `LIT` or `BIG` in the status bar — but it is not the only place it exists. `xxd -e`, `od -x` and a bare `hexdump` all apply one, and only the first of those was asked.
 - ~~**A "byte" was not always 8 bits**~~ — written as [A byte was not always eight bits](01_Bits_and_Bytes/a_byte_is_eight_bits/README.md#a-byte-was-not-always-eight-bits), and it took more than a sentence because the question is still open in C: `CHAR_BIT` is a number the language declines to fix at 8 (POSIX does), and `sizeof(char) == 1` is true by *definition*, so `sizeof` counts chars and not octets. Which is where the RFC vocabulary comes from.
 
 ### 1.13 Registries and living standards — **core, and entirely absent from the imported list**
@@ -308,14 +308,22 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 
 ### 2.5 Endianness — **core**
 
+*Covered:* [The bytes do not say which end](01_Bits_and_Bytes/which_end_comes_first/README.md) · [Byte order and the BOM](03_Encodings/byte_order_and_bom/README.md) · [Packing a record](07_Real_Data/packing_a_record/README.md) · [`hexdump`](11_Tools/hexdump/README.md)
+
 **Imported:** endianness · big-endian · little-endian · mixed-endian · bi-endian · network byte order · host byte order · `htons`/`htonl` · `ntohs`/`ntohl` · byte swapping · `bswap` · endian-neutral code · struct packing
 
-**Missing — add:**
+**Written 2026-09-12**, all four of the items this section listed, on one page that the section had no page for at all — endianness was marked *core* from the import and lived only as asides on four other pages:
 
-- **Plain `hexdump` with no `-C` reads two bytes at a time in the CPU's order** — so a file starting `63 61` prints as `6163`. The byte-order question hiding inside a tool that was only asked to show bytes. Measured; on [Inspecting a file](06_Terminal/inspecting_a_file/README.md).
-- **Text has no endianness; *code units* do** — UTF-8 is immune because its unit is one byte. The cleanest way to explain why UTF-16 needs a BOM and UTF-8 does not.
-- **`to_le_bytes` / `to_be_bytes` / `from_be_bytes`** — Rust makes you name it, which is the language enforcing the lesson.
-- **Gulliver's Travels** — the terms are a joke about which end of a boiled egg to open. Worth one line, because it tells you neither order is better.
+- ~~**Plain `hexdump` with no `-C` reads two bytes at a time in the CPU's order**~~ — the tool's own account stays on [`hexdump`](11_Tools/hexdump/README.md); what the new page adds is the **comparison**, six dump commands over one file, three printing the file and three printing numbers, so the swap reads as one instance of a general setting rather than as a quirk of one tool.
+- ~~**Text has no endianness; *code units* do**~~ — written, as the bridge into [Byte order and the BOM](03_Encodings/byte_order_and_bom/README.md): the unit is one byte in UTF-8, two in UTF-16, four in UTF-32, and that is the whole of why one of them needs a mark.
+- ~~**`to_le_bytes` / `to_be_bytes` / `from_be_bytes`**~~ — written, with the payoff the item did not name: because the order is in the method *name*, `grep to_ne_bytes` enumerates every place a program committed to its build machine, and Python's version of the same mistake is an argument left out, which no grep finds.
+- ~~**Gulliver's Travels**~~ — written, sourced to Cohen's [*On Holy Wars and a Plea for Peace* ↗](https://history.rfc-editor.org/ien/ien137.txt) (IEN 137, 1 April 1980) rather than to the usual second-hand retelling. Cohen's argument is not that the orders differ but that **neither is better**, which is where network byte order comes from.
+
+**Still missing — add:**
+
+- **`htons` / `ntohl` as C, not as a mention** — the functions are named on the new page and run nowhere in this library. A short C example would also be the natural home for `bswap` and for the fact that these are macros that compile to nothing on a big-endian host.
+- **Mixed-endian and bi-endian** — PDP-11 word order, and ARM/PowerPC being switchable at run time. Both are named in the imported list and nothing here has met either.
+- **Endian-neutral code** — the actual discipline: never cast a struct pointer over a buffer, read field by field with a named order. The negative example (`*(uint32_t *)buf`) is what most real bugs look like, and it is missing.
 
 ### 2.6 Collation — **core**
 

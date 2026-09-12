@@ -1,0 +1,48 @@
+THE FILE: four bytes, 01 00 00 00
+
+$ wc -c < one.bin | squeeze
+4
+
+1 and 2. THE TWO INTEGER READINGS
+
+$ python3 -c "b=open('one.bin','rb').read(); print('big   ', int.from_bytes(b,'big')); print('little', int.from_bytes(b,'little'))"
+big    16777216
+little 1
+   big-endian     16777216   = 0x01000000
+   little-endian         1   = 0x00000001
+   The same four bytes are sixteen million or one -- a factor of 2^24, which
+   is the largest ratio two readings of four bytes can have (all the weight
+   in the first byte and none anywhere else, which is this file). That is
+   why 01 00 00 00 is the pattern to keep in your head: when a length field
+   reads 16777216 and the file is 200 bytes long, you have not found a
+   corrupt file, you have found the other end.
+
+3. WHAT A BARE hexdump PRINTS
+
+$ hexdump one.bin | squeeze
+0000000 0001 0000
+0000004
+   0001 0000 -- two 16-bit numbers in this CPU's order, not the file. The
+   first group is 0x0001, made from the bytes 01 00.
+
+4. WHAT xxd PRINTS
+
+$ xxd one.bin | squeeze
+00000000: 0100 0000 ....
+   0100 0000 -- the file, in file order, grouped into pairs and reordered
+   by nothing. Compare it with answer 3 character by character: same four
+   bytes, same tool family, and the groups are not the same number.
+
+5. WHICH OF THE FOUR WOULD CHANGE ON A BIG-ENDIAN MACHINE
+   Only answer 3.
+
+      1 and 2   facts about the FILE. int.from_bytes names its order, so
+                both numbers are the same on every machine ever built.
+      4         a fact about the FILE. xxd never reorders.
+      3         a fact about the MACHINE. A bare hexdump reads two bytes
+                at a time as a number and prints it in the host's order,
+                so on a big-endian host the same command prints 0100 0000.
+
+   Two of the four are the file and two are not, and nothing in the
+   printout says which is which. That is the whole lesson: the dump you
+   paste into a bug report should be one of the ones that cannot lie.

@@ -1,0 +1,44 @@
+1. ONE FILE, TWO NUMBERS
+   the bytes                      2f 75 05
+   int.from_bytes(b, 'big')         3110149   0x2f7505
+   int.from_bytes(b, 'little')       357679   0x05752f
+   Neither call is a misreading. The bytes are the same object both times;
+   the number is a thing the reader made, and the file never voted.
+
+2. THIS MACHINE
+   sys.byteorder                  'little'
+   That is what the CPU does in memory. It is NOT what the bytes in a file
+   do, and -- the next section -- it is not what Python does when you
+   decline to choose.
+
+3. THE DEFAULT IS 'big', AND IT IS NOT YOUR MACHINE'S ORDER
+   int.from_bytes(b)              3110149
+   (65).to_bytes(2).hex()         00 41
+   Since Python 3.11 both arguments have defaults: to_bytes(length=1,
+   byteorder='big'). So the reflex call is not 'whatever this machine
+   does' -- it is big-endian on every machine, while sys.byteorder is
+   'little' here. The two disagree, silently, and the result is a
+   perfectly ordinary int either way.
+   Before 3.11 the argument was required, which is the version most advice
+   about this was written against.
+
+4. struct: FIVE PREFIXES, AND ONLY TWO OF THEM NAME AN ORDER
+   <I  05 75 2f 00  little-endian, no padding
+   >I  00 2f 75 05  big-endian, no padding
+   !I  00 2f 75 05  network order -- a synonym for >
+   =I  05 75 2f 00  this machine's order, no padding
+   @I  05 75 2f 00  this machine's order AND its alignment (the default)
+   '!' and '>' produce the same bytes because network byte order IS
+   big-endian; the name is the only difference. '=' and '@' differ from
+   each other in padding, not in order, which is why a struct that looks
+   portable because it says '=' is still this machine's opinion.
+   struct.calcsize('@ci') = 8, struct.calcsize('=ci') = 5   <- the padding, not the order
+
+5. THE FAILURE HAS NO EXCEPTION IN IT
+   wrote 3110149 little-endian   -> 05 75 2f 00
+   read it back big-endian       -> 91565824
+   3110149 became 91565824. No error, no warning, no clue:
+   every byte string is a valid number in both orders, so a mismatch
+   cannot raise. It can only be wrong. That is the whole reason a format
+   specification has to say which end, and why 'the field is four bytes'
+   is not a specification.

@@ -1,0 +1,32 @@
+1. THREE METHODS, NO FLAG
+   n = 0x002f7505  (3110149)
+   n.to_be_bytes()   [00, 2f, 75, 05]
+   n.to_le_bytes()   [05, 75, 2f, 00]
+   n.to_ne_bytes()   [05, 75, 2f, 00]
+   There is no n.to_bytes(). You cannot decline to choose, because
+   the choice is spelled into the name you call -- which also means
+   `grep to_ne_bytes` finds every place a program committed to the
+   machine it was built on. The Python version of that mistake is a
+   call with the argument LEFT OUT, and no grep finds a missing word.
+
+2. WHAT THIS BUILD TARGETS
+   cfg!(target_endian = "little")   true
+   cfg!(target_endian = "big")      false
+   `ne` is whichever of those is true, decided at COMPILE time, so a
+   cross-compiled binary and the machine that built it can disagree.
+
+3. THE WIDTH IS IN THE TYPE
+   bytes                          [00, 2f, 75, 05]
+   u32::from_be_bytes(bytes)      3110149
+   u32::from_le_bytes(bytes)      91565824
+   from_be_bytes takes [u8; 4], not &[u8]: a slice of the wrong
+   length is a compile error, not a runtime surprise. Python's
+   int.from_bytes accepts any length and quietly means it.
+
+4. THE SAME MISMATCH AS EVERY OTHER LANGUAGE
+   wrote 3110149 little-endian   -> [05, 75, 2f, 00]
+   read it back big-endian       -> 91565824
+   Rust makes you NAME the order; it cannot make you name the same
+   one twice. Nothing here is unsafe, nothing panics, and the number
+   is simply wrong -- the compiler was never told the two calls were
+   supposed to agree.
