@@ -1,0 +1,63 @@
+1. ONE OPERAND, FOUR PATTERNS
+------------------------------------------------------------------------
+   Assign 0x41 over the same eight zero bytes, four ways. The formula
+   is the same every time; how many bytes one copy fills, and in which
+   order, is not.
+
+     Unsigned Byte            41 41 41 41 41 41 41 41
+     Unsigned Short, little   41 00 41 00 41 00 41 00
+     Unsigned Short, big      00 41 00 41 00 41 00 41
+     Unsigned Int, little     41 00 00 00 41 00 00 00
+
+   The second row is 'A' and a NUL, four times -- which is what
+   UTF-16LE writes for AAAA:
+
+     .decode('utf-16-le')                'AAAA'
+     == 'AAAA'.encode('utf-16-le')       True
+
+2. ASSIGN FEFF TO ONE SHORT AND YOU HAVE WRITTEN A BOM
+------------------------------------------------------------------------
+   U+FEFF, the byte order mark, is a 16-bit value. Assign it to the
+   first Unsigned Short of a file and the Endian toggle picks which of
+   the two marks you wrote:
+
+     little  ff fe   == codecs.BOM_UTF16_LE: True
+     big     fe ff   == codecs.BOM_UTF16_BE: True
+
+3. OPERAND STEP BUILDS THE TABLE EVERY CODE PAGE IS DRAWN ON
+------------------------------------------------------------------------
+   Assign 0 with Operand Step 1 over 256 bytes writes every byte value
+   once, in order:
+
+     the first eight   00 01 02 03 04 05 06 07
+     the last eight    f8 f9 fa fb fc fd fe ff
+     == bytes(range(256)): True
+
+   Decode that file one byte at a time and count what each table calls
+   a character:
+
+     latin-1  256 of 256
+     cp1252   251 of 256   refuses 81 8d 8f 90 9d
+     ascii    128 of 256
+     utf-8    128 of 256
+
+4. THE TYPE DECIDES THE BYTES, NOT ONLY HOW MANY
+------------------------------------------------------------------------
+   Type 1 into the Operand box. What reaches the file depends on the
+   type it is written as:
+
+     Unsigned Byte          01
+     Unsigned Int, little   01 00 00 00
+     Unsigned Int, big      00 00 00 01
+     Float, little          00 00 80 3f
+     Double, little         00 00 00 00 00 00 f0 3f
+
+   A Float or a Double is not the integer in more bytes. It is the
+   same number in a different notation, and none of its bytes is 01.
+
+5. OPERAND STEP ON A SHORT COUNTS IN CHARACTERS
+------------------------------------------------------------------------
+   Assign 0x41 with Operand Step 1, as a little-endian Unsigned Short,
+   over eight bytes:
+
+     41 00 42 00 43 00 44 00   .decode('utf-16-le') -> 'ABCD'

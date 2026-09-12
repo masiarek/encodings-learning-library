@@ -1,0 +1,58 @@
+1. THE TWENTY, ON ONE BYTE
+------------------------------------------------------------------------
+   x is 0xf0u8, which is 240; s is the same bits as an i8, -16.
+   Treat Data As is the type, and the dialog's formula is the line.
+
+     Assign 0x41              0x41                     41
+     Add 0x20                 x.wrapping_add(0x20)     10
+     Subtract 0xf1            x.wrapping_sub(0xf1)     ff
+     Multiply 3               x.wrapping_mul(3)        d0
+     Divide 3                 x / 3                    50
+     Divide 3, Signed         s / 3                    fb
+     Negate                   x.wrapping_neg()         10
+     Modulus 7                x % 7                    02
+     Modulus 7, Signed        s % 7                    fe
+     Set Minimum 0xf8         x.max(0xf8)              f8
+     Set Maximum 0x7f         x.min(0x7f)              7f
+     Binary And 0x3c          x & 0x3c                 30
+     Binary Or 0x0f           x | 0x0f                 ff
+     Binary Xor 0xff          x ^ 0xff                 0f
+     Binary Invert            !x                       0f
+     Shift Left 1             x << 1                   e0
+     Shift Right 1            x >> 1                   78
+     Shift Right 1, Signed    s >> 1                   f8
+     Rotate Left 4            x.rotate_left(4)         0f
+     Rotate Right 1           x.rotate_right(1)        78
+
+   The two that do not fit in one byte:
+
+     Swap Bytes, Short        v.swap_bytes()           12 34
+     Block Shift Left 4       v << 4, as one u32       23 45 67 80
+     Block Shift Right 4      v >> 4, as one u32       01 23 45 67
+     (Swap Bytes starts from 34 12; the Block Shifts from 12 34 56 78.)
+
+2. WHAT THE C NOTATION DOES NOT SAY, RUST MAKES YOU SAY
+------------------------------------------------------------------------
+   Each group is one question the manual leaves open, and each line one
+   answer Rust will let you choose.
+
+     0xf0u8.wrapping_add(0x20)      0x10         a result that does not fit
+     0xf0u8.checked_add(0x20)       None
+     0xf0u8.saturating_add(0x20)    0xff
+
+     i8::MIN.wrapping_neg()         -128         the value with no positive twin
+     i8::MIN.checked_neg()          None
+
+     0x10u8.checked_div(0)          None         dividing by zero
+
+     -7i8 / 2                       -3           a negative quotient
+     (-7i8).div_euclid(2)           -4
+     -7i8 % 3                       -1           a negative remainder
+     (-7i8).rem_euclid(3)           2
+
+     0x81u8.wrapping_shl(9)         0x02         a shift of the width or more
+     0x81u8.checked_shl(9)          None
+     0x81u8.rotate_left(9)          0x03
+
+     0x1234u16.rotate_left(8)       0x3412       a rotation that is a byte swap
+     0x1234u16.swap_bytes()         0x3412

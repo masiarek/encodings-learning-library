@@ -1,0 +1,61 @@
+1. TREAT DATA AS DECIDES WHAT ONE VALUE IS
+------------------------------------------------------------------------
+   Four bytes, cut four ways. The file does not say which cut is
+   meant; the dropdown and the Endian toggle do.
+
+     the bytes                  01 00 02 00
+     Unsigned Byte              X = 1, 0, 2, 0
+     Unsigned Short, little     X = 1, 2
+     Unsigned Short, big        X = 256, 512
+     Unsigned Int, little       X = 131073
+
+2. SO ONE OPERATION HAS MORE THAN ONE ANSWER
+------------------------------------------------------------------------
+   Add 1 to the first two of those bytes, 01 00, three ways:
+
+     Unsigned Byte              02 01
+     Unsigned Short, little     02 00
+     Unsigned Short, big        01 01
+
+   As bytes, each one gets its own 1. As one little-endian Short the
+   1 lands on the first byte, and as a big-endian Short on the second.
+
+3. SIGNED OR UNSIGNED CHANGES SOME FORMULAS AND NOT OTHERS
+------------------------------------------------------------------------
+   F0 is 240 as an Unsigned Byte and -16 as a Signed Byte:
+
+     operation            Unsigned Byte   Signed Byte
+     Add 1                f1              f1
+     Multiply 2           e0              e0
+     Divide 2             78              f8
+     Set Minimum 16       f0              10
+
+   Addition and multiplication keep the same low bits either way.
+   Division and comparison have to know the number, and the number
+   is what the dropdown changed.
+
+4. OPERAND STEP ADDS TO THE OPERAND AFTER EACH VALUE
+------------------------------------------------------------------------
+   Assign 0 with Operand Step 1 counts up, one value at a time:
+
+     Unsigned Byte,  8 bytes    00 01 02 03 04 05 06 07
+     Unsigned Short, 8 bytes    00 00 01 00 02 00 03 00
+
+5. SKIP BYTES LEAVES A GAP AFTER EACH VALUE
+------------------------------------------------------------------------
+   Two records, each a Signed Int id and then a four-byte name. Add 1
+   with Skip Bytes 4 changes every id and no name:
+
+     before  01 00 00 00 41 64 61 20 02 00 00 00 42 6f 62 20
+     after   02 00 00 00 41 64 61 20 03 00 00 00 42 6f 62 20
+
+     before  ids 1 and 2, names b'Ada ' and b'Bob '
+     after   ids 2 and 3, names b'Ada ' and b'Bob '
+
+6. RANGE: A SELECTION IS A SLICE
+------------------------------------------------------------------------
+   With Selection set, the bytes outside it are not values at all.
+   Add 1 to six zero bytes, then to two of them selected at offset 2:
+
+     Entire File   01 01 01 01 01 01
+     Selection     00 00 01 01 00 00

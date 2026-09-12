@@ -1,0 +1,44 @@
+1. ONE LONG NUMBER INSTEAD OF MANY SHORT ONES
+------------------------------------------------------------------------
+   12 34 56 as Unsigned Byte, shifted left by 4:
+
+     Shift Left 4         20 40 60   each byte on its own
+     Block Shift Left 4   23 45 60   the three bytes as one number
+
+   Shift Left lost the top digit of every byte. Block Shift Left lost
+   only the first, and the others moved into the byte before theirs.
+
+2. BLOCK SHIFT LEFT 4 DELETES A HEX DIGIT
+------------------------------------------------------------------------
+     Block Shift Left 4   123456 -> 234560
+     Block Shift Left 8   123456 -> 345600
+     Block Shift Left 12  123456 -> 456000
+
+   Four bits is one hex digit, so each 4 deletes the first digit of the
+   range and appends a 0; eight deletes a whole byte. The range keeps
+   its size, which a real delete would not.
+
+3. NOTHING COMES BACK
+------------------------------------------------------------------------
+     12 34 56   Block Shift Left 4  -> 23 45 60
+     23 45 60   Block Shift Right 4 -> 02 34 56
+
+   The 1 that left the range is gone, and a 0 came in to replace it.
+   A Rotate would have kept it.
+
+4. ON A LITTLE-ENDIAN SHORT, THE SENTENCE HAS TWO READINGS
+------------------------------------------------------------------------
+   The manual says bytes shifted off X[i+1] are shifted onto X[i]. For
+   one-byte values that settles everything. For wider ones there are two
+   ways to lay the values end to end, and they agree only on big-endian:
+
+     Unsigned Short, big     12 34 56 78
+       the values in order, each high bit first   23 45 67 80
+       the file's bytes as they lie                23 45 67 80
+     Unsigned Short, little  34 12 78 56
+       the values in order, each high bit first   45 23 80 67
+       the file's bytes as they lie                41 27 85 60
+
+   The first reading follows the manual's X[i] wording, and it is the
+   one this program's Block Shift uses. Which one the dialog uses on a
+   little-endian Short has not been measured here.

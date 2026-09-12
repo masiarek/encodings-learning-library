@@ -1,0 +1,45 @@
+1. SET MINIMUM 20 ON A LINE OF TEXT
+------------------------------------------------------------------------
+   A, a tab, B, CR, LF, then café. Set Minimum 0x20 raises every value
+   below a space to a space:
+
+     the bytes       41 09 42 0d 0a 63 61 66 c3 a9
+     Unsigned Byte   41 20 42 20 20 63 61 66 c3 a9   'A B  café'
+     Signed Byte     41 20 42 20 20 63 61 66 20 20   'A B  caf  '
+
+   As Unsigned Byte the tab, the CR and the LF became spaces, and café
+   came through. As Signed Byte, C3 and A9 are -61 and -87, both below
+   32, so the é became two spaces as well.
+
+2. HOW MANY BYTE VALUES IT CHANGES
+------------------------------------------------------------------------
+     Unsigned Byte    32 of 256   00-1f
+     Signed Byte     160 of 256   00-1f, 80-ff
+
+   The C0 control characters are 00-1F under both settings. Signed
+   Byte adds every byte from 80 up -- which is every byte UTF-8 uses
+   for anything outside ASCII.
+
+3. THE NAME IS THE FLOOR, NOT THE FUNCTION
+------------------------------------------------------------------------
+   Set Minimum does not take a minimum. It sets one, which in Python is
+   max():
+
+     Set Minimum 20 on 10 -> 20      max(0x10, 0x20) -> 20
+     Set Minimum 20 on 20 -> 20      max(0x20, 0x20) -> 20
+     Set Minimum 20 on 41 -> 41      max(0x41, 0x20) -> 41
+
+4. ON UTF-16, THE WIDTH DECIDES WHAT A CONTROL CHARACTER IS
+------------------------------------------------------------------------
+   A, tab, B in UTF-16LE is 41 00 09 00 42 00. Set Minimum 0x20:
+
+     Unsigned Short  41 00 20 00 42 00   .decode('utf-16-le') -> 'A B'
+     Unsigned Byte   41 20 20 20 42 20   .decode('utf-16-le') -> '⁁†⁂'
+
+   As a Short, only the tab was below 0x20. As a Byte, so was every 00
+   that UTF-16 puts beside an ASCII letter, and three new characters
+   arrived:
+
+     U+2041  CARET INSERTION POINT
+     U+2020  DAGGER
+     U+2042  ASTERISM

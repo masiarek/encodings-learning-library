@@ -1,0 +1,32 @@
+1. THE SAME LONG NUMBER, MOVED THE OTHER WAY
+------------------------------------------------------------------------
+   12 34 56 as Unsigned Byte, shifted right by 4:
+
+     Shift Right 4         01 03 05   each byte on its own
+     Block Shift Right 4   01 23 45   the three bytes as one number
+
+2. BLOCK SHIFT RIGHT 8 INSERTS A ZERO BYTE AND DROPS THE LAST ONE
+------------------------------------------------------------------------
+     12 34 56            -> 00 12 34
+     63 61 66 c3 a9      -> 00 63 61 66 c3   café, now not UTF-8
+
+   The range keeps its size, so inserting a byte at the front pushes one
+   out at the back. In café the byte pushed out was half of the é, and
+   the byte pushed in is a NUL.
+
+3. RIGHT 4, THEN LEFT 4, LOSES THE LAST DIGIT
+------------------------------------------------------------------------
+     12 34 56   Block Shift Right 4 -> 01 23 45
+     01 23 45   Block Shift Left 4  -> 12 34 50
+
+4. WHAT ENTERS AT THE TOP OF A SIGNED RANGE
+------------------------------------------------------------------------
+   f0 00, Block Shift Right 4. Its first bit is 1, which as a Signed
+   type is a minus sign. Two candidates for what comes in:
+
+     zeros, as this program does          0f 00
+     copies of the sign bit, as >> does   ff 00
+
+   The manual says only that Block Shift Right is similar to Shift
+   Right, and Shift Right itself leaves the signed case to the
+   implementation. Neither row has been measured against the dialog.

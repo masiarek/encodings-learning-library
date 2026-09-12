@@ -1,0 +1,48 @@
+1. AND 7F IS A SEVEN-BIT CHANNEL
+------------------------------------------------------------------------
+   Clear the top bit of every byte, the way a mail relay built for
+   seven-bit ASCII once did:
+
+     before   63 61 66 c3 a9   'café'
+     after    63 61 66 43 29   'cafC)'
+
+   C3 A9 lost the bit that marked them as part of a UTF-8 character and
+   became C and ). Nothing in the result says a bit was ever there.
+
+2. AND DF UPPERCASES ASCII, AND SOMETIMES MORE
+------------------------------------------------------------------------
+   A lowercase ASCII letter is its capital plus 0x20, and DF is every
+   bit except that one. The same mask, over UTF-8:
+
+     word   And DF                 reads as
+     café   43 41 46 c3 89         'CAFÉ'
+     Łódź   c5 81 c3 93 44 c5 9a   'ŁÓDŚ'
+     €      c2 82 8c               not UTF-8
+
+   The non-ASCII letters it changed, by name:
+
+     U+00E9 LATIN SMALL LETTER E WITH ACUTE -> U+00C9 LATIN CAPITAL LETTER E WITH ACUTE
+     U+00F3 LATIN SMALL LETTER O WITH ACUTE -> U+00D3 LATIN CAPITAL LETTER O WITH ACUTE
+     U+017A LATIN SMALL LETTER Z WITH ACUTE -> U+015A LATIN CAPITAL LETTER S WITH ACUTE
+
+   é and É are 0x20 apart, and so are ó and Ó, and UTF-8 keeps that
+   bit in the continuation byte -- so clearing it capitalised them. ź
+   and its capital are not 0x20 apart, and clearing the same bit made a
+   different letter. € lost a bit its lead byte needed.
+
+3. A WIDER MASK LANDS WHERE THE ENDIAN TOGGLE PUTS IT
+------------------------------------------------------------------------
+   And 0x00FF as Unsigned Short keeps the low byte of the value. Which
+   byte of the file that is depends on the toggle:
+
+     little  34 12 -> 34 00
+     big     34 12 -> 00 12
+
+4. AND FF CHANGES NOTHING, AND AND 00 IS ASSIGN 0
+------------------------------------------------------------------------
+     And FF leaves all 256 bytes alone                    True
+     And 00 writes 00 over all 256                        True
+     Signed and Unsigned write the same, operands 0-127   True
+
+   Every other operand is in between: one bit column kept or cleared
+   per bit of the mask, and no carries, so the sign never enters into it.

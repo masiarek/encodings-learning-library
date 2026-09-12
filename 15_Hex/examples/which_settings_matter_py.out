@@ -1,0 +1,43 @@
+1. WHICH SETTINGS CAN CHANGE THE BYTES AN OPERATION WRITES
+------------------------------------------------------------------------
+   sign: Signed against Unsigned Byte. endian: Big against Little,
+   as a Short and as an Int. width: Short against Byte, same bytes.
+
+     operation           sign   endian Short   endian Int   width
+     Assign              no     yes            yes          yes
+     Add                 no     yes            yes          yes
+     Subtract            no     yes            yes          yes
+     Multiply            no     yes            yes          yes
+     Divide              yes    yes            yes          yes
+     Negate              no     yes            yes          yes
+     Modulus             yes    yes            yes          yes
+     Set Minimum         yes    yes            yes          yes
+     Set Maximum         yes    yes            yes          yes
+     Swap Bytes          no     no             no           yes
+     Binary And          no     yes            yes          yes
+     Binary Or           no     yes            yes          yes
+     Binary Xor          no     yes            yes          yes
+     Binary Invert       no     no             no           no
+     Shift Left          no     yes            yes          yes
+     Shift Right         yes    yes            yes          yes
+     Block Shift Left    no     yes            yes          yes
+     Block Shift Right   ?      yes            yes          yes
+     Rotate Left         no     no             yes          yes
+     Rotate Right        no     no             yes          yes
+
+2. THE FIRST INPUT ON WHICH SIGNED AND UNSIGNED DISAGREE
+------------------------------------------------------------------------
+   One byte, one operand, the byte each setting writes:
+
+     Divide 2             on 80   Unsigned 40   Signed c0
+     Modulus 3            on 80   Unsigned 02   Signed fe
+     Set Minimum 0        on 80   Unsigned 80   Signed 00
+     Set Maximum 0        on 80   Unsigned 00   Signed 80
+     Shift Right 1        on 80   Unsigned 40   Signed c0
+
+3. WHAT THE TABLE SAYS, COUNTED
+------------------------------------------------------------------------
+   no setting changes it:             Binary Invert
+   the Endian toggle cannot change:   Swap Bytes, Binary Invert
+   ...on a Short, but can on an Int:  Rotate Left, Rotate Right
+   signed or unsigned is the same:    14 of 20

@@ -1,0 +1,47 @@
+1. UTF-16LE BECOMES UTF-16BE IN PLACE
+------------------------------------------------------------------------
+   é€ in UTF-16LE with its byte order mark, then Swap Bytes as
+   Unsigned Short:
+
+     before   ff fe e9 00 ac 20   .decode('utf-16') -> 'é€'
+     after    fe ff 00 e9 20 ac   .decode('utf-16') -> 'é€'
+     after, without its first two bytes, as UTF-16BE        'é€'
+
+   The mark was swapped along with the text, FF FE to FE FF, so a
+   reader that trusts the mark still gets é€. That is what the mark is
+   for.
+
+2. THE ENDIAN TOGGLE CANNOT CHANGE IT
+------------------------------------------------------------------------
+   Little and Big wrote the same bytes:
+
+     all 65,536 Unsigned Shorts                    True
+     65,536 Unsigned Ints, every 65,537th value    True
+
+   Reading a value little-endian and writing it back big-endian is a
+   reversal, and so is the other way round. Either way the bytes come
+   out reversed, so the setting has nothing to decide.
+
+3. THE WIDTH CAN
+------------------------------------------------------------------------
+   Swap Bytes on 12 34 56 78:
+
+     Unsigned Short  34 12 78 56
+     Unsigned Int    78 56 34 12
+     Unsigned Int64  01 02 03 04 05 06 07 08 -> 08 07 06 05 04 03 02 01
+
+4. A RANGE THAT STARTS ONE BYTE LATE
+------------------------------------------------------------------------
+   The same six bytes, with the selection starting at offset 1 and
+   four bytes long. The pairs are the wrong pairs:
+
+     ff e9 fe ac 00 20   .decode('utf-16-le') -> '\ue9ff곾\u2000'
+
+   Three code units, and none of them is the mark, é or €. Swap Bytes
+   trusts the range to start on a value, and nothing in the bytes says
+   where one starts.
+
+5. PYTHON SPELLS IT array.byteswap()
+------------------------------------------------------------------------
+     array('H', before).byteswap()   fe ff 00 e9 20 ac
+     == Swap Bytes as Unsigned Short  True

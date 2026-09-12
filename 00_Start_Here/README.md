@@ -52,7 +52,7 @@ The chapters the diagram above is about. Each one needs the one before it.
 
 ### Read these at any point
 
-These are off the diagram on purpose: none of them depends on the spine, and two are the chapters a reader most often arrives *wanting* — [10_Best_Practices](../10_Best_Practices/README.md), which is what to do rather than how it works, and [13_Documentation](../13_Documentation/README.md), which is the one whose subject is already on your machine. [ROADMAP.md](../ROADMAP.md), under *Written out of order, on purpose*, says why each was written before the chapters it sits after.
+These are off the diagram on purpose: none of them depends on the spine past chapter 1, and two are the chapters a reader most often arrives *wanting* — [10_Best_Practices](../10_Best_Practices/README.md), which is what to do rather than how it works, and [13_Documentation](../13_Documentation/README.md), which is the one whose subject is already on your machine. [ROADMAP.md](../ROADMAP.md), under *Written out of order, on purpose*, says why each was written before the chapters it sits after.
 
 | Chapter | What it settles | Written / stub |
 |---|---|---|
@@ -61,6 +61,7 @@ These are off the diagram on purpose: none of them depends on the spine, and two
 | [11_Tools](../11_Tools/README.md) | `grep`, `find`, `sort`, `tr` — none of them is *about* encodings, and every one has already made an encoding decision for you without saying so | 22 / 0 |
 | [12_Adversarial](../12_Adversarial/README.md) | The shapes text bugs take when somebody chooses the bytes on purpose, each with the one-line rule that closes it | 5 / 0 |
 | [13_Documentation](../13_Documentation/README.md) | The primary material already on your machine under `/usr/share/man` — and the fact that it is documentation *of* your machine, with a date on it | 3 / 0 |
+| [15_Hex](../15_Hex/README.md) | What each operation in a hex editor's Hex Operations dialog does to the bytes, and which of the dialog's settings can change the answer | 20 / 0 |
 | [14_Resources](../14_Resources/README.md) | Not a chapter of the course: the things you review, print, or come back to once the reading is done | 3 / 0 |
 
 **The `Written / stub` column is generated, not typed.** It is the one thing on this page that counts pages living in other files, which is the claim that goes false when you touch a file that is not this one — and on 2026-09-07 all eight cells were wrong at once, `3 / 0` against an actual seven. `python3 tools/check_chapter_status.py --fix` writes them from the tree, and CI fails if they drift; the same gate checks that every chapter has a row here, that every lesson has a row in its chapter's table, and that [ROADMAP.md](../ROADMAP.md) agrees with both. So the numbers are worth reading, and so is the roadmap they summarise.

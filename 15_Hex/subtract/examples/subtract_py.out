@@ -1,0 +1,42 @@
+1. THE SAME BYTES, THREE DIFFERENCES
+------------------------------------------------------------------------
+   Subtract 0x10 from 08 01:
+
+     Unsigned Byte            f8 f1   each byte borrows from nowhere
+     Unsigned Short, little   f8 00   0108-10 is 00F8
+     Unsigned Short, big      07 f1   0801-10 is 07F1
+
+2. ZERO MINUS ONE IS EVERY BIT SET, IN EVERY TYPE
+------------------------------------------------------------------------
+   Subtract 1 from zero bytes, then read the result back as the same
+   type:
+
+     Unsigned Byte    ff                        255
+     Signed Byte      ff                        -1
+     Unsigned Short   ff ff                     65535
+     Signed Int       ff ff ff ff               -1
+     Unsigned Int64   ff ff ff ff ff ff ff ff   18446744073709551615
+
+   The bytes are the same in each signed and unsigned pair. The
+   number is not, and the file only ever holds the bytes.
+
+3. SUBTRACT 1 IS ADD FF
+------------------------------------------------------------------------
+   Wrapping makes subtraction a special case of addition, which is why
+   a dialog could offer only one of them:
+
+     Subtract 1 == Add 0xFF,   all 256 Unsigned Bytes        True
+     Subtract 1 == Add 0xFFFF, all 65,536 Unsigned Shorts    True
+
+4. SUBTRACT 20 ON A LINE OF TEXT
+------------------------------------------------------------------------
+   Lowercase ASCII sits exactly 0x20 above uppercase, so Subtract 0x20
+   as Unsigned Byte uppercases letters -- and does the same arithmetic
+   to every other byte:
+
+     before  63 61 66 c3 a9 20 34 32   'café 42'
+     after   43 41 46 a3 89 00 14 12   'CAF��\x00\x14\x12'
+
+   The letters came out right. The space became NUL, the digits became
+   control characters, and C3 A9 became A3 89 -- a continuation byte
+   where a lead byte has to be, so the é is two replacement characters.

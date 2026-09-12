@@ -1,0 +1,47 @@
+1. THE SAME BYTES, THREE SUMS
+------------------------------------------------------------------------
+   Add 0x10 to f8 00:
+
+     Unsigned Byte            08 10   F8+10 is 108, and a byte keeps 08
+     Unsigned Short, little   08 01   00F8+10 is 0108: the 1 carries
+     Unsigned Short, big      f8 10   F800+10 is F810: nothing carries
+
+2. THE CARRY NEVER REACHES THE NEXT VALUE
+------------------------------------------------------------------------
+   Add 0x10 to f8 ff 00 00, little-endian, as two Shorts and as one Int:
+
+     Unsigned Short   08 00 10 00   FFF8+10 keeps 0008; the next Short gets its own 10
+     Unsigned Int     08 00 01 00   0000FFF8+10 is 00010008
+
+   One setting, one byte apart, and the 1 that the Int kept in its
+   third byte is simply gone from the Short.
+
+3. SIGNED OR UNSIGNED, THE SAME BYTES
+------------------------------------------------------------------------
+   Every byte value, every operand from 0 to 127, both settings:
+
+     wrote the same byte    32,768 of 32,768
+
+   7F + 1 is 80 either way. Read back, that byte is 128
+   as an Unsigned Byte and -128 as a Signed one: the bytes agree,
+   and only the number they are read as moved.
+
+4. ADD 13 TO café
+------------------------------------------------------------------------
+   café in UTF-8 is 63 61 66 c3 a9. Add to every byte, as Unsigned Byte:
+
+     + 1     64 62 67 c4 aa   'dbgĪ'
+     + 13    70 6e 73 d0 b6   'pnsж'
+     + 64    a3 a1 a6 03 e9   not UTF-8
+
+   é is C3 A9: a lead byte from C2-DF and a continuation byte from
+   80-BF. Add 1 or 13 and both stay inside their ranges, so the pair
+   is still one character, just a different one. Add 64 and neither
+   does.
+
+5. OPERAND STEP ADDS A DIFFERENT AMOUNT TO EACH VALUE
+------------------------------------------------------------------------
+   Add 0 with Operand Step 1 adds 0 to the first value, 1 to the
+   second, and so on:
+
+     b'AAAA' -> b'ABCD'

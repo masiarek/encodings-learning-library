@@ -1,0 +1,38 @@
+1. THE TOP BIT FALLS OFF
+------------------------------------------------------------------------
+   81 is 1000 0001. Shift Left, as Unsigned Byte:
+
+     81 << 1   02   00000010
+     81 << 4   10   00010000
+     81 << 7   80   10000000
+
+   The low 1 walks up one place per count. The high 1 went past the top
+   on the first step and nothing remembers it.
+
+2. SHIFT LEFT 1 IS MULTIPLY 2, AND ADDING THE VALUE TO ITSELF
+------------------------------------------------------------------------
+     all 256 bytes, the three agree                         True
+     Signed and Unsigned write the same, counts 0-7         True
+
+3. ON A LITTLE-ENDIAN SHORT THE BITS CROSS RIGHTWARD ON SCREEN
+------------------------------------------------------------------------
+   0x1234 << 4 is 0x2340 whichever way the bytes are stored:
+
+     Unsigned Short, big     12 34 -> 23 40
+     Unsigned Short, little  34 12 -> 40 23
+
+   In the big-endian row the digits moved left, the way they would on
+   paper. In the little-endian row the high byte is the second one, so
+   the 3 that left the first byte arrived in the second.
+
+4. A SHIFT BY THE WIDTH OR MORE
+------------------------------------------------------------------------
+     81 << 7   80
+     81 << 8   00
+     81 << 9   00
+
+   This program keeps the low eight bits of the true result, so from 8
+   on every bit has gone. That is Python's arithmetic, not a rule: C
+   leaves a shift by the width or more undefined, Rust's wrapping_shl
+   takes the count modulo the width, and the manual does not say what
+   the dialog does.

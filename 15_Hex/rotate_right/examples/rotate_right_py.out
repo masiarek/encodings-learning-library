@@ -1,0 +1,28 @@
+1. THE BIT THAT FALLS OFF THE BOTTOM LANDS ON TOP
+------------------------------------------------------------------------
+     01 rotated right by 1   80   10000000
+
+   Read back, that is 128 as an Unsigned Byte and -128 as a Signed
+   one. The only 1 in the byte became the sign bit, and a value that
+   was +1 is now the most negative the type can hold, without any
+   arithmetic having happened.
+
+2. ROTATE RIGHT N IS ROTATE LEFT BY THE WIDTH MINUS N
+------------------------------------------------------------------------
+     all 256 bytes, every count 0-7                  True
+     all 65,536 Unsigned Shorts, counts 1, 4, 8, 12  True
+
+   So a dialog needs only one of the two. Rotate Right 4 on a byte is
+   Rotate Left 4, the swap of its hex digits, from the other side.
+
+3. ON A SHORT THE ENDIAN TOGGLE CANNOT CHANGE A ROTATION, ON AN INT IT CAN
+------------------------------------------------------------------------
+     every Unsigned Short, every count 0-15, little == big   True
+     12 34 56 78 as an Unsigned Int, Rotate Right 8:
+       little   34 56 78 12
+       big      78 12 34 56
+
+   Reading a Short the other way round swaps its two bytes, and that is
+   itself a rotation by 8. Rotations of the same width can be done in
+   either order, so the toggle cannot change the result. Reversing four
+   bytes is not a rotation of 32 bits, so on an Int it can.

@@ -1,0 +1,47 @@
+1. XOR 20 SWAPS THE CASE OF ASCII LETTERS
+------------------------------------------------------------------------
+   Bit 5 is set in a lowercase ASCII letter and clear in a capital, so
+   flipping it swaps them:
+
+     'Cafe'  43 61 66 65      -> 63 41 46 45      'cAFE'
+     'Café'  43 61 66 c3 a9   -> 63 41 46 e3 89   not UTF-8
+
+   On é the flip also lands on the lead byte: C3 becomes E3, which
+   starts a three-byte character, and only one byte follows it.
+
+2. XOR TWICE GIVES THE FILE BACK
+------------------------------------------------------------------------
+     every byte, every operand, 65,536 pairs   True
+     café through Xor 20 twice                 'café'
+
+   Even the invalid UTF-8 in the middle comes back, because no bit was
+   ever lost -- only flipped.
+
+3. A ONE-BYTE KEY IS NOT A SECRET
+------------------------------------------------------------------------
+   café, Xor 0x5A: 39 3b 3c 99 f3
+
+     hidden[0] ^ ord('c')                         0x5A   the key, from one known letter
+     hidden[i] ^ hidden[j] == café[i] ^ café[j]   True   the key cancels out
+
+   Anyone who can guess one byte of the original has the key, and
+   anyone who has two hidden bytes has their Xor without it.
+
+4. OPERAND STEP GIVES EVERY BYTE ITS OWN KEY
+------------------------------------------------------------------------
+   b'aaaa', Xor 0x5A:
+
+     Operand Step 0           3b 3b 3b 3b   four equal bytes for four equal letters
+     Operand Step 1           3b 3a 3d 3c   no two alike
+     Step 1 again, same key   b'aaaa'
+
+   The key now changes with the position, so repeated letters stop
+   showing. It is still a key anyone can recover the same way.
+
+5. A WIDER KEY LANDS WHERE THE ENDIAN TOGGLE PUTS IT
+------------------------------------------------------------------------
+   Xor 0x1234 as Unsigned Short over four zero bytes writes the key
+   itself, in the order the toggle names:
+
+     little  34 12 34 12
+     big     12 34 12 34

@@ -1,0 +1,38 @@
+1. INVERT FLIPS EVERY BIT
+------------------------------------------------------------------------
+     café         63 61 66 c3 a9
+     inverted     9c 9e 99 3c 56
+     and again    63 61 66 c3 a9
+
+2. INVERT IS XOR FF
+------------------------------------------------------------------------
+     all 256 bytes   True
+
+   Xor flips the bits the operand has, and FF has all of them.
+
+3. NO SETTING CAN CHANGE IT
+------------------------------------------------------------------------
+   Every setting below wrote the same bytes, on every input tried:
+
+     all 65,536 two-byte inputs; Byte and Short, signed and
+     unsigned, little and big                                    True
+     65,536 four-byte inputs; Byte, Short and Int, both orders   True
+
+   Inverting a value inverts each of its bytes, whichever bytes they
+   are and whatever they mean -- so there is nothing for the type, the
+   sign or the byte order to decide. Every other operation in the list
+   depends on at least one of them.
+
+4. INVERT, THEN ADD 1, IS NEGATE
+------------------------------------------------------------------------
+     all 256 bytes   True
+
+5. READ AS SIGNED, ~X IS -X - 1
+------------------------------------------------------------------------
+     every Signed Byte   True
+        0 -> ff -> -1
+        5 -> fa -> -6
+     -128 -> 7f -> 127
+
+   So inverting a Signed Byte never overflows: the most negative value
+   becomes the most positive, and the other way round.

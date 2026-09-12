@@ -1,0 +1,44 @@
+1. SET MAXIMUM 7F ON café
+------------------------------------------------------------------------
+   café is 63 61 66 c3 a9. Set Maximum 0x7F:
+
+     Unsigned Byte  63 61 66 7f 7f   'caf\x7f\x7f'
+     Signed Byte    63 61 66 c3 a9   'café'
+
+   As Unsigned Byte, C3 and A9 are 195 and 169, both above 127, and
+   both became 7F -- DEL, twice. As Signed Byte they are -61 and -87,
+   nowhere near the ceiling, and nothing changed.
+
+2. HOW MANY BYTE VALUES IT CHANGES
+------------------------------------------------------------------------
+     Unsigned Byte  128 of 256
+     Signed Byte      0 of 256
+
+   0x7F is the largest Signed Byte there is. A ceiling at the top of
+   the type catches nothing.
+
+3. TWO SEVEN-BIT CLAMPS THAT DISAGREE
+------------------------------------------------------------------------
+   Binary And 7F also forces every byte into 00-7F. It gets there by
+   dropping the top bit instead of by capping the value:
+
+     Set Maximum 7F   63 61 66 7f 7f   'caf\x7f\x7f'
+     Binary And 7F    63 61 66 43 29   'cafC)'
+
+   Bytes the two write differently: 127 of 256 -- every byte from
+   80 up except FF, whose low seven bits are already 7F.
+
+4. A FLOOR AND A CEILING MAKE A RANGE
+------------------------------------------------------------------------
+   Set Minimum 0x30, then Set Maximum 0x39, pins every byte into the
+   ASCII digits:
+
+     b'Hi 42!' -> b'990420'
+     the other order, b'990420'; the same for all 256 bytes: True
+
+   Get the operands the wrong way round and the order starts to matter,
+   because then there is no byte both limits allow -- the second
+   operation wins:
+
+     Set Minimum 39, then Set Maximum 30   b'000000'
+     Set Maximum 30, then Set Minimum 39   b'999999'

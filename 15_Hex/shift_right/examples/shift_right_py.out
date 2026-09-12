@@ -1,0 +1,35 @@
+1. WHAT COMES IN AT THE TOP
+------------------------------------------------------------------------
+   Shift Right f0 81 7f by 1 and by 4:
+
+     Unsigned Byte                  >> 1  78 40 3f    >> 4  0f 08 07
+     Signed Byte, sign copied in    >> 1  f8 c0 3f    >> 4  ff f8 07
+     Signed Byte, zeros in          >> 1  78 40 3f    >> 4  0f 08 07
+
+   An Unsigned Byte always takes zeros. For a Signed Byte, C says a
+   negative value's >> is implementation-defined; every compiler this
+   library runs copies the sign bit, which is the second row, and the
+   manual does not say which rule the dialog follows. 7F is positive,
+   and all three rows agree on it.
+
+2. SHIFT RIGHT 4 AND AND 0F SPLIT A BYTE INTO ITS HEX DIGITS
+------------------------------------------------------------------------
+     é               c3 a9
+     Shift Right 4   0c 0a   the left digits
+     Binary And 0F   03 09   the right digits
+
+3. SHIFT RIGHT 1 IS NOT DIVIDE 2 ON A NEGATIVE VALUE
+------------------------------------------------------------------------
+   Copying the sign bit rounds toward minus infinity; C's division
+   rounds toward zero:
+
+     Signed Bytes where they differ       64 of 256
+     every one of them negative and odd   True
+     -7 >> 1, and -7 / 2                  -4 and -3
+
+4. SHIFT RIGHT 8 MOVES A SHORT'S HIGH BYTE DOWN
+------------------------------------------------------------------------
+   0x1234 >> 8 is 0x0012, stored both ways:
+
+     Unsigned Short, big     12 34 -> 00 12
+     Unsigned Short, little  34 12 -> 12 00

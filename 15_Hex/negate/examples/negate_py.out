@@ -1,0 +1,50 @@
+1. NEGATE IS INVERT, THEN ADD ONE
+------------------------------------------------------------------------
+   As Unsigned Byte, and the two steps that make it:
+
+     the bytes        00 01 7f 80 81 ff
+     Binary Invert    ff fe 80 7f 7e 00
+     ...then Add 1    00 ff 81 80 7f 01
+     Negate           00 ff 81 80 7f 01
+
+   The same for all 256 bytes: True
+
+2. SIGNED OR UNSIGNED, THE SAME BYTES
+------------------------------------------------------------------------
+   Negate 01 writes FF either way. The two settings only disagree
+   about what FF is:
+
+     Negate 01 -> ff   as Unsigned Byte 255, as Signed Byte   -1
+     Negate 10 -> f0   as Unsigned Byte 240, as Signed Byte  -16
+     Negate 80 -> 80   as Unsigned Byte 128, as Signed Byte -128
+
+   All 256 bytes, both settings, the same byte written: True
+   An Unsigned Byte has no negative numbers, so -1 wraps to 255 --
+   the same wrap as 0 - 1.
+
+3. TWO VALUES ARE THEIR OWN NEGATIVE
+------------------------------------------------------------------------
+     bytes Negate leaves alone   00 80
+
+   00 is zero. 80 is -128, and +128 does not fit in a Signed Byte, so
+   the most negative value is its own negative. Every signed width has
+   one:
+
+     Signed Short  00 80        -> 00 80        unchanged: True
+     Signed Int    00 00 00 80  -> 00 00 00 80  unchanged: True
+
+4. NEGATE TWICE GIVES THE FILE BACK
+------------------------------------------------------------------------
+     all 65,536 Signed Shorts   True
+
+5. ON A FLOAT, NEGATE CHANGES ONE BIT
+------------------------------------------------------------------------
+     1.0  00 00 80 3f -> 00 00 80 bf   reads back -1.0
+     0.0  00 00 00 00 -> 00 00 00 80   reads back -0.0
+
+     -0.0 == 0.0 as numbers   True
+     ...and as bytes          False
+
+   A float keeps its sign in a bit of its own, the top bit of the last
+   byte here, so there is no carry and no wrap -- and zero has two
+   spellings that compare equal and are not the same file.

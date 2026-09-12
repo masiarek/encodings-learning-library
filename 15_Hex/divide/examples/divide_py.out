@@ -1,0 +1,53 @@
+1. ONE DROPDOWN, TWO QUOTIENTS
+------------------------------------------------------------------------
+   Divide f0 80 ff 7f by 2:
+
+     Unsigned Byte  reads 240, 128, 255, 127   writes 78 40 7f 3f
+     Signed Byte    reads -16, -128, -1, 127   writes f8 c0 00 3f
+
+   Byte values that divide differently: 128 of 256,
+   and they are exactly 80 to FF: True
+
+   Those are the bytes the two settings read as different numbers. The
+   first four operations never had to know the number; Divide does.
+
+2. C ROUNDS TOWARD ZERO, AND PYTHON'S // ROUNDS DOWN
+------------------------------------------------------------------------
+   The manual writes Divide as C's /=, and C drops the fraction, which
+   rounds toward zero. Python's // rounds toward minus infinity. They
+   agree until the quotient is negative:
+
+     a / b       C   //   as a Signed Byte, C and //
+     7 / 2       3    3   03 and 03
+     -7 / 2     -3   -4   fd and fc
+     7 / -2     -3   -4   fd and fc
+     -1 / 2      0   -1   00 and ff
+
+3. DIVIDE 2 IS NOT SHIFT RIGHT 1
+------------------------------------------------------------------------
+   Shift Right 1 on a negative Signed Byte copies the sign bit in -- on
+   every compiler this library runs -- which rounds toward minus
+   infinity, where Divide rounds toward zero:
+
+     values where Divide 2 and Shift Right 1 differ   64 of 256
+     every one of them negative and odd               True
+     -7, through Divide 2 and Shift Right 1           -3 and -4
+
+4. DIVIDE 0
+------------------------------------------------------------------------
+   There is no byte to write. This program's answer is Python's:
+
+     Divide 0 on 10   ZeroDivisionError
+
+   C leaves integer division by zero undefined, and the manual does not
+   say what the dialog does instead.
+
+5. A FLOAT QUOTIENT IS ROUNDED TO ITS TYPE
+------------------------------------------------------------------------
+   As Float or Double, Divide is floating-point division. 1 / 3:
+
+     Float   ab aa aa 3e              reads back 0.3333333432674408
+     Double  55 55 55 55 55 55 d5 3f  reads back 0.3333333333333333
+
+   Neither is a third. Each is the nearest number its bits can hold,
+   and a Float and a Double are nearest in different places.

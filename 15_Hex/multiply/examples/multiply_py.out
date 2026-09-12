@@ -1,0 +1,52 @@
+1. THE PRODUCT KEEPS ITS LOW BITS
+------------------------------------------------------------------------
+   F0 x 2 is 480 as an Unsigned Byte and -32 as a Signed one. Both
+   answers end in the same eight bits:
+
+     Unsigned Byte  e0
+     Signed Byte    e0
+
+   Every byte, every operand 0-127: the same byte 32,768 times of 32,768.
+
+2. MULTIPLY 2 IS SHIFT LEFT 1, AND IT LOSES THE TOP BIT
+------------------------------------------------------------------------
+     Multiply 2 == Shift Left 1, all 256 bytes          True
+     different bytes Multiply 2 can write               128 of 256
+     00 x 2 and 80 x 2                                  00 and 00
+
+   Half the byte values can never come out of a Multiply 2, and every
+   one that does came from two different inputs.
+
+3. MULTIPLY 3 IS UNDONE BY MULTIPLY 171, NOT BY DIVIDE 3
+------------------------------------------------------------------------
+   Multiply every byte by 3, then try to get the file back:
+
+     then Multiply 171 (AB)   restores 256 of 256
+     then Divide 3            restores  86 of 256, bytes 00-55
+     ...which are the bytes whose product never wrapped: True
+
+   3 x 171 is 513, which is 2 x 256 + 1: within eight bits, 1. So
+   Multiply 171 undoes Multiply 3 on every byte, and Divide 3 only on
+   the ones that did not overflow.
+
+   Multipliers with a partner like 171: 128 of 256, all of them odd:
+   True. An even multiplier clears the low bit and loses the top one.
+
+4. MULTIPLY 256 MOVES A WHOLE BYTE
+------------------------------------------------------------------------
+   0x1234 x 256 is 0x123400, and a Short keeps 0x3400:
+
+     Unsigned Short, little   34 12 -> 00 34
+     Unsigned Short, big      12 34 -> 34 00
+
+   The same byte moved to the high end of the value both times. On
+   screen, that is rightward in one row and leftward in the other.
+
+5. A FLOAT DOUBLES IN ITS EXPONENT
+------------------------------------------------------------------------
+   As Float, Multiply 2 is floating-point multiplication. Nothing wraps
+   and nothing is kept low; the exponent field goes up by one:
+
+     1.0  00 00 80 3f -> 00 00 00 40   reads back 2.0
+     3.0  00 00 40 40 -> 00 00 c0 40   reads back 6.0
+     0.1  cd cc cc 3d -> cd cc 4c 3e   reads back 0.20000000298023224

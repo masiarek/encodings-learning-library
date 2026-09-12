@@ -1,0 +1,43 @@
+1. OR 20 LOWERCASES ASCII LETTERS, AND A FEW THINGS BESIDES
+------------------------------------------------------------------------
+   Bit 5 is the difference between an ASCII capital and its lowercase
+   letter. Set it everywhere:
+
+     b'HI [42]@' -> b'hi {42}`'
+
+   The space and the digits live in 20-3F, where that bit is already
+   set, so they are untouched -- unlike Subtract 20, which takes 0x20
+   from every byte whether it has the bit or not. [ ] and @ live in
+   40-5F with the capitals, and became { } and `.
+
+2. ON UTF-8, IT BREAKS EVERY TWO-BYTE CHARACTER
+------------------------------------------------------------------------
+     before   43 41 46 c3 89   'CAFÉ'
+     after    63 61 66 e3 a9   not UTF-8
+
+   Two-byte lead bytes, C2-DF, that Or 20 changes: 30 of 30,
+   every one into E2-FF: True
+
+   A lead byte from E0 up announces a character of three bytes or more,
+   so C3 | 20 = E3 tells a decoder to expect two continuation bytes,
+   and the É had only one.
+
+3. OR NEVER CLEARS A BIT, SO IT CANNOT BE UNDONE
+------------------------------------------------------------------------
+     different bytes Or 20 can write   128 of 256
+     41 and 61 both become             61 and 61
+
+   Once two bytes have been merged into one, no operation can tell
+   which one it was. And and Or both lose information this way; Xor and
+   Invert never do.
+
+4. OR 80 MOVES EVERY BYTE INTO THE TOP HALF
+------------------------------------------------------------------------
+   b'Hi!' is 48 69 21. Or 0x80:
+
+     c8 e9 a1   as Latin-1 'Èé¡', and not UTF-8
+
+   Every ASCII character lands exactly 0x80 higher, in the half of the
+   byte range where each code page keeps its own letters -- which is
+   why text that has been through Or 80 reads as accented garbage in
+   one table and as nothing at all in UTF-8.

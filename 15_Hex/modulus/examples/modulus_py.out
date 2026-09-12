@@ -1,0 +1,41 @@
+1. MODULUS 16 KEEPS THE LOW HEX DIGIT
+------------------------------------------------------------------------
+   café is 63 61 66 c3 a9. Modulus 16, as Unsigned Byte:
+
+     03 01 06 03 09
+
+   Modulus 16 == Binary And 0F, all 256 Unsigned Bytes: True
+   Sixteen is a power of two, so the remainder is the low four bits,
+   which is the right-hand hex digit.
+
+2. UNTIL THE BYTE IS SIGNED
+------------------------------------------------------------------------
+   c3 a9 as Signed Byte is -61 and -87. Modulus 16 by each language's rule:
+
+     C's %        f3 f9   -13, -7
+     Python's %   03 09   3, 9
+
+   The manual writes Modulus in C, so the first row is the rule it
+   names, and the low hex digit is no longer what comes out.
+
+3. WHOSE SIGN THE REMAINDER TAKES
+------------------------------------------------------------------------
+     a % b       C  Python
+     7 % 3       1       1
+     -7 % 3     -1       2
+     7 % -3      1      -2
+     -7 % -3    -1      -1
+
+   C's remainder has the sign of a, Python's the sign of b. Neither is
+   wrong: each is the one that fits its own division, over every pair
+   of Signed Bytes:
+
+     a == b * c_div(a, b) + c_mod(a, b)    True
+     a == b * (a // b) + a % b             True
+
+4. MODULUS 0
+------------------------------------------------------------------------
+     Modulus 0 on 10   ZeroDivisionError
+
+   A remainder after dividing by zero is undefined in C as well, and
+   the manual does not say what the dialog writes.

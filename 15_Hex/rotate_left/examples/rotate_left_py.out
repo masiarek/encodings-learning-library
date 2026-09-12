@@ -1,0 +1,38 @@
+1. THE BIT THAT FALLS OFF COMES BACK
+------------------------------------------------------------------------
+   81 is 1000 0001. Shift and rotate it left by 1:
+
+     Shift Left 1    02   00000010
+     Rotate Left 1   03   00000011
+
+2. ROTATE LEFT 4 SWAPS A BYTE'S TWO HEX DIGITS
+------------------------------------------------------------------------
+     é   c3 a9 -> 3c 9a
+     the same as swapping the digits, all 256 bytes   True
+
+   Four is half of eight, so the top digit comes round to the bottom
+   and the bottom digit is pushed up to the top.
+
+3. NOTHING IS LOST
+------------------------------------------------------------------------
+     Rotate Left 1, eight times, gives every byte back   True
+     different bytes Rotate Left 1 can write             256 of 256
+     Rotate Left 3, then Rotate Left 5, is no change     True
+
+   Every byte in, a different byte out, and all 256 of them reachable:
+   a rotation only reorders bits, so it can always be turned back.
+
+4. ROTATE LEFT 8 ON AN UNSIGNED SHORT IS SWAP BYTES
+------------------------------------------------------------------------
+     all 65,536 Unsigned Shorts   True
+
+   Half of sixteen is eight, and a byte is eight bits: rotating a Short
+   by half its width trades its two bytes.
+
+5. SIGNED OR UNSIGNED, THE SAME BITS
+------------------------------------------------------------------------
+     all 256 bytes, counts 0-7   True
+
+   A rotation moves bits and never looks at what they mean. The number
+   read back can change sign -- 40 rotated left by 1 is 80, which is
+   +64 becoming -128 -- but the bytes do not depend on the dropdown.
