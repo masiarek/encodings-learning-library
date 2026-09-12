@@ -97,9 +97,9 @@ And the family emoji has **three** defensible column counts — 8 if you count e
    U+1F467  4 bytes  2 u16   GIRL
    5 code points, 18 bytes, 8 UTF-16 units, and 1 cluster.
    A name is the one question this program asks the Unicode table,
-   and it is the only question whose answer Unicode promises never
-   to change. That is why this section quotes names, and why the
-   next one refuses to quote a width.
+   and it is one of the few questions whose answer Unicode promises
+   never to change. That is why this section quotes names, and why
+   section 5 refuses to quote a width.
 
 4. WHAT THIS SEGMENTER DOES NOT IMPLEMENT
    A               -> 1 cluster(s): A
@@ -356,7 +356,7 @@ Three of the four letters carry something above or through them. Two questions t
 ```
 <!-- /output -->
 
-The decomposition is safe to write down, incidentally, and it is the one table fact on this page that is: Unicode's normalization stability policy freezes the canonical decomposition of a character that already exists, which is what makes NFC and NFD mean the same thing in five years' time. Width classes carry no such promise.
+The decomposition is safe to write down, incidentally, for the same reason the names in section 3 of [the Python example](#in-python) are: Unicode promises never to change either. Its normalization stability policy freezes the canonical decomposition of a character that already exists, which is what makes NFC and NFD mean the same thing in five years' time. Width classes carry no such promise.
 
 </details>
 

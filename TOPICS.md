@@ -353,7 +353,7 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 
 - **`NFC(NFD(x)) == x` is false for a whole class of characters** — singletons and composition exclusions. Normalization is a projection, not a round trip. Measured; on [Normalization](04_Python/normalization/README.md).
 - **NFKC is lossy on purpose and dangerous by consequence** — `U+2100 ACCOUNT OF` expands to `a/c`, one code point becoming a path separator. On [The check that ran too early](12_Adversarial/canonicalize_then_check/README.md).
-- **The Normalization Stability Policy** — the one Unicode table lookup an answer key may hold, and *why*.
+- **The Normalization Stability Policy** — one of the few Unicode table lookups an answer key may hold, and *why*.
 - **Normalize *where*, not *whether*** — at the boundary, once, in a named direction. The operational rule the term list has no room for.
 - **NFKC_Casefold** — the guaranteed-stable caseless form, and not the same as `casefold()`.
 - **rsync, Samba, git and macOS** — the same filename in NFC and NFD is two files on Linux and one on macOS. `core.precomposeunicode` exists solely for this.

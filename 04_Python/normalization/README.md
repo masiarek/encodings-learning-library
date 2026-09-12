@@ -175,11 +175,11 @@ The **K** is for *kompatibility* — spelled with a K because C was already take
 
      key = unicodedata.normalize('NFC', s.casefold())
 
-8. THE ONE THING ON THIS PAGE YOU MAY WRITE DOWN
+8. ONE OF THE FEW LOOKUPS YOU MAY WRITE DOWN
 ------------------------------------------------------------------------
    Chapter 2 said no Unicode table lookup belongs in an answer key,
-   because two machines carry two tables. Normalization is the
-   exception, and it is an exception on purpose.
+   because two machines carry two tables. Normalization is an
+   exception, as a name is, and it is an exception on purpose.
 
    Unicode's Normalization Stability Policy, in force since 4.1:
    if a string holds only characters your table already knows, its
@@ -296,11 +296,11 @@ The split is clean and worth remembering: **`std` does case mapping in full Unic
 
 That is a deliberate line rather than an oversight. The decomposition tables are large, they get a release every September, and Rust keeps that kind of data out of `std` — the same reasoning that keeps `char::UNICODE_VERSION` a compile-time constant in [The table has a version](../../02_Characters/the_table_has_a_version/README.md). The crate is [`unicode-normalization` ↗](https://crates.io/crates/unicode-normalization), and section 4's five-entry hand-rolled NFD is there to show what you are actually buying: not the loop, which is trivial, but the table, the canonical ordering of multiple marks, and the exclusion list.
 
-## The one lookup this library lets you write down
+## One of the few lookups this library lets you write down
 
 Chapter 2 established that a Unicode table lookup must never become a recorded answer key, because two machines carry two tables — `python3` and `rustc` on the machine these pages were written on are a full Unicode release apart.
 
-Normalization is the documented exception. The [Unicode Normalization Stability Policy ↗](https://www.unicode.org/policies/stability_policy.html#Normalization), in force since Unicode 4.1:
+Normalization is one of the documented exceptions. The [Unicode Normalization Stability Policy ↗](https://www.unicode.org/policies/stability_policy.html#Normalization), in force since Unicode 4.1:
 
 > If a string contains only characters from a given version of Unicode, and it is put into a normalized form in accordance with that version of Unicode, then the results will be identical to the results of putting that string into a normalized form in accordance with any subsequent version of Unicode.
 

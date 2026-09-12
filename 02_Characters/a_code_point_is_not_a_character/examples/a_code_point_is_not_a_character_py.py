@@ -153,9 +153,9 @@ def main() -> None:
     print(f"   {len(family)} code points, {utf8_bytes(family)} bytes, "
           f"{utf16_units(family)} UTF-16 units, and {graphemes(family)} cluster.")
     print("   A name is the one question this program asks the Unicode table,")
-    print("   and it is the only question whose answer Unicode promises never")
-    print("   to change. That is why this section quotes names, and why the")
-    print("   next one refuses to quote a width.")
+    print("   and it is one of the few questions whose answer Unicode promises")
+    print("   never to change. That is why this section quotes names, and why")
+    print("   section 5 refuses to quote a width.")
     print()
 
     print("4. WHAT THIS SEGMENTER DOES NOT IMPLEMENT")

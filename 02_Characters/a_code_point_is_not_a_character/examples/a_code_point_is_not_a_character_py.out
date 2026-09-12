@@ -33,9 +33,9 @@
    U+1F467  4 bytes  2 u16   GIRL
    5 code points, 18 bytes, 8 UTF-16 units, and 1 cluster.
    A name is the one question this program asks the Unicode table,
-   and it is the only question whose answer Unicode promises never
-   to change. That is why this section quotes names, and why the
-   next one refuses to quote a width.
+   and it is one of the few questions whose answer Unicode promises
+   never to change. That is why this section quotes names, and why
+   section 5 refuses to quote a width.
 
 4. WHAT THIS SEGMENTER DOES NOT IMPLEMENT
    A               -> 1 cluster(s): A

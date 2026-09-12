@@ -127,11 +127,11 @@
 
      key = unicodedata.normalize('NFC', s.casefold())
 
-8. THE ONE THING ON THIS PAGE YOU MAY WRITE DOWN
+8. ONE OF THE FEW LOOKUPS YOU MAY WRITE DOWN
 ------------------------------------------------------------------------
    Chapter 2 said no Unicode table lookup belongs in an answer key,
-   because two machines carry two tables. Normalization is the
-   exception, and it is an exception on purpose.
+   because two machines carry two tables. Normalization is an
+   exception, as a name is, and it is an exception on purpose.
 
    Unicode's Normalization Stability Policy, in force since 4.1:
    if a string holds only characters your table already knows, its
