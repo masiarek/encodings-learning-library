@@ -1,0 +1,42 @@
+1. THE BYTES A LOADER LOOKS AT FIRST
+------------------------------------------------------------------------
+   format               at                   bytes                                            reads as             recognised by
+
+   Android APK          0 (and the last 22)  50 4b 03 04                                      (not text)           ZIP; classes.dex inside
+   COFF                 0                    4c 01                                            (not text)           a machine type the table knows
+   DEX                  0                    64 65 78 0a 30 33 35 00                          dex\n035\0           magic
+   DBG                  0                    44 49                                            DI                   magic
+   Dump File Loader     0                    4d 44 4d 50                                      MDMP                 one of four words
+   DYLD Shared Cache    0                    64 79 6c 64 5f 76 31 20 78 38 36 5f 36 34 68 00  dyld_v1 x86_64h\0    a 16-byte text field
+   ELF                  0                    7f 45 4c 46                                      (not text)           magic
+   GDT                  6                    2e 30 21 26 34 e9 2c 20                          (not text)           magic, and the .gdt name
+   GZF                  6                    2e 30 21 26 34 e9 2c 20                          (not text)           magic, and the .gzf name
+   GZT                  6                    2e 30 21 26 34 e9 2c 20                          (not text)           magic, and the .gzt name
+   Intel Hex            0                    3a                                               :                    a regex over the first line
+   Java Class File      0                    ca fe ba be                                      (not text)           magic
+   Mach-O               0                    cf fa ed fe                                      (not text)           one of four magics, or a fat header
+   DEF                  -                                                                     -                    the .def name, and one export
+   Motorola Hex         0                    53                                               S                    the same regex as Intel Hex
+   NE                   e_lfanew             4e 45                                            NE                   MZ first, then this
+   MZ                   0                    4d 5a                                            MZ                   magic, and no NE or PE behind it
+   PE                   e_lfanew             50 45 00 00                                      PE\0\0               MZ first, then this
+   PEF                  0                    4a 6f 79 21 70 65 66 66                          Joy!peff             two tags
+   MAP                  -                                                                     -                    the .map name, and a symbol line
+   Raw Binary           -                                                                     -                    nothing: every file qualifies
+   OMF                  0                    80                                               (not text)           a THEADR or LHEADR record
+   XML Input Format     -                                                                     -                    parses as a PROGRAM element
+   SARIF Input Format   -                                                                     -                    parses as SARIF
+
+2. COUNTED
+------------------------------------------------------------------------
+   formats on the list                     24
+   with a signature in the file            19
+   ...of which the signature is text        10
+   ...of which it sits at offset 0          14
+   ...of which it sits somewhere else       5
+   with no signature at all                5
+
+   A magic number is a number to the program and a picture to the
+   person reading the dump, and most of these were chosen so the
+   picture reads as a word. The ELF designers went one better: a
+   first byte no text file can start with, then the name.

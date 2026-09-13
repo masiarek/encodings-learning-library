@@ -1,0 +1,55 @@
+1. FOUR SIGNATURES, READ AS ONE LITTLE-ENDIAN INTEGER
+------------------------------------------------------------------------
+   Minidump  constant 0x504d444d   bytes 4d 44 4d 50   spells 'MDMP'
+   Pagedump  constant 0x45474150   bytes 50 41 47 45   spells 'PAGE'
+   Userdump  constant 0x52455355   bytes 55 53 45 52   spells 'USER'
+   Apport    constant 0x626f7250   bytes 50 72 6f 62   spells 'Prob'
+
+   Ghidra reads a 32-bit little-endian integer at offset 0 and switches
+   on it. Three are the first four bytes of a binary header -- MDMP,
+   PAGE (then DUMP or DU64), USER (then DUMP). The fourth is the first
+   four letters of 'ProblemType:', the first line of an Ubuntu apport
+   crash report, which is a text file recognised as if it were binary.
+
+   50 41 47 45 44 55 4d 50   first int 0x45474150 -> Pagedump   second int 0x504d5544 spells 'DUMP'   PAGEDUMP, a 32-bit kernel dump
+   50 41 47 45 44 55 36 34   first int 0x45474150 -> Pagedump   second int 0x34365544 spells 'DU64'   PAGEDU64, a 64-bit one
+   ef bb bf 50 72 6f 62 6c   first int 0x50bfbbef -> no loader  second int 0x6c626f72 spells 'robl'   a BOM in front of ProblemType
+
+   The BOM row is the text file's hazard: three invisible bytes and
+   the integer compare misses. And the second word of a kernel dump
+   is DUMP, 0x504d5544, or DU64, 0x34365544 -- Ghidra's source holds
+   0x504d5444 for both, which spells 'DTMP'; a comment says DUMP.
+
+2. THE MINIDUMP HEADER IS 32 BYTES, THEN A DIRECTORY
+------------------------------------------------------------------------
+   4d 44 4d 50 93 a7 34 12 02 00 00 00 20 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+   Signature   b'MDMP'
+   Version     0x1234a793   low word 0xa793 = MINIDUMP_VERSION; high word 0x1234 is the writer's
+   Streams     2 at RVA 32   Flags 0x0
+
+   directory[0]   type 7  SystemInfo     48 bytes at RVA 56
+   directory[1]   type 4  ModuleList    112 bytes at RVA 104
+
+   An RVA here is a plain file offset -- the dump is not mapped -- and
+   every stream is found through the directory, never by position.
+
+3. THE ARCHITECTURE IS A 16-BIT NUMBER IN THE SYSTEMINFO STREAM
+------------------------------------------------------------------------
+   ProcessorArchitecture 9 = AMD64   level 6  revision 0x3f03  8 processors   Windows 10.0 build 22631
+
+   This is the field Ghidra's Minidump.getMachineType() returns, as a
+   decimal string, to pick a language: 0 x86, 5 ARM, 9 AMD64, 12 ARM64.
+
+4. A MINIDUMP_STRING IS A BYTE LENGTH, THEN UTF-16LE, THEN A NUL
+------------------------------------------------------------------------
+   1 module   base 0x7ff600000000   size 0x20000   ModuleNameRva 216
+   at 216: Length 16 bytes   63 00 61 00 66 00 e9 00 2e 00 64 00 6c 00 6c 00
+           -> 'café.dll'  (8 code points, 8 UTF-16 units)
+   at 238: Length 12 bytes   3d d8 00 de 2e 00 64 00 6c 00 6c 00
+           -> '😀.dll'  (5 code points, 6 UTF-16 units)
+
+   Length counts BYTES of UTF-16, excluding the terminator: café.dll
+   is 8 characters and 16 bytes, and the emoji name is 5 code points,
+   6 units, 12 bytes. Three numbers for one name, and the field holds
+   the one a C++ wchar_t buffer needs.

@@ -1,0 +1,51 @@
+1. THE LOADER KEEPS THE SECOND AND THIRD COLUMNS
+------------------------------------------------------------------------
+   __ImageBase            0x0000000140000000
+   main                   0x0000000140001040
+   café_string            0x00000001400010c0
+   ?greeting@@3PEBDEB     0x0000000140002010
+   helper                 0x0000000140001200
+
+   Each symbol line is split on whitespace into at most four parts:
+   parts[0] is the segment:offset, ignored; parts[1] the name;
+   parts[2] the Rva+Base column, parsed as hexadecimal; parts[3] the
+   rest, ignored. A line with fewer than three parts is skipped, and
+   the section ends at the first blank line after a symbol was added.
+
+2. THE ADDRESS COLUMN IS HEX WITH NO PREFIX
+------------------------------------------------------------------------
+   '0000000140001040'
+   int(col, 16)   0x140001040   what the loader does: Long.parseLong(s, 16)
+   int(col)       140,001,040   what a reader who did not know the base would get
+
+   int('140001040', 16)   0x140001040   
+   int('0x140001040', 16)   0x140001040   Python accepts a 0x prefix in base 16; Java's parseLong does not
+   int('140001040h', 16)   ValueError   -- and NumberFormatException in Java: the line is logged and skipped
+
+   Sixteen digits and no 0x: the base is in the linker's documentation
+   and nowhere in the file. And the one prefix a reader might add is
+   a parser differential between the two languages on this page.
+
+3. THE COLUMN THE LOADER IGNORES SAYS THE SAME THING
+------------------------------------------------------------------------
+   preferred load address 0x140000000   sections {1: ('.text', 0), 2: ('.rdata', 0)}
+
+   0001:00000040  main                   computed 0x140001040   column 0x140001040   agree
+   0001:000000c0  café_string            computed 0x1400010c0   column 0x1400010c0   agree
+   0002:00000010  ?greeting@@3PEBDEB     computed 0x140002010   column 0x140002010   agree
+   0001:00000200  helper                 computed 0x140001200   column 0x140001200   agree
+
+   segment:offset plus the section's start plus the load address is
+   the Rva+Base column, so the column is redundant and the loader
+   reads the one that needs no arithmetic. It does mean that a map
+   file with the wrong preferred load address is wrong in the column
+   Ghidra trusts and right in the one it ignores.
+
+4. WHERE THE SECTION ENDS
+------------------------------------------------------------------------
+   as written             5 symbols
+   blank line after main  4 symbols   -- the loop stops at the first blank line once it has added one
+
+   'Static symbols' opens a second section that is parsed the same
+   way, so symbols after it are found; a stray blank line inside
+   the first section loses everything after it, silently.

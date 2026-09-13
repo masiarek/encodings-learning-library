@@ -1,0 +1,43 @@
+1. TWO QUESTIONS: THE NAME, THEN EIGHT BYTES AT OFFSET 6
+------------------------------------------------------------------------
+   ac ed 00 05 77 2a 2e 30 21 26 34 e9 2c 20 00 00
+   offset 6..14   2e 30 21 26 34 e9 2c 20   == MAGIC_NUMBER 0x2e30212634e92c20
+   content type   'Trace'
+
+   session-1.gzt    accepted by the GZT loader: True
+   session-1.GZT    accepted by the GZT loader: True
+   session-1.gzf    accepted by the GZT loader: False
+   session-1        accepted by the GZT loader: False
+
+   The extension is compared case-insensitively and it is compared
+   first: the bytes are not read at all for a file not named .gzt.
+   The same bytes named .gzf go to the GZF loader, which asks the same
+   two questions with its own extension and would then find 'Trace'
+   where it expected a Program, and stop.
+
+2. WHAT THE EIGHT-BYTE CHECK DOES NOT LOOK AT
+------------------------------------------------------------------------
+   the real file                              isPackedFile True
+   byte 5, the block length, set to 0xff      isPackedFile True
+   bytes 0..4, the stream header, zeroed      isPackedFile True
+   byte 4, the block tag, set to 0x7a         isPackedFile True
+   one byte of the magic changed              isPackedFile False
+   everything after byte 14 removed           isPackedFile True
+   the ZIP part removed                       isPackedFile True
+
+   Six of seven pass. The check reads exactly eight bytes and nothing
+   else, so the serialization header, the block length, the strings
+   and the ZIP are all beyond it: a recognised file and a loadable
+   file are different things, and the loader finds out which it has
+   only when it hands the bytes to the database layer.
+
+3. THE MAGIC IS A NUMBER, AND ALSO EIGHT BYTES
+------------------------------------------------------------------------
+   big-endian bytes   2e 30 21 26 34 e9 2c 20
+   as text            '.0!&4é, '
+   read little-endian 0x202ce9342621302e
+
+   0x2e30212634e92c20 is compared as a long through a big-endian
+   converter, so the byte order is fixed in the reader, not the file.
+   Seven of the eight bytes are printable ASCII and one, e9, is not:
+   a magic chosen so that no text file starts this way at offset 6.

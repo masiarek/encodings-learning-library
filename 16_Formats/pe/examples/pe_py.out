@@ -1,0 +1,49 @@
+1. THREE MAGICS, AND WHERE EACH ONE IS FOUND
+------------------------------------------------------------------------
+   offset 0        4d 5a         'MZ'      the DOS header, present in every PE
+   offset 0x3c     80 00 00 00   e_lfanew  = 0x80: where the PE header starts
+   offset 0x80     50 45 00 00   'PE\0\0'  the signature
+   offset 0x80+4   64 86 01 00 00 00 00 00 00 00 00 00 00 00 00 00 f0 00 22 00   the COFF file header, 20 bytes
+   offset 0x80+24  0b 02         0x20b: the optional header's own magic
+
+   Three signatures, and only the first is at a fixed place. The
+   second is wherever a 32-bit little-endian field says, and the third
+   is a number, not text: 0x10b means PE32 and 0x20b means PE32+.
+
+2. THE OPTIONAL HEADER'S MAGIC DECIDES ITS OWN WIDTH
+------------------------------------------------------------------------
+   PE32   machine 0x014c I386   SizeOfOptionalHeader 224  = 96 fixed + 16 directories x 8
+          ImageBase 0x400000   SizeOfStackReserve 0x100000   has BaseOfData
+   PE32+  machine 0x8664 AMD64  SizeOfOptionalHeader 240  = 112 fixed + 16 directories x 8
+          ImageBase 0x140000000   SizeOfStackReserve 0x100000   no BaseOfData
+
+   Same fields, two sizes: 224 and 240. PE32+ drops BaseOfData and
+   widens ImageBase and the four Size...Reserve/Commit fields from 4
+   bytes to 8, so every field after ImageBase sits at a different
+   offset in the two layouts. The width is the optional header's own
+   magic, not the machine type, which is a separate field 22 bytes
+   earlier: two fields, two facts.
+
+3. A SECTION HAS AN ADDRESS IN THE FILE AND ANOTHER IN MEMORY
+------------------------------------------------------------------------
+   .text    VirtualAddress 0x1000  VirtualSize 0x100   PointerToRawData 0x0400  SizeOfRawData 0x200
+
+   RVA 0x1000  ->  file offset 0x0400 in .text
+   RVA 0x1010  ->  file offset 0x0410 in .text
+   RVA 0x2000  ->  no section: not in the file at all
+
+   AddressOfEntryPoint is an RVA, an offset from ImageBase once the
+   image is mapped. The bytes for it are at a different offset in
+   the file, because sections are 0x200-aligned on disk and 0x1000-
+   aligned in memory. The section table is the conversion, and an
+   RVA in a gap between sections is a number with no bytes behind it.
+
+4. THE NAME FIELD IS EIGHT BYTES AND NO TERMINATOR
+------------------------------------------------------------------------
+   2e 74 65 78 74 00 00 00   b'.text\x00\x00\x00' -> '.text'
+   2e 72 64 61 74 61 00 00   b'.rdata\x00\x00' -> '.rdata'
+   2e 74 65 78 74 62 73 73   b'.textbss'    -> '.textbss'
+
+   Eight bytes exactly: a shorter name is NUL-padded and an eight-byte
+   name has no NUL at all, so strlen() on it runs into the next field.
+   COFF's escape for longer names, /offset, is on the COFF page.

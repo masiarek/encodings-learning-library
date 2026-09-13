@@ -1,0 +1,59 @@
+1. ONE MAGIC, TWO SPELLINGS, FOUR CONSTANTS
+------------------------------------------------------------------------
+   written on x86 (little)    cf fa ed fe   read LE 0xfeedfacf   MH_MAGIC_64  64-bit, this reader's order
+   written on PowerPC (big)   fe ed fa cf   read LE 0xcffaedfe   MH_CIGAM_64  64-bit, the other order
+
+   The value is 0xfeedfacf in both files. A reader that always reads
+   little-endian sees it forwards on one and backwards on the other,
+   and 'backwards' has a name: CIGAM. Ghidra reads the four bytes LE
+   and accepts all four constants, so the spelling IS the byte order.
+
+2. A 64-BIT HEADER IS 32 BYTES, THEN THE LOAD COMMANDS
+------------------------------------------------------------------------
+   bytes 0..32   cf fa ed fe 07 00 00 01 03 00 00 00 02 00 00 00
+                 02 00 00 00 68 00 00 00 85 00 20 00 00 00 00 00
+
+   magic        0xfeedfacf  4277009103
+   cputype      0x01000007    16777223   CPU_ARCH_ABI64 | 7: the high byte says 64-bit, the low byte says x86
+   cpusubtype   0x00000003           3
+   filetype     0x00000002           2   MH_EXECUTE
+   ncmds        0x00000002           2
+   sizeofcmds   0x00000068         104
+   flags        0x00200085     2097285
+   reserved     0x00000000           0
+
+   load command 1   cmd 0x19 LC_SEGMENT_64   cmdsize 72
+   segname          5f 5f 54 45 58 54 00 00 00 00 00 00 00 00 00 00
+                    b'__TEXT\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'  -> '__TEXT'
+   Sixteen bytes, NUL-padded, never NUL-terminated if the name is 16
+   long: strip the padding, do not read to a NUL.
+   load command 2   cmd 0xe LC_LOAD_DYLINKER   cmdsize 32   name offset 12
+   the path         '/usr/lib/dyld', NUL-terminated at 12 bytes into the command
+
+3. A FAT HEADER IS BIG-ENDIAN, WHATEVER IS INSIDE IT
+------------------------------------------------------------------------
+   bytes 0..8      ca fe ba be 00 00 00 02   magic 0xcafebabe   nfat_arch 2
+
+   slice  cputype      subtype  offset   size   align  first bytes of the slice
+   0      0x01000007   3        4096     136    2^12  cf fa ed fe
+   1      0x0100000c   0        8192     136    2^12  cf fa ed fe
+
+   Two byte orders in one file: the fat header and its arch table are
+   big-endian on every machine, and each slice inside is a whole
+   Mach-O in its own order -- here cf fa ed fe, little-endian, twice.
+
+4. CAFEBABE IS ALSO A JAVA CLASS, AND OFFSET 4 SETTLES IT
+------------------------------------------------------------------------
+   this fat binary        ca fe ba be 00 00 00 02   u32 at 4 = 2    a slice count
+   a Java 25 class file   ca fe ba be 00 00 00 45   u32 at 4 = 69   a class version
+
+   file(1)'s rule is exactly that comparison: greater than 30 is Java.
+   The two formats never agreed to share; the number was Java's first.
+
+5. THE SAME HEADER READ THE WRONG WAY
+------------------------------------------------------------------------
+   magic as big-endian     0xcffaedfe   MH_CIGAM_64  64-bit, the other order
+   cputype as big-endian   0x07000001      117440513
+
+   The magic tells a reader it has the order wrong; the cputype does
+   not, it is simply a different number. Read the magic first.

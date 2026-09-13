@@ -1,0 +1,55 @@
+1. THE SIGNATURE IS TWO BYTES, AND TWO NUMBERS
+------------------------------------------------------------------------
+   bytes 0..2   44 49   b'DI'   little 0x4944   big 0x4449
+
+   Microsoft's IMAGE_SEPARATE_DEBUG_SIGNATURE is 0x4944, the two
+   letters read little-endian. Ghidra's SeparateDebugHeader keeps a
+   second constant, 0x4449, named _MAC -- the same picture read the
+   other way. Two names for one pair of bytes is the honest version.
+
+2. THE HEADER IS 48 BYTES OF 16- AND 32-BIT FIELDS
+------------------------------------------------------------------------
+   Signature            0x00004944     18756
+   Flags                0x00000000         0
+   Machine              0x0000014c       332
+   Characteristics      0x00000102       258
+   TimeDateStamp        0x00000000         0
+   CheckSum             0x00000000         0
+   ImageBase            0x00400000   4194304
+   SizeOfImage          0x00003000     12288
+   NumberOfSections     0x00000001         1
+   ExportedNamesSize    0x0000000c        12
+   DebugDirectorySize   0x0000001c        28
+   SectionAlignment     0x00001000      4096
+   Reserved[0]          0x00000000         0
+   Reserved[1]          0x00000000         0
+
+   Machine and Characteristics are the PE's own, copied here so the
+   file can say which image it belongs to. Then NumberOfSections
+   section headers, ExportedNamesSize bytes of NUL-terminated names,
+   and DebugDirectorySize bytes of 28-byte directory entries.
+
+3. THE DEBUG DIRECTORY POINTS AT A CODEVIEW RECORD
+------------------------------------------------------------------------
+   exported names   ['main', '_start']
+   entry 0   Type 2 CODEVIEW  SizeOfData 43   PointerToRawData 0x80
+             b'RSDS' e0 04 25 3f 89 4f d3 11 9a 0c 03 05 e8 2c 33 01 age 7
+             path bytes 43 3a 5c 62 75 69 6c 64 5c 63 61 66 c3 a9 2e 70 64 62
+             as UTF-8   'C:\\build\\café.pdb'
+             as cp1252  'C:\\build\\cafÃ©.pdb'
+
+   RSDS is the PDB 7.0 record: signature, GUID, age, path. Nothing in
+   it says which encoding the path is in -- the linker wrote whatever
+   bytes it had, and 'c3 a9' is one character or two depending on
+   the reader. A debugger that opens the wrong file is the bug.
+
+4. A GUID IS THREE BYTE ORDERS IN SIXTEEN BYTES
+------------------------------------------------------------------------
+   as text        {3F2504E0-4F89-11D3-9A0C-0305E82C3301}
+   .bytes         3f 25 04 e0 4f 89 11 d3 9a 0c 03 05 e8 2c 33 01   the text, left to right
+   .bytes_le      e0 04 25 3f 89 4f d3 11 9a 0c 03 05 e8 2c 33 01   what the file holds
+
+   Data1 (4 bytes) and Data2, Data3 (2 each) are little-endian; the
+   last eight are in text order. So the file's e0 04 25 3f 89 4f d3 11
+   reads back as 3F2504E0-4F89-11D3 -- three fields reversed and one
+   not, in one 16-byte value. Python spells the choice bytes_le.

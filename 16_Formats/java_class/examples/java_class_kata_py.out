@@ -1,0 +1,13 @@
+   string       chars UTF-16 UTF-8 MUTF-8   the two length bytes
+
+   'A'              1      1     1      1   00 01
+   'café'           4      4     5      5   00 05
+   'Łódź'           4      4     7      7   00 07
+   'a\x00b'         3      3     3      4   00 04
+   '😀'              1      2     4      6   00 06
+
+   The field is the last column, big-endian. It equals the UTF-8 length
+   for three of the five and differs for the two the encoding exists
+   to change: the NUL costs one byte more, the emoji two. It never
+   equals the character count except for pure ASCII, and it equals
+   the UTF-16 count for nothing here but 'A'.

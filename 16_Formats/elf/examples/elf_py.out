@@ -1,0 +1,67 @@
+1. THE FIRST SIXTEEN BYTES SAY HOW TO READ THE REST
+------------------------------------------------------------------------
+   64-bit, little-endian  7f 45 4c 46 02 01 01 00 00 00 00 00 00 00 00 00
+   32-bit, big-endian     7f 45 4c 46 01 02 01 00 00 00 00 00 00 00 00 00
+
+   byte 0..3   7f 45 4c 46   a byte no text file starts with, then 'ELF'
+   byte 4      EI_CLASS      1 = 32-bit offsets, 2 = 64-bit offsets
+   byte 5      EI_DATA       1 = little-endian, 2 = big-endian
+   byte 6      EI_VERSION    1, the only value there has ever been
+   byte 7      EI_OSABI      0 = System V; 9..15 the pad
+
+2. THE SAME SEVEN FIELDS, 52 OR 64 BYTES
+------------------------------------------------------------------------
+   64-bit LSB   64 bytes   format string '<HHIQQQIHHHHHH'
+      0010  02 00 3e 00 01 00 00 00 00 10 40 00 00 00 00 00
+      0020  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+      0030  00 00 00 00 40 00 38 00 00 00 40 00 00 00 00 00
+   32-bit MSB   52 bytes   format string '>HHIIIIIHHHHHH'
+      0010  00 02 00 3e 00 00 00 01 00 40 10 00 00 00 00 00
+      0020  00 00 00 00 00 00 00 00 00 34 00 20 00 00 00 28
+      0030  00 00 00 00
+
+   e_entry, e_phoff and e_shoff are the three fields that grew from
+   4 bytes to 8; everything else is the same width in both. 52 + 12
+   is 64, and e_ehsize in each header says which it is.
+
+3. READ EACH ONE WITH ITS OWN IDENT
+------------------------------------------------------------------------
+   field          64-bit LSB   32-bit MSB
+   e_type                  2            2
+   e_machine            0x3e         0x3e
+   e_version               1            1
+   e_entry          0x401000     0x401000
+   e_phoff                 0            0
+   e_shoff                 0            0
+   e_flags                 0            0
+   e_ehsize               64           52
+   e_phentsize            56           32
+   e_phnum                 0            0
+   e_shentsize            64           40
+   e_shnum                 0            0
+   e_shstrndx              0            0
+
+   e_type 2 is EXEC, e_machine 0x3e is X86_64,
+   in both -- two layouts, one header, because the file said which
+   layout it used before its first multi-byte field.
+
+4. READ THE BIG-ENDIAN ONE AS IF IT WERE LITTLE
+------------------------------------------------------------------------
+   e_type      512      (0x0200, not in the table: 1..4)
+   e_machine   15872    (0x3e00, not x86-64)
+   e_entry     0x00104000
+
+   Nothing raised. Every wrong reading of a header is a number, which
+   is why byte 5 exists: the alternative is guessing from plausibility.
+
+5. A SECTION'S NAME IS AN OFFSET INTO A STRING TABLE
+------------------------------------------------------------------------
+   .shstrtab bytes   00 2e 74 65 78 74 00 2e 73 68 73 74 72 74 61 62 00
+   as text           b'\x00.text\x00.shstrtab\x00'
+
+   sh_name = 1   -> read to the next NUL -> '.text'      ok
+   sh_name = 7   -> read to the next NUL -> '.shstrtab'  ok
+
+   A section header holds no name, only sh_name, an offset into the
+   section that e_shstrndx points at. Names are NUL-terminated there,
+   and offset 0 is an empty string on purpose: the unnamed section.

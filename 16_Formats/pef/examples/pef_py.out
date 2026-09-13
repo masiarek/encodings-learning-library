@@ -1,0 +1,52 @@
+1. TWELVE ASCII BYTES, THEN A BIG-ENDIAN HEADER
+------------------------------------------------------------------------
+   4a 6f 79 21 70 65 66 66 70 77 70 63 00 00 00 01   b'Joy!peffpwpc'
+   tag1 b'Joy!'  tag2 b'peff'  architecture b'pwpc'   formatVersion 1   sections 2, 2 instantiated
+
+   Joy! and peff are the two tags Ghidra's ContainerHeader compares,
+   and pwpc or m68k the architecture that picks the language. Every
+   number after them is big-endian, as everything on a 68000 or a
+   PowerPC Mac was, and nothing in the file says so.
+
+2. THE TIMESTAMP COUNTS FROM 1904
+------------------------------------------------------------------------
+   dateTimeStamp   0xc2a43140 = 3,265,540,416 seconds
+   from 1904-01-01 2007-06-24 14:33:36   the Mac OS epoch, which is what the field means
+   from 1970-01-01 2073-06-24 14:33:36   the Unix epoch, which is what a C program assumes
+   the two epochs differ by 2,082,844,800 seconds
+
+   An unsigned 32-bit count from 1904 runs out in 2040; a signed one
+   from 1970 runs out in 2038; Windows counts 100-ns ticks from 1601.
+   The number is the same kind of thing as a byte order: a choice the
+   file does not record and a reader has to already know.
+
+3. A SECTION HEADER IS 28 BYTES, AND ONE KIND IS A PROGRAM
+------------------------------------------------------------------------
+   section 0   kind 0 code                       address 0x10000000   total  512  unpacked  512  packed 512  at 0x64   nameOffset -1
+   section 1   kind 2 pattern-initialized data   address 0x20000000   total   64  unpacked   64  packed  13  at 0x264   nameOffset -1
+
+   nameOffset -1 means no name. Kind 2 is the one this page is about:
+   totalSize bytes in memory, unpackedSize of them initialised, and
+   only packedSize bytes in the file, because the initial contents
+   are stored as instructions for producing them.
+
+4. PATTERN-INITIALIZED DATA: A 3-BIT OPCODE AND A 5-BIT COUNT
+------------------------------------------------------------------------
+   the packed bytes   04 25 63 61 66 c3 a9 42 02 ab cd 00 31
+
+   04                       opcode 0 Zero           count   4
+   25 63 61 66 c3 a9        opcode 1 BlockCopy      count   5
+   42 02 ab cd              opcode 2 RepeatedBlock  count   2   (then the repeat count, then the block)
+   00 31                    opcode 0 Zero           count  49   (count in a varint after the opcode byte)
+
+   unpacked, 64 bytes
+      00  00 00 00 00 63 61 66 c3 a9 ab cd ab cd ab cd 00
+      10  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+      20  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+      30  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+   Each byte's top three bits are an instruction and the low five a
+   count; a count of 0 means 'read a varint next', seven bits per byte
+   with the high bit as the continuation flag. Five opcodes, and a
+   loader that runs them is executing the data section's bytes to
+   produce the data section -- 13 bytes of file for 64 bytes of memory.

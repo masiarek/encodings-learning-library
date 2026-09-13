@@ -1,0 +1,45 @@
+1. THE MAGIC IS A 16-BYTE TEXT FIELD
+------------------------------------------------------------------------
+   64 79 6c 64 5f 76 31 20 20 20 20 69 33 38 36 00   b'dyld_v1    i386\x00' in the table
+   64 79 6c 64 5f 76 31 20 20 78 38 36 5f 36 34 00   b'dyld_v1  x86_64\x00' in the table
+   64 79 6c 64 5f 76 31 20 78 38 36 5f 36 34 68 00   b'dyld_v1 x86_64h\x00' in the table
+   64 79 6c 64 5f 76 31 20 20 61 72 6d 36 34 65 00   b'dyld_v1  arm64e\x00' in the table
+   64 79 6c 64 5f 76 31 61 72 6d 36 34 5f 33 32 00   b'dyld_v1arm64_32\x00' in the table
+
+   dyld_v1, then the architecture right-justified to fill 15 bytes,
+   then a NUL: i386 gets four spaces and arm64_32 none. Ghidra reads
+   sixteen bytes, decodes them, trims them, and compares the string
+   with twelve it knows -- a text comparison, not a number.
+
+2. THE HEADER, THEN A MAPPING TABLE
+------------------------------------------------------------------------
+   magic          b'dyld_v1 x86_64h\x00'
+   mappingOffset  512   mappingCount 2   imagesOffsetOld 0  imagesCountOld 0
+   uuid           f25a411f0e2b394f861b412f1a52f90d
+
+   address                size   fileOffset  maxProt initProt
+   0x007ff800000000  650067968            0  r-x     r-x
+   0x007ff840000000   55705600    650067968  rw-     r--
+
+   Every field is little-endian and every address is 64-bit: this is
+   an image of memory, and the mappings say which file bytes land at
+   which addresses with which permissions. Nothing here is code yet.
+
+3. AN IMAGE IS AN ADDRESS AND A PATH
+------------------------------------------------------------------------
+   image 0   address 0x7ff800001000   pathFileOffset 640   -> '/usr/lib/libSystem.B.dylib'
+   image 1   address 0x7ff800011000   pathFileOffset 667   -> '/usr/lib/libc++.1.dylib'
+
+   The path is a NUL-terminated string INSIDE the cache. On a Mac
+   since macOS 11, /usr/lib/libSystem.B.dylib is not a file on disk
+   at all: the linker names it, dyld finds it here, and the only
+   place the name exists is this table.
+
+4. SUBCACHES ARE NAMED BY AN EXTENSION FIELD
+------------------------------------------------------------------------
+   subcache 0   uuid 00000000...   vmOffset 0x40000000   extension '.01'
+   subcache 1   uuid 11111111...   vmOffset 0x80000000   extension '.02'
+
+   A modern cache is one file plus subcaches named by appending the
+   extension -- .01, .02 -- and a .symbols file, each a cache with
+   its own magic; the entries here are how the main file finds them.

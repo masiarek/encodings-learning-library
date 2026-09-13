@@ -1,0 +1,53 @@
+1. A JAVA SERIALIZATION STREAM, THEN ONE BLOCK OF DATA
+------------------------------------------------------------------------
+   ac ed 00 05 77 2c 2e 30 21 26 34 e9 2c 20 00 00
+   00 01 00 09 44 54 41 72 63 68 69 76 65 00 07 41
+   72 63 68 69 76 65 00 00 00 00 00 00 00 00 00 00 10 00
+
+   bytes 0..4   ac ed 00 05   STREAM_MAGIC ac ed, STREAM_VERSION 5: ObjectOutputStream's header
+   byte 4       0x77          TC_BLOCKDATA: a block of primitive data follows
+   byte 5       0x2c = 44     its length in bytes
+   bytes 6..14  2e 30 21 26 34 e9 2c 20   MAGIC_NUMBER 0x2e30212634e92c20, big-endian
+   then         FORMAT_VERSION 1
+                writeUTF item name     b'DTArchive'   (9 bytes, after a 2-byte count)
+                writeUTF content type  b'Archive'
+                fileType 0   length 4096 = the payload's size before compression
+   block ends at 50 = 6 + 44
+
+   writeLong, writeInt, writeUTF: Java's DataOutput, big-endian, with
+   writeUTF counting bytes of modified UTF-8 in a 16-bit field. The
+   whole 44 bytes travel as one serialization block.
+
+2. THEN A ZIP WITH ONE ENTRY AND NO CENTRAL DIRECTORY
+------------------------------------------------------------------------
+   at 50: local header 0x04034b50   flags 0x0808   method 8 (deflate)   entry b'FOLDER_ITEM'
+   crc 0x0  sizes 0/0: all zero, because flag bit 3 says a data descriptor follows the data
+   PK\1\2 (central directory) present: False   PK\5\6 (end record) present: False
+   last 16 bytes  50 4b 07 08 18 ba fd 13 1e 00 00 00 00 10 00 00   the descriptor: PK\7\8, crc, compressed size, size
+
+   ItemSerializer calls closeEntry() and flush() on a ZipOutputStream
+   and never finish(): the central directory is never written. A
+   stream reader that walks local headers does not need one; an
+   archive reader that starts from the end cannot find anything.
+
+3. WHO CAN OPEN IT
+------------------------------------------------------------------------
+   isPackedFile (8 bytes at offset 6 == magic)   True
+   zipfile.ZipFile on the ZIP part               refused: BadZipFile
+   zlib, raw deflate from byte 91             4096 bytes out; descriptor crc matches: True; size matches: True
+   the payload begins                            b'/01,4),*'
+
+   Same bytes, three verdicts. The Java stream reader Ghidra uses
+   reads entries in order and is satisfied; unzip and zipfile look
+   for the end record first and give up; zlib does not know what a
+   ZIP is and inflates what it is pointed at.
+
+4. WHAT A REAL ONE HOLDS
+------------------------------------------------------------------------
+   item 'DTArchive'  content type 'Archive'   block length 44   length field 0xcac000 = 13,287,424 bytes unpacked
+   item 'Archive'    content type 'Archive'   block length 42   length field 0x74000 = 475,136 bytes unpacked
+
+   The sixteen .gdt files Ghidra 12.1.3 ships all open ac ed 00 05 77
+   and then 2c or 2a -- 44 or 42 -- because 'DTArchive' is two bytes
+   longer than 'Archive'. The block length is the only byte that
+   varies before the magic, and the magic is what the loader reads.

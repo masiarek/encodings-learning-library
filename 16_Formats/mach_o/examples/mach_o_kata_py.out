@@ -1,0 +1,21 @@
+   bytes                      read LE       verdict
+
+   cf fa ed fe 07 00 00 01    0xfeedfacf    MH_MAGIC_64  64-bit, written little-endian
+                                              a 64-bit Mach-O written little-endian: x86-64 or arm64
+
+   fe ed fa ce 00 00 00 12    0xcefaedfe    MH_CIGAM     32-bit, written big-endian
+                                              a 32-bit Mach-O written big-endian: PowerPC
+
+   ca fe ba be 00 00 00 02    0xbebafeca    cafebabe     u32 at 4 is 2: a fat binary
+                                              a fat binary with two slices
+
+   ca fe ba be 00 00 00 41    0xbebafeca    cafebabe     u32 at 4 is 65: a Java class
+                                              a Java class file, major version 65 = Java 21
+
+   ce fa ed fe 0c 00 00 00    0xfeedface    MH_MAGIC     32-bit, written little-endian
+                                              a 32-bit Mach-O written little-endian: armv7
+
+   Read LE and look the number up: four values are Mach-O and the
+   spelling gives the order. 0xbebafeca is cafebabe backwards, which is
+   the fat magic seen by a little-endian reader -- and then the next
+   four bytes, always big-endian, say whether Java or a fat header.

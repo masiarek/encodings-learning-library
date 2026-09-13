@@ -1,0 +1,64 @@
+1. THE FIRST TWO BYTES ARE A MACHINE TYPE, NOT A SIGNATURE
+------------------------------------------------------------------------
+   bytes 0..2   4c 01   read LE 0x014c   I386
+
+   4c 01   0x014c   a machine the table knows: I386
+   64 86   0x8664   a machine the table knows: AMD64
+   64 aa   0xaa64   a machine the table knows: ARM64
+   00 00   0x0000   IMAGE_FILE_MACHINE_UNKNOWN: defined, and refused by a guard
+   7f 45   0x457f   not in the table: not COFF
+
+   There is no magic number. A file is COFF if its first 16-bit word
+   is a machine type the reader has heard of -- Ghidra's isValid() is
+   that lookup, plus one guard: 0x0000 is IMAGE_FILE_MACHINE_UNKNOWN,
+   which is 'defined', so a file that starts with 64 zero bytes is
+   refused by hand. Every other format in this chapter says its name;
+   this one says which CPU, and the reader infers the rest.
+
+2. THE HEADER IS 20 BYTES
+------------------------------------------------------------------------
+   4c 01 01 00 00 00 00 00 3f 00 00 00 02 00 00 00 00 00 00 00
+
+   f_magic    0x0000014c     332
+   f_nscns    0x00000001       1
+   f_timdat   0x00000000       0
+   f_symptr   0x0000003f      63
+   f_nsyms    0x00000002       2
+   f_opthdr   0x00000000       0
+   f_flags    0x00000000       0
+
+   f_symptr is the file offset of the symbol table, f_nsyms how many
+   18-byte entries it has, and the string table starts right after
+   the last one. f_opthdr is 0 in an object; in a PE it is 224 or 240.
+
+3. A SECTION NAME IS EIGHT BYTES, OR A DECIMAL OFFSET IN ASCII
+------------------------------------------------------------------------
+   name bytes   2f 34 00 00 00 00 00 00   b'/4\x00\x00\x00\x00\x00\x00'
+   starts with '/', so the rest is a DECIMAL number in ASCII: 4
+   string table at 99, offset 4 there -> '.text.startup'
+
+   Eight bytes hold '.text' and not '.text.startup', so a long name is
+   stored in the string table and the name field holds its offset --
+   as text, in base 10, in a header where every other number is
+   binary. '/4' is the two ASCII bytes 2f 34, and int('4') is the read.
+
+4. A SYMBOL NAME HAS TWO SHAPES
+------------------------------------------------------------------------
+   symbol 0   6d 61 69 6e 00 00 00 00   eight bytes in place     -> 'main'
+             value 0x0  section 1  type 0x20  class 2  aux 0
+   symbol 1   00 00 00 00 12 00 00 00   zeroes then offset 18    -> 'a_much_longer_symbol_name'
+             value 0x10  section 1  type 0x0  class 3  aux 0
+
+   The first four bytes decide: zero means 'the next four are an
+   offset', anything else means 'these eight are the name'. A name
+   cannot start with a NUL, so the two shapes cannot collide -- but
+   a name of exactly eight characters has no terminator at all.
+
+5. THE STRING TABLE'S FIRST FOUR BYTES ARE ITS OWN SIZE
+------------------------------------------------------------------------
+   at 99:  2c 00 00 00   size 44, counting these four bytes
+   contents   b'.text.startup\x00a_much_longer_symbol_name\x00'
+
+   So the smallest string table is 04 00 00 00, and offset 4 is the
+   first string. Both escapes above -- '/4' and the symbol's offset --
+   point at this table, and both count from its size field.

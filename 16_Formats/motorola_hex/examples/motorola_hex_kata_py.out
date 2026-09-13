@@ -1,0 +1,21 @@
+   S1080100636166C3A960     S1  address 0x000100  data 63 61 66 c3 a9
+                            ok
+
+   S2080100636166C3A960     S2  address 0x010063  data 61 66 c3 a9
+                            ok
+
+   S1080100636167C3A960     S1  address 0x000100  data 63 61 67 c3 a9
+                            sums to 0x00, not 0xff
+
+   S9030000FC               S9  address 0x000000  data 
+                            ok
+
+   Line 1 is café at 0x0100 and correct. Line 2 is the same characters
+   with the type letter changed to 2: nothing else moved, but a 24-bit
+   address takes one more byte, so the first data byte 63 has become
+   the third address byte, the address reads 0x010063, and the count
+   still says 8 -- which is right, so only the sum can object, and
+   it cannot either: the bytes are the same bytes. A wrong type letter
+   is invisible to both checks. Line 3 has one data byte changed, 66
+   to 67, and the sum moves by one: caught. Line 4 is a correct S9
+   with a start address of zero.

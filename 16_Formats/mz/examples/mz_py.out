@@ -1,0 +1,67 @@
+1. THE HEADER, IN UNITS THAT ARE NOT BYTES
+------------------------------------------------------------------------
+   4d 5a 90 00 03 00 00 00 04 00 00 00 ff ff 00 00 b8 00 00 00 00 00 00 00 40 00 00 00
+
+   e_magic      0x5a4d   23117   'MZ'
+   e_cblp       0x0090     144   bytes used in the LAST 512-byte page
+   e_cp         0x0003       3   pages of 512 bytes in the file
+   e_crlc       0x0000       0   relocation entries
+   e_cparhdr    0x0004       4   header size, in 16-byte paragraphs
+   e_minalloc   0x0000       0   extra paragraphs needed
+   e_maxalloc   0xffff   65535   extra paragraphs wanted
+   e_ss         0x0000       0   initial SS, relative
+   e_sp         0x00b8     184   initial SP
+   e_csum       0x0000       0   checksum, usually 0
+   e_ip         0x0000       0   initial IP
+   e_cs         0x0000       0   initial CS, relative
+   e_lfarlc     0x0040      64   offset of the relocation table
+   e_ovno       0x0000       0   overlay number
+
+   file size DOS computes   (e_cp - 1) * 512 + e_cblp = (3 - 1) * 512 + 144 = 1168
+   header size              e_cparhdr * 16 = 4 * 16 = 64
+   load module              bytes 64 .. 1168, 1104 of them
+
+   These are the numbers from the DOS stub of pip's t64.exe, a 108,032-
+   byte PE32+ launcher. DOS reads 1,168 of those bytes and stops, and
+   the stub inside that region is what prints the one sentence DOS
+   users of it ever see. No field here can count higher than 65,535
+   pages, which is 32 MB, and a 16-bit page count was plenty in 1981.
+
+2. e_cblp = 0 MEANS THE LAST PAGE IS FULL
+------------------------------------------------------------------------
+   e_cblp 144  e_cp 3   ->   1168 bytes
+   e_cblp   0  e_cp 3   ->   1536 bytes   0 bytes used of the last page means all 512
+   e_cblp   1  e_cp 3   ->   1025 bytes
+   e_cblp 512  e_cp 3   ->   1536 bytes   512 is never written: it would be 0 with one more page
+
+3. THE RELOCATION TABLE IS PAIRS OF 16-BIT NUMBERS
+------------------------------------------------------------------------
+   e_lfarlc 0x40  e_crlc 2   table bytes 03 00 00 00 10 00 01 00
+   entry 0   offset 0x0003  segment 0x0000   linear 0x00003: a word the loader adds the load segment to
+   entry 1   offset 0x0010  segment 0x0001   linear 0x00020: a word the loader adds the load segment to
+
+   segment:offset, 16 bits each, and the linear address is 16 * seg +
+   off, so one address has 4096 spellings. The table says where the
+   segment halves of far pointers sit, so DOS can patch them for
+   wherever the program was actually loaded.
+
+4. TWO BYTES, TWO NUMBERS
+------------------------------------------------------------------------
+   4d 5a  b'MZ'   little-endian 0x5a4d   big-endian 0x4d5a   Ghidra: MZ
+   5a 4d  b'ZM'   little-endian 0x4d5a   big-endian 0x5a4d   Ghidra: not MZ
+
+   The constant Ghidra compares, IMAGE_DOS_SIGNATURE, is 0x5a4d: the
+   letters M and Z read as a little-endian 16-bit number. The same
+   two bytes are 0x4d5a to a big-endian reader, and a file that
+   spells them ZM is 0x4d5a to this one. One picture, two numbers,
+   and a signature test picks one of them.
+
+5. WHAT MAKES IT 'OLD-STYLE'
+------------------------------------------------------------------------
+   e_lfanew at 0x3c   00 00 00 00   = 0
+
+   0x3c is inside the reserved words of the 1981 header. NE and PE
+   put a 32-bit offset there, pointing past the DOS stub at their own
+   header. Ghidra's MZ loader takes a file only when the signature
+   is MZ AND no NE header AND no PE header is found through e_lfanew:
+   it is the loader for what the other two decline.

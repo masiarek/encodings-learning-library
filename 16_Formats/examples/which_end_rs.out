@@ -1,0 +1,35 @@
+1. ELF: BYTE 5 SAYS WHICH FUNCTION TO CALL
+------------------------------------------------------------------------
+   LSB, 64-bit  bytes 16..20  02 00 3e 00   byte 5 = 1 -> from_le_bytes
+                e_type 2  e_machine 0x3e  header will be 64 bytes
+   MSB, 32-bit  bytes 16..20  00 02 00 3e   byte 5 = 2 -> from_be_bytes
+                e_type 2  e_machine 0x3e  header will be 52 bytes
+
+   Same two numbers out of two different byte layouts, because the
+   file said which layout it used. Read the MSB file as if it were
+   LSB and e_type is 512 -- a number, not an error.
+
+2. MACH-O: THE MAGIC'S SPELLING SAYS IT
+------------------------------------------------------------------------
+   written little-endian    cf fa ed fe   read LE 0xfeedfacf   MH_MAGIC_64  64-bit, same order as this reader
+   written big-endian       fe ed fa cf   read LE 0xcffaedfe   MH_CIGAM_64  64-bit, the other order
+
+   Ghidra reads the four bytes little-endian and accepts all four
+   values; which one it met is what tells it the file's order.
+
+3. TWO BYTES, TWO NUMBERS
+------------------------------------------------------------------------
+   4d 5a  'MZ'   little 0x5a4d   big 0x4d5a
+   44 49  'DI'   little 0x4944   big 0x4449
+
+   A two-byte text signature is one picture and two numbers, and a
+   constant in a program has to be one of them. Ghidra's DOS header
+   compares against 0x5a4d; its DBG header keeps both.
+
+4. CAFEBABE: THE NEXT FOUR BYTES SETTLE IT
+------------------------------------------------------------------------
+   a fat Mach-O, 2 slices     ca fe ba be 00 00 00 02   u32 at 4 = 2    <= 30: a slice count
+   a Java class, version 69   ca fe ba be 00 00 00 45   u32 at 4 = 69   > 30: a class file
+
+   Both are big-endian at offset 4, so the reader needs no choice
+   here -- only a threshold, which is the one file(1) uses.

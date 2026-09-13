@@ -1,0 +1,49 @@
+1. MZ FIRST, THEN e_lfanew, THEN NE
+------------------------------------------------------------------------
+   offset 0      b'MZ'
+   offset 0x3c   80 00 00 00   e_lfanew = 0x80
+   offset 0x80   4e 45         b'NE' = 0x454e, IMAGE_NE_SIGNATURE
+
+   The same door PE walks through, ten years earlier: a DOS header,
+   a 32-bit offset at 0x3c, and a two-letter signature there.
+
+2. THE INFORMATION BLOCK IS 64 BYTES
+------------------------------------------------------------------------
+   ne_ver         0x0005       5   
+   ne_rev         0x0001       1   
+   ne_cseg        0x0002       2   
+   ne_segtab      0x0040      64   offset of the segment table, from the NE header
+   ne_restab      0x0050      80   offset of the resident-name table
+   ne_align       0x0004       4   a shift count: one sector is 1 << 4 = 16 bytes
+   ne_exetyp      0x0002       2   Windows
+   ne_expver      0x030a     778   expected Windows 3.10
+
+3. SEGMENT OFFSETS ARE IN SECTORS, AND THE SECTOR SIZE IS IN THE HEADER
+------------------------------------------------------------------------
+   segment 1   sector 0x0010  length 0x0100  flags 0x0d00 CODE   file offset 16 << 4 = 0x100   b8 00 4c cd 21
+   segment 2   sector 0x0030  length 0x0020  flags 0x0c41 DATA   file offset 48 << 4 = 0x300   63 61 66 e9 00
+
+   A 16-bit sector number times a sector size reaches 1 MB with a
+   shift of 4 and 32 MB with a shift of 9, out of a 16-bit field. The
+   unit is in the file, unlike MZ's pages, but it is a power of two
+   written as its exponent, which is a third way to write a number.
+
+4. A NAME IS A LENGTH BYTE, THE BYTES, AND AN ORDINAL
+------------------------------------------------------------------------
+   05 48 45 4c 4c 4f 00 00          len 5  'HELLO'    the module name (ordinal 0)
+   07 57 69 6e 4d 61 69 6e 01 00    len 7  'WinMain'  an exported name, ordinal 1
+   06 53 61 79 43 61 66 02 00       len 6  'SayCaf'   an exported name, ordinal 2
+   00                               a zero length ends the table
+
+   No NUL after the name: the length byte is the delimiter, so a name
+   may hold any byte and can be at most 255 long. The first entry is
+   the module's own name, and each one carries an ordinal -- which is
+   the number an import can use instead of the name.
+
+5. THE DATA SEGMENT IS BYTES IN THE CODE PAGE OF 1990
+------------------------------------------------------------------------
+   bytes 63 61 66 e9   cp1252 'café'   as UTF-8: not valid
+
+   A Windows 3.x program's strings are single-byte, in whatever ANSI
+   code page the machine ran, and nothing in the NE header records
+   which. 'e9' is é in cp1252 and an error in UTF-8.

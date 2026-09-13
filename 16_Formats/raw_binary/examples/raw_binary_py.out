@@ -1,0 +1,55 @@
+1. FOUR BYTES, AND WHAT EACH READING MAKES OF THEM
+------------------------------------------------------------------------
+   u32 little       '<I'    1065353216
+   u32 big          '>I'    32831
+   i32 little       '<i'    1065353216
+   f32 little       '<f'    1.0
+   f32 big          '>f'    4.600602988224807e-41
+   two u16 little   '<HH'   (0, 16256)
+   two u16 big      '>HH'   (0, 32831)
+   four bytes       '4B'    (0, 0, 128, 63)
+
+   00 00 80 3f is 1.0 as a little-endian float and 32,831 as a big-
+   endian one; 1,065,353,216 or 32,831 as an integer. Every other
+   loader here has a header that picks one row. Raw Binary has a
+   dropdown, and the reader picks.
+
+2. A POINTER IS A POINTER UNDER ONE BASE
+------------------------------------------------------------------------
+   34 bytes: a table of four 32-bit little-endian values, then four strings
+   10 00 00 08 16 00 00 08 1c 00 00 08 1f 00 00 08
+   63 61 66 c3 a9 00 68 65 6c 6c 6f 00 c5 bc 00 6f 6b 00
+
+   base 0x08000000   'café', 'hello', 'ż', 'ok'
+   base 0x00000000   out of range, out of range, out of range, out of range
+   base 0x08000100   out of range, out of range, out of range, out of range
+   base 0x07fffffc   '�', 'o', 'k', out of range
+
+   The same 16 bytes of table read four ways. Under the base the file
+   was built for, every value lands on a string. Under base 0 they
+   point 128 MB past the end; four bytes lower, each lands four bytes
+   into its string. The file does not say which base is right, and
+   the loader has no way to tell a pointer from a number.
+
+3. THE DIALOG'S FIELDS ARE A SLICE AND A PLACEMENT
+------------------------------------------------------------------------
+   File Offset 0   Length 34  Base Address 0x08000000   -> 34 bytes at 0x8000000..0x8000021   10 00 00 08 16 00 00 08 ...
+   File Offset 16  Length 20  Base Address 0x08000010   -> 18 bytes at 0x8000010..0x8000021   63 61 66 c3 a9 00 68 65 ...
+   File Offset 16  Length 5   Base Address 0x00001000   -> 5 bytes at 0x1000..0x1004   63 61 66 c3 a9
+
+   File Offset and Length cut the file; Base Address says where the
+   cut goes; Block Name and Overlay name the result. Nothing is
+   parsed, so nothing can be wrong, and nothing can be checked.
+
+4. WHAT EVERY OTHER FORMAT HERE WOULD HAVE SAID
+------------------------------------------------------------------------
+   question         a header answers with                      Raw Binary answers with
+   which end        ELF byte 5, a Mach-O magic, PE by decree   the language's, chosen from a list
+   how wide         ELF byte 4, the PE optional magic          the language's
+   where it loads   e_entry, ImageBase, a mapping table        Base Address, typed in
+   what it is       a magic number                             nothing: every file qualifies
+
+   Ghidra's BinaryLoader is an UNTARGETED_LOADER: it appears in the
+   list for any file, last, with no opinion. It is the only loader
+   whose acceptance test is empty, and the only one that cannot be
+   wrong about a file, because it claims nothing about it.

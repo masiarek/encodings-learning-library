@@ -1,0 +1,54 @@
+1. THE OFFSET FIELD IS 16 BITS
+------------------------------------------------------------------------
+   :05FFFC00636166C3A96A
+   type 0 Data   offset 0xfffc   5 bytes 63 61 66 c3 a9
+
+   Four hex digits of offset reach 65,535 and no further. A firmware
+   image for anything with more than 64 KB of address space needs
+   another record to say which 64 KB, and Intel gave it two.
+
+2. THE SAME DATA RECORD, THREE ADDRESSES
+------------------------------------------------------------------------
+   nothing before it                              :05010000636166C3A964   lands at 0x00000100
+   02: Extended Segment Address 0x1000  (x 16)    :05010000636166C3A964   lands at 0x00010100
+   04: Extended Linear Address 0x0001   (<< 16)   :05010000636166C3A964   lands at 0x00010100
+   04: Extended Linear Address 0x0800   (<< 16)   :05010000636166C3A964   lands at 0x08000100
+
+   The data record is identical in all four files: 63 61 66 c3 a9 at
+   offset 0x0100. What changed is the record before it, which the
+   loader keeps as state. Type 02 shifts by 4 bits, the 8086's
+   segment arithmetic; type 04 shifts by 16, and reaches 4 GB.
+
+3. A LOADER IS A LITTLE STATE MACHINE
+------------------------------------------------------------------------
+   :020000040800F2              4  Extended Linear Address  08 00
+   :05000000636166C3A965        0  Data                     63 61 66 c3 a9
+   :0400100000010203E6          0  Data                     00 01 02 03
+   :020000040801F1              4  Extended Linear Address  08 01
+   :02000000FFFE01              0  Data                     ff fe
+   :0400000508000010DF          5  Start Linear Address     08 00 00 10
+   :00000001FF                  1  End of File              
+
+   0x08000000..0x08000004   63 61 66 c3 a9
+   0x08000010..0x08000013   00 01 02 03
+   0x08010000..0x08010001   ff fe
+   start address   EIP 0x08000010
+
+   Three runs of bytes at three addresses, out of seven lines of
+   text, and the file itself has no notion of a total size or an
+   order: a loader could read the records in any sequence as long
+   as each data record follows the extended-address record it needs.
+
+4. HOW GHIDRA DECIDES A FILE IS HEX
+------------------------------------------------------------------------
+   ':020000040800F2'      possible hex file  an Intel Hex record
+   'S00600004844521B'     possible hex file  a Motorola S-record
+   ':00000001FF  '        not a hex file     trailing spaces
+   ':0000000 1FF'         not a hex file     a space inside
+   ''                     not a hex file     an empty file
+
+   One regular expression over the first non-blank line, shared by the
+   Intel and Motorola loaders: a colon or an S, then hex digits to the
+   end. Neither loader can tell the two formats apart at that point;
+   the record mark is the only difference, and both offer every
+   processor Ghidra has, because a hex file names none.

@@ -1,0 +1,59 @@
+1. THE PROGRAM ELEMENT SAYS WHAT A HEADER WOULD
+------------------------------------------------------------------------
+   attribute          value
+   NAME               hello.bin
+   EXE_PATH           /tmp/hello.bin
+   EXE_FORMAT         Raw Binary
+   IMAGE_BASE         08000000
+   PROCESSOR/NAME     x86
+   PROCESSOR/ENDIAN   little
+   PROCESSOR/ADDRESS_MODEL 64-bit
+   PROCESSOR/LANGUAGE_PROVIDER x86:LE:64:default:gcc
+
+   ENDIAN and ADDRESS_MODEL are the two facts every binary header in
+   this chapter encodes somewhere; here they are attribute strings,
+   and the loader picks a language from them -- or from
+   LANGUAGE_PROVIDER, which names it outright, if that is present.
+
+2. THE BYTES ARE NOT IN THE XML
+------------------------------------------------------------------------
+   MEMORY_SECTION 'ram'   START_ADDR '08000000' -> 0x8000000   LENGTH '12' -> 12
+   MEMORY_CONTENTS FILE_NAME 'hello.bin.bytes'   FILE_OFFSET 0
+   the bytes, from the sidecar   63 61 66 c3 a9 00 55 48 89 e5 5d c3
+
+   An export is two files: the .xml and a .bytes beside it, named in
+   FILE_NAME. The XML never holds a byte of the program; it holds
+   where in the other file the bytes are, and where in memory they
+   go. Import the .xml alone and the memory map is 0xff, by design.
+
+3. TWO NUMBERS, TWO BASES, AND THE TAG SAYS WHICH
+------------------------------------------------------------------------
+   START_ADDR   '08000000'   an address: hex, no prefix   as hex 134217728    as decimal 8000000
+   LENGTH       '12'         a length: decimal            as hex 18           as decimal 12
+   FILE_OFFSET  '0'          an offset: decimal           as hex 0            as decimal 0
+   IMAGE_BASE   '08000000'   an address: hex              as hex 134217728    as decimal 8000000
+
+   '12' is twelve as a LENGTH and eighteen as an address; '08000000'
+   is 134,217,728 as an address and eight million as a length. The
+   attribute name is the only thing that says which base to read a
+   digit string in. Ghidra's XmlUtilities.parseInt reads decimal, or
+   hex after a 0x prefix, so LENGTH="0x10" is sixteen and "10" is ten;
+   an address goes through the address factory, which reads hex bare.
+
+4. TEXT INSIDE TEXT IS ESCAPED, AND THE FILE'S ENCODING IS UTF-8 BY DEFAULT
+------------------------------------------------------------------------
+   in the file   <COMMENT ADDRESS="08000000" TYPE="end-of-line">the string &quot;café&quot; &amp; a NUL</COMMENT>
+   parsed        'the string "café" & a NUL'
+   symbol name   'café_handler'   63 61 66 c3 a9 5f 68 61 6e 64 6c 65 72
+
+   declaration   <?xml version="1.0" standalone="yes"?>
+   no encoding= : XML 1.0 says UTF-8, or UTF-16 with a byte-order mark
+   UTF-8                  parses, symbol 'café_handler'
+   UTF-16 with BOM        parses, symbol 'café_handler'
+   Latin-1, undeclared    ParseError: the bytes are not the encoding the declaration implies
+
+   A quote is &quot; and an ampersand &amp;, so a comment can hold
+   any character the encoding can. Without encoding= the parser
+   assumes UTF-8, accepts UTF-16 because the BOM says so, and refuses
+   a Latin-1 e9 as malformed -- the one case a binary header would
+   have let through as a number.

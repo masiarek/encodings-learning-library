@@ -1,0 +1,58 @@
+1. AN ADDRESS IS A JSON NUMBER
+------------------------------------------------------------------------
+   in the file   "absoluteAddress": 9223372036854775792,
+   Python reads  9223372036854775792  = 0x7ffffffffffffff0   exact: True
+
+   Ghidra writes address.getOffset(), a Java long, as a JSON number.
+   Python's json reads a digit string with no fraction as an int, so
+   the round trip here is exact -- but JSON itself has no integer type.
+
+2. WHAT A DOUBLE MAKES OF IT
+------------------------------------------------------------------------
+       9007199254740991  0x00001fffffffffffff   as float64     9007199254740991   exact
+       9007199254740992  0x000020000000000000   as float64     9007199254740992   exact
+       9007199254740993  0x000020000000000001   as float64     9007199254740992   ROUNDED
+    9223372036854775792  0x007ffffffffffffff0   as float64  9223372036854775808   ROUNDED
+    9223372036854775807  0x007fffffffffffffff   as float64  9223372036854775808   ROUNDED
+
+   RFC 8259 says a reader that keeps numbers as IEEE doubles is
+   interoperable up to 2**53, and warns about the rest. JavaScript,
+   most JSON libraries and every spreadsheet keep doubles: a 64-bit
+   address above 9,007,199,254,740,992 comes back a different number,
+   with no error. Python and Java's Gson keep integers and do not.
+
+3. A NAME IS A STRING, AND ITS ESCAPES ARE UTF-16
+------------------------------------------------------------------------
+   the text        'café_handler 😀'
+   ensure_ascii    "caf\u00e9_handler \ud83d\ude00"
+   as UTF-8        "café_handler 😀"
+   both decode to the same string: True
+
+   JSON's escape is \uXXXX, four hex digits: a UTF-16 unit. An emoji
+   is two of them, a surrogate pair written in ASCII, and a reader
+   has to pair them up again. Or the writer emits the UTF-8 bytes
+   directly, which the standard prefers and every reader accepts.
+
+4. THE FILE MUST BE UTF-8, AND A BOM MAY NOT BE WRITTEN
+------------------------------------------------------------------------
+   UTF-8 bytes                  7b 0a 20 22 76 65    parses
+   UTF-8 bytes with a BOM       ef bb bf 7b 0a 20    parses
+   UTF-16 bytes                 ff fe 7b 00 0a 00    parses
+   a str starting with U+FEFF   '\ufeff{\n'          refused: JSONDecodeError
+
+   RFC 8259 section 8.1: JSON exchanged between systems MUST be UTF-8,
+   a writer MUST NOT add a byte-order mark, and a reader MAY ignore
+   one. Python's json.loads, given bytes, sniffs UTF-8, -16 and -32
+   from the first four and strips a BOM; given a str that begins
+   with U+FEFF it refuses, because a str has no encoding to sniff.
+
+5. WHAT GHIDRA LOOKS FOR
+------------------------------------------------------------------------
+   version                '2.1.0'
+   artifactLocation.uri   'hello.bin'
+   address.absoluteAddress 0x7ffffffffffffff0   address.fullyQualifiedName 'ram'
+
+   SarifUtils.locationToAddress reads absoluteAddress as the offset
+   and fullyQualifiedName as the address space, 'ram' here; the loader
+   needs the name to end in .sarif, or .json, and the file to parse
+   as SARIF 2.1.0 with a Ghidra-shaped run inside it.

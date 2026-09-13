@@ -1,0 +1,54 @@
+1. TEXT: A KEYWORD, THEN ONE EXPORT PER LINE
+------------------------------------------------------------------------
+   name     ordinal  flags      internal name  other module
+   Foo      -        -          -              
+   Bar      2        -          -              
+   Baz      3        NONAME     -              
+   Qux      -        -          Foo            
+   Data1    -        DATA       -              
+   Secret   -        PRIVATE    -              
+   Fwd      -        -          Func           other
+   Fwd2     -        -          -              other.#5
+
+   The loader skips ';' comments and empty lines, ignores LIBRARY,
+   starts at EXPORTS, and tokenises each line after it: the name,
+   with =internal or =module.name or =module.#ordinal glued on; then
+   an @ordinal, or an @ followed by a separate number; then flags.
+
+2. THE LINE IS SPLIT ON WHITESPACE, SO THESE ARE THE SAME EXPORT
+------------------------------------------------------------------------
+   'Bar @2'     -> name 'Bar'    ordinal 2
+   'Bar   @2'   -> name 'Bar'    ordinal 2
+   'Bar\t@2'    -> name 'Bar'    ordinal 2
+   'Bar @ 2'    -> name 'Bar'    ordinal 2
+   'Bar@2'      -> name 'Bar@2'  ordinal None
+
+   Except the last: with no whitespace the '@2' is part of the name
+   token, and the ordinal is never seen. Whitespace is the grammar.
+
+3. THE CHARSET IS THE JVM'S DEFAULT, WHICH IS UTF-8 SINCE JAVA 18
+------------------------------------------------------------------------
+   written as UTF-8           LIBRARY line reads 'café'     exports ['Foo', 'Bar', 'Baz']...
+   written as Windows-1252    LIBRARY line reads 'caf�'     exports ['Foo', 'Bar', 'Baz']...
+
+   Ghidra opens the file with new InputStreamReader(stream) and no
+   charset, so the JVM's default applies -- UTF-8 on every platform
+   since JEP 400, and Ghidra 12 runs on Java 21. A .def saved by an
+   old Visual Studio in the ANSI code page decodes its accented
+   comment and library name to U+FFFD, and every export is untouched,
+   because export names are ASCII. The failure is invisible exactly
+   where it does not matter.
+
+4. LINE ENDINGS DO NOT MATTER, AND ONE THING DOES
+------------------------------------------------------------------------
+   LF         8 exports
+   CRLF       8 exports
+   CR alone   8 exports
+
+   with a BOM   8 exports   -- the first line no longer starts with ';', but nothing before EXPORTS is read anyway
+   BOM then EXPORTS as the first line   0 exports   -- 'EXPORTS' is not at the start of the line any more
+
+   readLine() ends a line at LF, CRLF or a bare CR, so the three files
+   parse alike. A byte-order mark is not whitespace and startsWith
+   does not skip it: a file whose first line is EXPORTS, saved as
+   UTF-8 with BOM, has no exports at all to this reader.

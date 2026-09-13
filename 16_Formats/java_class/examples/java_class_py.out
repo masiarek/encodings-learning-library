@@ -1,0 +1,52 @@
+1. MAGIC, THEN MINOR, THEN MAJOR, ALL BIG-ENDIAN
+------------------------------------------------------------------------
+   ca fe ba be 00 00 00 45   magic 0xcafebabe   minor 0   major 69 = Java 25
+
+   major 45  Java 1.1   bytes 00 2d
+   major 52  Java 8     bytes 00 34
+   major 61  Java 17    bytes 00 3d
+   major 65  Java 21    bytes 00 41
+   major 69  Java 25    bytes 00 45
+
+   The class file is big-endian from the first byte to the last, by
+   specification; no field says so and no field could be read before
+   deciding it. Read as little-endian the version is 0x4500 = 17664.
+
+2. A CONSTANT_Utf8 IS A 16-BIT BYTE COUNT AND MODIFIED UTF-8
+------------------------------------------------------------------------
+   the string      'café\x00😀'   6 code points, 10 bytes of UTF-8
+   built here      01 00 0d 63 61 66 c3 a9 c0 80 ed a0 bd ed b8 80
+   javac 25 wrote  01 00 0d 63 61 66 c3 a9 c0 80 ed a0 bd ed b8 80
+   identical       True
+
+   tag 01, length 00 0d = 13 bytes: café is five, the NUL is c0 80,
+   and the emoji is two surrogates of three bytes each. The length
+   counts bytes of MUTF-8, not characters and not UTF-16 units -- a
+   third answer to 'how long is this string', beside DEX's and C's.
+
+3. THE POOL IS COUNTED FROM 1, AND TWO KINDS TAKE TWO SLOTS
+------------------------------------------------------------------------
+   constant_pool_count   00 07 = 7   (entries + 1, and a Long counts twice)
+
+   #1   Utf8        length 5  b'Hello'
+   #2   Class       -> #1
+   #3   Long        1
+   #4   (unusable)  the second half of the Long: no entry may use this index
+   #5   Utf8        length 1  b'x'
+   #6   String      -> #4
+
+   #0 does not exist, and the count is one more than the last index.
+   The JVM specification calls the two-slot rule 'a poor choice' in
+   its own words, and keeps it, because every class file has it.
+
+4. THE LENGTH FIELD IS 16 BITS OF BYTES
+------------------------------------------------------------------------
+   'A' x 65535   65535 bytes   fits
+   'é' x 32767   65534 bytes   fits
+   '😀' x 10922   65532 bytes   fits
+   '日' x 21845   65535 bytes   fits
+
+   65,535 is the ceiling in BYTES, so how many characters fit depends
+   on which characters: 65,535 of A, 32,767 of é, 10,922 emoji. A
+   string constant longer than that is a compile error, not a runtime
+   one, and the limit is measured after encoding.

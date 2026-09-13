@@ -1,0 +1,52 @@
+1. A ZIP IS READ FROM THE END
+------------------------------------------------------------------------
+   file size 476   last 22 bytes   50 4b 05 06 00 00 00 00 03 00 03 00 b8 00 00 00 0e 01 00 00 00 00
+
+   signature      b'PK\x05\x06'   0x06054b50
+   entries        3
+   central dir    184 bytes at offset 270
+   comment        0 bytes
+
+   offset 0        b'PK\x03\x04'   a local file header -- the FIRST entry, not the index
+   offset 270      b'PK\x01\x02'   the central directory, which is the index
+
+   A reader seeks to the end, finds this record, and follows its
+   offset to the central directory; the local headers at the front
+   are reached from there. PK\3\4 at offset 0 is what file(1) tests,
+   and it is a convention, not what a ZIP reader uses.
+
+2. SO BYTES IN FRONT DO NOT BREAK IT
+------------------------------------------------------------------------
+   24 bytes of shell script, then the ZIP   opens: ['classes.dex', 'AndroidManifest.xml', 'assets/café.txt']
+   the ZIP, then 13 bytes of junk           opens: ['classes.dex', 'AndroidManifest.xml', 'assets/café.txt']
+
+   Self-extracting archives and installers are exactly a program with
+   a ZIP appended, and every reader that starts from the end handles
+   them. The offsets inside are relative to the archive, so zipfile
+   measures where the archive begins and corrects them.
+
+3. A FILENAME'S CODE PAGE IS ONE BIT IN ITS HEADER
+------------------------------------------------------------------------
+   at 0    flags 0x0000  bit 11 clear  name bytes 63 6c 61 73 73 65 73 2e 64 65 78
+   at 153  flags 0x0000  bit 11 clear  name bytes 41 6e 64 72 6f 69 64 4d 61 6e 69 66 65 73 74 2e 78 6d 6c
+   at 218  flags 0x0800  bit 11 set    name bytes 61 73 73 65 74 73 2f 63 61 66 c3 a9 2e 74 78 74
+
+   zipfile reads   ['classes.dex', 'AndroidManifest.xml', 'assets/café.txt']
+   bit 11 cleared  ['classes.dex', 'AndroidManifest.xml', 'assets/caf├⌐.txt']
+
+   Same name bytes, 63 61 66 c3 a9, in both files. With bit 11 set
+   they are UTF-8 and read back as café; with it clear the APPNOTE
+   says IBM code page 437, and c3 a9 is two characters there. Python
+   sets the bit only when a name is not ASCII, which is why the
+   first two entries carry 0x0000: for ASCII the two tables agree.
+
+4. WHAT THE APK LOADER LOOKS FOR
+------------------------------------------------------------------------
+   /classes.dex    found
+   /classes2.dex   absent -- the loader stops here
+   /classes3.dex   absent -- the loader stops here
+
+   Ghidra asks the ZIP for /classes.dex, then /classes2.dex, and so on
+   until one is missing, and loads each as a DEX program. Everything
+   else in the archive -- the manifest, the resources, the signature
+   block -- is a file it can list and does not read.

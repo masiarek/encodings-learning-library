@@ -1,0 +1,59 @@
+1. THE SAME FIVE BYTES, TWO FRAMES
+------------------------------------------------------------------------
+   Motorola   S1080100636166C3A960
+   Intel      :05010000636166C3A964
+
+   field      Motorola                           Intel
+   mark       S1                                 :
+   count      08 = address + data + checksum     05 = data only
+   address    0100, width from the type letter   0100, always 16-bit
+   type       in the letter                      00, a field of its own
+   checksum   one's complement                   two's complement
+
+   Every field is a different number for the same payload, and the
+   Intel line is one character longer because its type is a field
+   where Motorola's is the second character of the mark.
+
+2. THE COUNT INCLUDES THE CHECKSUM, AND THE ADDRESS
+------------------------------------------------------------------------
+   S1080100636166C3A960       S1: address 2 bytes   count 8 = 2 + 5 + 1
+   S209000100636166C3A95F     S2: address 3 bytes   count 9 = 3 + 5 + 1
+   S30A00000100636166C3A95E   S3: address 4 bytes   count 10 = 4 + 5 + 1
+
+   Three records for the same bytes at the same address, and the
+   count grows with the address width the type letter chose. Intel's
+   count would be 05 for all three, because it counts only data.
+
+3. ONE'S COMPLEMENT: THE RECORD SUMS TO 0xFF, NOT TO 0
+------------------------------------------------------------------------
+   Motorola   bytes after the mark  08 01 00 63 61 66 c3 a9 60   sum mod 256 = 0xff
+   Intel      bytes after the mark  05 01 00 00 63 61 66 c3 a9 64   sum mod 256 = 0x00
+
+   Intel's checksum is the two's complement of the sum, so the whole
+   record sums to 0x00; Motorola's is the one's complement, so it
+   sums to 0xFF. A reader checks for a different constant, and a
+   record from one format fed to the other's check always fails --
+   which is the useful property, since the marks can be confused.
+
+4. A WHOLE FILE: HEADER, DATA, COUNT, START
+------------------------------------------------------------------------
+   S00C000068656C6C6F2E733139D4   S0 header                 hello.s19      ok
+   S30A08000000636166C3A957       S3 data, 32-bit address   63 61 66 c3 a9 ok
+   S3090800001000010203D8         S3 data, 32-bit address   00 01 02 03    ok
+   S5030002FA                     S5 count, 16-bit                         ok
+   S70508000000F2                 S7 start, 32-bit                         ok
+
+   S0's data field is text by convention -- the module name -- and
+   Ghidra skips the line. S5 carries the number of S1/S2/S3 records
+   as its address; Ghidra treats it as invalid and skips it too. S7,
+   S8 and S9 end the file with a start address in their address
+   field, one letter per width, matching S3, S2 and S1.
+
+5. WHAT A CHECKSUM DOES NOT NOTICE
+------------------------------------------------------------------------
+   S1050100414276   ok True
+   S1050100424176   ok True   -- the same two bytes, swapped: the same checksum
+
+   Addition does not care about order, in either complement. A byte
+   count and a sum catch a changed byte and a missing one; they do
+   not catch two bytes exchanged, in this format or in Intel's.

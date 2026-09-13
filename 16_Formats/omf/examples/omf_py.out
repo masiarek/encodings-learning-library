@@ -1,0 +1,73 @@
+1. A RECORD IS A TYPE, A LENGTH, A BODY AND A CHECKSUM
+------------------------------------------------------------------------
+   80 08 00 06 63 61 66 65 2e 63 52
+
+   type     0x80  THEADR
+   length   08 00       = 8, little-endian, counting the checksum
+   body     06 63 61 66 65 2e 63   a length byte, then the name
+   checksum 0x52  sum of every byte of the record mod 256 = 0
+
+   The same three fields Framing a format asks for -- type, length,
+   check -- with Intel's checksum rule from Intel HEX: the whole record,
+   type and length included, sums to zero. This is Intel's 1981 8086
+   object format, and the 8086's byte order: little-endian throughout.
+
+2. THE MODULE, RECORD BY RECORD
+------------------------------------------------------------------------
+   0x80 THEADR  length   8   checksum 0x52 ok    ['cafe.c']
+   0x96 LNAMES  length  13   checksum 0x95 ok    ['', '_TEXT', 'CODE']
+   0x98 SEGDEF  length   7   checksum 0x12 ok    48 00 01 02 03 01
+   0xa0 LEDATA  length   9   checksum 0xc0 ok    01 00 00 63 61 66 c3 a9
+   0x8a MODEND  length   2   checksum 0x74 ok    00
+
+   THEADR names the module, LNAMES lists every name any later record
+   will refer to by index, SEGDEF defines a segment by those indexes,
+   LEDATA carries bytes for it, MODEND ends the module. No offsets:
+   every record is found by walking from the one before.
+
+3. EVERY STRING HAS A LENGTH BYTE
+------------------------------------------------------------------------
+   LNAMES body   00 05 5f 54 45 58 54 04 43 4f 44 45
+   name 1   length 0   b''
+   name 2   length 5   b'_TEXT'
+   name 3   length 4   b'CODE'
+
+   No terminator anywhere: the first name is the empty string, one
+   byte long, which is what index 1 in a SEGDEF means by 'no name'.
+   A name can be 255 bytes at most and may hold any byte, including
+   a NUL, which a C string could not. Ghidra's OmfUtils.readString
+   is exactly 'read a byte, read that many'.
+
+4. THE LOW BIT OF THE TYPE IS THE WIDTH OF THE FIELDS
+------------------------------------------------------------------------
+   98 07 00 48 00 01 02 03 01 12            type 0x98 = SEGDEF     segment length 0x100 in 2 bytes
+   99 09 00 48 00 00 01 00 02 03 01 0f      type 0x99 = SEGDEF32   segment length 0x10000 in 4 bytes
+
+   0x98 and 0x99 are one record type; the low bit says whether its
+   numeric fields are 16 or 32 bits, and Ghidra masks it off before
+   looking the type up. The 8086 format grew 32-bit fields for the
+   386 by spending one bit that was always zero.
+
+5. A CHECKSUM OF ZERO MEANS 'NOT COMPUTED', AND IS ACCEPTED
+------------------------------------------------------------------------
+   as written                     checksum 0x52   sum 0x00   valid
+   checksum byte set to 0         checksum 0x00   sum 0xae   valid
+   one byte of the name changed   checksum 0x52   sum 0xe0   INVALID
+
+   'Some compilers just set this to zero', says the comment in Ghidra's
+   OmfRecord.validCheckSum, and so a zero passes. A check that can be
+   switched off by the writer is a check the reader cannot rely on --
+   and a record damaged in a way that happens to leave the byte at
+   zero is, to this reader, a record nobody checked.
+
+6. HOW GHIDRA RECOGNISES A MODULE
+------------------------------------------------------------------------
+   a THEADR                         type 0x80  length  8  name length 6   OMF
+   an LHEADR                        type 0x82  length  5  name length 3   OMF
+   a THEADR with the wrong length   type 0x80  length  9  name length 6   not OMF
+   an LNAMES first                  type 0x96  length 13  name length 0   not OMF
+
+   OmfFileHeader.checkMagicNumber: the first record must be THEADR
+   or LHEADR, and its length must be the name's length plus two --
+   the name byte and the checksum. There is no magic; the first
+   record's arithmetic is the signature.

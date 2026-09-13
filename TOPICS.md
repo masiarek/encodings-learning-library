@@ -672,6 +672,7 @@ The imported list's largest section, and the one furthest from this library's su
 
 **Missing — add:**
 
+- ~~**Executable and object file formats as encodings**~~ — **written 2026-09-13** as [16_Formats](16_Formats/README.md), one page per entry of Ghidra's import dialog. The finding the chapter turns on: of twenty-four headers only ELF and DEX *state* their byte order, Mach-O lets you infer it from a magic that reads backwards, most fixed it in a document, and Raw Binary, Intel Hex and Motorola Hex make the reader choose from a dropdown — the undeclared-encoding problem of chapter 3, for headers. Three formats share modified UTF-8 (the Java class file, DEX, and Ghidra's own `writeUTF` container), a Windows GUID has three byte orders in sixteen bytes, and a Ghidra `.gdt` is a ZIP with no central directory.
 - **HTTP headers are ISO-8859-1 by RFC 7230, and RFC 8187 is the fix** — `filename*=UTF-8''...` in `Content-Disposition` is why a download with a Polish filename works in some browsers and not others. **A daily real-data problem.**
 - **WHATWG URL vs RFC 3986** — two specifications, different parses of the same string, which is a [parser differential](12_Adversarial/parser_differentials/README.md) with a CVE list attached. Plus the **percent-encode sets** (C0, fragment, query, path, userinfo, component) — there is no single "URL encoding".
 - **IRIs (RFC 3987), IDNA2003 vs IDNA2008, UTS #46** — three answers to "what does this domain name mean", and browsers implement UTS #46.

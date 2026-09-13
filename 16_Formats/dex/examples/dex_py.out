@@ -1,0 +1,54 @@
+1. THE HEADER NAMES ITS OWN BYTE ORDER
+------------------------------------------------------------------------
+   magic        64 65 78 0a 30 33 35 00   b'dex\n035\x00'
+   endian_tag   78 56 34 12   read LE 0x12345678   read BE 0x78563412
+
+   ENDIAN_CONSTANT is 0x12345678. A reader that gets 0x78563412 has
+   read a big-endian file with a little-endian rule, and the spec
+   names that value too, REVERSE_ENDIAN_CONSTANT -- the same trick as
+   Mach-O's CIGAM, as a 32-bit field instead of the magic itself.
+
+2. TWO CHECKSUMS OVER TWO RANGES
+------------------------------------------------------------------------
+   checksum    at 8    d0 17 ef 91   adler32 of bytes 12..end   recomputed 0x91ef17d0  ok
+   signature   at 12   4809cbd3fc2e7974a5c4db8b...   sha1 of bytes 32..end   ok
+
+   flip one bit in the last string      checksum FAILS   signature FAILS
+   change the version digit at byte 4   checksum ok   signature ok
+
+   Each check covers everything after itself and nothing before: the
+   magic and the version are inside neither, so 'dex\n935' verifies.
+
+3. MODIFIED UTF-8 IS UTF-8 WITH TWO EXCEPTIONS
+------------------------------------------------------------------------
+   string     UTF-8                        MUTF-8                       note
+   'café'     63 61 66 c3 a9               63 61 66 c3 a9               identical below U+10000, except NUL
+   '😀'        f0 9f 98 80                  ed a0 bd ed b8 80            one code point, two surrogates, six bytes
+   'a\x00b'   61 00 62                     61 c0 80 62                  NUL is c0 80, so no byte is zero
+
+   c0 80 is an overlong sequence and a UTF-8 decoder must reject it;
+   ed a0 bd is a surrogate and so must that. Modified UTF-8 wants both,
+   for one reason: a string can then be NUL-terminated in C and hold
+   any character. The Java class file uses the same encoding.
+
+4. A STRING IS A COUNT OF UTF-16 UNITS, THEN MUTF-8, THEN NUL
+------------------------------------------------------------------------
+   string_id[0] -> offset 124   uleb128 04    = 4 UTF-16 units   5 bytes of MUTF-8   63 61 66 c3 a9
+   string_id[1] -> offset 131   uleb128 02    = 2 UTF-16 units   6 bytes of MUTF-8   ed a0 bd ed b8 80
+   string_id[2] -> offset 139   uleb128 03    = 3 UTF-16 units   4 bytes of MUTF-8   61 c0 80 62
+
+   utf16_size is not a byte count and not a code-point count: café is
+   4 and 5 bytes, the emoji is 2 and 6 bytes. And the terminator that
+   ends the search is a real 00, which is why NUL inside is c0 80.
+
+5. ULEB128, THE LENGTH FIELD THAT GROWS
+------------------------------------------------------------------------
+        4  ->  04
+      127  ->  7f
+      128  ->  80 01
+      300  ->  ac 02
+    16384  ->  80 80 01
+
+   Seven bits per byte, low bits first, top bit set on every byte but
+   the last. 127 is one byte and 128 is two, which is the same shape
+   as UTF-8 itself: the length of the length depends on the value.

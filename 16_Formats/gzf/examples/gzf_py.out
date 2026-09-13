@@ -1,0 +1,45 @@
+1. THE CONTAINER, WITH 'Program' IN THE TYPE FIELD
+------------------------------------------------------------------------
+   ac ed 00 05 77 2c 2e 30 21 26 34 e9 2c 20 00 00
+   00 01 00 09 68 65 6c 6c 6f 2e 62 69 6e 00 07 50
+   72 6f 67 72 61 6d 00 00 00 00 00 00 00 00 00 00 10 00
+
+   block length 44   item b'hello.bin'   content type b'Program'
+
+   Byte for byte the GDT layout: the same magic at 6, and the type
+   string is what says whether the ZIP holds a program, a data type
+   archive or a trace. The GZF loader reads the extension and the
+   magic, and finds out which it has when it unpacks.
+
+2. writeUTF COUNTS BYTES OF MODIFIED UTF-8
+------------------------------------------------------------------------
+   'hello.bin'     9 chars   count 00 09 =  9 bytes   68 65 6c 6c 6f 2e 62 69 6e
+   'café.bin'      8 chars   count 00 09 =  9 bytes   63 61 66 c3 a9 2e 62 69 6e
+   'a\x00b'        3 chars   count 00 04 =  4 bytes   61 c0 80 62
+   '😀.bin'         5 chars   count 00 0a = 10 bytes   ed a0 bd ed b8 80 2e 62 69 6e
+
+   The item name is a Java String written by DataOutput.writeUTF: two
+   bytes of count, then modified UTF-8, the encoding of the Java class
+   file and of DEX. A NUL costs two bytes and an emoji six, and the
+   count is of those bytes -- the third format here that carries it.
+
+3. THE COUNT IS 16 BITS, AND SO IS THE NAME'S CEILING
+------------------------------------------------------------------------
+   65535 ASCII characters   writes
+   65536 ASCII characters   refused: UTFDataFormatException: encoded string too long
+   32768 é's               refused: 65536 encoded bytes
+
+   Java throws UTFDataFormatException past 65,535 encoded bytes, so
+   the longest program name a GZF can carry depends on its letters.
+
+4. A LONG NAME MOVES THE MAGIC
+------------------------------------------------------------------------
+   name of   9 chars   block  44 bytes   header byte 0x77 TC_BLOCKDATA       magic at offset 6
+   name of 200 chars   block 235 bytes   header byte 0x77 TC_BLOCKDATA       magic at offset 6
+   name of 230 chars   block 265 bytes   header byte 0x7a TC_BLOCKDATALONG   magic at offset 9
+
+   ObjectOutputStream writes a block's length in one byte up to 255
+   and in four above that, with a different tag. Ghidra's isPackedFile
+   reads eight bytes at offset 6 unconditionally, so -- computed here,
+   not tried on Ghidra -- a name long enough to push the block past
+   255 bytes leaves the magic at offset 9, where the check never looks.
