@@ -2,7 +2,7 @@
 
 **Level:** 101 → 201 · for Python programmers
 
-Python draws the text/bytes line as a type boundary and refuses to cross it silently. These lessons are what you already know about `str` and `bytes`, reorganised around [chapter 2](../02_Characters/README.md) and [chapter 3](../03_Encodings/README.md), plus the places the boundary is easy to get wrong: `open()`, the `errors` policy, the bytes that are not text at all, normalization, and binary formats.
+Python draws the text/bytes line as a type boundary and refuses to cross it silently. These lessons are what you already know about `str` and `bytes`, reorganised around [chapter 2](../02_Characters/README.md) and [chapter 3](../03_Encodings/README.md), plus the places the boundary is easy to get wrong: `open()`, the `errors` policy, the bytes that are not text at all, normalization, and binary formats. The last page is the eight jobs the standard library cannot finish, each measured against the PyPI library that stands where it stopped.
 
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|
@@ -13,3 +13,4 @@ Python draws the text/bytes line as a type boundary and refuses to cross it sile
 | 5 | [Normalization](normalization/README.md) | Why can `'é' == 'é'` be `False`, and what do I run before comparing? | written, 2026-09-06 |
 | 6 | [Bytes, hex and int](bytes_hex_and_int/README.md) | How do I read a binary format by hand with four conversions? | written, 2026-09-07 |
 | 7 | [A `str` in memory](str_in_memory/README.md) | Why can one emoji quadruple what a string costs, and why is `len()` still O(1)? | written, 2026-09-07 |
+| 8 | [Where the standard library stops](where_the_stdlib_stops/README.md) | Which library do I install for the text job the standard library cannot finish — and what exactly am I buying? | written, 2026-09-13 |

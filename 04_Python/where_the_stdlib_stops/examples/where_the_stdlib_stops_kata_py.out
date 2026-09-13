@@ -1,0 +1,39 @@
+1. 'cafÃ©' arrived; get 'café' back
+   'cafÃ©'.encode('cp1252').decode('utf-8') -> 'café'
+   YES, standard library. Two calls; the skill is knowing to name cp1252.
+
+2. How many characters does a user see in the family emoji?
+   len(FAMILY) = 7   a user sees 1
+   NO. Nothing in the standard library implements UAX #29; the regex module's
+   \X, uniseg or grapheme.
+
+3. Is 'Straße' the same word as 'STRASSE', ignoring case?
+   lower() == lower():       False
+   casefold() == casefold(): True
+   YES, standard library -- but only the second call. lower() is not a fold.
+
+4. Which code page is b'caf\xe9'?
+   latin-1      -> 'café'
+   cp1252       -> 'café'
+   iso-8859-2   -> 'café'
+   cp1250       -> 'café'
+   iso-8859-15  -> 'café'
+   cp1251       -> 'cafй'
+   koi8-r       -> 'cafИ'
+   mac_roman    -> 'cafÈ'
+   4 different readings from 8 tables, every one of them valid.
+   NOBODY -- not the standard library, not a detector. One byte carries no
+   statistics. The answer is whoever wrote the file.
+
+5. Make 'Łódź' safe for an ASCII URL slug
+   NFKD, drop the marks -> 'Łodz'   isascii(): False
+   NO. ł has no decomposition to strip. anyascii or Unidecode say 'Lodz'.
+
+6. Sort ['łódź', 'lód', 'zebra'] the way a Polish dictionary does
+   sorted()            -> ['lód', 'zebra', 'łódź']
+   key=locale.strxfrm  -> ['lód', 'zebra', 'łódź']   (C locale, as CI runs)
+   NO. With no locale set, strxfrm is byte order and puts ł after z. pyuca
+   gets close (lód, łódź, zebra, by treating ł as an l) and ICU with locale
+   pl gets it right, for the right reason.
+
+Score: 2 of 6 the standard library finishes, 1 nobody can, 3 need a library.

@@ -1,0 +1,106 @@
+1. DETECTION -- the standard library can VALIDATE, and that is all it can do
+   file        decodes without error under
+   utf8.txt    utf-8, cp1252, iso-8859-2, cp1250, latin-1
+   latin1.txt  cp1252, iso-8859-2, cp1250, latin-1
+   cp1252.txt  cp1252, iso-8859-2, cp1250, latin-1
+   latin2.txt  cp1252, iso-8859-2, cp1250, latin-1
+   cp1250.txt  cp1252, iso-8859-2, cp1250, latin-1
+   Every 8-bit table accepts every byte it defines, so 'decodes' rules out
+   UTF-8 and nothing else. Which table is RIGHT is not a question the bytes
+   can answer; a detector guesses from letter statistics, and the page
+   measures two of them. For Polish the guess rests on six letters:
+   letter   iso-8859-2  cp1250
+   ą        b1          b9
+   ś        b6          9c
+   ź        bc          9f
+   Ą        a1          a5
+   Ś        a6          8c
+   Ź        ac          8f
+   6 of the 18 Polish letters differ between the two tables. A text
+   that happens to use none of them is the same bytes in both, and no
+   detector can tell the tables apart, because there is nothing to tell.
+
+2. REPAIR -- the recipe is one line, and it has two ways to fail
+   damaged                encode(cp1252).decode(utf-8)   encode(latin-1).decode(utf-8)
+   'cafÃ©'                'café'                         'café'
+   'Ã\x81lvaro'           <UnicodeEncodeError>           'Álvaro'
+   'cafÃƒÂ©'              'cafÃ©'                        <UnicodeEncodeError>
+   'Za¿ó³æ gêœl¹ jaŸñ'    <UnicodeDecodeError>           <UnicodeEncodeError>
+   Row 2: 0x81 is one of cp1252's five unassigned bytes, so the cp1252 recipe
+   cannot even re-encode it; Latin-1 has all 256 and can.
+   Row 3: mojibake applied twice needs the recipe twice:
+      once 'cafÃ©'   twice 'café'
+   Row 4 is not UTF-8 mojibake at all: it is cp1250 bytes read as cp1252, so
+   the second half of the recipe names the other table:
+      encode(cp1252).decode(cp1250) -> 'Zażółć gęślą jaźń'
+   Knowing WHICH recipe is the whole job. ftfy automates the first kind only.
+
+3. TRANSLITERATION -- NFKD then drop the marks, and the letters it leaves standing
+   Zażółć gęślą jaźń  -> Zazołc gesla jazn  still not ASCII: ł
+   Straße             -> Straße             still not ASCII: ß
+   Łódź               -> Łodz               still not ASCII: Ł
+   Москва             -> Москва             still not ASCII: Москва
+   北京                 -> 北京                 still not ASCII: 北京
+   Ærøskøbing         -> Ærøskøbing         still not ASCII: Æøø
+   ﬁ                  -> fi                 still not ASCII: -
+   ½                  -> 1⁄2                still not ASCII: ⁄
+   Þór                -> Þor                still not ASCII: Þ
+   ł has no decomposition (there is no COMBINING STROKE), and neither do ß, æ,
+   ø, þ, any Cyrillic letter or any Han character. ½ decomposes to 1 FRACTION
+   SLASH 2, which is not ASCII either. The recipe is a normalization, and
+   normalization was never about ASCII. A transliterator is a table of
+   opinions -- Straße -> Strasse, 北京 -> Bei Jing -- and the standard library
+   ships none.
+
+4. WHAT A PERSON CALLS ONE CHARACTER -- nothing in the standard library counts it
+   e + acute          len = 2   re.findall('.') = 2   a person sees 1
+   flag PL            len = 2   re.findall('.') = 2   a person sees 1
+   family             len = 7   re.findall('.') = 7   a person sees 1
+   Devanagari kshi    len = 4   re.findall('.') = 4   a person sees 1
+   thumbs up + tone   len = 2   re.findall('.') = 2   a person sees 1
+   re.compile(r'\X') -> raises: the grapheme escape does not exist in re
+   len() counts code points and so does '.'. UAX #29's boundary rules are in
+   the third-party regex module, uniseg and grapheme -- measured on the page --
+   and in nothing that ships with the interpreter.
+
+5. COLUMNS -- f'{s:<8}' pads, and pads by the wrong ruler
+   |café    |  len = 4
+   |日本語     |  len = 3
+   |👨‍👩‍👧‍👦 |  len = 7
+   |🇵🇱      |  len = 2
+   The bars are meant to line up. Python padded each string to 8 CODE POINTS;
+   a terminal draws 日本語 six columns wide and the family two, and the standard
+   library has no function that returns either number. unicodedata has the raw
+   East_Asian_Width property; turning it into columns is a rule set the library
+   leaves to you, and the property is a table lookup, so its values stay out of
+   this key.
+
+6. SORTING -- sorted() is code point order, and the C locale has no other
+   sorted()               Zawadzki Zebra cmentarz lód zebra ćma Łukasiewicz łódź żaba
+   key=str.casefold       cmentarz lód Zawadzki zebra Zebra ćma Łukasiewicz łódź żaba
+   key=locale.strxfrm, C  Zawadzki Zebra cmentarz lód zebra ćma Łukasiewicz łódź żaba
+   Three orders and none of them Polish: ł, ć, ż all land after z. strxfrm is
+   the standard library's only collation, it says whatever the machine's locale
+   files say, and under LC_ALL=C -- every container, every CI runner, this
+   program -- it says byte order. The page shows what a pure-Python UCA and
+   ICU make of the same words.
+
+7. REGEX -- re knows Unicode, and has no property syntax
+   re.fullmatch('\\w+'       , 'Zażółć_gęślą'  ) -> match
+   re.fullmatch('(?i)straße' , 'STRASSE'       ) -> no match
+   re.fullmatch('(?i)straße' , 'STRAẞE'        ) -> match
+   re.fullmatch('\\d+'       , '٣٤'            ) -> match
+   re.fullmatch('\\p{L}+'    , 'żółw'          ) -> raises -- no such escape
+   re.fullmatch('\\X'        , FAMILY          ) -> raises -- no such escape
+   \w and \d are Unicode-aware; (?i) folds one character to one, so ß never
+   meets SS; and \p{...} and \X do not exist. That is the whole of the gap the
+   regex module fills, and the page measures it.
+
+8. THE TABLE -- one Unicode version per interpreter, and nothing to update it
+   unicodedata.unidata_version has 3 parts and is a property of THIS python3
+   name('é')      -> LATIN SMALL LETTER E WITH ACUTE
+   name(U+FFFE)   -> raises   (a noncharacter: never assigned, by policy)
+   A character assigned AFTER this interpreter's table has no name here and
+   category Cn, however real it is. How many such characters one version step
+   adds is on the page, dated -- it is the one number this program must not
+   print, because next year's interpreter would print a different one.

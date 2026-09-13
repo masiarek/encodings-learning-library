@@ -188,6 +188,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "normalization",
         "bytes_hex_and_int",
         "str_in_memory",
+        "where_the_stdlib_stops",
     ],
     "05_Rust": [
         "README.md",
@@ -196,6 +197,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "from_utf8_and_lossy",
         "slicing_by_byte",
         "osstr_path_and_wtf8",
+        "where_std_stops",
     ],
     "06_Terminal": [
         "README.md",

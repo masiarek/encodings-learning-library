@@ -97,7 +97,7 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 - **Byte-order-free by construction** — UTF-8 has no endianness, which is why its "BOM" marks nothing. Already on [Byte order and the BOM](03_Encodings/byte_order_and_bom/README.md); belongs in the term list too.
 - **`F4 90 80 80` and the RFC 3629 cap** — the 2003 restriction to `U+10FFFF`, and the fact that `iconv` never got the memo. Measured; on [Validation is a boundary](03_Encodings/validation_is_a_boundary/README.md).
 - **UTF-8 in DFA form** — Björn Höhrmann's ~40-line table-driven validator, and Bob Steagall's SIMD version. The bridge from "the rule" to "the code everyone actually ships".
-- **`simdutf` / `simdutf8`** — validation at memory bandwidth. Rust-goal relevant, and a concrete answer to "does this cost anything".
+- ~~**`simdutf` / `simdutf8`**~~ — **measured 2026-09-13** on [Where `std` stops](05_Rust/where_std_stops/README.md): 1.2× `std` on ASCII, 6–7× on anything else, identical verdicts on the bad byte strings. validation at memory bandwidth. Rust-goal relevant, and a concrete answer to "does this cost anything".
 - **UTF-8B / surrogateescape** — the trick that round-trips undecodable bytes through a `str`, so a filename that is not UTF-8 can still be opened. **PEP 383 in Python; the reason `os.fsdecode` exists.** Written 2026-09-07 as [Bytes that are not text](04_Python/surrogateescape/README.md), in chapter 4 rather than chapter 7 — the mechanism is a Python one, and the real-data chapter can link it.
 - **Modified UTF-8's real home** — the JNI and the `.class` constant pool, not "Java strings".
 - **The maximum byte length of a character** — 4 under RFC 3629, 6 under the original design. Both numbers are in old code.
@@ -231,7 +231,7 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 - **The WHATWG Encoding Standard** — a *living* standard that defines the exact encodings and label-matching a browser must implement, including that `iso-8859-1` means windows-1252 and that unknown labels map to the **replacement encoding** (which decodes to a single `U+FFFD` on purpose, as an anti-XSS measure). **This is the document the web actually obeys**, and the list does not mention it once.
 - **Encoding label vs encoding** — matching is case-insensitive and whitespace-trimmed, and the label set is closed. "Just pass the charset through" is not a strategy.
 - **`x-user-defined`** — the escape hatch for reading binary through a text API.
-- **`encoding_rs` / `chardetng`** — Firefox's Rust implementations, and the practical answer for Rust to "decode this legacy file".
+- ~~**`encoding_rs` / `chardetng`**~~ — **measured 2026-09-13** on [Where `std` stops](05_Rust/where_std_stops/README.md): the label table, the BOM sniff, the streaming decoder, and the detector with `Allow`, `Deny` and a TLD hint. Firefox's Rust implementations, and the practical answer for Rust to "decode this legacy file".
 - **ICU** — the elephant. Collation, break iteration, normalization, transliteration, formatting, and 30 MB of data. The list mentions ICU six times without ever saying what it *is* or that most languages' text handling is ICU wearing a hat.
 - **CLDR vs the UCD** — character data versus locale data, and the fact that sort order, plural rules and date formats come from CLDR, not Unicode proper. Already the missing half of [`tr` and `sort`](11_Tools/tr_and_sort/README.md).
 
@@ -277,10 +277,10 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 
 - **The five lengths** — bytes, code units, code points, grapheme clusters, terminal columns. One string, five different correct answers to "how long is it". This library's spine, and the frame the whole section needs.
 - **UAX #29 and the GB rules** — grapheme cluster boundaries are a specified state machine, not a heuristic. Legacy vs extended vs *tailored* clusters.
-- **`unicode-segmentation` (Rust) / `Intl.Segmenter` (JS) / `StringInfo` (.NET) / Swift's `Character`** — who ships this and who makes you install it. **Swift is the only mainstream language whose `count` is graphemes**, which is why its `"👨‍👩‍👧‍👦".count == 1`.
+- **`unicode-segmentation` (Rust) / `Intl.Segmenter` (JS) / `StringInfo` (.NET) / Swift's `Character`** — who ships this and who makes you install it. **Swift is the only mainstream language whose `count` is graphemes**, which is why its `"👨‍👩‍👧‍👦".count == 1`. **The Rust and Python halves were measured 2026-09-13** on [Where `std` stops](05_Rust/where_std_stops/README.md) and [Where the standard library stops](04_Python/where_the_stdlib_stops/README.md); the JS, .NET and Swift columns are still open.
 - **Stream-Safe Text Format** — UAX #15's 30-mark limit, and **Zalgo text** as what happens without it. Also a denial-of-service vector on naive renderers.
 - **Canonical combining class and canonical ordering** — why two decomposed strings with the same marks in different orders are still equal.
-- **`wcwidth()` and ambiguous width** — `U+00E9` is one column here and two in a CJK terminal, so a table's alignment depends on the reader's locale. Promised as the fifth answer on [A code point is not a character](02_Characters/a_code_point_is_not_a_character/README.md); `unicodedata.east_asian_width` makes it checkable.
+- **`wcwidth()` and ambiguous width** — `U+00E9` is one column here and two in a CJK terminal, so a table's alignment depends on the reader's locale. Promised as the fifth answer on [A code point is not a character](02_Characters/a_code_point_is_not_a_character/README.md); `unicodedata.east_asian_width` makes it checkable. **Measured 2026-09-13** with `wcwidth` and `unicode-width` on [Where the standard library stops](04_Python/where_the_stdlib_stops/README.md) and [Where `std` stops](05_Rust/where_std_stops/README.md): the two make opposite choices about a control character, -1 against 1, and `width_cjk` is the ambiguous-width switch.
 - **Emoji width is unresolved** — terminals disagree with each other today, not historically.
 
 ### 2.3 Surrogate pairs — **core**
@@ -365,7 +365,7 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 **Missing — add:**
 
 - **"NFD then drop the marks" does not give you ASCII** — `ł` has no decomposed form, because no COMBINING STROKE exists. The folk recipe leaves exactly one Polish letter standing. Measured; on [Normalization](04_Python/normalization/README.md).
-- **`anyascii`** — the modern, data-driven alternative to `unidecode` (which has a licence most companies dislike).
+- ~~**`anyascii`**~~ — **measured 2026-09-13** on [Where the standard library stops](04_Python/where_the_stdlib_stops/README.md) beside `Unidecode` and `text-unidecode`: the same letters, different edges, three licences. the modern, data-driven alternative to `unidecode` (which has a licence most companies dislike).
 - **Slugification is transliteration with a spec** — and every framework's is different, which is why the same article title yields three URLs.
 - **Transliteration is not reversible** and romanization systems are political. Two sentences, and they prevent a class of bad decisions.
 
@@ -379,7 +379,7 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 
 - **There is no "convert" — there is decode then encode** — and naming the middle is the whole skill. Already the argument of [Encode and decode are verbs](03_Encodings/encode_and_decode_are_verbs/README.md).
 - **Detection is guessing, and it is *sometimes confidently wrong*** — the "Bush hid the facts" bug: Notepad's detector reads a specific 4-word ASCII file as UTF-16. Still the best one-line demonstration in computing.
-- **`ftfy`** — the library for repairing already-mangled text, and the recipe behind it (`text.encode('cp1252').decode('utf-8')`), which is [the mojibake round trip](07_Real_Data/mojibake_round_trip/README.md) stub's whole subject.
+- ~~**`ftfy`**~~ — **measured 2026-09-13** on [Where the standard library stops](04_Python/where_the_stdlib_stops/README.md): it picks the table, repeats, declines the 8-bit-to-8-bit case, and uncurls quotes by default. the library for repairing already-mangled text, and the recipe behind it (`text.encode('cp1252').decode('utf-8')`), which is [the mojibake round trip](07_Real_Data/mojibake_round_trip/README.md) stub's whole subject.
 - **Double encoding is *sometimes* repairable and sometimes not** — the deciding question is whether the wrong table was total (Latin-1: always reversible) or partial (cp1252: five bytes are unassigned, so information is gone). This is the single most useful thing to know when someone hands you a corrupted export.
 - **`iconv //TRANSLIT` and `//IGNORE`** — and that both mean "lose data quietly"; GNU and BSD disagree on how. Measured.
 

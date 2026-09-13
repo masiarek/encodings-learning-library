@@ -122,3 +122,5 @@ That is deliberate, and the reason is that folders are URLs. A topic — the byt
 | K104 | [Five openings read little-endian: four Mach-O constants and the cafebabe that is not one](16_Formats/mach_o/README.md#practice) | [Mach-O](16_Formats/mach_o/README.md) | 201 |
 | K105 | [Five constants, and the length field javac writes for each](16_Formats/java_class/README.md#practice) | [Java class file](16_Formats/java_class/README.md) | 201 |
 | K106 | [Four S-records, and the wrong type letter that passes both checks](16_Formats/motorola_hex/README.md#practice) | [Motorola Hex](16_Formats/motorola_hex/README.md) | 201 |
+| K107 | [Six jobs, and which of them the standard library finishes](04_Python/where_the_stdlib_stops/README.md#practice) | [Where the standard library stops](04_Python/where_the_stdlib_stops/README.md) | 201 |
+| K108 | [Six jobs, and which of them `std` finishes](05_Rust/where_std_stops/README.md#practice) | [Where `std` stops](05_Rust/where_std_stops/README.md) | 201 |

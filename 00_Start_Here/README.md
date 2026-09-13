@@ -44,8 +44,8 @@ The chapters the diagram above is about. Each one needs the one before it.
 | [01_Bits_and_Bytes](../01_Bits_and_Bytes/README.md) | A byte is 0..255 with no meaning of its own; hex is bits four at a time; a hex dump is three columns | 9 / 0 |
 | [02_Characters](../02_Characters/README.md) | A character is a number by agreement — 128, then 256 with everybody's own top half, then one numbering for all | 18 / 1 |
 | [03_Encodings](../03_Encodings/README.md) | How a code point becomes bytes: UTF-8 by hand, UTF-16, byte order, and mojibake as the wrong table | 12 / 0 |
-| [04_Python](../04_Python/README.md) | `str` vs `bytes`, the `errors` policies, `open()`, normalization, binary formats | 6 / 1 |
-| [05_Rust](../05_Rust/README.md) | `String` is bytes that promise UTF-8; `char` is a code point; the three `from_utf8`s; byte slicing | 5 / 0 |
+| [04_Python](../04_Python/README.md) | `str` vs `bytes`, the `errors` policies, `open()`, normalization, binary formats, and where the standard library stops | 7 / 1 |
+| [05_Rust](../05_Rust/README.md) | `String` is bytes that promise UTF-8; `char` is a code point; the three `from_utf8`s; byte slicing, and where `std` stops | 6 / 0 |
 | [06_Terminal](../06_Terminal/README.md) | `printf`, `iconv`, the locale, and why `file` only guesses | 12 / 0 |
 | [07_Real_Data](../07_Real_Data/README.md) | SAP code pages, mojibake repair, the BOM in a CSV, byte-width fields, packing a binary record, 1252 vs Latin-1, CRLF, collation | 8 / 0 |
 | [08_Build_Your_Own](../08_Build_Your_Own/README.md) | A project: the Tribit format — your own code points, a 3-bit variable-length encoding, a container, a viewer — specified with test vectors for a Rust implementation, then the record type, length and checksum any format needs before it ships | 2 / 0 |

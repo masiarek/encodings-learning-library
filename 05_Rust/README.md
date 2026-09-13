@@ -2,7 +2,7 @@
 
 **Level:** 101 → 201 · for anyone learning Rust
 
-Rust's `String` is a `Vec<u8>` with one promise attached — the bytes are valid UTF-8 — and everything that feels strange about Rust strings is that promise being kept. These pages connect the type to [chapter 2](../02_Characters/README.md) and [chapter 3](../03_Encodings/README.md); the sibling Rust learning library's [Strings chapter ↗](https://masiarek.github.io/rust-learning-library/14_Strings/index.html) owns the memory, ownership and API stories — thirteen lessons, plus a reference page for each of the 125 `str` and `String` methods, mapped in [STRINGS.md ↗](https://masiarek.github.io/rust-learning-library/STRINGS.html) — and is linked from every page here rather than repeated. Read in that direction it is a Rust section that happens to be about text; read in this one it is the same bytes, from the encoding's side.
+Rust's `String` is a `Vec<u8>` with one promise attached — the bytes are valid UTF-8 — and everything that feels strange about Rust strings is that promise being kept. These pages connect the type to [chapter 2](../02_Characters/README.md) and [chapter 3](../03_Encodings/README.md); the sibling Rust learning library's [Strings chapter ↗](https://masiarek.github.io/rust-learning-library/14_Strings/index.html) owns the memory, ownership and API stories — thirteen lessons, plus a reference page for each of the 125 `str` and `String` methods, mapped in [STRINGS.md ↗](https://masiarek.github.io/rust-learning-library/STRINGS.html) — and is linked from every page here rather than repeated. Read in that direction it is a Rust section that happens to be about text; read in this one it is the same bytes, from the encoding's side. The chapter's last page, [Where `std` stops](where_std_stops/README.md), is the nine jobs `std` does not finish, each measured against the crate that does.
 
 | # | Lesson | The question it answers | Status |
 |---|---|---|---|
@@ -11,6 +11,7 @@ Rust's `String` is a `Vec<u8>` with one promise attached — the bytes are valid
 | 3 | [From UTF-8, and lossy](from_utf8_and_lossy/README.md) | What do the three ways of turning bytes into a `String` each promise? | **written** |
 | 4 | [Slicing by byte](slicing_by_byte/README.md) | Why can `&s[0..2]` panic, and what do I call instead? | **written** |
 | 5 | [`OsStr`, `Path`, and WTF-8](osstr_path_and_wtf8/README.md) | Why is a filename not a `String`, and what is `to_string_lossy` deciding? | **written** |
+| 6 | [Where `std` stops](where_std_stops/README.md) | Which crate stands where `std` stops, and what does a `cargo add` buy? | written, 2026-09-13 |
 
 ## The other direction: why the type exists at all
 

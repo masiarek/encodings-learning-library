@@ -1,0 +1,66 @@
+1. LEGACY ENCODINGS -- std decodes UTF-8 and UTF-16, plus one table by accident
+   b as char over 63 61 66 e9         -> "café"    Latin-1 IS the first 256 code points
+   the same cast over cp1252 bytes  -> "Preis\u{85} 100\u{80}"
+   0x80 became U+0080, a C1 control, not the euro sign. windows-1252 needs a
+   32-entry table for 80..9f, windows-1250 a 128-entry one, Shift_JIS a state
+   machine. std ships none of them: from_utf8, from_utf16, and that is all.
+   from_utf8(5a 61 bf f3 b3 e6)      -> Err((2, Some(1)))
+
+2. DETECTION -- validation is the only test std has, and it only names UTF-8
+   utf8    63 61 66 c3 a9       valid UTF-8: true
+   latin1  63 61 66 e9          valid UTF-8: false
+   cp1250  5a 61 bf f3 b3 e6    valid UTF-8: false
+   ascii   70 6c 61 69 6e       valid UTF-8: true
+   'Not UTF-8' is where std stops. Which 8-bit table the bytes are in instead
+   is a guess from letter statistics, and the page measures Firefox's guesser.
+
+3. NORMALIZATION -- two spellings of one word, and == has one opinion
+   "café" == "cafe\u{301}" -> false
+   bytes 5 vs 6, chars 4 vs 5
+   std has no nfc(). Python's unicodedata.normalize is a standard-library
+   call; in Rust it is a crate, and the page measures it.
+
+4. WHAT A PERSON CALLS ONE CHARACTER -- three rulers in std, and none is that one
+   e + acute          bytes  3  chars  2  utf16  2   a person sees 1
+   flag PL            bytes  8  chars  2  utf16  4   a person sees 1
+   family             bytes 25  chars  7  utf16 11   a person sees 1
+   Devanagari kshi    bytes 12  chars  4  utf16  4   a person sees 1
+   thumbs up + tone   bytes  8  chars  2  utf16  4   a person sees 1
+   split_whitespace: ["can't", "stop,", "won't", "stop;", "3.14", "isn't", "3,14.", "東京都"]
+   Whitespace is the only word boundary std knows. UAX #29's boundaries, which
+   keep can't and 3.14 whole and drop the punctuation, are a crate.
+
+5. COLUMNS -- {:<8} pads by chars().count(), which is the wrong ruler
+   |café    |  chars 4
+   |日本語     |  chars 3
+   |👨‍👩‍👧‍👦 |  chars 7
+   |🇵🇱      |  chars 2
+   The bars are meant to line up. A terminal draws 日本語 six columns wide and
+   the family two. std has no width function and no East_Asian_Width property;
+   both are a crate.
+
+6. BYTES THAT ARE MOSTLY TEXT -- std has the pieces, and each one is a line
+   lines:           3
+   find "au":       Some(5)
+   utf8_chunks():   [("caf", "e9"), (" au lait\nZa", "bf"), ("", "f3 b3"), ("", "e6"), (" g", "ea 9c"), ("l", "b9"), ("\r\nplain", "")]
+   from_utf8_lossy: "caf� au lait\nZa��� g�l�\r\nplain"
+   No lines(), no find(), no chars() on a [u8] -- but since Rust 1.79
+   utf8_chunks() is std, and it is the loop that bstr and from_utf8_lossy share.
+
+7. VALIDATION -- std checks every byte, and what that costs is not in this key
+   from_utf8 over 28 MB of Polish text -> Ok
+   How long it took, and how long simdutf8 takes over the same bytes, is on
+   the page in a dated fence: a speed is a fact about one machine.
+
+8. REGEX -- there is none in std; char predicates cover the small cases
+   split on !is_alphabetic: ["Zażółć", "gęślą", "jaźń", "can", "t", "stop"]
+   is_alphabetic('ż') = true   is_numeric('٣') = true
+   That is \p{L}+ and \p{N} by hand. Anything with structure -- alternation,
+   repetition, a class named by script -- is the regex crate, measured on the page.
+
+9. SORTING -- sort() is code point order, and std has no locale to ask
+   sort():                  Zawadzki Zebra cmentarz lód zebra ćma Łukasiewicz łódź żaba
+   sort_by_key(lowercase):  cmentarz lód Zawadzki Zebra zebra ćma Łukasiewicz łódź żaba
+   ł, ć and ż land after z in both. A Polish dictionary puts ć after c and ł
+   after l, and the rules that know that are locale data -- which is why std
+   does not carry them and ICU4X does. Measured on the page.
