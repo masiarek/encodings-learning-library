@@ -322,4 +322,5 @@ $ xxd one.bin | squeeze
 - [`hexdump`](../../11_Tools/hexdump/README.md) — the swap in full, and the format engine behind it
 - [`xxd`](../../11_Tools/xxd/README.md) — the dump that never reorders, and what `-e` does when you ask it to
 - [Packing a record](../../07_Real_Data/packing_a_record/README.md) — width, byte order and alignment as the three decisions a binary record has to make
+- [Byte order on the wire ↗](https://masiarek.github.io/c-learning-library/05_Bytes_on_the_Wire/byte_order_on_the_wire/index.html) — the C library on serialising a number in a fixed order with shifts and `htonl`, so both ends agree
 - [*On Holy Wars and a Plea for Peace* ↗](https://history.rfc-editor.org/ien/ien137.txt) — Cohen, IEN 137, 1980; eight pages, and the source of both words

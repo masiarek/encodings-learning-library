@@ -248,3 +248,4 @@ Two things the table cannot show. **A C program's answers for text belong to the
 - [Case is not a per-character operation](../../02_Characters/case_is_not_per_character/README.md) — the character-level version of the `toupper` finding
 - [The NUL byte](../../02_Characters/the_nul_byte/README.md) — the one piece of structure a C string has
 - [`iconv`](../../06_Terminal/iconv/README.md) — the command-line face of `iconv(3)`, and the tables it knows on each platform
+- [Strings, in the C learning library ↗](https://masiarek.github.io/c-learning-library/03_Strings/index.html) — this page's C half as a whole chapter: the NUL terminator, the byte that is not a letter, the functions with no length, and the format string that is a program

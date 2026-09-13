@@ -287,4 +287,5 @@ THE TWO DEFENCES, AND ONLY ONE OF THEM SCALES
 - [Two readers, one byte string](../parser_differentials/README.md) — the same disagreement about *characters* rather than about *ends*
 - [What you see is not what runs](../trojan_source/README.md) — the ESC story taken to its conclusion, where the renderer is the target
 - [Escaping into ASCII](../../03_Encodings/escaping_into_ascii/README.md) — the four escape schemes, and the fact that each one escapes for exactly one destination
+- [A format string is a program ↗](https://masiarek.github.io/c-learning-library/03_Strings/a_format_string_is_a_program/index.html) — the C library's case of the same pattern: bytes one layer prints and `printf` runs as instructions
 - [CWE-117: Improper Output Neutralization for Logs ↗](https://cwe.mitre.org/data/definitions/117.html) — the log half, named

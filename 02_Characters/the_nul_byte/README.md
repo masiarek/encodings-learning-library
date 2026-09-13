@@ -270,3 +270,4 @@ WHY IT IS ALSO THE SEPARATOR YOU CAN TRUST
 - [`grep` on text that is not ASCII](../../11_Tools/grep/README.md) and [`rg`](../../11_Tools/ripgrep/README.md) — one `00` and a text file stops being text
 - [`find`, and filenames that are bytes](../../11_Tools/find/README.md) — the separator argument, on real files
 - [Reading a hex dump](../../01_Bits_and_Bytes/reading_a_hex_dump/README.md) — why `xxd` draws it as a dot and `od -c` names it `\0`
+- [A string is bytes up to a NUL ↗](https://masiarek.github.io/c-learning-library/03_Strings/a_string_is_bytes_up_to_a_nul/index.html) — the terminator from the C side: `sizeof` against `strlen`, a NUL in the middle, and the array that forgets its length

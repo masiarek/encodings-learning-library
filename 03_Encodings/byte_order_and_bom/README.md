@@ -514,3 +514,4 @@ AND HERE IS THE CSV BUG, IN FULL
 - [Bytes, hex and int](../../04_Python/bytes_hex_and_int/README.md) — `to_bytes` and `from_bytes` in more detail
 - [Why UTF-8 won](../../09_History/why_utf8_won/README.md) — property 5: no byte order, and no variants
 - [UTF-8 everywhere](../../10_Best_Practices/utf8_everywhere/README.md) — where the read/write asymmetry belongs in a program
+- [Byte order on the wire ↗](https://masiarek.github.io/c-learning-library/05_Bytes_on_the_Wire/byte_order_on_the_wire/index.html) — the same choice where the multi-byte unit is an integer, and the C that gets it right on any machine

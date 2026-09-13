@@ -377,3 +377,4 @@ For each file, predict three things: is it valid UTF-8? Does it have a NUL in it
 - [Opening a file](../../04_Python/opening_a_file/README.md) — Python's side of the mode, and the default encoding it bets on
 - [From UTF-8, and lossy](../../05_Rust/from_utf8_and_lossy/README.md) — Rust's side of the one question
 - [A record has to say what it is](../../08_Build_Your_Own/framing_a_format/README.md) — Intel HEX, the text most `.hex` files hold
+- [Text and binary are both bytes ↗](https://masiarek.github.io/c-learning-library/05_Bytes_on_the_Wire/text_and_binary_are_both_bytes/index.html) — the same split in C: the number 1000 as digits and as an int32, sharing no byte

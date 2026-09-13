@@ -623,4 +623,5 @@ cc -std=c11 -Wall -Wextra packing_a_record_c.c -o /tmp/pack_c && /tmp/pack_c
 - [`xxd` is the dump you can put back](../../11_Tools/xxd/README.md) — for editing one of these records by hand and writing it back
 - [Meet the byte ↗](https://masiarek.github.io/rust-learning-library/19_Numbers/meet_the_byte/index.html) — the sibling Rust library on `u8`, `size_of` and the `to_be_bytes` family
 - [Calling C ↗](https://masiarek.github.io/rust-learning-library/09_Advanced/calling_c/index.html) — `#[repr(C)]`, and what asking for C's layout rules actually buys
+- [A record on the wire ↗](https://masiarek.github.io/c-learning-library/05_Bytes_on_the_Wire/a_record_on_the_wire/index.html) — the C library's version: struct padding measured with `offsetof`, and why you serialise the fields by hand rather than `fwrite` the struct
 - [`perlpacktut` ↗](https://perldoc.perl.org/perlpacktut) — the Perl tutorial that prompted this page
