@@ -430,3 +430,4 @@ GO, COUNTING THE SAME FIVE FIELDS ITSELF
 - ["Handles Unicode" is four questions](../../10_Best_Practices/what_your_language_gives_you/README.md) — question 4, *can the type system stop you?*, asked of whole languages
 - [The encoding man pages nobody opens](../../13_Documentation/the_encoding_man_pages/README.md) — `mbrune(3)`, the BSD branch of the word
 - [Meet the `char` ↗](https://masiarek.github.io/rust-learning-library/14_Strings/meet_the_char/index.html) — the sibling library's tour of Rust's checked type
+- [Decode at the edges ↗](https://masiarek.github.io/perl-learning-library/02_Unicode_Text/decode_at_the_edges/index.html) — `Encode::decode`'s `U+FFFD` beside the other answers perl gives the same bad byte: a layer that turns it into the text `\xE9`, `FB_CROAK`, and `:utf8`, which checks nothing

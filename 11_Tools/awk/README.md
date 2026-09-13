@@ -201,3 +201,4 @@ THE PRACTICAL RULE
 - [The shell has no string type](../sh/README.md) — the third of the three little languages, and the one whose variables `awk`'s fields arrive in
 - [`cut` counts what it is told to count](../cut/README.md) — `substr()`'s problem with a different flag on it
 - [UTF-8 by hand](../../03_Encodings/utf8_by_hand/README.md) — why `0x80`–`0xBF` is exactly the continuation range
+- [`-l`, `-a` and `-F` take a line apart ↗](https://masiarek.github.io/perl-learning-library/01_One_Liners/fields_with_l_a_and_F/index.html) — awk's fields as Perl's `@F`, and the newline the last field keeps without `-l`

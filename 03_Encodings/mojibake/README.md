@@ -330,3 +330,4 @@ WHICH ONES ARE REPAIRABLE
 - [Mojibake round trip](../../07_Real_Data/mojibake_round_trip/README.md) — the same repair against real interface data
 - [Why UTF-8 won](../../09_History/why_utf8_won/README.md) — property 4, and why Latin-1 could never have warned you
 - [UTF-8 everywhere](../../10_Best_Practices/utf8_everywhere/README.md) — how to stop producing it
+- [`use utf8` is about the source file ↗](https://masiarek.github.io/perl-learning-library/02_Unicode_Text/use_utf8_is_about_the_source/index.html) — Perl's route to `KrakÃ³w`: a source file that was never decoded, printed through a UTF-8 layer

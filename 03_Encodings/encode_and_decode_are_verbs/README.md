@@ -335,3 +335,4 @@ do not carry it.
 - [`str` vs `bytes`](../../04_Python/str_vs_bytes/README.md) — the same two nouns, in Python detail
 - [Anatomy of a `String` ↗](https://masiarek.github.io/rust-learning-library/14_Strings/anatomy_of_a_string/index.html) — the Rust side, in the sibling library
 - [UTF-8 everywhere](../../10_Best_Practices/utf8_everywhere/README.md) — the rule that makes both verbs boring
+- [Decode at the edges ↗](https://masiarek.github.io/perl-learning-library/02_Unicode_Text/decode_at_the_edges/index.html) — the two verbs in Perl, and what decoding twice and encoding twice do to `Kraków`

@@ -587,3 +587,4 @@ THE ONE-LINE FIX, AND WHAT IT BUYS
 - [Sorting is not comparing ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/sorting_is_not_comparing/index.html) — the Python half next door: the hand-written key built out, and the diacritic-stripping shortcut that is right for a search box and wrong for a list
 - [A BOM in a CSV](../bom_in_a_csv/README.md) — the completely-ignorable character from the weight table above, met as a column name
 - [Two people, one account](../../12_Adversarial/collisions_by_design/README.md) — what happens when the thing being made equal on purpose is a username
+- [`sort` is not alphabetical ↗](https://masiarek.github.io/perl-learning-library/04_Records_and_Fields/sort_is_not_alphabetical/index.html) — Perl's `sort`, `Unicode::Collate` and `Unicode::Collate::Locale` on the same Polish place names: three different orders

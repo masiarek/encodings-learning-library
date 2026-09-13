@@ -500,3 +500,4 @@ PART TWO -- WHICH OF THE SIX DOES NORMALIZATION FIX?
 - [The table has a version](../the_table_has_a_version/README.md) — why the counts in this page's sweeps could not become answer keys
 - [Preparing a string](../preparing_a_string/README.md) — case folding done properly, which is what `re.IGNORECASE` is not
 - [Case is not a per-character operation](../case_is_not_per_character/README.md) — the *transformation* half of the case question this page measures the matching half of, including why `re.fullmatch('ß', 'SS', re.IGNORECASE)` is `False`
+- [The Unicode bug ↗](https://masiarek.github.io/perl-learning-library/03_Regex/the_unicode_bug/index.html) — Perl's two answers to `\w`, chosen by how the string is stored unless the file says `use v5.12` or later, and `/a` to take Unicode back

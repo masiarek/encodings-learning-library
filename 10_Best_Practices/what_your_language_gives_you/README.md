@@ -415,3 +415,4 @@ PART TWO -- WHICH OF THE SIX COULD A BROWSER DO?
 - [The table has a version](../../02_Characters/the_table_has_a_version/README.md) — why the count of resolvable codec names could not go in the answer key
 - [Why UTF-16 stayed](../../09_History/why_utf16_stayed/README.md) — the shared reason JavaScript, Java and ABAP all give a surprising answer to question 3
 - [The encoding man pages nobody opens](../../13_Documentation/the_encoding_man_pages/README.md) — asking a registry for names, which is the same move section 1 of the Python program makes
+- [The Perl library's Unicode text chapter ↗](https://masiarek.github.io/perl-learning-library/02_Unicode_Text/index.html) — the Perl row taken apart: where a string becomes text, what `length` counts, and `fc`

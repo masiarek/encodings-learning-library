@@ -494,3 +494,4 @@ AND THE ONE THAT IS NOT A FIX
 - [`sed` matches patterns, not bytes](../../11_Tools/sed/README.md) — the tool doing the stripping above
 - [`diff` compares lines, `cmp` compares bytes, neither compares text](../../11_Tools/diff_and_cmp/README.md) — for the day two identical-looking files will not compare equal
 - [Python text in practice](../../10_Best_Practices/python_text_in_practice/README.md) — `encoding=` and `newline=` as one standing habit
+- [`chomp` leaves the `\r` ↗](https://masiarek.github.io/perl-learning-library/04_Records_and_Fields/chomp_leaves_the_cr/index.html) — the same `0d` in Perl: four ways to remove it, tried on a CRLF file and an LF file

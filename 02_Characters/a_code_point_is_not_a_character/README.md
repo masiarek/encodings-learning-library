@@ -377,3 +377,4 @@ The decomposition is safe to write down, incidentally, for the same reason the n
 - [Counting characters ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/counting_characters/index.html) — the same rulers from Python's side, with a grapheme rule the page marks as crude and this one measures
 - [Four lengths ↗](https://masiarek.github.io/rust-learning-library/14_Strings/four_lengths/index.html) — the same rulers from Rust's side
 - [It's Not Wrong that "🤦🏼‍♂️".length == 7 ↗](https://hsivonen.fi/string-length/) — one emoji and every honest answer to how long it is
+- [`length` counts code points ↗](https://masiarek.github.io/perl-learning-library/02_Unicode_Text/length_counts_code_points/index.html) — the Perl library's three rulers — bytes, `length` and `/\X/g` — on `café` spelled two ways, a flag and a family emoji

@@ -193,3 +193,4 @@ Finish with the portability question: write the in-place edit that works on both
 - [`awk` is three programs](../awk/README.md) — the third member of the family, and the only one that names the record it choked on
 - [The shell has no string type](../sh/README.md) — where `s///`'s pattern and `y///`'s set become `IFS` and an unquoted `$var`, one layer out
 - [CRLF vs LF](../../07_Real_Data/crlf_vs_lf/README.md) — what `s/\r$//` is actually for
+- [`-i` edits in place ↗](https://masiarek.github.io/perl-learning-library/01_One_Liners/i_edits_in_place/index.html) — Perl's `-i`, which takes the same backup suffix on macOS and Linux
