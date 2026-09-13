@@ -1,0 +1,94 @@
+1. A BARE %x EATS FOUR BYTES, NOT ONE
+
+$ hexdump -e '"%x "' eight.bin; echo
+64636261 68676665 
+
+$ hexdump -e '/1 "%x "' eight.bin; echo
+61 62 63 64 65 66 67 68 
+   The man page's table: %d %i %o %u %X %x default to a FOUR-byte unit, and
+   1, 2 and 4 are the only sizes allowed. 64636261 is 'abcd' read as one
+   little-endian 32-bit number — the bare-hexdump swap, twice as wide. Write
+   the byte count every time: /1 for bytes.
+
+2. THE INPUT RUNS OUT MID-FORMAT: THE BLOCK IS ZERO-PADDED
+
+$ hexdump -e '2/2 "%04x " "\n"' three.bin
+6261 0063
+   Three bytes, a format that wants four. The unit that OVERLAPS the end
+   gets 63 plus a zero byte and prints 0063: the padding is real and it is
+   inside a number you might read as data. There is no 00 in the file.
+
+3. UNITS ENTIRELY PAST THE END BECOME SPACES, AND THE LAST ITERATION LOSES ITS TRAILING SPACE
+
+$ hexdump -e '4/2 "%04x " "|\n"' one.bin | cat -vet
+0061               |$
+
+$ hexdump -e '4/2 "%04x " "|\n"' eight.bin | cat -vet
+6261 6463 6665 6867|$
+   One byte, four two-byte units. Unit 1 overlaps the end and prints 0061;
+   units 2 to 4 are past it and print as many spaces as they would have
+   printed characters. With a full block every unit prints, and the space
+   after the LAST one is dropped — which is why a full line ends '6867|'
+   and the short one is exactly as wide. This is where the trailing spaces
+   on every dump tool's short last line come from.
+
+4. THE BLOCK IS THE LONGEST FORMAT STRING, AND A SHORTER ONE GROWS TO FIT
+
+$ hexdump -e '8/1 "%02x " "\n"' -e '"%_p"' -e '"\n"' eight.bin
+61 62 63 64 65 66 67 68
+abcdefgh
+
+$ hexdump -e '8/1 "%02x " "\n"' -e '"%_p" "\n"' eight.bin
+61 62 63 64 65 66 67 68
+a
+   The block is eight bytes because the first string wants eight. The second
+   string asked for ONE %_p with no count, and the man page's rule is exact:
+   a string whose LAST unit consumes bytes and has no iteration count has
+   that count raised until the block is used up — so it printed all eight.
+   Move the "\n" into the same string and %_p is no longer the last unit:
+   the rule does not fire, one character prints, and seven bytes go unshown.
+   Every -e string sees the same block from its start either way.
+
+5. %_u NAMES THE CONTROL CHARACTERS
+
+$ hexdump -e '8/1 "%_u " "\n"' ctl.bin | cat -vet
+a ht b lf nul del  $
+
+$ hexdump -e '8/1 "%_c " "\n"' ctl.bin | cat -vet
+a \t b \n \0 177  $
+
+$ hexdump -e '8/1 "%_p " "\n"' ctl.bin | cat -vet
+a . b . . .  $
+   Three ways to draw a byte you cannot draw. %_u prints the ASCII control
+   name in lower case (ht, lf, nul, del); %_c prints the C escape where one
+   exists (\t, \n, \0) and three-digit octal otherwise (177 for DEL);
+   %_p gives up with a dot. Two units were past the end: spaces again.
+
+6. -f: THE FORMAT STRINGS IN A FILE, ONE PER LINE, # FOR A COMMENT
+
+$ hexdump -f perusal.fmt s.txt
+000000  63 61 66 c3 a9 3a 20 31  e2 82 ac 0a              |caf..: 1....|
+   -e strings and -f files are applied in the order given, and a format
+   file is the one place a layout you use every day can live.
+
+7. THE OFFSET IS CUMULATIVE ACROSS FILES
+
+$ hexdump -C three.bin eight.bin
+00000000  61 62 63 61 62 63 64 65  66 67 68                 |abcabcdefgh|
+0000000b
+   Two files, one dump: eight.bin's first byte is at offset 3. hexdump is
+   a filter over the concatenation, which is exactly what cat a b | hexdump
+   would have shown — the file boundary is not in the output anywhere.
+
+8. -s TAKES 0x, AND -n COUNTS FROM THERE
+
+$ hexdump -C -s 0x8 -n 4 s.txt
+00000008  e2 82 ac 0a                                       |....|
+0000000c
+   A leading 0x makes the offset hexadecimal, a leading 0 makes it octal,
+   plain digits are decimal — the C rules. The offset column still shows
+   the position in the file, not in the window.
+
+9. EXIT STATUS: 0, AND >0 IF A FILE CANNOT BE READ
+   hexdump -C s.txt          -> 0
+   hexdump -C no_such_file   -> 1  (message on stderr, not shown)
