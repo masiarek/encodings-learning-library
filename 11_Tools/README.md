@@ -8,7 +8,7 @@ That is the chapter in a sentence, and it is why these pages exist separately fr
 
 [The shell itself](sh/README.md) is the odd one out and goes first in the toolkit table below, because it is not a tool you run over text — it is the program running every other row, and it is the only language in this library with no string type at all. Every quoting rule in the chapter's examples is that page's subject.
 
-The three dump tools — [`hexdump`](hexdump/README.md), [`xxd`](xxd/README.md) and [`od`](od/README.md) — are the deliberate exceptions, and they are here rather than in chapter 6 because the question they answer is a *tool-choice* question: which one to type, what each decided before it printed a line, which you can paste into a bug report and expect the reader to see what you saw, which will give you the file back afterwards, and which will simply be there when nothing else is. That is this chapter's job. Chapter 6 still owns the workflow.
+The three dump tools — [`hexdump`](hexdump/README.md), [`xxd`](xxd/README.md) and [`od`](od/README.md) — are the deliberate exceptions, and they are here rather than in chapter 6 because the question they answer is a *tool-choice* question: which one to type, what each decided before it printed a line, which you can paste into a bug report and expect the reader to see what you saw, which will give you the file back afterwards, and which will simply be there when nothing else is. That is this chapter's job. Chapter 6 still owns the workflow. [`fasthex`](fasthex/README.md) is the fourth dump tool, the one you install, and it is here for the same reason: its help screen is a list of the decisions the other three make silently, with a flag on each.
 
 [Typing a character you cannot type](typing_a_character/README.md) is the other way round from the rest of the chapter, and belongs here for the same reason: it is a tool-choice question. The compose key, Vim's digraphs, `uni print` and a macOS keyboard layout are four tools for one job, each with its own table and its own idea of what a character is called — and the chapter's first question, *bytes or characters*, has a twin here: *whose table*.
 
@@ -44,11 +44,12 @@ Ask these of any tool before you trust its answer about non-ASCII text. Each pag
 | 15 | [`hexdump` is a format engine wearing six presets](hexdump/README.md) | Why is my dump showing the bytes in the wrong order? | written |
 | 16 | [`xxd` is the dump you can put back](xxd/README.md) | Which column of a dump is the file, and how do I get the file back? | written |
 | 17 | [`od` reads types, not bytes](od/README.md) | Nothing else is installed. What are the two flags that make `od` honest? | written, 2026-09-07 |
-| 18 | [`strings` has a printable set, not an encoding](strings/README.md) | Why did `strings` print nothing for a file that is full of text? | written, 2026-09-10 |
-| 19 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
-| 20 | [`uni -h`, line by line](uni_help/README.md) | What does every word on `uni`'s help screen mean — and where does the program not do what it says? | written, 2026-09-10 |
-| 21 | [Typing a character you cannot type](typing_a_character/README.md) | There is no `ż` on my keyboard — how do I produce one? | written, 2026-09-07 |
-| 22 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
+| 18 | [`fasthex -h`, line by line](fasthex/README.md) | What does a dump decide before it prints — and which of those decisions does a sixty-five-times-faster one make differently? | written, 2026-09-13 |
+| 19 | [`strings` has a printable set, not an encoding](strings/README.md) | Why did `strings` print nothing for a file that is full of text? | written, 2026-09-10 |
+| 20 | [`uni` — the character's name](uni/README.md) | What *is* this character, not just how is it stored? | written |
+| 21 | [`uni -h`, line by line](uni_help/README.md) | What does every word on `uni`'s help screen mean — and where does the program not do what it says? | written, 2026-09-10 |
+| 22 | [Typing a character you cannot type](typing_a_character/README.md) | There is no `ż` on my keyboard — how do I produce one? | written, 2026-09-07 |
+| 23 | [The five worth installing](worth_installing/README.md) | What do `hexyl`, `uchardet`, `recode`, `dos2unix` and GNU coreutils add? | written |
 
 ## The whole toolkit, one row each
 
@@ -170,6 +171,7 @@ Two things to take from it. **`grep` is the only one that says nothing and still
 | [`uni`](uni/README.md) | the character's **name**, and search *by* name — the column no dump tool has |
 | [`rg`](ripgrep/README.md) | one implementation on every platform, no locale — and it reads a UTF-16 file, [as long as it has a BOM](ripgrep/README.md): three marks are tested and UTF-32 is not one of them |
 | [`hexyl`](worth_installing/README.md) | `xxd` with colour by byte category |
+| [`fasthex`](fasthex/README.md) | a dump sixty-five times faster than `xxd`, with the file's own byte order in its two-byte views, five tables for the text column — and a reverse that does not seek |
 | [`uchardet`](worth_installing/README.md) | a real encoding detector, where `file` only tells valid-UTF-8 from not |
 | [`recode`](worth_installing/README.md) | `iconv` with a bigger table set and a syntax you can type |
 | [`dos2unix`](worth_installing/README.md) | the [CRLF](../07_Real_Data/crlf_vs_lf/README.md) kit, with a report mode that changes nothing |

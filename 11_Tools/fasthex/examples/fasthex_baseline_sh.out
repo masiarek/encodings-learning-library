@@ -1,0 +1,104 @@
+1. THE FILES
+
+$ xxd -p s.txt
+636166c3a93a2031e282ac0a
+
+$ xxd -p mix.bin
+4100090a1b7f20c3a9
+   mix.bin is one byte of each kind: a letter, NUL, a tab, a newline, an
+   escape, DEL, a space, and the two bytes of é.
+
+2. THE TWO DUMPS FASTHEX'S DEFAULT IS ASSEMBLED FROM
+
+$ xxd s.txt
+00000000: 6361 66c3 a93a 2031 e282 ac0a            caf..: 1....
+
+$ hexdump -C s.txt
+00000000  63 61 66 c3 a9 3a 20 31  e2 82 ac 0a              |caf..: 1....|
+0000000c
+   xxd writes the offset with a colon and pairs the bytes; hexdump -C
+   writes one cell per byte, a gap after the eighth, and the text in
+   pipes. fasthex's default row is xxd's offset in front of hexdump -C's
+   cells and panel — its panel padded to sixteen where hexdump's is not.
+
+3. TWO BYTES AT A TIME, IN TWO ORDERS
+
+$ hexdump -x s.txt
+0000000    6163    c366    3aa9    3120    82e2    0aac                
+000000c
+
+$ hexdump -d s.txt
+0000000   24931   50022   15017   12576   33506   02732                
+000000c
+   Both presets read the file two bytes at a time as a NUMBER, in the
+   CPU's order: 63 61 becomes 0x6163, which is 24931. fasthex -X and -D
+   read the same pairs in FILE order unless told -E little — 0x6361,
+   which is 25441 — so the flag that makes fasthex agree with hexdump is
+   the one that makes it swap. hexdump -x has no flag to do the reverse.
+
+4. THE TEXT COLUMN, UNDER OTHER AGREEMENTS
+
+$ xxd -E s.txt
+00000000: 6361 66c3 a93a 2031 e282 ac0a            ./.Cz...Sb..
+   The same twelve bytes read as EBCDIC — the column fasthex -T ebcdic
+   prints. Its braille table is one glyph per byte value, U+2800 plus the
+   byte, which is a rule a shell loop can apply without the tool (the
+   braille function at the top of this script):
+
+$ braille s.txt
+⡣⡡⡦⣃⢩⠺⠠⠱⣢⢂⢬⠊
+   and its cp437 table is the IBM PC's, which iconv knows by name, here
+   for the bytes above 127:
+
+$ printf '\303\251\342\202\254' | iconv -f CP437 -t UTF-8; echo
+├⌐Γé¼
+
+5. WHAT xxd -r DOES WITH A LINE THAT IS MISSING
+
+$ xxd runs.bin | sed '2d' | xxd -r | wc -c | tr -d ' '
+80
+   80 bytes from a dump with a row deleted: xxd -r seeks to each offset,
+   so the gap is a hole of NULs and the length is unchanged. fasthex -r
+   reads the hex and ignores the offsets, and the same dump comes back
+   16 bytes shorter — the page has the run.
+
+6. WHICH ROWS A STAR STANDS FOR
+
+$ hexdump -C runs.bin
+00000000  41 41 41 41 41 41 41 41  41 41 41 41 41 41 41 41  |AAAAAAAAAAAAAAAA|
+*
+00000050
+
+$ xxd -a runs.bin | wc -l | tr -d ' '
+5
+   hexdump collapses ANY repeated row into a star; xxd -a collapses only
+   rows of NUL, so five rows of 'A' stay five rows. fasthex -w follows
+   hexdump's rule, and is off unless asked.
+
+7. THE FORMAT STRINGS hexdump RUNS, FOR COMPARISON WITH -F
+
+$ hexdump -e '16/1 "%02x " "\n"' s.txt
+63 61 66 c3 a9 3a 20 31 e2 82 ac 0a            
+
+$ hexdump -e '8/1 "%02x " "  " 8/1 "%03u " "\n"' s.txt
+63 61 66 c3 a9 3a 20 31  226 130 172 010                
+
+$ hexdump -e '"%08_ax: " 16/1 "%02x " "\n"' s.txt
+00000000: 63 61 66 c3 a9 3a 20 31 e2 82 ac 0a            
+   A short last row is left short; %03u prints decimal — of the NEXT
+   eight bytes, since conversions in one string consume what they print;
+   and %_ax prints the offset without consuming a byte. Each of those is
+   a place where fasthex -F, handed the same string, prints something else.
+
+8. THE SIZE SUFFIXES ARE TWO DIFFERENT ARITHMETICS
+
+$ printf '%x %x\n' 2048 2000
+800 7d0
+
+$ xxd -s 2048 -l 16 big.txt
+00000800: 7879 7a0a 6162 6364 6566 6768 696a 6b6c  xyz.abcdefghijkl
+
+$ xxd -s 2000 -l 16 big.txt
+000007d0: 6364 6566 6768 696a 6b6c 6d6e 6f70 7172  cdefghijklmnopqr
+   K and KiB are 1024; kB is 1000. fasthex -s 2K lands at 0x800 and
+   -s 2kB at 0x7d0, which is the second row here.

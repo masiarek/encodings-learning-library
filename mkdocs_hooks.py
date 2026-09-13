@@ -258,6 +258,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "hexdump",
         "xxd",
         "od",
+        "fasthex",
         "strings",
         "uni",
         "uni_help",
