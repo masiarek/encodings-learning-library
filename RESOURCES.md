@@ -115,6 +115,7 @@ Where this library asks *what the bytes are*, these ask what to do with them onc
 - **[Dale Dougherty & Arnold Robbins, *sed & awk*, 2nd ed. (1997) ↗](https://openlibrary.org/isbn/9781565922259).** The stream-editing half, and the standard reference for `sed` — a tool with no manual worth reading.
 - **[Dale Dougherty & Tim O'Reilly, *Unix Text Processing* (1987, free) ↗](https://www.oreilly.com/openbook/utp/).** Where the pipeline idiom comes from. The tools are troff-era and the book is dated in every particular, but it is the one that argues text is a *stream you pass through filters* — the assumption underneath [06_Terminal](06_Terminal/README.md).
 - **[Brian Kernighan & Rob Pike, *The Practice of Programming* (1999) ↗](https://www.cs.princeton.edu/~bwk/tpop.webpage/).** Its Markov chapter writes one text program in C, C++, Java, Awk and Perl and then compares them — the cross-language reading this library does per lesson, done once at length. (Their earlier *Software Tools*, 1976, is the ancestor of the whole idea; out of print and listed here without a link.)
+- **The shell itself** has a shelf of its own: [Shell scripting: the reading list](14_Resources/shell_scripting/README.md) — the books, the two references worth more than any book, and the linters that read a script before you run it.
 
 ### Searching bytes, a different subject again
 

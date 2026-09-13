@@ -57,12 +57,12 @@ These are off the diagram on purpose: none of them depends on the spine past cha
 | Chapter | What it settles | Written / stub |
 |---|---|---|
 | [09_History](../09_History/README.md) | Nobody designed the mess: every strange rule is a fossil — a sensible decision that outlived the constraint that made it sensible | 4 / 0 |
-| [10_Best_Practices](../10_Best_Practices/README.md) | What to actually do on Monday, and why the modern answer is short | 5 / 0 |
+| [10_Best_Practices](../10_Best_Practices/README.md) | What to actually do on Monday, and why the modern answer is short | 6 / 0 |
 | [11_Tools](../11_Tools/README.md) | `grep`, `find`, `sort`, `tr` — none of them is *about* encodings, and every one has already made an encoding decision for you without saying so | 22 / 0 |
 | [12_Adversarial](../12_Adversarial/README.md) | The shapes text bugs take when somebody chooses the bytes on purpose, each with the one-line rule that closes it | 5 / 0 |
 | [13_Documentation](../13_Documentation/README.md) | The primary material already on your machine under `/usr/share/man` — and the fact that it is documentation *of* your machine, with a date on it | 3 / 0 |
 | [15_Hex](../15_Hex/README.md) | What each operation in a hex editor's Hex Operations dialog does to the bytes, and which of the dialog's settings can change the answer | 20 / 0 |
-| [14_Resources](../14_Resources/README.md) | Not a chapter of the course: the things you review, print, or come back to once the reading is done | 3 / 0 |
+| [14_Resources](../14_Resources/README.md) | Not a chapter of the course: the things you review, print, or come back to once the reading is done | 4 / 0 |
 
 **The `Written / stub` column is generated, not typed.** It is the one thing on this page that counts pages living in other files, which is the claim that goes false when you touch a file that is not this one — and on 2026-09-07 all eight cells were wrong at once, `3 / 0` against an actual seven. `python3 tools/check_chapter_status.py --fix` writes them from the tree, and CI fails if they drift; the same gate checks that every chapter has a row here, that every lesson has a row in its chapter's table, and that [ROADMAP.md](../ROADMAP.md) agrees with both. So the numbers are worth reading, and so is the roadmap they summarise.
 

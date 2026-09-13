@@ -231,6 +231,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "rust_strings_in_practice",
         "python_text_in_practice",
         "what_your_language_gives_you",
+        "c_or_rust_for_text",
         "interfaces_and_storage",
     ],
     # The tools you already run over text every day, then the ones worth
@@ -284,6 +285,8 @@ NAV_ORDER: dict[str, list[str]] = {
         "README.md",
         "anki",
         "hard_strings",
+        "typical_words",
+        "shell_scripting",
     ],
     # The dialog's own order: seven arithmetic operations, two limits, the
     # byte swap, four masks, then the six that move bits.

@@ -1,0 +1,52 @@
+1. A char IS A BYTE, AND A STRING IS BYTES UP TO THE FIRST ZERO
+   char cafe[] = "caf\xc3\xa9";
+   sizeof cafe = 6   strlen(cafe) = 5   bytes: 63 61 66 c3 a9
+   (signed char)cafe[3] = -61   (unsigned char)cafe[3] = 195
+   Six bytes of storage, five of text, and a NUL that is the only
+   structure the type has. Nothing says UTF-8: the é is two chars
+   because that is how many bytes it takes, and which of those two
+   numbers a plain char gives you is the compiler's choice -- the
+   standard leaves the sign of char to the implementation.
+
+2. NOTHING KNOWS WHAT THE BYTES MEAN UNTIL YOU SET A LOCALE
+   MB_CUR_MAX at startup = 1   (one byte per character: the C locale)
+   setlocale(LC_ALL, a UTF-8 locale): obtained   MB_CUR_MAX > 1 now: yes
+   mbstowcs(cafe) = 4 wide characters: U+0063 U+0061 U+0066 U+00E9
+   Same five bytes, and now they are four characters -- because a
+   global setting changed, not because anything about the data did.
+   The setting is per process and reaches every thread. And the C
+   locale it replaced is not even the same locale on every libc: the
+   page's dated fence has this exact mbstowcs call, under LC_ALL=C,
+   returning five on macOS and failing on glibc.
+
+3. DISCOVERY IS A LOOP YOU WRITE, AND TWO NEGATIVE NUMBERS
+   cafe         U+0063 U+0061 U+0066 U+00E9
+   caf c3       U+0063 U+0061 U+0066  | byte 3: (size_t)-2, incomplete
+   caf c3 28    U+0063 U+0061 U+0066  | byte 3: (size_t)-1, invalid
+   a c0 af      U+0061  | byte 1: (size_t)-1, invalid
+   a ed a0 80   U+0061  | byte 1: (size_t)-1, invalid
+   mbstowcs(caf c3) == (size_t)-1: yes   errno == EILSEQ: yes
+   That is all the one-shot call says: not where it stopped and not
+   whether more bytes would have helped. mbrtowc, one character per
+   call with an mbstate_t between calls, gives back both. (size_t)-2
+   is a valid prefix that ran out -- keep it, read more. (size_t)-1 is
+   bytes that will never be text -- skip and resynchronise. Those are
+   Rust's error_len() None and Some(n), and Rust hands them to you from
+   the first call.
+
+4. CASE: THE BYTE FUNCTION AND THE CHARACTER FUNCTION ARE NOT THE SAME FUNCTION
+   toupper over the bytes of cafe: 43 41 46 c3 a9 
+   towupper(U+00E9)              : U+00C9
+   toupper takes one byte and answered for the three ASCII ones; the
+   two bytes of é came back as they went in. towupper takes the decoded
+   value, so it can only run after sections 2 and 3 have happened. What
+   toupper does with a byte above 0x7F is the locale's business, and
+   the page's dated fence shows the two libcs answering differently.
+
+5. WHAT THIS BOUGHT, AND WHAT IT COST
+   Bought: the bytes are yours. Nothing copied, validated or refused
+   them, so a file of unknown encoding, a Latin-1 record or a filename
+   is a char* with no ceremony -- and iconv(3) converts between more
+   tables than Rust's std will ever ship.
+   Cost: a global setting, a loop, an mbstate_t, and answers that belong
+   to whichever libc the program was linked against.

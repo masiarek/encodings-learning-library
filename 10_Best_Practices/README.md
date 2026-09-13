@@ -10,7 +10,8 @@ Everything else in this library is *how it works*. This chapter is **what to do 
 | 2 | [Rust strings in practice](rust_strings_in_practice/README.md) | Which type to take, which length to ask for, when to say `&[u8]`, and the three std methods that are ASCII-only on purpose | written |
 | 3 | [Python text in practice](python_text_in_practice/README.md) | `encoding=` on every `open()`, the two interpreter switches, filenames that are not text, and what changes in Python 3.15 | written |
 | 4 | ["Handles Unicode" is four questions](what_your_language_gives_you/README.md) | Which language is best at this — and why the answer is four answers, one of which is that JavaScript reads 37 encodings and writes one | written, 2026-09-07 |
-| 5 | [Interfaces and storage](interfaces_and_storage/README.md) | HTTP, JSON, CSV, databases and SAP — where the encoding is declared, per protocol | written, 2026-09-07 |
+| 5 | [C or Rust for text](c_or_rust_for_text/README.md) | Bytes with a locale, or bytes with a promise — which of the two compiled languages for the job that starts before the decode, and which for everything after it | written, 2026-09-13 |
+| 6 | [Interfaces and storage](interfaces_and_storage/README.md) | HTTP, JSON, CSV, databases and SAP — where the encoding is declared, per protocol | written, 2026-09-07 |
 
 ## The whole chapter in nine lines
 
@@ -24,7 +25,7 @@ Everything else in this library is *how it works*. This chapter is **what to do 
 8. **Validate, don't assume.** UTF-8's structure lets a decoder reject a wrong-table file; that is a feature to use, not an inconvenience to route around with `errors='ignore'`.
 9. **Filenames and command-line arguments are not text.** They are bytes on Unix and possibly-invalid UTF-16 on Windows. Use the platform's escape hatch rather than `.encode('utf-8')`.
 
-The five pages are those nine lines with the failures shown — the fourth from the outside, asking which languages can actually keep each rule, and the fifth per protocol, asking where each one lets you *write the rule down*. [Chapter 9](../09_History/README.md) is why they are the rules rather than one option among several.
+The six pages are those nine lines with the failures shown — the fourth from the outside, asking which languages can actually keep each rule, the fifth choosing between the two compiled languages this library runs for the job that starts before the decode, and the sixth per protocol, asking where each one lets you *write the rule down*. [Chapter 9](../09_History/README.md) is why they are the rules rather than one option among several.
 
 ## Where this is going to change
 

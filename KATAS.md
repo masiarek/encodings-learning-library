@@ -117,3 +117,4 @@ That is deliberate, and the reason is that folders are URLs. A topic — the byt
 | K99 | [Five pairs, and the checks that reach them](14_Resources/hard_strings/README.md#practice) | [The hard strings](14_Resources/hard_strings/README.md) | 301 |
 | K100 | [Four files, twelve answers, and a rename](06_Terminal/binary_or_text/README.md#practice) | [Binary is a verdict, not a property](06_Terminal/binary_or_text/README.md) | 101 |
 | K101 | [Five fields cut to fit, and the one a Go front end refuses](02_Characters/rune_is_an_int32/README.md#practice) | [`rune` is an `int32`](02_Characters/rune_is_an_int32/README.md) | 201 |
+| K102 | [Six bytes, five questions, and the one only a dated fence can answer](10_Best_Practices/c_or_rust_for_text/README.md#practice) | [C or Rust for text](10_Best_Practices/c_or_rust_for_text/README.md) | 301 |

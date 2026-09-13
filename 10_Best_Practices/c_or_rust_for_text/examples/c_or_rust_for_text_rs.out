@@ -1,0 +1,43 @@
+1. TWO TYPES, AND THE BOUNDARY BETWEEN THEM IS A FUNCTION
+   let bytes: &[u8] = b"caf\xc3\xa9";   len 5   63 61 66 c3 a9
+   let s: &str = from_utf8(bytes)?         len 5   chars 4   "café"
+   bytes[3] = 195   s.as_bytes()[3] = 195   (a u8 is 0..=255; no sign to argue about)
+   Same five bytes. One value knows nothing about them; the other exists
+   only because from_utf8 said yes, and every method on it -- chars(),
+   to_uppercase(), slicing -- is written on that promise.
+
+2. DISCOVERY IS IN THE ERROR, FROM THE FIRST CALL
+   63 61 66 c3    Err: valid_up_to 3  error_len None   lossy "caf�"
+   63 61 66 c3 28 Err: valid_up_to 3  error_len Some(1)   lossy "caf�("
+   61 c0 af       Err: valid_up_to 1  error_len Some(1)   lossy "a��"
+   61 ed a0 80    Err: valid_up_to 1  error_len Some(1)   lossy "a���"
+   error_len None is a prefix that ran out -- keep it, read more. Some(n)
+   is n bytes that will never be text -- skip them. C's mbrtowc says the
+   same two things as (size_t)-2 and (size_t)-1, one character per call,
+   after a locale has been set and an mbstate_t kept between calls.
+
+3. NO LOCALE ANYWHERE
+   "café".to_uppercase() = "CAFÉ"   bytes 5 -> 5   chars 4 -> 4
+   "straße".to_uppercase() = "STRASSE"   bytes 7 -> 7   chars 6 -> 7
+   "Łódź".to_uppercase() = "ŁÓDŹ"   bytes 7 -> 7   chars 4 -> 4
+   The tables are in std, so they are the same on every machine that ran
+   this binary. Nothing was set first, so nothing elsewhere in the process
+   can have set it differently. It is also why there is no
+   to_uppercase_in(locale): the Turkish dotless i is a crate's job.
+
+4. BYTES THAT ARE NOT TEXT HAVE A TYPE TOO
+   OsStr::from_bytes(b"caf\xe9.txt") = "caf\xE9.txt"   len 8
+   .to_str()          = None
+   .to_string_lossy() = "caf�.txt"
+   The byte survives, the &str never comes into being, and the lossy view
+   says so with U+FFFD. That is C's char* with the decision made visible:
+   the place where bytes become text is a method call you can read.
+
+5. WHAT std WILL NOT DO, AND SAYS SO
+   String::from_utf16(&[0x63, 0x61, 0x66, 0xE9]) = Ok("café")
+   char::from_u32(0xD800)                       = None   (a surrogate is not a char)
+   Latin-1 in: (b as char) is the whole decoder, because Latin-1 IS code
+   points 0..=255. Windows-1250, Shift_JIS, an EBCDIC page: no table in std
+   at all -- encoding_rs is the crate, and iconv is a C library you bind.
+   Graphemes, collation, locale-aware case: crates too, and they are good
+   precisely because std declined to guess.

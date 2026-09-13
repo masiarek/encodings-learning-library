@@ -1,0 +1,36 @@
+1. HOW LONG IS IT: SIX AND SIX, AND ONLY ONE SIDE CAN ALSO SAY THREE UNASKED
+   C    strlen(s)                     = 6
+   Rust s.len()                       = 6
+   Rust s.chars().count()             = 3
+   C    mbstowcs(s), UTF-8 locale     = 3
+   Both count bytes without being told anything. Rust's three came from
+   the type; C's three came from a setlocale call that had to run first,
+   and before it ran the same call had no portable answer (question 5).
+
+2. THE FIRST FOUR BYTES: A CHARACTER CUT SHORT, SEEN FROM BOTH SIDES
+   Rust from_utf8(&b[..4])            : valid_up_to 3, error_len None
+   C    mbrtowc on the first 4 bytes  : stopped at byte 3 with (size_t)-2, incomplete
+   Same verdict at the same position: three good bytes, then the lead
+   byte of € with nothing after it. None and (size_t)-2 both mean
+   'read more' -- neither is the answer for bytes that are simply wrong.
+
+3. UPPERCASE UNDER LC_ALL=C
+   C    toupper over the bytes        : 41 c3 a9 e2 82 ac
+   Rust s.to_uppercase()              = "AÉ€"  bytes 41 c3 89 e2 82 ac
+   C changed the one ASCII byte and nothing else: the C locale has no
+   opinion above 0x7F on either libc, which is the only reason this
+   line could be recorded. Rust changed é to É from its own table, and
+   would have printed the same under any environment at all.
+
+4. WHAT EACH ONE NEEDED TO GET HERE
+   C    : a locale name that exists on this machine, one global call,
+          an mbstate_t, and a loop
+   Rust : a slice and a function
+
+5. THE ONE WITH NO ANSWER
+   C    mbstowcs(s) under LC_ALL=C     : (not recorded)
+   Six on a Mac -- its C locale is a single-byte table where every byte
+   is a character -- and (size_t)-1 on glibc, whose C locale is ASCII
+   and stops at the first byte above 0x7F. The standard picks neither.
+   A key that held either number would be red on the other runner, so
+   the page's dated fence holds both and this key holds a sentence.
