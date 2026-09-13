@@ -104,10 +104,14 @@ $ hexdump -e '16/1 "%02x " "\n"' s.txt
 
 $ hexdump -e '8/1 "%02x " "  " 8/1 "%03u " "\n"' s.txt
 63 61 66 c3 a9 3a 20 31  226 130 172 010                
-   Two columns of the same eight bytes, hex then decimal, in a layout
-   nothing else offers: od's shape is whatever its flags decided, and
-   xxd's is whatever -c and -g allow. One warning about %u — write it,
-   not %d. A one-byte unit under %d is SIGNED, so c3 prints as -61.
+   Eight bytes as hex, then the NEXT four as decimal — not the same
+   eight twice. It is one string, so the second conversion starts where
+   the first stopped (section 4), and a block is sixteen bytes: the
+   file's last four reach %u and the four it lacks print as spaces. Two
+   conversions over consecutive bytes is a shape od's flags and xxd's
+   -c and -g cannot make; the same eight twice takes two -e strings.
+   One warning about %u — write it, not %d. A one-byte unit under %d is
+   SIGNED, so c3 prints as -61.
 
 6. THE STAR: REPEATED LINES ARE HIDDEN BY DEFAULT
 

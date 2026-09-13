@@ -64,10 +64,14 @@ echo "   count/size \"printf format\" is the whole language: how many units, how
 echo "   many bytes each, how to print one."
 show "hexdump -e '16/1 \"%02x \" \"\n\"' s.txt"
 show "hexdump -e '8/1 \"%02x \" \"  \" 8/1 \"%03u \" \"\n\"' s.txt"
-echo "   Two columns of the same eight bytes, hex then decimal, in a layout"
-echo "   nothing else offers: od's shape is whatever its flags decided, and"
-echo "   xxd's is whatever -c and -g allow. One warning about %u — write it,"
-echo "   not %d. A one-byte unit under %d is SIGNED, so c3 prints as -61."
+echo "   Eight bytes as hex, then the NEXT four as decimal — not the same"
+echo "   eight twice. It is one string, so the second conversion starts where"
+echo "   the first stopped (section 4), and a block is sixteen bytes: the"
+echo "   file's last four reach %u and the four it lacks print as spaces. Two"
+echo "   conversions over consecutive bytes is a shape od's flags and xxd's"
+echo "   -c and -g cannot make; the same eight twice takes two -e strings."
+echo "   One warning about %u — write it, not %d. A one-byte unit under %d is"
+echo "   SIGNED, so c3 prints as -61."
 
 echo
 echo "6. THE STAR: REPEATED LINES ARE HIDDEN BY DEFAULT"
