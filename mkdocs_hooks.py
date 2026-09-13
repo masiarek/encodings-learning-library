@@ -5,15 +5,19 @@ Three jobs, all about the sidebar:
 1. **Clean chapter labels.** MkDocs derives a section label from the folder name
    on disk, so `01_Bits_and_Bytes/` reads as "01 Bits And Bytes". The numeric prefix exists
    to set reading order in a file listing; it should not be visible in the nav.
-   Only *prefixed* folders are relabelled — a lesson folder takes its label from
-   its page's own H1, which is already written the way it should read.
+   Only *prefixed* folders are relabelled from their name — a lesson folder takes
+   its README's own H1 (job 3).
 
 2. **Order the sections.** `NAV_ORDER` states the intended reading order per
    folder, keyed by folder path, listing children by their on-disk name.
 
-3. **Fix acronym labels.** A lesson folder's label is its folder name
-   title-cased, so `utf8_by_hand` reads as "Utf8 by hand" and `pcre2` as
-   "Pcre2". `LABEL_OVERRIDES` restores the page's own H1 casing.
+3. **Label lessons from their H1.** Left alone, MkDocs titles a lesson folder
+   from its name, so `xxd` read "Xxd", `the_nul_byte` "The nul byte" and
+   `osstr_path_and_wtf8` "Osstr path and wtf8" — and `mkdocs build --strict`
+   passes either way. A lesson folder takes its README's H1 instead, up to any
+   " — " subtitle and with the backticks dropped. `LABEL_OVERRIDES` holds the
+   exceptions: an H1 too long for the sidebar, and 11_Tools, which lists its
+   pages by the tool's name where the H1s make claims about the tool.
 
 Why order here rather than by renaming files: a filename is a permanent URL.
 Renumbering `03_` to `04_` to insert a lesson would move every page after it and
@@ -56,36 +60,39 @@ FIXUPS = {
     "Of": "of",
 }
 
-# Lesson folders whose sidebar label the title-caser gets wrong, because the
-# name holds an acronym: MkDocs turns `utf8_by_hand` into "Utf8 by hand". Each
-# value is that page's own H1 casing, so the tree and the page agree. Keyed by
-# on-disk folder name -- a folder name is a permanent URL, so the fix belongs
-# here rather than in a rename. Like NAV_ORDER, an entry naming a folder that no
-# longer exists is a silent no-op.
+# Lesson folders whose sidebar label is deliberately not their H1. Every other
+# lesson folder is labelled with its README's H1, backticks dropped -- see
+# `_visit`. Keyed by on-disk folder name -- a folder name is a permanent URL, so
+# the fix belongs here rather than in a rename. Like NAV_ORDER, an entry naming a
+# folder that no longer exists is a silent no-op, which tools/check_nav_chain.py
+# reports.
+#
+# The opposite choice is just as deliberate: 12_Adversarial's labels are its
+# H1s, because the folder names say what a page is ABOUT and the H1s say what it
+# CLAIMS, which is what belongs in that chapter's table of contents.
 LABEL_OVERRIDES: dict[str, str] = {
-    "which_end_comes_first": "The bytes do not say which end",
-    "utf8_by_hand": "UTF-8 by hand",
-    "look_paste_tee_split": "look, paste, tee and split",
-    "utf16_and_surrogates": "UTF-16 and surrogates",
-    "byte_order_and_bom": "Byte order and the BOM",
-    "bom_in_a_csv": "A BOM in a CSV",
-    "crlf_vs_lf": "CRLF vs LF",
-    "sap_code_pages": "SAP code pages",
-    "writing_a_code_point": "Writing a code point",
-    "typing_a_character": "Typing a character",
-    "uni_help": "uni -h, line by line",
-    "pcre2": "PCRE2",
-    "sh": "The shell has no string type",
+    # The name a Python programmer would look for; the H1 is "Bytes that are
+    # not text".
     "surrogateescape": "surrogateescape",
-    "what_a_regex_matches": '"Supports Unicode" is a level, not a yes',
-    # 12_Adversarial: the folder names say what the page is ABOUT (and are
-    # permanent URLs); the H1s say what it CLAIMS, which is what belongs in a
-    # table of contents.
-    "parser_differentials": "Two readers, one byte string",
-    "canonicalize_then_check": "The check that ran too early",
-    "collisions_by_design": "Two people, one account",
-    "in_band_signals": "The byte that means something to somebody else",
-    "trojan_source": "What you see is not what runs",
+    # H1s that are a whole sentence.
+    "framing_a_format": "Framing a format",
+    "creating_and_writing_files": "Creating and writing files",
+    "look_paste_tee_split": "look, paste, tee and split",
+    "typing_a_character": "Typing a character",
+    # 11_Tools lists tools by name, spelled the way you type them; the H1s are
+    # claims about each tool ("`xxd` is the dump you can put back").
+    "grep": "grep",
+    "find": "find",
+    "xargs": "xargs",
+    "sed": "sed",
+    "awk": "awk",
+    "cut": "cut",
+    "tr_and_sort": "tr and sort",
+    "diff_and_cmp": "diff and cmp",
+    "hexdump": "hexdump",
+    "xxd": "xxd",
+    "od": "od",
+    "strings": "strings",
 }
 
 # Reading order per folder path. Children named by on-disk name; anything not
@@ -360,19 +367,43 @@ def _order_key(path: str, name: str) -> tuple[int, str]:
     return (len(listed), name.lower())
 
 
+def _readme_h1(section) -> str:
+    """The H1 of a section's own README.md, read from disk ("" if it has none).
+
+    Read from disk because MkDocs fills in a page's title only when it renders
+    the page, long after `on_nav`. Backticks are dropped: the sidebar prints
+    them as literal characters.
+
+    A subtitle after " — " is dropped too, the way `PCRE2 — the other regex
+    engine` was already labelled "PCRE2": `ripgrep — the Rust grep` becomes
+    "ripgrep".
+    """
+    for child in section.children:
+        page_file = getattr(child, "file", None)
+        if page_file is None or page_file.src_uri.rsplit("/", 1)[-1] != "README.md":
+            continue
+        with open(page_file.abs_src_path, encoding="utf-8") as fh:
+            for line in fh:
+                if line.startswith("# "):
+                    return line[2:].strip().replace("`", "").split(" — ", 1)[0]
+    return ""
+
+
 def _visit(items: list, path: str, depth: int) -> None:
     for child in items:
         if not _is_section(child):
             continue
         name = _on_disk_name(child, depth)
-        # Only a numbered chapter folder gets relabelled. A lesson folder's
-        # section label already comes from its page H1, which is authored prose;
-        # title-casing it here would turn "Significant figures" into
-        # "Significant Figures" and fight the page it points at.
+        # A numbered chapter folder is relabelled from its name. A lesson folder
+        # takes its README's H1, which is authored prose, unless LABEL_OVERRIDES
+        # names a label for it. Title-casing the folder name instead would fight
+        # the page it points at ("Significant Figures").
         if name in LABEL_OVERRIDES:
             child.title = LABEL_OVERRIDES[name]
         elif PREFIX.match(name):
             child.title = _label(name)
+        else:
+            child.title = _readme_h1(child) or child.title
 
     items.sort(key=lambda c: _order_key(path, _on_disk_name(c, depth)))
 
