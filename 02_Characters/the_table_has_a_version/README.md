@@ -277,7 +277,7 @@ The middle row is doing more work than it looks. `is_alphabetic('é')` has been 
 
 This is the rule that already governs this repo, arrived at from the other direction. [Inspecting a file](../../06_Terminal/inspecting_a_file/README.md) found `od -a` naming bytes in two dialects and recorded `-tx1` instead; the same page's tool comparison sits in a dated, hand-labelled fence because no key could match both platforms. This library's CI runs on Ubuntu *and* macOS and does not pin `rustc`, so a key derived from a Rust table lookup could break on one runner only, which is the failure no local check can see. `python3` is pinned to 3.14 on both runners, and that only moves the Python half of the problem: a key read out of its table would pass on both today, break on both the day the pin moves to 3.15, and can already disagree with a reader running 3.13.
 
-The one measured survivor is worth knowing: [Unicode code points](../unicode_code_points/README.md) scans all 1,114,112 slots for `char::is_whitespace` and prints the runs, and it is green on both runners, because `White_Space` has been 25 code points since 2005. That scan is safe **for that property**. It is not a licence.
+The one measured survivor is worth knowing: [Unicode code points](../unicode_code_points/README.md) scans all 1,114,112 slots for `char::is_whitespace` and prints the runs, and it is green on both runners, because `White_Space` has been 25 code points since Unicode 6.3, in 2013, when `U+180E` MONGOLIAN VOWEL SEPARATOR left it. That scan is safe **for that property**. It is not a licence.
 
 ## If you are coming from Python or ABAP
 

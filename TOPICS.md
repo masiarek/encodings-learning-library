@@ -604,7 +604,7 @@ The imported list's largest section, and the one furthest from this library's su
 
 **Missing — add:**
 
-- **25 code points have `White_Space`, in 10 runs** — measured on both CI runners, and stable since Unicode 4.1. One of the few table facts safe to record.
+- **25 code points have `White_Space`, in 10 runs** — measured on both CI runners, and unchanged since Unicode 6.3 (2013), when `U+180E` left it. Observed, not guaranteed: the stability policy freezes `Pattern_White_Space`, not `White_Space`.
 - **NBSP is the most common invisible bug in business data** — it survives copy-paste from Word and Excel, it is not stripped by `strip()` in every language, and it makes a numeric field fail to parse. **A real-data page in waiting.**
 - **`str.strip()` strips Unicode whitespace; `bytes.strip()` strips ASCII** — the same method name, two definitions.
 - **`Zs` is not `White_Space`** — `U+200B ZERO WIDTH SPACE` is neither, despite the name. The name of a character is not a specification.
