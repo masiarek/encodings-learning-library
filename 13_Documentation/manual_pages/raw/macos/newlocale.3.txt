@@ -1,0 +1,53 @@
+NEWLOCALE(3)               Library Functions Manual               NEWLOCALE(3)
+
+NAME
+     newlocale - Create a new locale
+
+SYNOPSIS
+     #include <xlocale.h>
+
+     locale_t
+     newlocale(int mask, const char * locale, locale_t base);
+
+DESCRIPTION
+     Creates a new locale_t based off the locale specified by base.  The
+     categories specified by mask will be replaced to correspond with the
+     named locale.
+
+     The mask is the logical OR of the following:
+
+     LC_COLLATE_MASK   Collation
+
+     LC_CTYPE_MASK     Character type
+
+     LC_MESSAGES_MASK  Messages
+
+     LC_MONETARY_MASK  Monetary
+
+     LC_NUMERIC_MASK   Numeric
+
+     LC_TIME_MASK      Time
+
+     LC_ALL_MASK       The logical OR of all of the above
+
+     The locale string is typically the name of one of the directories in
+     /usr/share/locale.  If locale is NULL, then the C locale is used. If
+     locale is an empty string, then it will look for environment variables:
+     LC_ALL, then LC_* if the corresponding LC_*_MASK bit is set, then the
+     LANG environment variable. If none of these are found, it will default to
+     the C locale.
+
+     If base is NULL, the current locale is used. If base is LC_GLOBAL_LOCALE,
+     the global locale is used.
+
+     If mask is LC_ALL_MASK, base is ignored. In order to create a C locale_t
+     value, use newlocale(LC_ALL_MASK, NULL, NULL).
+
+RETURN VALUES
+     Returns a new locale_t, or NULL in case of error.  New locales should be
+     freed with freelocale(3).
+
+SEE ALSO
+     duplocale(3), freelocale(3), querylocale(3), uselocale(3), xlocale(3)
+
+macOS 26.6                      March 11, 2005                      macOS 26.6

@@ -1,0 +1,5 @@
+Linux dump: 2026-09-13
+  Ubuntu 24.04.4 LTS in Docker, image enc-man (built from ubuntu:24.04)
+  manpages 6.7-2, man-db 2.12.0-4build2, glibc 2.39-0ubuntu8.9
+  rendered with: LANG=C.UTF-8 MANWIDTH=78 man.REAL -P cat SECTION NAME | col -bx   (man-db, UTF-8 rendering)
+  pages: 29 dumped, 0 missing

@@ -170,3 +170,4 @@ AND THE REASON THIS MATTERS BEYOND MAN PAGES
 - [Overlong sequences](../../03_Encodings/overlong_sequences/README.md) — the other half of `utf8(5)`'s one security sentence
 - [The encoding man pages nobody opens](../the_encoding_man_pages/README.md) — what else is in section 5
 - [RFC 3629 ↗](https://www.rfc-editor.org/rfc/rfc3629) — six pages, the whole of UTF-8 as it stands
+- [`utf8(5)` and `utf-8(7)`: one encoding, two pages, twenty years apart](../manual_pages/utf8.md) — the page this lesson is about, quoted in full beside its Linux twin, with the six-byte forms fed through both machines' `iconv`

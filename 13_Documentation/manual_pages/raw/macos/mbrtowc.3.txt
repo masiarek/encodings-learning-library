@@ -1,0 +1,73 @@
+MBRTOWC(3)                 Library Functions Manual                 MBRTOWC(3)
+
+NAME
+     mbrtowc, mbrtowc_l - convert a character to a wide-character code
+     (restartable)
+
+LIBRARY
+     Standard C Library (libc, -lc)
+
+SYNOPSIS
+     #include <wchar.h>
+
+     size_t
+     mbrtowc(wchar_t *restrict pwc, const char *restrict s, size_t n,
+         mbstate_t *restrict ps);
+
+     #include <wchar.h>
+     #include <xlocale.h>
+
+     size_t
+     mbrtowc_l(wchar_t *restrict pwc, const char *restrict s, size_t n,
+         mbstate_t *restrict ps, locale_t loc);
+
+DESCRIPTION
+     The mbrtowc() function inspects at most n bytes, pointed to by s, to
+     determine the number of bytes needed to complete the next multibyte
+     character.  If a character can be completed, and pwc is not NULL, the
+     wide character which is represented by s is stored in the wchar_t it
+     points to.
+
+     If s is NULL, mbrtowc() behaves as if pwc were NULL, s were an empty
+     string (""), and n were 1.
+
+     The mbstate_t argument, ps, is used to keep track of the shift state.  If
+     it is NULL, mbrtowc() uses an internal, static mbstate_t object, which is
+     initialized to the initial conversion state at program startup.
+
+     While the mbrtowc() function uses the current locale, the mbrtowc_l()
+     function may be passed a locale directly. See xlocale(3) for more
+     information.
+
+RETURN VALUES
+     The mbrtowc() functions returns:
+
+     0       The next n or fewer bytes represent the null wide character
+             (L'\0').
+
+     >0      The next n or fewer bytes represent a valid character, mbrtowc()
+             returns the number of bytes used to complete the multibyte
+             character.
+
+     (size_t)-2
+             The next n contribute to, but do not complete, a valid multibyte
+             character sequence, and all n bytes have been processed.
+
+     (size_t)-1
+             An encoding error has occurred.  The next n or fewer bytes do not
+             contribute to a valid multibyte character.
+
+ERRORS
+     The mbrtowc() function will fail if:
+
+     [EILSEQ]           An invalid multibyte sequence was detected.
+
+     [EINVAL]           The conversion state is invalid.
+
+SEE ALSO
+     mbtowc(3), multibyte(3), setlocale(3), wcrtomb(3), xlocale(3)
+
+STANDARDS
+     The mbrtowc() function conforms to ISO/IEC 9899:1999 ("ISO C99").
+
+macOS 26.6                       April 8, 2004                      macOS 26.6

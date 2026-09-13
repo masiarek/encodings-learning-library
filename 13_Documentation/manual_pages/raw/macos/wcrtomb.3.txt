@@ -1,0 +1,57 @@
+WCRTOMB(3)                 Library Functions Manual                 WCRTOMB(3)
+
+NAME
+     wcrtomb, wcrtomb_l - convert a wide-character code to a character
+     (restartable)
+
+LIBRARY
+     Standard C Library (libc, -lc)
+
+SYNOPSIS
+     #include <wchar.h>
+
+     size_t
+     wcrtomb(char *restrict s, wchar_t wc, mbstate_t *restrict ps);
+
+     #include <wchar.h>
+     #include <xlocale.h>
+
+     size_t
+     wcrtomb_l(char *restrict s, wchar_t wc, mbstate_t *restrict ps,
+         locale_t loc);
+
+DESCRIPTION
+     The wcrtomb() function stores a multibyte sequence representing the wide
+     character wc, including any necessary shift sequences, to the character
+     array s.  A maximum of MB_CUR_MAX bytes will be stored.
+
+     If s is NULL, wcrtomb() behaves as if s pointed to an internal buffer and
+     wc were a null wide character (L'\0').
+
+     The mbstate_t argument, ps, is used to keep track of the shift state.  If
+     it is NULL, wcrtomb() uses an internal, static mbstate_t object, which is
+     initialized to the initial conversion state at program startup.
+
+     While the wcrtomb() function uses the current locale, the wcrtomb_l()
+     function may be passed a locale directly. See xlocale(3) for more
+     information.
+
+RETURN VALUES
+     The wcrtomb() functions returns the length (in bytes) of the multibyte
+     sequence needed to represent wc, or (size_t)-1 if wc is not a valid wide
+     character code.
+
+ERRORS
+     The wcrtomb() function will fail if:
+
+     [EILSEQ]           An invalid wide character code was specified.
+
+     [EINVAL]           The conversion state is invalid.
+
+SEE ALSO
+     mbrtowc(3), multibyte(3), setlocale(3), wctomb(3), xlocale(3)
+
+STANDARDS
+     The wcrtomb() function conforms to ISO/IEC 9899:1999 ("ISO C99").
+
+macOS 26.6                       April 8, 2004                      macOS 26.6

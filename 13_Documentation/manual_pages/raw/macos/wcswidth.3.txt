@@ -1,0 +1,42 @@
+WCSWIDTH(3)                Library Functions Manual                WCSWIDTH(3)
+
+NAME
+     wcswidth, wcswidth_l - number of column positions in wide-character
+     string
+
+LIBRARY
+     Standard C Library (libc, -lc)
+
+SYNOPSIS
+     #include <wchar.h>
+
+     int
+     wcswidth(const wchar_t *pwcs, size_t n);
+
+     #include <wchar.h>
+     #include <xlocale.h>
+
+     int
+     wcswidth_l(const wchar_t *pwcs, size_t n, locale_t loc);
+
+DESCRIPTION
+     The wcswidth() function determines the number of column positions
+     required for the first n characters of pwcs, or until a null wide
+     character (L'\0') is encountered.
+
+     Although the wcswidth() function uses the current locale, the
+     wcswidth_l() function may be passed a locale directly. See xlocale(3) for
+     more information.
+
+RETURN VALUES
+     The wcswidth() function returns 0 if pwcs is an empty string (L""), -1 if
+     a non-printing wide character is encountered; otherwise, it returns the
+     number of column positions occupied.
+
+SEE ALSO
+     iswprint(3), wcwidth(3), xlocale(3)
+
+STANDARDS
+     The wcswidth() function conforms to IEEE Std 1003.1-2001 ("POSIX.1").
+
+macOS 26.6                      August 20, 2002                     macOS 26.6

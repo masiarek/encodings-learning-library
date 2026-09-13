@@ -213,3 +213,4 @@ AND THE HEALTH WARNING FROM THE PAGE NEXT DOOR
 - [Inspecting a file](../../06_Terminal/inspecting_a_file/README.md) — the tools these pages document, in a workflow
 - [11_Tools](../../11_Tools/README.md) — one page per tool, with the encoding decision each one already made
 - [`ascii(7)` and the C1 controls](../../02_Characters/control_characters/README.md) — the table the man page prints, explained
+- [The man pages, annotated](../manual_pages/README.md) — all forty of these pages and a hundred and thirty more, dumped verbatim and read one family at a time, with every term explained

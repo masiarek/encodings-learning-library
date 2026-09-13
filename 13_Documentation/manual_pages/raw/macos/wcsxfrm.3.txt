@@ -1,0 +1,58 @@
+WCSXFRM(3)                 Library Functions Manual                 WCSXFRM(3)
+
+NAME
+     wcsxfrm, wcsxfrm_l - transform a wide string under locale
+
+LIBRARY
+     Standard C Library (libc, -lc)
+
+SYNOPSIS
+     #include <wchar.h>
+
+     size_t
+     wcsxfrm(wchar_t *restrict ws1, const wchar_t *restrict ws2, size_t n);
+
+     #include <wchar.h>
+     #include <xlocale.h>
+
+     size_t
+     wcsxfrm_l(wchar_t *restrict ws1, const wchar_t *restrict ws2, size_t n,
+         locale_t loc);
+
+DESCRIPTION
+     The wcsxfrm() function transforms a null-terminated wide character string
+     pointed to by ws2, according to the current locale's collation order,
+     then copies the transformed string into ws1.  No more than n wide
+     characters are copied into ws1, including the terminating null character.
+     If n is set to 0 (it helps to determine an actual size needed for
+     transformation), ws1 is permitted to be a NULL pointer.
+
+     Comparing two strings using wcscmp() after wcsxfrm() is equivalent to
+     comparing two original strings with wcscoll().
+
+     Although the wcsxfrm() function uses the current locale, the wcsxfrm_l()
+     function may be passed a locale directly. See xlocale(3) for more
+     information.
+
+RETURN VALUES
+     Upon successful completion, wcsxfrm() returns the length of the
+     transformed string not including the terminating null character.  If this
+     value is n or more, the contents of ws1 are indeterminate.
+
+SEE ALSO
+     setlocale(3), strxfrm(3), wcscmp(3), wcscoll(3), xlocale(3)
+
+STANDARDS
+     The wcsxfrm() function conforms to ISO/IEC 9899:1999 ("ISO C99").
+
+BUGS
+     The current implementation of wcsxfrm() only works in single-byte
+     LC_CTYPE locales, and falls back to using wcsncpy() in locales with
+     extended character sets.
+
+     Comparing two strings using wcscmp() after wcsxfrm() is not always
+     equivalent to comparison with wcscoll(); wcsxfrm() only stores
+     information about primary collation weights into ws1, whereas wcscoll()
+     compares characters using both primary and secondary weights.
+
+macOS 26.6                      October 4, 2002                     macOS 26.6

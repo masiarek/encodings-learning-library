@@ -11,6 +11,7 @@ And there is a catch, which is the reason this is a chapter rather than a link: 
 | 1 | [The encoding man pages nobody opens](the_encoding_man_pages/README.md) | What is already installed, and how do I sweep it for a term? | written |
 | 2 | [A page has a date](a_page_has_a_date/README.md) | `man 5 utf8` says six bytes. Which year is it saying that from? | written |
 | 3 | [What the page does not say](what_the_page_does_not_say/README.md) | The flag works and is documented nowhere. Now what? | written |
+| 4 | [The man pages, annotated](manual_pages/README.md) | Which of the pages already on my machine are about text, and what does every word on them mean? | written, 2026-09-13 |
 
 ## The three questions
 

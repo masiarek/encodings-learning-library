@@ -1,0 +1,22 @@
+QUERYLOCALE(3)             Library Functions Manual             QUERYLOCALE(3)
+
+NAME
+     querylocale - Get locale name for a specified category
+
+SYNOPSIS
+     #include <xlocale.h>
+
+     const char *
+     querylocale(int mask, locale_t loc);
+
+DESCRIPTION
+     Returns the name of the locale for the category specified by mask.  The
+     mask is scanned starting at the least significant bit, until the first
+     set bit is found. This happens to scan the categories alphabetically, not
+     including LC_ALL_MASK, but it is best to specify one category at a time.
+     The available categories are documented in xlocale(3) and newlocale(3).
+
+SEE ALSO
+     duplocale(3), freelocale(3), newlocale(3), uselocale(3), xlocale(3)
+
+macOS 26.6                      March 11, 2005                      macOS 26.6

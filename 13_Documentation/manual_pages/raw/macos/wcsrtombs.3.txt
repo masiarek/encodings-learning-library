@@ -1,0 +1,76 @@
+WCSRTOMBS(3)               Library Functions Manual               WCSRTOMBS(3)
+
+NAME
+     wcsnrtombs, wcsnrtombs_l, wcsrtombs, wcsrtombs_l - convert a wide-
+     character string to a character string (restartable)
+
+LIBRARY
+     Standard C Library (libc, -lc)
+
+SYNOPSIS
+     #include <wchar.h>
+
+     size_t
+     wcsnrtombs(char *restrict dst, const wchar_t **restrict src, size_t nwc,
+         size_t len, mbstate_t *restrict ps);
+
+     size_t
+     wcsrtombs(char *restrict dst, const wchar_t **restrict src, size_t len,
+         mbstate_t *restrict ps);
+
+     #include <wchar.h>
+     #include <xlocale.h>
+
+     size_t
+     wcsnrtombs_l(char *restrict dst, const wchar_t **restrict src,
+         size_t nwc, size_t len, mbstate_t *restrict ps, locale_t loc);
+
+     size_t
+     wcsrtombs_l(char *restrict dst, const wchar_t **restrict src, size_t len,
+         mbstate_t *restrict ps, locale_t loc);
+
+DESCRIPTION
+     The wcsrtombs() function converts a string of wide characters, indirectly
+     pointed to by src, to a corresponding multi-byte character string, stored
+     in the array pointed to by dst.  No more than len bytes are written to
+     dst.
+
+     If dst is NULL, no characters are stored.
+
+     If dst is not NULL, the pointer pointed to by src is updated to point to
+     the character after the one that conversion stopped at.  If conversion
+     stops because a null character is encountered, *src is set to NULL.
+
+     The mbstate_t argument, ps, is used to keep track of the shift state.  If
+     it is NULL, wcsrtombs() uses an internal, static mbstate_t object, which
+     is initialized to the initial conversion state at program startup.
+
+     The wcsnrtombs() function behaves identically to wcsrtombs(), except that
+     conversion stops after reading at most nwc characters from the buffer
+     pointed to by src.
+
+     Although the wcsrtombs() and wcsnrtombs() functions use the current
+     locale, the wcsrtombs_l() and wcsnrtombs_l() functions may be passed
+     locales directly. See xlocale(3) for more information.
+
+RETURN VALUES
+     If successful, the wcsrtombs() and wcsnrtombs() functions return the
+     number of bytes stored in the array pointed to by dst (not including any
+     terminating null); otherwise, they return (size_t)-1.
+
+ERRORS
+     The wcsrtombs() and wcsnrtombs() functions will fail if:
+
+     [EILSEQ]           An invalid wide character was encountered.
+
+     [EINVAL]           The conversion state is invalid.
+
+SEE ALSO
+     mbsrtowcs(3), wcrtomb(3), wcstombs(3), xlocale(3)
+
+STANDARDS
+     The wcsrtombs() function conforms to ISO/IEC 9899:1999 ("ISO C99").
+
+     The wcsnrtombs() function is an extension to the standard.
+
+macOS 26.6                       July 21, 2004                      macOS 26.6

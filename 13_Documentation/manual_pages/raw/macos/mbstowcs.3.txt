@@ -1,0 +1,51 @@
+MBSTOWCS(3)                Library Functions Manual                MBSTOWCS(3)
+
+NAME
+     mbstowcs, mbstowcs_l - convert a character string to a wide-character
+     string
+
+LIBRARY
+     Standard C Library (libc, -lc)
+
+SYNOPSIS
+     #include <stdlib.h>
+
+     size_t
+     mbstowcs(wchar_t *restrict pwcs, const char *restrict s, size_t n);
+
+     #include <stdlib.h>
+     #include <xlocale.h>
+
+     size_t
+     mbstowcs_l(wchar_t *restrict pwcs, const char *restrict s, size_t n,
+         locale_t loc);
+
+DESCRIPTION
+     The mbstowcs() function converts a multibyte character string s,
+     beginning in the initial conversion state, into a wide character string
+     pwcs.  No more than n wide characters are stored.  A terminating null
+     wide character is appended, if there is room.
+
+     Although the mbstowcs() function uses the current locale, the
+     mbstowcs_l() function may be passed a locale directly. See xlocale(3) for
+     more information.
+
+RETURN VALUES
+     The mbstowcs() function returns the number of wide characters converted,
+     not counting any terminating null wide character, or -1 if an invalid
+     multibyte character was encountered.
+
+ERRORS
+     The mbstowcs() function will fail if:
+
+     [EILSEQ]           An invalid multibyte sequence was detected.
+
+     [EINVAL]           The conversion state is invalid.
+
+SEE ALSO
+     mbsrtowcs(3), mbtowc(3), multibyte(3), xlocale(3)
+
+STANDARDS
+     The mbstowcs() function conforms to ISO/IEC 9899:1999 ("ISO C99").
+
+macOS 26.6                       April 8, 2004                      macOS 26.6

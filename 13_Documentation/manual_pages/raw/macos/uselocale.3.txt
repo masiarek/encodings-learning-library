@@ -1,0 +1,24 @@
+USELOCALE(3)               Library Functions Manual               USELOCALE(3)
+
+NAME
+     uselocale - Set the per-thread locale
+
+SYNOPSIS
+     #include <xlocale.h>
+
+     locale_t
+     uselocale(locale_t loc);
+
+DESCRIPTION
+     Sets the per-thread locale to loc.  Specify LC_GLOBAL_LOCALE to turn off
+     any per-thread locale.  Pass NULL to return the current value of the per-
+     thread locale (or LC_GLOBAL_LOCALE) without changing the locale.
+
+RETURN VALUES
+     Returns the previous locale, or LC_GLOBAL_LOCALE if no per-thread locale
+     was in effect.
+
+SEE ALSO
+     duplocale(3), freelocale(3), newlocale(3), querylocale(3), xlocale(3)
+
+macOS 26.6                      March 11, 2005                      macOS 26.6

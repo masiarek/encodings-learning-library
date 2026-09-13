@@ -1,0 +1,61 @@
+MBRUNE(3)                  Library Functions Manual                  MBRUNE(3)
+
+NAME
+     mbrune, mbrrune, mbmb - multibyte rune support for C
+
+LIBRARY
+     Standard C Library (libc, -lc)
+
+SYNOPSIS
+     #include <rune.h>
+
+     char *
+     mbrune(const char *string, rune_t rune);
+
+     char *
+     mbrrune(const char *string, rune_t rune);
+
+     char *
+     mbmb(const char *string, char *pattern);
+
+DESCRIPTION
+     The 4.4BSD "rune" functions have been deprecated in favour of the ISO C99
+     extended multibyte and wide character facilities and should not be used
+     in new applications.  Consider working with wide characters instead, and
+     using wcschr(3), wcsrchr(3), and wcsstr(3) instead of these functions.
+
+     These routines provide the corresponding functionality of strchr(),
+     strrchr() and strstr() for multibyte strings.
+
+     The mbrune() function locates the first occurrence of rune() in the
+     string pointed to by string.  The terminating NUL character is considered
+     part of the string.  If rune is `\0', mbrune() locates the terminating
+     `\0'.
+
+     The mbrrune() function locates the last occurrence of rune in the string
+     string.  If rune is `\0', mbrune() locates the terminating `\0'.
+
+     The mbmb() function locates the first occurrence of the null-terminated
+     string pattern in the null-terminated string string.  If pattern is the
+     empty string, mbmb() returns string; if pattern occurs nowhere in string,
+     mbmb() returns NULL; otherwise mbmb() returns a pointer to the first
+     character of the first occurrence of pattern.
+
+RETURN VALUES
+     The function mbrune() returns a pointer to the located character, or NULL
+     if the character does not appear in the string.
+
+     The mbrrune() function returns a pointer to the character, or NULL if the
+     character does not appear in the string.
+
+     The mbmb() function returns a pointer to the pattern, or NULL if the
+     pattern does not appear in the string.
+
+SEE ALSO
+     rune(3), setlocale(3), euc(4), utf2(4), utf8(5)
+
+HISTORY
+     The mbrune(), mbrrune(), and mbmb() functions first appeared in Plan 9
+     from Bell Labs as utfrune(), utfrrune(), and utfutf().
+
+macOS 26.6                      April 19, 1994                      macOS 26.6

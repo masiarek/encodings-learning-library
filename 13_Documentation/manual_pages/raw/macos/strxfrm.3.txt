@@ -1,0 +1,48 @@
+STRXFRM(3)                 Library Functions Manual                 STRXFRM(3)
+
+NAME
+     strxfrm, strxfrm_l - transform a string under locale
+
+LIBRARY
+     Standard C Library (libc, -lc)
+
+SYNOPSIS
+     #include <string.h>
+
+     size_t
+     strxfrm(char *restrict s1, const char *restrict s2, size_t n);
+
+     #include <string.h>
+     #include <xlocale.h>
+
+     size_t
+     strxfrm_l(char *restrict s1, const char *restrict s2, size_t n,
+         locale_t loc);
+
+DESCRIPTION
+     The strxfrm() function transforms a null-terminated string pointed to by
+     s2 according to the current locale collation if any, then copies the
+     transformed string into s1.  Not more than n characters are copied into
+     s1, including the terminating null character added.  If n is set to 0 (it
+     helps to determine an actual size needed for transformation), s1 is
+     permitted to be a NULL pointer.
+
+     Comparing two strings using strcmp() after strxfrm() is equal to
+     comparing two original strings with strcoll().
+
+     Although the strxfrm() function uses the current locale, the strxfrm_l()
+     function may be passed a locale directly. See xlocale(3) for more
+     information.
+
+RETURN VALUES
+     Upon successful completion, strxfrm() returns the length of the
+     transformed string not including the terminating null character.  If this
+     value is n or more, the contents of s1 are indeterminate.
+
+SEE ALSO
+     setlocale(3), strcmp(3), strcoll(3), wcsxfrm(3), xlocale(3)
+
+STANDARDS
+     The strxfrm() function conforms to ISO/IEC 9899:1990 ("ISO C90").
+
+macOS 26.6                       June 4, 1993                       macOS 26.6

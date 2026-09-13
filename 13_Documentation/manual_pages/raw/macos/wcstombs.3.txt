@@ -1,0 +1,52 @@
+WCSTOMBS(3)                Library Functions Manual                WCSTOMBS(3)
+
+NAME
+     wcstombs, wcstombs_l - convert a wide-character string to a character
+     string
+
+LIBRARY
+     Standard C Library (libc, -lc)
+
+SYNOPSIS
+     #include <stdlib.h>
+
+     size_t
+     wcstombs(char *restrict s, const wchar_t *restrict pwcs, size_t n);
+
+     #include <stdlib.h>
+     #include <xlocale.h>
+
+     size_t
+     wcstombs_l(char *restrict s, const wchar_t *restrict pwcs, size_t n,
+         locale_t loc);
+
+DESCRIPTION
+     The wcstombs() function converts a wide character string pwcs into a
+     multibyte character string, s, beginning in the initial conversion state.
+     Up to n bytes are stored in s.  Partial multibyte characters at the end
+     of the string are not stored.  The multibyte character string is null
+     terminated, if there is room.
+
+     Although the wcstombs() function uses the current locale, the
+     wcstombs_l() function may be passed a locale directly. See xlocale(3) for
+     more information.
+
+RETURN VALUES
+     The wcstombs() function returns the number of bytes converted (not
+     including any terminating null), if successful; otherwise, it returns
+     (size_t)-1.
+
+ERRORS
+     The wcstombs() function will fail if:
+
+     [EILSEQ]           An invalid wide character was encountered.
+
+     [EINVAL]           The conversion state is invalid.
+
+SEE ALSO
+     mbstowcs(3), multibyte(3), wcsrtombs(3), wctomb(3), xlocale(3)
+
+STANDARDS
+     The wcstombs() function conforms to ISO/IEC 9899:1999 ("ISO C99").
+
+macOS 26.6                       April 8, 2004                      macOS 26.6

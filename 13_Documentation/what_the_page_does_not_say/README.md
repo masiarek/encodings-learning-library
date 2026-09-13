@@ -190,3 +190,4 @@ THE RECIPE, WHICH IS THE ACTUAL ANSWER
 - [The encoding man pages nobody opens](../the_encoding_man_pages/README.md) — the sweep this page's counts come from
 - [`iconv` at the boundary](../../06_Terminal/iconv/README.md) — what the tool is for, once you know its flags
 - [Validation is a boundary](../../03_Encodings/validation_is_a_boundary/README.md) — `iconv -f X -t X` as a validator, and where it disagrees with Python
+- [`iconv(1)` and `iconv(3)`: two pages that promise two different things](../manual_pages/iconv.md) — the GNU pages that do document `//TRANSLIT`, and the case in which this Mac's `iconv` keeps its own page's promise

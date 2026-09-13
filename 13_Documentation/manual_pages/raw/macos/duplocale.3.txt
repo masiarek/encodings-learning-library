@@ -1,0 +1,24 @@
+DUPLOCALE(3)               Library Functions Manual               DUPLOCALE(3)
+
+NAME
+     duplocale - Duplicate existing locale
+
+SYNOPSIS
+     #include <xlocale.h>
+
+     locale_t
+     duplocale(locale_t loc);
+
+DESCRIPTION
+     Duplicates an existing locale_t.  Sub-structures are shared between the
+     two locale_t structures.  Passing NULL will duplicate the current locale.
+     Passing LC_GLOBAL_LOCALE will duplicate the global locale.
+
+RETURN VALUES
+     Returns a duplicated locale_t, or NULL on error.  Duplicated locales
+     should be freed with freelocale(3).
+
+SEE ALSO
+     freelocale(3), newlocale(3), querylocale(3), uselocale(3), xlocale(3)
+
+macOS 26.6                      March 11, 2005                      macOS 26.6

@@ -1,0 +1,116 @@
+RUNE(3)                    Library Functions Manual                    RUNE(3)
+
+NAME
+     setrunelocale, setinvalidrune, sgetrune, sputrune, fgetrune, fungetrune,
+     fputrune - rune support for C
+
+LIBRARY
+     Standard C Library (libc, -lc)
+
+SYNOPSIS
+     #include <rune.h>
+     #include <errno.h>
+
+     int
+     setrunelocale(char *locale);
+
+     void
+     setinvalidrune(rune_t rune);
+
+     rune_t
+     sgetrune(const char *string, size_t n, char const **result);
+
+     int
+     sputrune(rune_t rune, char *string, size_t n, char **result);
+
+     #include <stdio.h>
+
+     long
+     fgetrune(FILE *stream);
+
+     int
+     fungetrune(rune_t rune, FILE *stream);
+
+     int
+     fputrune(rune_t rune, FILE *stream);
+
+DESCRIPTION
+     The 4.4BSD "rune" functions have been deprecated in favour of the ISO C99
+     extended multibyte and wide character facilities and should not be used
+     in new applications.  Consider using setlocale(3), mbrtowc(3),
+     wcrtomb(3), fgetwc(3), ungetwc(3), and fputwc(3) instead.
+
+     The setrunelocale() controls the type of encoding used to represent runes
+     as multibyte strings as well as the properties of the runes as defined in
+     <ctype.h>.  The locale argument indicates which locale to load.  If the
+     locale is successfully loaded, 0 is returned, otherwise an errno value is
+     returned to indicate the type of error.
+
+     The setinvalidrune() function sets the value of the global value
+     _INVALID_RUNE to be rune.
+
+     The sgetrune() function tries to read a single multibyte character from
+     string, which is at most n bytes long.  If sgetrune() is successful, the
+     rune is returned.  If result is not NULL, *result will point to the first
+     byte which was not converted in string.  If the first n bytes of string
+     do not describe a full multibyte character, _INVALID_RUNE is returned and
+     *result will point to string.  If there is an encoding error at the start
+     of string, _INVALID_RUNE is returned and *result will point to the second
+     character of string.
+
+     the sputrune() function tries to encode rune as a multibyte string and
+     store it at string, but no more than n bytes will be stored.  If result
+     is not NULL, *result will be set to point to the first byte in string
+     following the new multibyte character.  If string is NULL, *result will
+     point to (char *)0 + x, where x is the number of bytes that would be
+     needed to store the multibyte value.  If the multibyte character would
+     consist of more than n bytes and result is not NULL, *result will be set
+     to NULL.  In all cases, sputrune() will return the number of bytes which
+     would be needed to store rune as a multibyte character.
+
+     The fgetrune() function operates the same as sgetrune() with the
+     exception that it attempts to read enough bytes from stream to decode a
+     single rune.  It returns either EOF on end of file, _INVALID_RUNE on an
+     encoding error, or the rune decoded if all went well.
+
+     The fungetrune() function pushes the multibyte encoding, as provided by
+     sputrune(), of rune onto stream such that the next fgetrune() call will
+     return rune.  It returns EOF if it fails and 0 on success.
+
+     The fputrune() function writes the multibyte encoding of rune, as
+     provided by sputrune(), onto stream.  It returns EOF on failure and 0 on
+     success.
+
+RETURN VALUES
+     The setrunelocale() function returns one of the following values:
+
+     0                  The setrunelocale() function was successful.
+
+     [EINVAL]           The locale name was incorrect.
+
+     [ENOENT]           The locale could not be found.
+
+     [EFTYPE]           The file found was not a valid file.
+
+     The sgetrune() function either returns the rune read or _INVALID_RUNE.
+     The sputrune() function returns the number of bytes needed to store rune
+     as a multibyte string.
+
+FILES
+     $PATH_LOCALE/locale/LC_CTYPE
+     /usr/share/locale/locale/LC_CTYPE  binary LC_CTYPE file for the locale
+                                        locale.
+     /usr/local/share/locale/locale/LC_CTYPE
+                                        binary LC_CTYPE file for the locale
+                                        locale.
+
+SEE ALSO
+     mbrune(3), setlocale(3), euc(4), utf2(4), utf8(5)
+
+HISTORY
+     These functions first appeared in 4.4BSD.
+
+     The setrunelocale() function and the other non-ANSI rune functions were
+     inspired by Plan 9 from Bell Labs.
+
+macOS 26.6                      October 6, 2002                     macOS 26.6
