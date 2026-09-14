@@ -1,0 +1,61 @@
+1. THREE BYTES BEFORE THE FIRST LETTER
+
+$ od -tc book.txt | tidy
+0000000 357 273 277 C h a p t e r \r \n \t I n d
+0000020 e n t e d \r \n
+0000027
+   -t c prints a byte it cannot show as a character in octal. 357 273 277
+   is not part of the title. In hex it is:
+
+$ od -An -N3 -tx1 book.txt | tidy
+ef bb bf
+   ef bb bf, the UTF-8 encoding of U+FEFF: a byte order mark. And each
+   line ends \r \n -- carriage return FIRST, then newline, the order a
+   Windows editor and every CRLF protocol write them in. \t is the tab.
+
+2. WHAT GNU od -t a MAKES OF THOSE THREE BYTES
+   ef & 7f = 6f   o
+   bb & 7f = 3b   ;
+   bf & 7f = 3f   ?
+   GNU od -t a names the low seven bits of a byte, so a file that starts
+   with a BOM starts, under -t a, with o ; ? -- three ASCII characters
+   that are nowhere in it. BSD od prints ef bb bf instead. A listing that
+   opens with o ; ? is GNU output of a file with a BOM.
+
+3. THE LEADING ZERO MAKES -j OCTAL, NOT THE ADDRESS COLUMN
+
+$ od -Ad -j0400 -N8 -tc digits.txt | tidy
+0000256 8 5 0 8 6 0 8 7
+0000264
+
+$ od -Ad -j400 -N8 -tc digits.txt | tidy
+0000400 3 3 1 3 4 1 3 5
+0000408
+
+$ od -Ad -j0x190 -N8 -tc digits.txt | tidy
+0000400 3 3 1 3 4 1 3 5
+0000408
+   -j and -N read a number the way C does: a leading 0 is octal, 0x is
+   hex, anything else is decimal. The offset column is DECIMAL here
+   (-A d), and -j0400 still started at byte 256, in the middle of 085.
+   So -j0000640 is octal because of its first zero, and -j0640 is the same
+   request. It matches od's address column only because that column
+   happens to be octal by default.
+
+4. THE FIRST WORD OF AN ELF FILE, READ BACKWARDS
+
+$ od -An -tx1 elf.bin | tidy
+7f 45 4c 46 02 01 01 00
+
+$ od -tx elf.bin | tidy
+0000000 464c457f 00010102
+0000010
+
+$ od elf.bin | tidy
+0000000 042577 043114 000402 000001
+0000010
+   -t x with no size is an int: four bytes, printed as one number in this
+   CPU's byte order. Little-endian puts the low byte first, so the magic
+   7f 45 4c 46 -- DEL E L F -- comes out as 464c457f. Bare od is -t o2,
+   and 7f 45 becomes the 16-bit value 0x457f, which is 042577 in octal.
+   A dump of /bin/echo on 64-bit Linux opens with these same two lines.
