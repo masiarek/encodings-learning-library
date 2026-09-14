@@ -93,6 +93,7 @@ LABEL_OVERRIDES: dict[str, str] = {
     "xxd": "xxd",
     "od": "od",
     "strings": "strings",
+    "entropy": "entropy (Ghidra)",
 }
 
 # Reading order per folder path. Children named by on-disk name; anything not
@@ -260,6 +261,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "od",
         "fasthex",
         "strings",
+        "entropy",
         "uni",
         "uni_help",
         "typing_a_character",

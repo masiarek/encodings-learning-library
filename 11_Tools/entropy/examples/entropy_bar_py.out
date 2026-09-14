@@ -1,0 +1,119 @@
+1. THE SCORE, ON CHUNKS BUILT BY HAND
+------------------------------------------------------------------------
+   chunk                                values   score   2^score
+   1024 bytes of 00                          1    0.00      1.00
+   512 x 'a', then 512 x 'b'                 2    1.00      2.00
+   'abcd' x 256                              4    2.00      4.00
+   512 x 'a', 256 x 'b', 256 x 'c'           3    1.50      2.83
+   every byte value, four times over       256    8.00    256.00
+
+   The fourth row, written out: p(a) = 1/2, p(b) = p(c) = 1/4, so
+   H = -(1/2)log2(1/2) - 2 x (1/4)log2(1/4) = 0.5 + 1.0 = 1.5 bits.
+   Read 2^H as how many EQUALLY likely values would spread this much:
+   one value is 0 bits, two are 1 bit, all 256 are 8 bits, and the
+   1.5-bit chunk is spread like 2.83 equally likely values.
+
+2. ONE PARAGRAPH OF ENGLISH, SIX ENCODINGS, THE FIRST 1024 BYTES OF EACH
+------------------------------------------------------------------------
+   encoding  values   score   log2(values)   Ghidra's name for it
+   utf-8         41    4.21           5.36   ascii
+   cp037         41    4.21           5.36   ascii
+   utf-16le      34    3.06           5.09   utf16
+   utf-16be      34    3.06           5.09   utf16
+   utf-32le      29    1.83           4.86   -
+   utf-32be      29    1.83           4.86   -
+
+   Where the encoding itself caps the score. A fraction f of every
+   chunk is one fixed byte, and the rest is spread over at most k values:
+   ASCII: bit 7 is never set, so 128 values at most     cap 7.00
+   UTF-16 of ASCII: every other byte is 00              cap 4.50
+   UTF-32 of ASCII: three bytes in four are 00          cap 2.56
+   any byte at all                                      cap 8.00
+
+   English is well under its cap in every encoding -- letters are not
+   equally likely -- but the caps are why the encodings sort into
+   Ghidra's bands: the same paragraph is 'ascii' in UTF-8 and in
+   EBCDIC, 'utf16' in either byte order, and below every named range
+   in UTF-32.
+
+3. ORDER, REPETITION AND A SUBSTITUTION ARE INVISIBLE TO IT
+------------------------------------------------------------------------
+   as written                          1024 bytes    4.21
+   the same bytes, sorted              1024 bytes    4.21
+   the same bytes, reversed            1024 bytes    4.21
+   the same 1024 bytes twice over      2048 bytes    4.21
+   ROT13                               1024 bytes    4.21
+   EBCDIC (cp037)                      1024 bytes    4.21
+
+   Six inputs, one score. The histogram is the whole input: the order
+   of the bytes never enters the sum, a chunk repeated has the same
+   proportions, and a one-to-one substitution of values -- ROT13, or
+   ASCII to EBCDIC -- moves the bars of the histogram without changing
+   their heights. So 'ascii' is Ghidra's name for a text-shaped
+   histogram, and an EBCDIC string table earns it too.
+
+4. WHAT SCORES 8.0, AND WHETHER IT WOULD COMPRESS
+------------------------------------------------------------------------
+   chunk                                    score   name         zlib -9 shrinks it below a third
+   00 01 02 .. ff, four times over           8.00   compressed   True
+   1024 bytes of chained SHA-256             7.84   compressed   False
+
+   The counter scores a perfect 8.0 and compresses to a fraction; the
+   hash chain scores less -- 1024 draws over 256 values leave the
+   histogram bumpy -- and does not compress at all. Entropy measures
+   how evenly the values are spread, not whether the bytes carry
+   information, so 'compressed' is Ghidra's name for a flat histogram:
+   compressed data has one, encrypted data has one, and so does a
+   table that walks through every value.
+
+5. WHERE EACH CHUNK LANDS, IN THE DEFAULT PALETTE
+------------------------------------------------------------------------
+   Ghidra's four default ranges, in slot order, as integer bands of
+   the 256-entry palette (the Rust example derives them):
+   Compressed     compressed  index 239 to 256   score 7.47 to 8.03
+   x86 code       x86         index 178 to 203   score 5.56 to 6.38
+   ASCII strings  ascii       index 134 to 167   score 4.19 to 5.25
+   Unicode UTF16  utf16       index  96 to 109   score 3.00 to 3.44
+
+   chunk                        score   index   tooltip prints   name
+   English, UTF-8                4.21     134           4.2039   ascii
+   English, UTF-16LE             3.06      97           3.0431   utf16
+   English, UTF-32LE             1.83      58           1.8196   -
+   'abcd' x 256                  2.00      64           2.0078   -
+   chained SHA-256               7.84     251           7.8745   compressed
+   00 01 02 .. ff, x 4           8.00     255           8.0000   compressed
+
+   The tooltip does not print the score. Ghidra keeps floor(score x 32)
+   as a palette index and prints index x 8 / 255 -- 256 steps in, 255
+   steps out -- so every number it shows is a little high, by up to
+   1/32 plus 0.4%. Its format is #0.0, which hides all of that.
+
+6. THE LAST CHUNK OF A MEMORY BLOCK IS SCORED AGAINST A FULL ONE
+------------------------------------------------------------------------
+   chunk read from the block               true   ghidra index   tooltip   name
+   every value x 4 (1024 bytes)            8.00            255      8.00   compressed
+   every value x 2 (512 bytes)             8.00            144      4.52   ascii
+   every value x 1 (256 bytes)             8.00             80      2.51   -
+   English, UTF-8 (1024 bytes)             4.21            134      4.20   ascii
+   English, UTF-8 (512 bytes)              4.12             81      2.54   -
+
+   Chunks are cut from the start of each memory block, so a block whose
+   length is not a multiple of the chunk size ends in a short one, and
+   the short one is scored with its counts divided by 1024 rather than
+   by the bytes it has. A 512-byte tail of perfectly flat data scores
+   4.5 instead of 8.0 -- and 4.5 is inside the 'ascii' band, which is
+   what the tooltip would then call it. Read off the 12.1.3 source, not
+   run through Ghidra; the page links the three methods involved.
+
+7. CHUNK SIZE: THE OPTION TRADES DETAIL FOR STEADINESS
+------------------------------------------------------------------------
+   the paragraph is 2031 bytes; full chunks only
+   chunk size   chunks   lowest   highest   spread   all in the 'ascii' band
+         1024        1     4.21      4.21     0.00   True
+          512        3     4.12      4.28     0.16   False
+          256        7     4.07      4.24     0.17   False
+
+   Smaller chunks draw finer detail down the bar and score less
+   steadily, because a histogram of 256 buckets filled from 256 bytes
+   is mostly empty buckets. The same paragraph, cut finer, spreads
+   over a wider range of scores.

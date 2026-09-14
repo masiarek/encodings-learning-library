@@ -1,0 +1,70 @@
+1. THE HISTOGRAM IS THE WHOLE INPUT
+
+$ printf 'Hello, World!' | hist
+1 32
+1 33
+1 44
+1 72
+1 87
+1 100
+1 101
+3 108
+2 111
+1 114
+   Thirteen bytes, ten values: l three times, o twice, eight once each.
+   Nothing about their order survives into this table, and the score is
+   computed from the table alone:
+
+$ printf 'Hello, World!' | score
+3.18
+
+2. THE SAME TEXT IN UTF-16LE
+
+$ printf 'Hello, World!' | iconv -f UTF-8 -t UTF-16LE | hist | head -1
+13 0
+
+$ printf 'Hello, World!' | iconv -f UTF-8 -t UTF-16LE | score
+2.59
+   Twenty-six bytes now, and the first row of the histogram is the whole
+   story: half of them are 00. Half the mass on one value pulls the
+   score down, which is why UTF-16 text has a band of its own in
+   Ghidra's palette, below ASCII's.
+
+3. THE ENDS OF THE SCALE
+
+$ head -c 1024 /dev/zero | score
+0.00
+
+$ for i in $(seq 0 255); do printf "\\$(printf '%03o' "$i")"; done | score
+8.00
+   One value is 0.00. Every value, equally often, is 8.00 -- and this
+   input is a counter, not noise. The scale measures spread, not
+   randomness.
+
+4. ORDER DOES NOT MATTER; THE ENCODING DOES
+
+$ printf 'abcabcabc' | score
+1.58
+
+$ printf 'aaabbbccc' | score
+1.58
+
+$ printf 'cbacbacba' | score
+1.58
+
+$ printf 'Hello, World!' | tr 'A-Za-z' 'N-ZA-Mn-za-m' | score
+3.18
+   Three arrangements of the same nine bytes, and ROT13 of section 1's
+   string, all keep their score: a rearrangement or a one-to-one
+   substitution leaves the histogram's heights alone. What changes the
+   score is a different set of bytes for the same text:
+
+$ printf 'caf\303\251' | score
+2.32
+
+$ printf 'caf\351' | score
+2.00
+   café is five distinct bytes in UTF-8 and four in Latin-1, so the
+   UTF-8 spelling scores log2(5) and the Latin-1 spelling log2(4). Short
+   strings sit low on the scale whatever they hold; the named bands on
+   the page are for chunks of a thousand bytes.

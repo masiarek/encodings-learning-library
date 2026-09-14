@@ -1,0 +1,12 @@
+1. 1024 bytes of 00
+0.00  -
+2. 'ab', 512 times over
+1.00  -
+3. every byte value, four times over
+8.00  compressed
+4. 'Hello, World!' in UTF-8, then in UTF-16LE
+3.18  utf16
+2.59  -
+5. 'café' in UTF-8, then in Latin-1
+2.32  -
+2.00  -

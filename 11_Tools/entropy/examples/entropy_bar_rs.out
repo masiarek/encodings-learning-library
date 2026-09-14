@@ -1,0 +1,68 @@
+1. A HISTOGRAM IS 256 COUNTS, INDEXED BY THE BYTE
+------------------------------------------------------------------------
+   string           encoding  bytes values   score   log2(values)
+   Hello, World!    UTF-8        13     10    3.18           3.32
+   Hello, World!    UTF-16LE     26     11    2.59           3.46
+   café             UTF-8         5      5    2.32           2.32
+   café             UTF-16LE      8      5    2.00           2.32
+   żółw             UTF-8         7      6    2.52           2.58
+   żółw             UTF-16LE      8      6    2.50           2.58
+   日本語              UTF-8         9      8    2.95           3.00
+   日本語              UTF-16LE      6      6    2.58           2.58
+   😀                UTF-8         4      4    2.00           2.00
+   😀                UTF-16LE      4      4    2.00           2.00
+
+   [0u32; 256] indexed by b as usize: the type is the whole guarantee that
+   every byte has a bucket. Ghidra is Java, whose byte is signed, so its
+   histogram is indexed 128 + b -- the same 256 buckets, shifted, and the
+   sum does not care which bucket is which. When every byte is distinct
+   the score IS log2 of the count, which is why café is 2.32 in UTF-8
+   and 2.00 in Latin-1: the ceiling is the number of values in use.
+
+2. ONE NUMBER FROM 0.0 TO 8.0 BECOMES ONE OF 256 COLOURS
+------------------------------------------------------------------------
+   score   floor(score x 32)   tooltip prints   difference
+    0.00                   0           0.0000   +0.0000
+    1.00                  32           1.0039   +0.0039
+    3.21                 102           3.2000   -0.0100
+    4.70                 150           4.7059   +0.0059
+    5.94                 190           5.9608   +0.0208
+    7.99                 255           8.0000   +0.0100
+    8.00                 255           8.0000   +0.0000
+
+   The palette has 256 entries, so a score is floored to a step of 1/32
+   before it is a colour, and a chunk of exactly 8.0 has to be capped
+   at entry 255. The tooltip turns the entry back into a number by
+   dividing by 255 -- 256 steps in, 255 steps out -- so every score
+   above zero comes back a little high. #0.0 rounds most of that away.
+
+3. THE SEVEN NAMED RANGES ARE INTEGER BANDS
+------------------------------------------------------------------------
+   option         tooltip     centre   +/-   as written       indexes   as applied
+   x86 code       x86         5.9400  0.40   5.54 to 6.34   178 to 203   5.56 to 6.38
+   ARM code       arm         5.1252  0.51   4.62 to 5.64   148 to 181   4.62 to 5.69
+   THUMB code     thumb       6.2953  0.50   5.80 to 6.80   185 to 218   5.78 to 6.84
+   PowerPC code   powerpc     5.6674  0.52   5.15 to 6.19   165 to 198   5.16 to 6.22
+   ASCII strings  ascii       4.7000  0.50   4.20 to 5.20   134 to 167   4.19 to 5.25
+   Compressed     compressed  8.0000  0.50   7.50 to 8.50   239 to 256   7.47 to 8.03
+   Unicode UTF16  utf16       3.2100  0.20   3.01 to 3.41    96 to 109   3.00 to 3.44
+
+   Every band is a little wider than its centre plus or minus its
+   half-width says, because both are floored to 1/32 before the end is
+   mirrored from the start. Compressed's centre of 8.0 is the one that
+   hits the cap: entry 256 does not exist, so it is pinned to 255 and the
+   band is 17 entries below it and none above.
+
+   Ranges that overlap, so a score inside both is named by the lower slot:
+   x86      and arm        share entries 178 to 181   (5.56 to 5.69)
+   x86      and thumb      share entries 185 to 203   (5.78 to 6.38)
+   x86      and powerpc    share entries 178 to 198   (5.56 to 6.22)
+   arm      and powerpc    share entries 165 to 181   (5.16 to 5.69)
+   arm      and ascii      share entries 148 to 167   (4.62 to 5.25)
+   thumb    and powerpc    share entries 185 to 198   (5.78 to 6.22)
+   powerpc  and ascii      share entries 165 to 167   (5.16 to 5.25)
+
+   The four machine-code ranges are one region of the scale, 4.6 to 6.8,
+   sliced four ways; x86 lies wholly inside PowerPC's and THUMB's
+   overlap. Which name the tooltip prints for a score in two of them
+   is decided by which Entropy Range slot holds each, not by the score.

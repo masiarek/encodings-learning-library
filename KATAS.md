@@ -124,3 +124,4 @@ That is deliberate, and the reason is that folders are URLs. A topic — the byt
 | K106 | [Four S-records, and the wrong type letter that passes both checks](16_Formats/motorola_hex/README.md#practice) | [Motorola Hex](16_Formats/motorola_hex/README.md) | 201 |
 | K107 | [Six jobs, and which of them the standard library finishes](04_Python/where_the_stdlib_stops/README.md#practice) | [Where the standard library stops](04_Python/where_the_stdlib_stops/README.md) | 201 |
 | K108 | [Six jobs, and which of them `std` finishes](05_Rust/where_std_stops/README.md#practice) | [Where `std` stops](05_Rust/where_std_stops/README.md) | 201 |
+| K109 | [Five chunks, one score each, and the band a thirteen-byte string lands in](11_Tools/entropy/README.md#practice) | [Ghidra's entropy bar](11_Tools/entropy/README.md) | 201 |

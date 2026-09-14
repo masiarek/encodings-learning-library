@@ -115,7 +115,7 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 - **`isWellFormed()` / `toWellFormed()`** — the 2024 JavaScript answer to lone surrogates; the shortest proof that the problem is still live.
 - **WTF-8 is where Rust keeps them** — `OsString` on Windows. The reason `Path` is not `String`.
 - **UTF-16 is *still* the wire format of half the world** — Windows APIs, NTFS names, SQL Server `NVARCHAR`, Java/JS/C# in memory. "UTF-8 everywhere" is advice, not a description.
-- **Endianness detection without a BOM** — the statistical hack (count null bytes in even vs odd positions) every text editor ships and none documents.
+- **Endianness detection without a BOM** — the statistical hack (count null bytes in even vs odd positions) every text editor ships and none documents. The same `00`s are why UTF-16 text has a band of its own on [Ghidra's entropy bar](11_Tools/entropy/README.md) — half the histogram on one value caps the score at 4.5 bits.
 
 ### 1.5 UTF-32 / UCS-4 — **core (small)**
 
@@ -767,7 +767,7 @@ The imported list's largest section, and the one furthest from this library's su
 
 ## 12. Binary, compression and packed formats — **adjacent**
 
-*Covered:* [Decompress, then decode](11_Tools/decompress_then_decode/README.md)
+*Covered:* [Decompress, then decode](11_Tools/decompress_then_decode/README.md) · [Ghidra's entropy bar](11_Tools/entropy/README.md) — what *compressed* looks like to a byte histogram, and what else looks the same
 
 **Imported:** gzip · zlib · DEFLATE · bzip2 · xz / LZMA · zstd · LZ4 · Brotli · Huffman · RLE · LZW · chunked transfer encoding · Python `struct` · pack/unpack format strings · struct alignment · endian-aware packing · bit field · varint · LEB128 · base-128 · network packet encoding
 
