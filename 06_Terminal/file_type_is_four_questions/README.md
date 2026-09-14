@@ -388,4 +388,5 @@ the name -- while remembering that content is a guess too.
 - [`find`, and filenames that are bytes](../../11_Tools/find/README.md) — the filename as bytes, one layer down from question four
 - [`--pre` and `-z` — decompress, then decode](../../11_Tools/decompress_then_decode/README.md) — what to do once `file` has told you it is gzip
 - [What kind of file is this? ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/what_kind_of_file_is_this/index.html) — the same five questions asked entirely in Python, where the APIs are the subject: `os.lstat` against `Path.is_file()`, why `mimetypes` answers about files that do not exist, and the sniffer the standard library deleted in 3.13
+- [The first letter of `ls -l` is the type ↗](https://masiarek.github.io/linux-learning-library/10_Files/the_first_letter_is_the_type/index.html) — question one's seven answers as `ls -l` prints them, one real file of each, and what opening a FIFO or a socket file does, measured on Linux and a Mac
 - [Byte order and the BOM](../../03_Encodings/byte_order_and_bom/README.md) — the one signature that makes stage three certain instead of inferential
