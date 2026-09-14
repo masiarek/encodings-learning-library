@@ -247,6 +247,7 @@ echo -e 'a\tb'  (bash)    6109620a                           6109620a
 - [`strtol(3)`](strtol.md) — the other direction: parsing the numbers `printf` writes
 - [`wcwidth(3)`](wcwidth.md) — the width that would actually line up a column
 - [`locale(1)`, `setlocale(3)` and `xlocale(3)`](locale.md) — which locale `%ls` and `'` consult, and why a C program starts in `C`
+- [Teaching `printf` a new conversion ↗](https://masiarek.github.io/c-learning-library/03_Strings/teaching_printf_a_new_conversion/index.html) — the C library's lesson on `xprintf(5)`, this Mac's extensible `printf`, beside glibc's `register_printf_specifier`, and on opening a `name(section)` page from fish, zsh and bash
 - [`printf` writes bytes](../../06_Terminal/printf_writes_bytes/README.md) — the lesson built on the octal row
 - [Writing a code point](../../02_Characters/writing_a_code_point/README.md) — the `\u20ac` row at full length
 - [The shell has no string type](../../11_Tools/sh/README.md) — `sh`, `echo -n`, and finding 35
