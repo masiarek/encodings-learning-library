@@ -420,3 +420,4 @@ WHEN TO REACH FOR od ANYWAY
 - [Inspecting a file](../../06_Terminal/inspecting_a_file/README.md) — `-t a`'s invented names, at length, and these tools inside a workflow
 - [Reading a hex dump](../../01_Bits_and_Bytes/reading_a_hex_dump/README.md) — the three columns, if this page assumed one you have not met
 - [Byte order and the BOM](../../03_Encodings/byte_order_and_bom/README.md) — what `-t x2` and `-t x4` are asserting about your file
+- [Linux learning library: Resources ↗](https://masiarek.github.io/linux-learning-library/09_Resources/index.html) — the Linux library sends `od` here instead of giving it a chapter, and lists Tevault's book, whose chapter 7 is the textbook session above
