@@ -331,3 +331,4 @@ python3 show.py | cat
 - [Opening a file, in the Python library ↗](https://masiarek.github.io/python-learning-library/01_Text_and_Bytes/opening_a_file/index.html#who-decides-when-the-output-leaves) — section 4 there is section 3 here, run against a real pty, plus `buffering=` on a file you opened yourself
 - [The byte that means something to somebody else](../../12_Adversarial/in_band_signals/README.md) — colour escapes as an in-band signal, and what else rides that channel
 - [`printf` writes bytes](../printf_writes_bytes/README.md) — putting exact bytes on the pipe this page is about
+- [Who waits when main returns? ↗](https://masiarek.github.io/concurrency-learning-library/01_Threads/who_waits_when_main_returns/index.html) — output lost at exit the other way: the process ends while another thread is still in the middle of a line
