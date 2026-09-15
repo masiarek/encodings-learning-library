@@ -1,0 +1,106 @@
+
+1. ONE DOT, AND NINE CHARACTERS DRAWN LIKE IT
+------------------------------------------------------------------------
+   code point  name                             UTF-8     in a word
+   U+002E      FULL STOP                        2e        a.b
+   U+2024      ONE DOT LEADER                   e2 80 a4  a․b
+   U+2026      HORIZONTAL ELLIPSIS              e2 80 a6  a…b
+   U+FF0E      FULLWIDTH FULL STOP              ef bc 8e  a．b
+   U+3002      IDEOGRAPHIC FULL STOP            e3 80 82  a。b
+   U+FF61      HALFWIDTH IDEOGRAPHIC FULL STOP  ef bd a1  a｡b
+   U+00B7      MIDDLE DOT                       c2 b7     a·b
+   U+0387      GREEK ANO TELEIA                 ce 87     a·b
+   U+22C5      DOT OPERATOR                     e2 8b 85  a⋅b
+   U+2022      BULLET                           e2 80 a2  a•b
+
+   look-alikes whose UTF-8 holds the byte 2e    0 of 9
+
+   Every one of them is two or three bytes, and none of those bytes is
+   2e. A multi-byte UTF-8 sequence is built only from bytes 80 and up, so
+   a program scanning for the dot's byte cannot find a look-alike, and
+   cannot cut one in half either. The Rust example checks that claim
+   against every scalar value there is.
+
+2. WHAT UNICODE DECLARED ABOUT EACH ONE
+------------------------------------------------------------------------
+   code point  decomposition            NFC      NFKC
+   U+002E      (none)                   same     same
+   U+2024      <compat> 002E            same     U+002E
+   U+2026      <compat> 002E 002E 002E  same     U+002E x3
+   U+FF0E      <wide> 002E              same     U+002E
+   U+3002      (none)                   same     same
+   U+FF61      <narrow> 3002            same     U+3002
+   U+00B7      (none)                   same     same
+   U+0387      00B7                     U+00B7   U+00B7
+   U+22C5      (none)                   same     same
+   U+2022      (none)                   same     same
+
+   NFKC turns into full stops     U+2024  U+2026  U+FF0E
+   NFC changes at all             U+0387
+
+   A decomposition in angle brackets is a COMPATIBILITY mapping: Unicode
+   saying this is the other character in different clothes, a leader dot
+   or a wide one, and NFKC applies it. The ideographic full stop has no
+   mapping at all. It ends sentences too, but it is a different
+   punctuation mark, so NFKC leaves it -- and folds its halfwidth form onto
+   IT, not onto '.'. A bare mapping with no brackets is CANONICAL, and
+   even NFC, the form usually called safe, applies it: GREEK ANO TELEIA
+   becomes MIDDLE DOT, which is still not a dot.
+
+3. THREE READERS, THREE ANSWERS
+------------------------------------------------------------------------
+   code point  split on dot     NFKC is dots  .encode('idna')
+   U+002E      2 pieces         True          b'a.b'
+   U+2024      1 piece          True          b'a.b'
+   U+2026      1 piece          True          b'a...b'
+   U+FF0E      1 piece          True          b'a.b'
+   U+3002      1 piece          False         b'a.b'
+   U+FF61      1 piece          False         b'a.b'
+   U+00B7      1 piece          False         b'xn--ab-0ea'
+   U+0387      1 piece          False         b'xn--ab-0ea'
+   U+22C5      1 piece          False         b'xn--ab-9qv'
+   U+2022      1 piece          False         b'xn--ab-f3t'
+
+   str.split('.') finds a dot in        U+002E
+   NFKC makes a dot of                  U+002E  U+2024  U+2026  U+FF0E
+   .encode('idna') writes a 2e for      U+002E  U+2024  U+2026  U+FF0E  U+3002  U+FF61
+
+   Three readers, three questions. split() compares code points, and
+   exactly one code point is 2E. NFKC asks what Unicode declared, which
+   is section 2. The idna codec holds a LIST: RFC 3490 section 3.1 names
+   four characters that must be recognised as the dots between labels,
+   U+002E U+3002 U+FF0E U+FF61, and every other row that comes out with
+   a 2e got it from the NFKC that nameprep runs inside each label.
+
+4. THE ORDER OF THE READERS DECIDES
+------------------------------------------------------------------------
+   s = '127' + IDEOGRAPHIC FULL STOP + '0.0.1'
+   s.split('.')                          ['127。0', '0', '1']
+   ipaddress.ip_address(s)               ValueError
+   s.encode('idna')                      b'127.0.0.1'
+   ipaddress.ip_address(that, decoded)   127.0.0.1
+
+   'a...b'.encode('idna')                UnicodeEncodeError
+   ('a' + ELLIPSIS + 'b').encode('idna') b'a...b'
+
+   The same string is not an IP address before the idna codec and is one
+   after it. And the codec itself decides what a dot is twice: it splits
+   the name into labels on its four dots FIRST, and runs NFKC inside each
+   label AFTER. So three real full stops trip its empty-label check, and
+   an ellipsis walks past that check and comes out as the same three
+   bytes. Whatever validates a name has to run after the last step that
+   can turn something into a dot.
+
+5. A DOT THAT BELONGS TO A LETTER
+------------------------------------------------------------------------
+   'İ'   U+0130   LATIN CAPITAL LETTER I WITH DOT ABOVE
+   'İ'.lower()               'i̇'  2 code points: U+0069 U+0307
+   the second one            COMBINING DOT ABOVE
+   its UTF-8                 69 cc 87
+   .split('.')               1 piece
+   NFKC                      same
+   'İ'.lower() == 'i'        False
+
+   Lowercasing the Turkish capital without Turkish rules keeps its dot as
+   a combining mark on an ordinary i. Nothing on this page reads that
+   mark as punctuation, and nothing removes it either.

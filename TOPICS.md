@@ -64,7 +64,7 @@ Two more that are not wrong, only incomplete, and both are traps this library ha
 
 ### 1.2 Unicode — **core**
 
-*Covered:* [Unicode code points](02_Characters/unicode_code_points/README.md) · [The table has a version](02_Characters/the_table_has_a_version/README.md) · [Preparing a string](02_Characters/preparing_a_string/README.md) · [Noncharacters and the private use areas](02_Characters/noncharacters_and_private_use/README.md) · [Confusables and scripts](02_Characters/confusables_and_scripts/README.md) · [Unicode in identifiers](02_Characters/unicode_in_identifiers/README.md)
+*Covered:* [Unicode code points](02_Characters/unicode_code_points/README.md) · [The table has a version](02_Characters/the_table_has_a_version/README.md) · [Preparing a string](02_Characters/preparing_a_string/README.md) · [Noncharacters and the private use areas](02_Characters/noncharacters_and_private_use/README.md) · [Confusables and scripts](02_Characters/confusables_and_scripts/README.md) · [The full stop and its look-alikes](02_Characters/the_full_stop_and_its_lookalikes/README.md) · [Unicode in identifiers](02_Characters/unicode_in_identifiers/README.md)
 
 **Imported:** Unicode · Unicode Consortium · the Standard · UCS / ISO-IEC 10646 · plane · BMP · SMP · SIP · TIP · SSP · Private Use Areas · block · category · version · scalar value · UCD · character name · UBA / BiDi · RTL · LTR · emoji · math symbols · currency symbols · diacritics · Han unification · CJK Unified Ideographs · UTF · stability policy · Age property · name alias · deprecated character · noncharacter
 

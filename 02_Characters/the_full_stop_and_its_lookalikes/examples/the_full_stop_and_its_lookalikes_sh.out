@@ -1,0 +1,40 @@
+1. THE TEXT COLUMN DRAWS A DOT FOR EVERY BYTE IT HAS NO PICTURE FOR
+
+$ printf 'hi\n\t.' | xxd
+00000000: 6869 0a09 2e                             hi...
+   Three dots on the right and one 2e on the left. The first two are
+   0a (newline) and 09 (tab): the dump's placeholder, not a full stop.
+
+2. THREE DIFFERENT STRINGS, ONE PICTURE
+
+$ printf '...' | xxd
+00000000: 2e2e 2e                                  ...
+
+$ printf '\342\200\246' | xxd
+00000000: e280 a6                                  ...
+
+$ printf '\342\200\244' | xxd
+00000000: e280 a4                                  ...
+   Three full stops, one HORIZONTAL ELLIPSIS, one ONE DOT LEADER. The
+   text column says '...' three times; only the first dump holds a 2e,
+   and the other two hold no byte below 80 at all.
+
+3. GREP IN THE C LOCALE: A DOT IS ONE BYTE, A LOOK-ALIKE IS THREE
+
+$ words | xxd
+00000000: 612e 620a 61e2 80a4 620a 61e2 80a6 620a  a.b.a...b.a...b.
+
+$ words | grep -c 'a\.b'
+1
+
+$ words | grep -c 'a.b'
+1
+
+$ words | grep -c 'a...b'
+2
+
+$ words | grep 'a...b' | xxd
+00000000: 61e2 80a4 620a 61e2 80a6 620a            a...b.a...b.
+   An escaped dot finds the one line holding byte 2e. An unescaped dot is
+   any ONE byte here, so it cannot span a three-byte look-alike -- while
+   'a...b', three one-byte dots, matches both look-alikes and not a.b.

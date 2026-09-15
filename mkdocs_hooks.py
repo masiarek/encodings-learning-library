@@ -159,6 +159,7 @@ NAV_ORDER: dict[str, list[str]] = {
         "case_is_not_per_character",
         "where_a_line_may_break",
         "confusables_and_scripts",
+        "the_full_stop_and_its_lookalikes",
         "logical_and_visual_order",
         "unicode_in_identifiers",
         "what_a_regex_matches",

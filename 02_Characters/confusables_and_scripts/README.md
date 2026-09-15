@@ -341,6 +341,7 @@ a is the right letter in a Cyrillic word.
 
 - [Preparing a string](../preparing_a_string/README.md) — the invisible half, and the RFC that declines this half in writing
 - [Unicode in identifiers](../unicode_in_identifiers/README.md) — the same problem where the reader is a code reviewer
+- [The full stop and its look-alikes](../the_full_stop_and_its_lookalikes/README.md) — the same rule for one punctuation mark, where NFKC does fold three of the nine and the idna codec reads a different five as dots
 - [Normalization](../../04_Python/normalization/README.md) — what it *does* reconcile, and why that is a different question
 - [The table has a version](../the_table_has_a_version/README.md) — why a name may be recorded when a property may not
 - [`uni` — the character's name](../../11_Tools/uni/README.md) — the diagnostic tool for exactly this

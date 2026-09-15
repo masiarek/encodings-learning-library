@@ -1,0 +1,32 @@
+1. A u8 AND A char, AND SPLITTING ON EACH
+------------------------------------------------------------------------
+   b'.'            0x2e  (a u8)
+   '.' as u32      U+002E  (a char)
+
+   char     len_utf8  UTF-8        is_ascii_punctuation  "a?b".split('.')
+   U+002E   1         2e           true                  2 pieces
+   U+2024   3         e2 80 a4     false                 1 piece
+   U+2026   3         e2 80 a6     false                 1 piece
+   U+3002   3         e3 80 82     false                 1 piece
+   U+FF0E   3         ef bc 8e     false                 1 piece
+
+   All five in one string, split two ways:
+   str::split('.')                        2 pieces
+   as_bytes().split(|&b| b == b'.')       2 pieces
+
+   The same answer from the char and from the byte. Section 2 is why
+   that is not luck for these five, but true of every string.
+
+2. EVERY SCALAR VALUE, ENCODED, AND SEARCHED FOR 0x2E
+------------------------------------------------------------------------
+   scalar values encoded                      1112064
+   of those, encoded in more than one byte    1111936
+   ...with any byte below 0x80 among them     0
+   scalar values whose UTF-8 holds a 0x2E     1  (U+002E)
+
+   Every byte of a multi-byte UTF-8 sequence is 0x80 or above, so the
+   byte 0x2E appears in exactly one character's encoding: the full stop
+   itself. A byte scan for '.' can never cut a look-alike in half --
+   and, by the same rule, can never find one. Nothing on char says
+   U+2024 resembles U+002E, and std has no normalization to say it
+   either.

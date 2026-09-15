@@ -21,10 +21,11 @@ A [byte](../01_Bits_and_Bytes/a_byte_is_eight_bits/README.md) is a number. Text 
 | 13 | [Case is not a per-character operation](case_is_not_per_character/README.md) | Why does `.upper()` change a string's length, depend on neighbours, and refuse to know your language? | written, 2026-09-08 |
 | 14 | [Where a line may break](where_a_line_may_break/README.md) | Japanese and Thai have no spaces — so where may a line break, and why is `textwrap` wrong for both? | written, 2026-09-08 |
 | 15 | [Confusables and scripts](confusables_and_scripts/README.md) | Two strings, one picture, different code points — why does no normalization form merge them? | written, 2026-09-06 |
-| 16 | [Logical and visual order](logical_and_visual_order/README.md) | Why is the order you store not the order you see, and why is a screenshot not evidence? | stub |
-| 17 | [Unicode in identifiers](unicode_in_identifiers/README.md) | Why does `ﬁle = 2` define `file`, and why does Rust refuse to do that? | written, 2026-09-06 |
-| 18 | ["Supports Unicode" is a level, not a yes](what_a_regex_matches/README.md) | Your regex engine says it handles Unicode — which of UTS #18's fifteen requirements does it actually meet? | written, 2026-09-08 |
-| 19 | [`rune` is an `int32`](rune_is_an_int32/README.md) | Go and .NET both call one code point a rune — why will Go's hold `-1`, and why does its loop count a cut-off euro sign twice? | written, 2026-09-10 |
+| 16 | [The full stop and its look-alikes](the_full_stop_and_its_lookalikes/README.md) | Nine characters are drawn like a dot — which of them do `split`, NFKC and a hostname read as one, and what is the `.` in a hex dump? | written, 2026-09-14 |
+| 17 | [Logical and visual order](logical_and_visual_order/README.md) | Why is the order you store not the order you see, and why is a screenshot not evidence? | stub |
+| 18 | [Unicode in identifiers](unicode_in_identifiers/README.md) | Why does `ﬁle = 2` define `file`, and why does Rust refuse to do that? | written, 2026-09-06 |
+| 19 | ["Supports Unicode" is a level, not a yes](what_a_regex_matches/README.md) | Your regex engine says it handles Unicode — which of UTS #18's fifteen requirements does it actually meet? | written, 2026-09-08 |
+| 20 | [`rune` is an `int32`](rune_is_an_int32/README.md) | Go and .NET both call one code point a rune — why will Go's hold `-1`, and why does its loop count a cut-off euro sign twice? | written, 2026-09-10 |
 
 ## The through-line
 
